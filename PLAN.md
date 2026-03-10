@@ -890,30 +890,33 @@ programs/
 
 **The container resets without warning. Anything not pushed is lost.**
 
-**Push triggers — push immediately after ANY of these, no exceptions:**
-- A new file is created (even a skeleton with no tests running yet).
-- A test file is modified (even one test added or changed).
-- A source file is modified (even one line changed).
-- A file compiles clean for the first time.
-- A test goes green for the first time.
+### The one rule: write a file → push. Change a file → push. No exceptions.
 
-**The sequence for every new file:**
-1. Create file (skeleton/stub). → `git add -A && git commit -m "..." && git push`
-2. Add first test. → push.
-3. Add each additional test or section. → push.
-4. Write implementation stub. → push.
-5. Implementation passes first test. → push.
-6. All tests green. → push.
+Do not run tests first. Do not check if it compiles first. Do not add a second change first.
+**The moment a file is written or changed, the next action is `git add -A && git commit && git push`.**
 
-Do not write two tests then push. Do not write a test and its implementation then push.
-**One logical change. Push. Then the next change.**
+**What "a change" means — each of these is exactly one push:**
+- Creating a new file (even an empty skeleton, even one that does not compile yet)
+- Any modification to an existing file (one line, one test, one function)
+- A file compiling clean for the first time
+- A test going green
 
-- Work in the smallest meaningful unit: one file, one function, or one test class.
-- Commit and push **before** moving on to the next unit.
-- For a new feature: write tests → push. Implement → push. Suite green → push.
-- Never accumulate more than one logical unit of uncommitted work.
-- After every push, confirm with `git log --oneline -1` that the remote received it.
-- If a piece is not yet tested, commit it immediately as `WIP: <description>` so it is not lost.
+**Correct sequence for implementing anything:**
+1. `create file` → **push** (message: `"WIP: <n> — skeleton"`)
+2. `make it compile` → **push** (message: `"<n> compiles"`)
+3. `add first test` → **push**
+4. `add next test` → **push**
+5. `write implementation stub` → **push**
+6. `first test green` → **push**
+7. `all tests green` → **push**
+
+**What is forbidden:**
+- Writing a file and then modifying it before pushing
+- Writing two tests and then pushing both together
+- Running tests and then editing the file and then pushing
+- Any sequence where more than one logical change accumulates before a push
+
+After every push: confirm with `git log --oneline -1` that the remote received it.
 
 ---
 ---
