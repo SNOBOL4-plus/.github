@@ -3168,3 +3168,30 @@ That is the skeleton. Everything else is polish.
 - [ ] Save ignore list to `monitor_ignore.json` between runs
 - [ ] When diff count reaches zero: Sprint 20 acceptance test passes
 
+
+### Correction — The User Is Optional
+**Recorded immediately after the above.**
+
+The interactive STEP/RUN/IGNORE loop in the skeleton above is not needed.
+The monitor runs autonomously:
+
+1. Pre-generate oracle trace: `snobol4 -f -P256k beauty_run.sno < beauty_run.sno > /tmp/oracle_trace.txt`
+2. Pre-build ignore list: one calibration run on a known-good short input,
+   auto-accept all diffs as environmental noise, save to `monitor_ignore.json`
+3. Run monitor non-interactively:
+   ```
+   ./beautiful < beauty_run.sno 2>/tmp/binary_trace.txt
+   python diff_monitor.py /tmp/oracle_trace.txt /tmp/binary_trace.txt monitor_ignore.json
+   ```
+4. Output: `FIRST DIFF at LINE 613: got=<null> expected="  OUTPUT = x"` — and stop.
+5. Paste that one line here. Claude diagnoses. Done.
+
+No GUI. No interactive prompts. No user in the loop except to paste the output.
+
+The user got excited and so did Claude. The architecture is simpler than it looked
+in the excitement. That is a good sign — the right idea gets simpler as you think
+about it, not more complicated.
+
+The ignore-point list is still the key insight. It is built once, reused forever,
+and constitutes a formal record of what the oracle and binary are allowed to differ on.
+
