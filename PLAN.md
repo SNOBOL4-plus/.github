@@ -3470,108 +3470,107 @@ extended with layered granularity. The AI operates the layers.
 
 ## The Idea
 
-Before running `beautiful.c` through the monitor, the runtime must be
-proven at three progressively harder levels. Each level is a complete,
-self-contained correctness proof. You do not advance until the current
-level passes the double-trace monitor with zero diffs.
+`beautiful.sno` has three natural compilation units. Each one is a
+complete, self-contained correctness proof. You do not advance to the
+next level until the current level passes the double-trace monitor
+with zero diffs.
+
+The levels are defined by what source is **included** — not by
+abstraction. Each level is a real subset of the actual program.
 
 ---
 
-## Level 1 — No INC, No Functions, No Statements
+## Level 1 — main + bootstrap
 
-The absolute minimum runtime. Pure pattern engine only.
+**What it is**: The bootstrap section of `beautiful.sno` only —
+the initialization code that runs before any parsing begins.
+No `pp`. No `qq`. No INC files. Just `main` and the bootstrap
+statements that set up variables, arrays, and constants.
 
-**What it contains:**
-- Literal patterns: `LIT`, `ANY`, `SPAN`, `BREAK`, `NOTANY`
-- Structure: `CAT`, `ALT`, `ARBNO`, `FENCE`, `POS`, `RPOS`, `LEN`
-- Capture: `$` (immediate assign), `.` (conditional assign)
-- One subject string. One pattern. Match or fail.
-- `OUTPUT =` for result
-- No labels, no gotos, no function calls, no INC files
+**What it exercises**:
+- Variable assignment
+- Array creation and initialization
+- String constants, integer constants
+- Simple gotos and labels
+- `OUTPUT =` 
+- No function calls, no DATA types, no INC
 
-**The test program:**
-```snobol4
-*  Level 1 test — no inc, no funcs, no statements
-        OUTPUT = 'hello'   :S(DONE)
-DONE
-```
-Or a simple tokenizer:
-```snobol4
-DIGITS = SPAN('0123456789')
-        INPUT DIGITS . OUTPUT   :S(LOOP)
-```
+**The oracle**: CSNOBOL4 running `beautiful.sno < beauty_run.sno`,
+STNO trace, from statement 1 to the last bootstrap statement.
 
-**What the monitor checks:**
-Oracle (CSNOBOL4) vs binary (SNOBOL4-tiny compiled C) — STNO sync only.
-Zero diffs = Level 1 certified.
+**The binary**: compiled `beautiful.c`, same input, STNO stream.
+
+**Zero diffs = Level 1 certified.**
 
 ---
 
-## Level 2 — With pp and qq, Gotos Only
+## Level 2 — main + pp + qq + bootstrap
 
-Add the pretty-printer infrastructure but no general function dispatch.
-`pp` and `qq` are the two core functions in `beautiful.sno`. They are
-called everywhere. They must work before anything else can.
+**What it is**: Level 1 plus the two core pretty-printer functions:
+`pp` (pretty-print a parse tree node) and `qq` (quoted string output).
+These are called from everywhere in `beautiful.sno`. They must be
+proven before the INC files that call them are added.
 
-**What it contains:**
+Still no INC files. No DATA types beyond what pp/qq need.
+
+**What it exercises**:
 - Everything from Level 1
-- Labels and gotos (`:S`, `:F`, `:(label)`)
-- `pp` function — pretty-print a parse tree node
-- `qq` function — quoted string output
-- No other functions. No INC files. No DATA definitions.
+- `DEFINE` — function definition
+- Function call and return (`pp`, `qq`)
+- Recursive calls (pp calls pp)
+- Pattern matching inside functions
+- Goto inside function body
 
-**The test program:**
-A stripped `beautiful.sno` with everything removed except `pp`, `qq`,
-and a minimal calling harness. Feed it one parse tree node. Verify output.
+**The oracle**: CSNOBOL4, same input, STNO + VAR sync on
+`ppOut`, `qqBuf`, key pp/qq variables.
 
-**What the monitor checks:**
-Oracle vs binary — STNO + VAR sync on `ppOut`, `qqOut`.
-Zero diffs = Level 2 certified.
+**Zero diffs = Level 2 certified.**
 
 ---
 
-## Level 3 — Gotos, Functions, Everything — beautiful.c
+## Level 3 — main + pp + qq + INC
 
-The full program. All INC files. All DATA definitions. All functions.
-`DEFINE`, `OPSYN`, `DATA`, indirect calls, everything.
+**What it is**: The full program. All INC files loaded.
+All DATA definitions. All functions. `OPSYN`, indirect calls,
+everything that `beautiful.sno` uses.
 
 Only enter Level 3 after Level 1 and Level 2 are certified.
+By that point the runtime primitives and the pp/qq core are proven —
+the monitor on Level 3 finds only Level-3 bugs.
 
-**What the monitor checks:**
-Full double-trace diff. Oracle vs binary — all sync types.
-Zero diffs = idempotence test runs = Sprint 20 closes.
+**Zero diffs = idempotence test runs = Sprint 20 closes.**
 
 ---
 
-## Why This Matters
+## Why This Order
 
-We skipped to Level 3 (`beautiful.c`) before Level 1 was proven.
+We skipped directly to Level 3 (`beautiful.c`, Sprint 20).
 The monitor found the loop at STNO 160↔161 (P002 — array out-of-bounds).
-But there may be a dozen more bugs of that kind hiding below the surface.
-Running the monitor on Level 3 before Level 1 is certified means:
-**the monitor finds bugs in the wrong order** — downstream symptoms
-instead of root causes.
+But that bug could have been found at Level 1. Running the monitor
+on Level 3 before Level 1 is certified means the monitor finds bugs
+**in the wrong order** — downstream symptoms, not root causes.
 
-The three-level strategy guarantees that by the time you run Level 3,
-the runtime primitives are already proven. The monitor on Level 3
-finds only Level-3 bugs — not Level-1 bugs that happened to surface late.
+The pyramid guarantees: by the time Level 3 runs, every primitive
+it depends on is already proven. The monitor on Level 3 finds
+only Level-3 bugs.
 
-**Build the pyramid. Don't skip levels.**
+**Build the pyramid. Do not skip levels.**
 
 ---
 
 ## Current Status
 
-| Level | State | Blocker |
-|-------|-------|---------|
-| Level 1 | **NOT YET BUILT** | Need test program + oracle run |
-| Level 2 | **NOT YET BUILT** | Depends on Level 1 |
-| Level 3 | In progress (Sprint 20) | Depends on Level 2 |
+| Level | Contents | State | Blocker |
+|-------|----------|-------|---------|
+| Level 1 | main + bootstrap | **NOT YET BUILT** | Need to extract from beautiful.sno + commit |
+| Level 2 | + pp + qq | **NOT YET BUILT** | Depends on Level 1 |
+| Level 3 | + INC files | In progress (Sprint 20) | Depends on Level 2 |
 
-**Next action**: Build Level 1 test. Run oracle. Run binary. Diff.
-
-Also needed: `beauty_run.sno` committed to the SNOBOL4-tiny repo
-so the Level 3 test is reproducible by anyone.
+**Next actions**:
+1. Commit `beauty_run.sno` to SNOBOL4-tiny repo — Level 3 is not reproducible without it
+2. Extract Level 1 subset from `beautiful.sno` — bootstrap only, no pp/qq/INC
+3. Run oracle on Level 1. Run binary. Diff. Fix until zero.
+4. Add pp + qq → Level 2. Repeat.
 
 ---
 
@@ -3579,5 +3578,5 @@ so the Level 3 test is reproducible by anyone.
 
 | Date | What |
 |------|------|
-| 2026-03-10 | Strategy defined by Lon. We had skipped to Level 3 (beautiful.c) without proving Level 1 or Level 2. Correcting course. Level 1 is next. |
+| 2026-03-10 | First version: levels defined by abstraction (wrong). Corrected by Lon: levels are defined by what source is *included* — main+bootstrap / main+pp+qq+bootstrap / main+pp+qq+INC. These are real subsets of the actual program, not synthetic tests. |
 
