@@ -157,6 +157,7 @@ After updating this file, always push to headquarters (`SNOBOL4-plus/.github`).
 - [ ] Build unified cross-platform test corpus
 
 ### P3 — Polish
+- [ ] **&STCOUNT as a debugging protocol** — CSNOBOL4 disables `&STCOUNT` by default (sets `&STLIMIT = -1`) for speed, per Phil Budne's optimization in 0.98. But `&STCOUNT` is a powerful debugging tool from the original SIL design: run the same program three times (CSNOBOL4, SPITBOL, dotnet or JVM), compare statement counts. On failure, set `&STLIMIT` to 1, 2, 3... or binary search to find the exact statement where behavior diverges. Our dotnet and JVM engines already track this. Consider adding a `-debug` mode that re-enables `&STCOUNT` incrementing and supports `&STLIMIT`-triggered dumps of variable state. The three-engine cross-check (CSNOBOL4 / SPITBOL / ours) makes this a precision bug-finding tool.
 - [ ] **SNOBOL4-dotnet**: `WindowsDll` and `LinuxDll` in `SetupTests.cs` are declared but never used — dead variables, remove.
 - [ ] **SNOBOL4-dotnet**: `Test0.Test.cs` and `CTest_CODE0_NTest_CODE0.cs` contain hardcoded `C:\Users\jcooper\...` absolute paths — both are excluded from compilation but should be cleaned up or deleted.
 - [ ] Write individual repo READMEs for all five repos
