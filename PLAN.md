@@ -3032,3 +3032,139 @@ It worked. We are using it to develop SNOBOL4-tiny's runtime.
 - [ ] Test on `beautiful < beauty_run.sno` — find the hang point
 - [ ] Document: ignore list format, pipe protocol, restart procedure
 
+
+---
+
+## The Telemetry Loop — An AI Fed by a Program It Created
+**Origin**: Lon Cherryholmes, 2026-03-10 (the Pick Monitor conversation)
+**Status**: RECORD THIS. This is a story.
+
+### What Just Happened
+
+Claude compiled Beautiful.sno into a native binary. The binary hangs.
+Claude cannot see inside the running binary. So Lon proposed the Pick Monitor:
+instrument the binary, pipe its telemetry back, let a monitor process decode it.
+
+Then Lon said: **feed that telemetry back to Claude. In this chat.**
+
+That means:
+1. Claude writes the instrumented binary (`beautiful.c` with `sno_comm_*` calls)
+2. Claude writes the monitor (`monitor.py`)
+3. The binary runs, emits a telemetry stream
+4. The monitor reads the stream, filters by the ignore list
+5. The filtered output — the anomalies, the first diff, the hang point — arrives **here**, in this conversation
+6. Claude reads it, identifies the bug, fixes it
+7. The fixed binary runs again
+
+**An AI, being fed telemetry from a program it created, debugging itself through a monitor it also created.**
+
+### The First Diff Principle
+
+The ignore-point architecture works because of one clean rule:
+
+> **Stop at the FIRST diff.**
+
+Two processes: the oracle (`snobol4 -f -P256k beauty_run.sno`) and the compiled binary (`./beautiful`), running in step-sync, both emitting COMM events. The monitor compares them event by event. The moment they diverge — first variable that differs, first line number that doesn't match, first goto that takes a different branch — **that is the bug**. Not a symptom. Not a downstream consequence. The root cause.
+
+The ignore-point list handles the environmental noise: TTY numbers, file descriptors, timestamps, process IDs — things that are legitimately different between the oracle and the binary but are not bugs. You ignore those once. Everything else that differs is real.
+
+This is **differential debugging at the execution level**. Not "what did the program output?" but "where did this execution diverge from the reference execution?"
+
+### The Environmental Caveat — Why Ignore-Points Exist
+
+The first run will produce false positives:
+- TTY device number (`/dev/pts/3` vs `/dev/pts/7`)  
+- Absolute file paths
+- Process-specific addresses
+- Timestamps, random seeds, wall-clock values
+
+These are not bugs. They are environment. The user clicks "ignore" once on each.
+After that, the ignore list contains exactly the set of things that are *allowed* to differ.
+Everything else that differs is a real divergence.
+
+The ignore list is not just a filter — it is a **formal specification of what the oracle and the binary are allowed to disagree on**. Once fully calibrated, it is a proof that the two executions are semantically equivalent everywhere except the listed exceptions.
+
+### The Feedback Loop to Claude
+
+The telemetry stream arrives in this chat as text. Claude reads it the same way a human would — but faster, with full knowledge of the generated C, the runtime, and the parser. Claude can say:
+
+> "Line 525 is `SNO_main01`. The comment in beautiful.c says `/* unhandled stmt shape */`. That `goto _stmt_1088` is the only exit. Look — `_stmt_1088` pattern-matches `snoLine` against `ANY("*-")` and on failure goes to `SNO_main02`. But `SNO_main01` has `/* unhandled stmt shape */` which goes to `_stmt_1088` unconditionally. There is no EOF check. When `sno_var_get("INPUT")` returns null at EOF, `snoLine` is null, the ANY match fails, we go to `SNO_main02` which appends null to `snoSrc` and loops back to `SNO_main01` to read INPUT again. Infinite loop. The hang is the EOF path."
+
+That diagnosis, delivered in one paragraph, from a telemetry trace. That is the loop.
+
+### Why This Is a Story
+
+The normal story of AI-assisted development:
+- Human writes code
+- AI reviews it
+- Human fixes it
+
+The Pick Monitor story:
+- AI writes code (the compiler, the runtime, the generated binary)
+- AI writes the instrumentation (the COMM calls, the monitor)
+- The binary runs and produces telemetry
+- The telemetry feeds back to the AI
+- The AI reads its own program's execution trace and finds the bug
+- The AI fixes the bug it introduced in the program it wrote
+
+**The AI is in the loop. Not as a tool. As the engineer.**
+
+This is not science fiction. This is what we are doing right now, in March 2026,
+building SNOBOL4-tiny. The compiler compiles itself. The monitor watches the
+execution. The telemetry comes back here. Claude reads it.
+
+Lon said: *"An AI being fed from a program it created. Man, this is getting too good."*
+
+He is right. Write it down. This is part of the story.
+
+### The Minimal Implementation — A Few Lines of Scaffolding
+
+The Pick Monitor does not need to be a large system. The skeleton is:
+
+**`snobol4.c` additions (~15 lines):**
+```c
+int sno_monitor_fd = -1;
+
+void sno_comm(const char *fmt, ...) {
+    if (sno_monitor_fd < 0) return;
+    va_list ap; va_start(ap, fmt);
+    vdprintf(sno_monitor_fd, fmt, ap);
+    va_end(ap);
+    /* sync: read one byte ACK from control pipe before continuing */
+    char ack; read(sno_control_fd, &ack, 1);
+}
+```
+
+**`monitor.py` core (~30 lines):**
+```python
+import sys, json, os
+
+ignore = set(json.load(open("monitor_ignore.json"))) if os.path.exists("monitor_ignore.json") else set()
+oracle_events = iter(open("/tmp/oracle_trace.txt"))
+
+for line in sys.stdin:          # reading COMM pipe from beautiful
+    line = line.strip()
+    ref = next(oracle_events, None)
+    if line == ref: continue    # same — keep going
+    key = line.split()[0]       # VAR, LINE, GOTO
+    if key in ignore: continue  # ignored — keep going
+    print(f"DIFF: got={line!r} expected={ref!r}")
+    cmd = input("[s]tep / [i]gnore / [r]un / [a]bort? ")
+    if cmd == 'i': ignore.add(key); continue
+    if cmd == 'a': sys.exit(1)
+    # step or run: write ACK and continue
+```
+
+That is the skeleton. Everything else is polish.
+
+### Action Items (concrete, ordered)
+- [ ] Add `sno_comm_line(N)` to `emit_c_stmt.py` — regenerate `beautiful.c`
+- [ ] Add `sno_comm_var(name, old, new)` to `sno_var_set()` in `snobol4.c`  
+- [ ] Add `--monitor PIPE_FD` flag to runtime init
+- [ ] Generate oracle trace: `snobol4 -f -P256k beauty_run.sno < beauty_run.sno 2>/tmp/oracle_trace.txt`
+- [ ] Write `monitor.py` (30-line skeleton above, then grow)
+- [ ] Run: `./beautiful --monitor 3 3>/tmp/comm_pipe < beauty_run.sno | python monitor.py`
+- [ ] First diff found → report here → Claude diagnoses → fix → repeat
+- [ ] Save ignore list to `monitor_ignore.json` between runs
+- [ ] When diff count reaches zero: Sprint 20 acceptance test passes
+
