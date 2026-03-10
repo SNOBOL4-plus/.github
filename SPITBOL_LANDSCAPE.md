@@ -141,3 +141,57 @@ make install
 *Sources: github.com/spitbol (all repos), groups.io/g/spitbol,
 Debian RFP bug#1061167, Vice/Motherboard article (2024),
 daveshields.wordpress.com, snobol4.org*
+
+---
+
+## Live Inventory — What Actually Runs On This Machine
+
+*Tested 2026-03-10 on Ubuntu 24.04 x86_64*
+
+### Running
+
+| # | System | Version | Binary | Source | Notes |
+|---|--------|---------|--------|--------|-------|
+| 1 | **CSNOBOL4** | 2.3.3 (May 2025) | `/usr/local/bin/snobol4` | pre-installed | **Primary oracle** |
+| 2 | **SPITBOL x64** | 4.0f | `/usr/local/bin/spitbol` | pre-installed | Secondary reference |
+| 3 | **SPITBOL x64** (from source) | 4.0f | `/home/claude/spitbol-x64/sbl` | `github.com/spitbol/x64` — built with `make`, passed sanity check |
+
+All three produce identical output on pattern tests. ✓
+
+### Not Running (yet)
+
+| # | System | Why | Path to fix |
+|---|--------|-----|-------------|
+| 4 | SPITBOL x32 (i386) | `Exec format error` — pure 32-bit ELF, no 32-bit kernel | `qemu-i386` segfaults; needs investigation |
+| 5 | SPITBOL 88 (DOS, LZEXE) | DOSBox-X needs display/X11 | Run in DOSBox-X with display |
+| 6 | SPITBOL Windows NT 1.30.22 | 32rtm DOS extender, Wine can't run it | Needs proper DOS extender support |
+
+### What This Means For The Monitor
+
+We have **three oracles** that all agree. This is valuable:
+
+- Run all three on a Level 1 test. If they all produce the same trace → high confidence.
+- If CSNOBOL4 and SPITBOL disagree on something → dialect difference, document it.
+- The binary (SNOBOL4-tiny) must match all three on the agreed behavior.
+
+The installed SPITBOL (`/usr/local/bin/spitbol`) is the same version as the
+one built from source (`spitbol-x64/sbl`) — both v4.0f. The installed one
+is the canonical reference; the source build is for experimentation.
+
+### Install Commands (for reproducibility)
+
+```bash
+# CSNOBOL4 — already installed
+# Source: http://www.snobol4.org/csnobol4/
+
+# SPITBOL x64 — already installed
+# Source: github.com/spitbol/x64
+
+# Build SPITBOL x64 from source:
+git clone https://github.com/spitbol/x64 spitbol-x64
+cd spitbol-x64
+apt-get install nasm
+make
+./sanity-check   # must pass before trusting the build
+# binary at ./sbl
+```
