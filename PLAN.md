@@ -73,9 +73,10 @@ Mission: **SNOBOL4 everywhere. SNOBOL4 now.**
 git clone https://github.com/SNOBOL4-plus/SNOBOL4-dotnet.git
 cd SNOBOL4-dotnet
 export PATH=$PATH:/usr/local/dotnet
-dotnet build -c Release
+dotnet build Snobol4.sln -c Release -p:EnableWindowsTargeting=true
 dotnet test TestSnobol4/TestSnobol4.csproj -c Release
 ```
+> **Linux note**: Always pass `-p:EnableWindowsTargeting=true` to `dotnet build` — `Snobol4W` is a Windows GUI project and will error without it. The test project itself is cross-platform.
 
 ### SNOBOL4-jvm
 ```bash
