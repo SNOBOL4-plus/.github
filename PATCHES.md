@@ -289,3 +289,40 @@ SNOBOL4 params and locals must be saved/restored across calls (they're scoped pe
 
 **Files to change**: `emit_c_stmt.py` (major restructure), `snobol4.c` (func enter/exit), `snobol4.h` (declarations)
 **Commit**: 4a37a81 (WIP)
+
+---
+
+## P003 SESSION UPDATE (2026-03-10) — per-function emission + pattern fix chain
+
+### Done this session:
+
+**Compile fixed (was: 3 missing labels)**
+- `findRefs_1`: parser mis-labels call as stmt → synthesized label from subj.name when name is in goto_targets & not func entry
+- `io_end`/`lwr_end`: residual transfer on merge fixed; residuals stay in main flow
+- `IsSnobol4`/`XDump` duplicate labels: synthesized label heuristic tightened (not func entries)
+- `x`/`c` indirect gotos: emit `_sno_ind_x` stubs → `sno_indirect_goto(varname)` at runtime
+
+**INPUT/OUTPUT wired** — `sno_var_get("INPUT")` calls `sno_input_read()`
+
+**First real output: 7 comment lines** (commit `8e946d1`)
+
+**Pattern emission chain:**
+- `| alt` in function args: `_ExprParser.parse_alt()` added → FENCE/ARBNO args now have alt nodes
+- `*var` indirect ref: `mul(null, var)` → `sno_pat_ref("name")`
+- Pattern-aware concat: if either side is pattern → `sno_pat_cat`
+- Array on pattern base → `sno_pat_assign_cond` (PAT ~ expr)
+- `snoParse` now type=5 (PATTERN) ✓
+
+### Still failing (STNO 619):
+
+`snoSrc POS(0) *snoParse *snoSpace RPOS(0) :F(mainErr1)` fails on `"START\n"`.
+
+Root cause: inside pattern construction for `snoCommand`/`snoStmt`, two issues remain:
+1. `mul(PATTERN, var)` = `*PAT var` in pattern context = `pat_cat(PAT_REF, pat_ref(var))`. Currently emitted as `sno_mul(pat, var)` which is wrong.
+2. `mul(NULL_VAL, complex_expr)` where complex_expr is not a simple var name (e.g., `mul(null, var_get(to_str(",")))`) → we'd need `sno_pat_ref_val(expr)` instead of `sno_pat_ref("name")`.
+
+**Next fix needed**: In `emit_expr` for `mul`, when either operand involves a pattern, interpret `*X` as `pat_cat(pat_ref_of(X), ...)` in pattern concat context. Specifically:
+- `mul(A, B)` where `_is_pattern_expr(A)` or A.kind=='null' → pattern context → if A.kind=='null': `sno_pat_ref_val(emit_expr(B))`
+- `mul(PAT, VAR)` = `PAT * VAR` in pattern context = `sno_pat_cat(emit_as_pattern(PAT), sno_var_as_pattern(emit_expr(VAR)))`
+
+The SNOBOL4 `*` operator is overloaded: arithmetic multiply OR pattern deferred-ref. Parser doesn't know which — emitter must infer from context.
