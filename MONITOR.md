@@ -379,3 +379,100 @@ expressed in the same language as the program itself.
 This is Griswold's gift: a language where the debugging infrastructure
 is part of the language semantics, not bolted on afterward.
 
+
+---
+
+## The Null Concatenation Probe — Instrument Anything, Anywhere
+
+*Recorded 2026-03-10 — Lon Cherryholmes*
+
+### The Insight
+
+SNOBOL4 concatenation with null is semantically inert. The value is unchanged.
+But TRACE is watching variables. So:
+
+```snobol4
+        snoDebug = snoDebug '' myVar
+```
+
+This assigns `snoDebug` the value of `myVar` concatenated with nothing.
+The program behavior is identical. But TRACE('snoDebug','VALUE') fires —
+and the value appears in the trace stream at exactly that moment.
+
+**A COMM call. Zero semantic footprint. Works anywhere.**
+
+### The Pattern Debugging Case — Where This Shines
+
+Patterns are the hard case. A pattern is not a statement — it has no
+label, no line number, no natural trace hook. When a 17-level recursive
+pattern like `snoExpr3` misbehaves, you cannot put a printf inside it.
+The pattern either matches or it doesn't. You can't see inside.
+
+Until now.
+
+```snobol4
+* Instrument a pattern node with a null concat probe:
+snoExpr3 = nPush()  *snoX3
++          (TRACE_PROBE $ snoDebug)
++          ("'|'" & '*(GT(nTop(), 1) nTop())')
++          nPop()
+```
+
+Where `TRACE_PROBE` is a pattern that always succeeds and assigns
+its span to `snoDebug` via null concat:
+
+```snobol4
+TRACE_PROBE = ('') $ snoDebug
+```
+
+Or more directly — the immediate-assign operator `$` *is* the probe:
+
+```snobol4
+*  Drop a probe anywhere in a pattern with $ and a null concat:
+snoExpr3 = nPush()  (*snoX3 $ snoDebug)  nPop()
+```
+
+Now `snoDebug` gets set every time the subpattern `*snoX3` matches.
+TRACE('snoDebug','VALUE') fires. The trace stream shows you exactly
+when and where inside the pattern the match is occurring.
+
+### The General Form
+
+```snobol4
+*  At the top of the program, arm the probe:
+        TRACE('snoDebug', 'VALUE')
+
+*  Drop probes anywhere — patterns, expressions, assignments:
+        subject  (SPAN('0123456789') $ snoDebug)   :S(found)
+
+*  Or with null concat to capture any value at any moment:
+        snoDebug = '' myComputedValue
+
+*  Probe fires → trace stream records it → diff monitor sees it
+```
+
+### Implications for the Double-Trace Monitor
+
+The null concat probe extends the monitor's reach from statement-level
+to **sub-statement level** — inside patterns, inside alternations,
+inside recursive grammar rules. Any node in a 17-level recursive descent
+parser can be made visible without changing the parser's behavior.
+
+When the diff monitor finds a divergence at STNO N, you drop probes
+into the patterns that execute around STNO N. Rerun. The trace stream
+now shows the internal pattern state at the point of divergence.
+
+**This is surgical instrumentation. One probe per question.
+Each probe costs one null concat. Each probe answers one question.
+Remove it when done.**
+
+The pattern is invisible to the program. Visible to the monitor.
+That is exactly what a probe should be.
+
+---
+
+*The null concat trick works in the compiled binary too — `sno_comm_var`
+fires on every `sno_var_set()`. Drop a null concat assignment in the
+generated C for any subexpression you want to watch. Same probe,
+same zero semantic footprint, same trace event.*
+
