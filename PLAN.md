@@ -282,7 +282,7 @@ pick up without re-explanation.
   - `Step6_InitFinalize_StatementLimitAborts` — `StatementControl.cs`: catch `CompilerException` in threaded path so error 244 is recorded in `ErrorCodeHistory` rather than propagating uncaught.
   - 7 real-format tests — `RealConversionStrategy.TweakRealString`: suffix was `.0`; correct per SPITBOL (`sbl.min` gts27) and CSNOBOL4 (`lib/realst.c`) is trailing dot only — `"25."` not `"25.0"`. Changed to `str + "."`. Test assertions updated.
   - `Load_Area_FailureBranchBadClass`, `Load_Area_FailureBranchMissingFile` — `Load.cs`: call `NonExceptionFailure()` instead of `LogRuntimeException()` so `:F` branch is taken on LOAD() error.
-- [x] **SNOBOL4-dotnet**: No CI. F# is included in .NET 10 SDK (no separate workload needed — confirmed). Add GitHub Actions workflow: build solution in order, run full test suite. *(done 2026-03-10, commit `5b635b0`)*
+- [ ] **SNOBOL4-dotnet**: No CI. F# is included in .NET 10 SDK (no separate workload needed — confirmed). Add GitHub Actions workflow: build solution in order, run full test suite. *(added then removed 2026-03-10 — revisit when needed)*
 - [x] **SNOBOL4-dotnet** `benchmarks/Benchmarks.csproj` targets `net8.0` — should be `net10.0`. *(fixed 2026-03-10, commit `defc478`)*
 - [ ] Verify SNOBOL4python 0.5.1 published to PyPI (check Actions tab)
 - [ ] Remove old PyPI Trusted Publisher (`LCherryholmes/SNOBOL4python`)
