@@ -231,3 +231,61 @@ Check `sno_is_fail(result)` before `sno_var_set`, branch to fail label if true.
 
 **Files to change**: `emit_c_stmt.py` (expression emission), `snobol4.c` (var_set check)
 **Status**: P1 — blocks all progress. Every loop in beautiful.sno uses this pattern.
+
+---
+
+## P003 — UPDATE: Root Cause Is Flat Function Emission
+**Date**: 2026-03-10 (update)
+**Status**: PARTIAL — FAIL propagation works, but exposed deeper architectural issue
+
+### What Was Fixed
+- `emit_c_stmt.py`: comparison functions (LT/GT/EQ/NE/IDENT/DIFFER/LE/GE) now emit `SNO_NULL_VAL : SNO_FAIL_VAL` (correct SNOBOL4 semantics — these return empty string on success)
+- `emit_c_stmt.py`: Case 2 (assignment) and Case 5 (OUTPUT=) now check `sno_is_fail(_rhs)` before assigning
+- `snobol4.c`: added `sno_concat_sv(SnoVal a, SnoVal b)` — propagates `SNO_FAIL_VAL` if either operand is FAIL
+- `emit_c_stmt.py`: `concat` node now emits `sno_concat_sv(a, b)` instead of `SNO_STR_VAL(sno_concat(sno_to_str(a), sno_to_str(b)))`
+
+### The Deeper Problem: Flat Function Emission
+The program exits after only 514 trace steps with `exit: 1`.
+
+**Root cause**: All SNOBOL4 functions are emitted as goto-labels inside a single flat `sno_program()` C function. There is only ONE `SNO_RETURN_LABEL` and ONE `SNO_FRETURN_LABEL` at the bottom of `sno_program()`. When `findRefs` hits `FRETURN` (loop exit condition fires), it jumps to the top-level FRETURN which does `return 1` — exiting the **entire program**, not returning from `findRefs`.
+
+Meanwhile, `sno_apply("findRefs", ...)` doesn't call the inlined goto code at all — it dispatches to the null stub registered by `sno_define_spec`. So function calls both:
+1. Don't actually call the function body
+2. When the body IS reached via inline goto, RETURN/FRETURN exits the program
+
+### Fix Required: Per-Function C Functions
+Each SNOBOL4-defined function must be emitted as its own C function:
+
+```c
+/* DEFINE('findRefs(x)n,v') → entry label: findRefs_ */
+static SnoVal sno_uf_findRefs(SnoVal *_args, int _nargs) {
+    SnoVal x = (_nargs > 0) ? _args[0] : SNO_NULL_VAL;
+    SnoVal n = SNO_NULL_VAL;  /* local */
+    SnoVal v = SNO_NULL_VAL;  /* local */
+    
+    /* function body via goto labels */
+    goto SNO_findRefs_;
+    
+SNO_findRefs_: ...
+SNO_findRefs_0: ...
+...
+
+SNO_RETURN_LABEL:  return SNO_NULL_VAL;  /* returns FROM THIS FUNCTION */
+SNO_FRETURN_LABEL: return SNO_FAIL_VAL;  /* signals failure to caller */
+}
+```
+
+`sno_define` registers `sno_uf_findRefs` as the handler. `sno_apply("findRefs", ...)` calls it directly. RETURN/FRETURN are local to the function.
+
+### Implementation Plan
+1. **Parse function sections**: scan for DEFINE statements that set entry labels (e.g. `DEFINE('findRefs(x)n,v', 'findRefs_')`) — extract name, params, locals, entry label.
+2. **Partition statements**: assign each statement to its enclosing function section (from entry label to next function's entry label, or END).
+3. **Emit each function** as a separate C function with its own RETURN/FRETURN labels.
+4. **Register with `sno_define`**: emit a registration call at program start.
+5. **Main program section**: statements before first function definition only.
+
+### Variables: Scoping Issue
+SNOBOL4 params and locals must be saved/restored across calls (they're scoped per invocation). For now: use a global var table (already in place via `sno_var_get/set`), push/pop on entry/exit. Add `sno_func_enter(params, locals, nargs, args)` and `sno_func_exit()` to handle save/restore.
+
+**Files to change**: `emit_c_stmt.py` (major restructure), `snobol4.c` (func enter/exit), `snobol4.h` (declarations)
+**Commit**: 4a37a81 (WIP)
