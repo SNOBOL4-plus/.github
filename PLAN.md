@@ -1207,7 +1207,7 @@ pick up without re-explanation.
 ### P1 — Blocking
 - [x] **SNOBOL4-dotnet**: `ErrorJump` field missing from `Executive.cs` — build failed entirely. Added `internal int ErrorJump` to `Executive` partial class. Build now clean (0 errors, 5 warnings). *(fixed 2026-03-09)*
 - [x] **SNOBOL4-dotnet**: `MathLibrary` and `FSharpLibrary` not in `Snobol4.sln` and not referenced by `TestSnobol4.csproj` — on a clean clone `dotnet test` will not build plugin DLLs. Fixed: added both to solution; added all three plugin projects as `ProjectReference ReferenceOutputAssembly="false"` in `TestSnobol4.csproj` so MSBuild rebuilds them automatically before every test run. *(fixed 2026-03-10, commit `3bce92c`)*
-- [ ] Jeffrey accepts GitHub org invitation → promote jcooper0 to Owner at https://github.com/orgs/SNOBOL4-plus/people
+- [x] Jeffrey accepts GitHub org invitation → promote jcooper0 to Owner at https://github.com/orgs/SNOBOL4-plus/people *(confirmed active admin 2026-03-10)*
 
 ### P2 — Important
 - [x] **SNOBOL4-dotnet**: 10 test failures — all fixed in commit `3bce92c` (2026-03-10), 1466/0:
