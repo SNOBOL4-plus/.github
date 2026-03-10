@@ -400,6 +400,33 @@ static int         _bt_top = 0;
 (Uses GCC computed gotos — `&&label` and `goto *ptr` — which are available
 on all targets SNOBOL4-tiny cares about.)
 
+### Why Branches Cluster — The Compiler Sees More
+When everything is in one flat loop, the C compiler sees the entire match
+as a **single function**. This changes four things at once:
+
+1. **Branch prediction** — the CPU predictor sees the same goto targets
+   repeatedly across millions of iterations. With function calls, each
+   return is an indirect branch the predictor relearns on every call.
+   In the flat loop, hot paths train the predictor once and stay hot.
+
+2. **Instruction cache** — one function fits in L1 icache. Multiple
+   function calls scatter hot code across cache lines. The flat loop
+   keeps the entire match engine in one place.
+
+3. **Compiler optimization scope** — `gcc -O2` can hoist invariants,
+   eliminate redundant loads, and schedule instructions across what were
+   formerly call boundaries. It cannot do this across function calls.
+
+4. **Proebsting becomes global** — the copy-propagation pass already
+   collapses goto chains *within* a function. In the flat loop, a Ref
+   is just a goto. Proebsting propagates across it for free. No special
+   cross-function inlining pass needed — the boundary is gone.
+
+This is why SPITBOL's inner loop is structured this way. The branches
+cluster. The predictor wins. The icache wins. The optimizer wins.
+The Round 1 hand-optimized numbers (5 ns) are what this architecture
+delivers. Round 2 + arena + Proebsting + flat loop = Round 1.
+
 ### Priority
 **High** — this is the path to closing the Round 1 / Round 2 gap entirely.
 Implement after Sprint 14 (SNOBOL4 subset codegen) once the architecture
