@@ -8,9 +8,25 @@ SNOBOL4 is one of the great languages. Invented at Bell Labs in the 1960s by Ral
 
 SPITBOL (Speedy Implementation of SNOBOL) extended the language further — structured programming constructs, an external function plugin architecture, and a compiler that proved SNOBOL4 could be genuinely fast. Robert Dewar and Ken Belcher built the original SPITBOL at the Illinois Institute of Technology in the early 1970s, and it changed what people thought was possible.
 
-The tradition is alive today. Phil Budne maintains CSNOBOL4 — a faithful, actively maintained C interpreter that builds on nearly any platform with a C89 compiler: Linux, macOS, Windows, FreeBSD, and beyond. It is the reference implementation most people reach for first, and it deserves that reputation. Cheyenne Wills maintains SPITBOL x64, an actively developed compiler that brings genuine native-code speed to x86_64 Unix — and whose changelog credits Jeffrey Cooper for testing and feedback. Pattern matching bridges exist for Ada (in GNAT itself), Java, JavaScript, Lua, and Python. This is a community of serious, generous people who have kept a great language alive for decades, and we are proud to stand alongside them.
+The tradition is alive today. Phil Budne maintains CSNOBOL4 — a faithful, actively maintained C interpreter that builds on nearly any platform with a C89 compiler: Linux, macOS, Windows, FreeBSD, and beyond. It is the reference implementation most people reach for first, and it deserves that reputation. Cheyenne Wills maintains SPITBOL x64, an actively developed compiler that brings genuine native-code speed to x86_64 Unix. Pattern matching bridges exist for Ada (in GNAT itself), Java, JavaScript, Lua, and Python. This is a community of serious, generous people who have kept a great language alive for decades, and we are proud to stand alongside them.
 
-What we add to that tradition is SNOBOL4 on the JVM and on .NET — two ecosystems where hundreds of millions of programs run today. On the JVM, pattern libraries exist in Java (Dennis Heimbigner's jpattern, a port of Dewar's Ada SPITBOL primitives), but no one had built a full SNOBOL4 language implementation: no GOTO execution model, no DEFINE/DATA/FIELD, no CODE() or EVAL(), no named I/O channels. On .NET, there was nothing at all — not even a pattern library. We built both: a full JVM compiler and runtime in Clojure, and a full .NET compiler and runtime in C# with a Windows GUI. And we brought idiomatic pattern libraries to Python and C# for their native communities. That is our contribution.
+What we add to that tradition is SNOBOL4 on the JVM and on .NET — two ecosystems where hundreds of millions of programs run today — plus a discovery about SNOBOL4's pattern model that changes what SNOBOL4-plus is, at its core.
+
+---
+
+## The Discovery
+
+SNOBOL4's pattern engine is not a regex engine. It is a **universal grammar machine**.
+
+The same four-state **Byrd Box model** — α (enter), β (resume), γ (succeed), ω (fail) — describes SNOBOL4 pattern matching, Icon's goal-directed generators, Prolog unification and backtracking, and recursive-descent parsing at every level of the Chomsky hierarchy. Regular grammars, context-free grammars, context-sensitive grammars, unrestricted grammars — all expressible directly as SNOBOL4 patterns, with mutual recursion, backtracking, and capture. No yacc. No lex. No separate grammar formalism. The language *is* the grammar tool.
+
+This is what SNOBOL4 was always for. The humanities, the AI labs, the linguists who adopted it in the 1960s and 70s understood this intuitively. What was missing was speed, portability, and a modern platform story.
+
+SNOBOL4-plus is fixing all three — simultaneously.
+
+The key insight, embodied in [SNOBOL4-tiny](https://github.com/SNOBOL4-plus/SNOBOL4-tiny): the Byrd Box model is not just an execution model. It is a **code generation strategy**. When you compile those four states to static gotos, you get goal-directed backtracking evaluation with **zero dispatch overhead**. No interpreter loop. No indirect jump. The wiring *is* the execution.
+
+SPITBOL, the fastest SNOBOL4 implementation ever written, pays three instructions per node — load, load, jump — as its irreducible minimum. SNOBOL4-tiny pays zero.
 
 ---
 
@@ -20,7 +36,9 @@ SNOBOL4-plus is a joint project between Lon Jones Cherryholmes, a software devel
 
 We built two complete, independent implementations of the full SNOBOL4/SPITBOL language. Not stubs. Not subsets. Not pattern-matching libraries wearing a SNOBOL4 badge. Full implementations — with compilers, runtimes, GOTO-driven execution models, DEFINE/DATA/FIELD, CODE(), EVAL(), OPSYN, TABLE, ARRAY, named I/O channels, the -INCLUDE preprocessor, and TRACE/STOPTR — validated against SPITBOL and CSNOBOL4 as reference oracles on thousands of programs.
 
-We then brought the pattern matching engine — the heart of what makes SNOBOL4 SNOBOL4 — to Python and C# as first-class libraries. Not a regex wrapper. The real thing.
+We then brought the pattern matching engine to Python and C# as first-class libraries. Not a regex wrapper. The real thing.
+
+And now we are building [SNOBOL4-tiny](https://github.com/SNOBOL4-plus/SNOBOL4-tiny): a native compiler that targets x86-64 ASM, JVM bytecode, and MSIL from a single IR — faster than SPITBOL, self-hosting in SNOBOL4, and expressive enough to compile grammars that reach from network protocols to natural language.
 
 ---
 
@@ -31,45 +49,58 @@ We then brought the pattern matching engine — the heart of what makes SNOBOL4 
 
 Jeffrey Cooper set out to build a SNOBOL4 implementation that was readable, correct, and faithful to Emmer and Quillen's *MACRO SPITBOL* manual as the specification. He succeeded. SNOBOL4-dotnet runs on Windows, Linux, and macOS — the first full SNOBOL4/SPITBOL implementation to do so on .NET.
 
-The original backend generated C# via Roslyn. The current backend emits MSIL `DynamicMethod` delegates directly via `ILGenerator` — no Roslyn, no intermediate C# source, no startup overhead. All GOTO logic, Init/Finalize, and TRACE hooks are compiled directly into the delegates. The hot execute path is a tight two-case loop. The result: **up to 15.9× faster** than the Roslyn baseline on short programs. A plugin architecture (LOAD/UNLOAD) allows C# and F# extensions to be loaded at runtime A Windows GUI (Snobol4W) ships alongside the command-line runner. **1,484 tests passing.**
+The original backend generated C# via Roslyn. The current backend emits MSIL `DynamicMethod` delegates directly via `ILGenerator` — no Roslyn, no intermediate C# source, no startup overhead. All GOTO logic, Init/Finalize, and TRACE hooks are compiled directly into the delegates. The result: **up to 15.9× faster** than the Roslyn baseline on short programs. A plugin architecture allows C# and F# extensions to be loaded at runtime. A Windows GUI ships alongside the command-line runner. **1,484 tests passing.**
+
+SNOBOL4-dotnet is also the home of `Beautiful.sno` — a complete 17-level SNOBOL4 expression and statement parser written entirely as SNOBOL4 patterns. This single file turns out to solve the bootstrap problem for the entire platform: serialize its patterns to C struct declarations, include them in the seed kernel, and SNOBOL4-tiny parses SNOBOL4 source using SNOBOL4 patterns from Sprint 5 onward.
 
 ### [SNOBOL4-jvm](https://github.com/SNOBOL4-plus/SNOBOL4-jvm)
 *Full SNOBOL4/SPITBOL compiler and runtime for the JVM — written in Clojure — any platform Java runs on*
 
-A complete implementation of SNOBOL4 and SPITBOL built from the ground up in Clojure. The compiler parses SNOBOL4 source through an instaparse PEG grammar, emits a labeled-statement intermediate representation, and runs programs through a GOTO-driven interpreter faithful to the original execution model. Multiple execution backends provide progressively faster performance: a transpiler emitting Clojure IR (3.5–6× faster), a stack-machine VM (2–6× faster), and a direct JVM bytecode backend via ASM that generates `.class` files and loads them with `DynamicClassLoader` — achieving **up to 7.6× faster** dispatch with the JVM JIT compiling to native x64. With the EDN compilation cache, repeated programs run 22× faster than a cold compile. Cumulative speedup from cold start: approximately 190×.
+A complete implementation of SNOBOL4 and SPITBOL built from the ground up in Clojure. The compiler parses SNOBOL4 source through an instaparse PEG grammar, emits a labeled-statement intermediate representation, and runs programs through a GOTO-driven interpreter faithful to the original execution model. Multiple execution backends: a transpiler emitting Clojure IR (3.5–6×), a stack-machine VM (2–6×), and a direct JVM bytecode backend via ASM that generates `.class` files loaded with `DynamicClassLoader` — achieving **up to 7.6× faster** dispatch with the JVM JIT. With the EDN compilation cache, repeated programs run 22× faster than a cold compile.
 
-The full language is supported without compromise: DEFINE/DATA/FIELD, CODE(), EVAL(), OPSYN, TABLE, ARRAY, named I/O channels, the -INCLUDE preprocessor, TRACE/STOPTR, and the complete SPITBOL function library. Validated against **2,033 tests / 4,417 assertions / 0 failures**, cross-checked against SPITBOL v4.0f and CSNOBOL4 2.3.3 as reference oracles on over 1,500 systematic programs. Includes the complete Gimpel corpus (135 library routines, 10 runnable programs from *Algorithms in SNOBOL4*) and the Shafto AI corpus (SNOLISPIST — a full Lisp-style list-processing system in SNOBOL4, including Wang's theorem prover, an Augmented Transition Network compiler, and the Kalah board game).
+The full language is supported without compromise. Validated against **2,033 tests / 4,417 assertions / 0 failures**, cross-checked against SPITBOL v4.0f and CSNOBOL4 2.3.3 on over 1,500 systematic programs. Includes the complete Gimpel corpus and the Shafto AI corpus — Wang's theorem prover, an Augmented Transition Network compiler, the Kalah board game, all in SNOBOL4.
 
 ### [SNOBOL4-python](https://github.com/SNOBOL4-plus/SNOBOL4-python)
-*SNOBOL4 pattern matching for Python*
+*SNOBOL4 pattern matching for Python — available on PyPI*
 
 ```bash
 pip install SNOBOL4python
 ```
 
-SNOBOL4-style pattern matching as a first-class Python library. This is not a regex wrapper. Patterns are objects. Matching is lazy and backtracking. The full primitive vocabulary is here — ANY, NOTANY, SPAN, BREAK, BREAKX, NSPAN, ARB, ARBNO, BAL, FENCE, POS, RPOS, LEN, TAB, RTAB, REM — along with Greek-letter constructors, conditional and immediate capture operators, cursor capture, inline predicates, a regex bridge, and a shift-reduce parser stack for building ASTs directly inside patterns. The library ships with a dual backend: a C extension wrapping Phil Budne's excellent SPIPAT engine (**7–11× faster**) and a pure-Python fallback that works anywhere Python 3.10+ runs.
+SNOBOL4-style pattern matching as a first-class Python library. Patterns are objects. Matching is lazy and backtracking. The full primitive vocabulary is here — ANY, NOTANY, SPAN, BREAK, BREAKX, ARB, ARBNO, BAL, FENCE, POS, RPOS, LEN, TAB, RTAB, REM — along with Greek-letter constructors, conditional and immediate capture operators, cursor capture, inline predicates, a regex bridge, and a shift-reduce parser stack for building ASTs directly inside patterns. Dual backend: a C extension wrapping Phil Budne's SPIPAT engine (**7–11× faster**) and a pure-Python fallback that works anywhere Python 3.10+ runs.
 
-### [SNOBOL4-csharp](https://github.com/SNOBOL4-plus/SNOBOL4-csharp)
-*SNOBOL4 pattern matching for C#*
+This library is also the substrate for SNOBOL4-tiny's development toolchain — the Python patterns that describe the compiler's own bootstrap are written here first, then serialized to C for the seed kernel.
 
-A direct C# port of the SNOBOL4python pattern engine — the same semantics, the same primitives, the same composability, in idiomatic C#. Patterns are first-class objects with lazy, backtracking matching and captures via plain C# delegates — no global state, no string keys. Recursive patterns via `ζ(() => p)`. A .NET regex bridge with named-group capture. The full shift-reduce parse-tree construction system. Full TRACE support at Off / Warning / Info / Debug levels. The Porter Stemmer test alone validates against a 23,531-word corpus. **263 tests passing.**
+### [SNOBOL4-tiny](https://github.com/SNOBOL4-plus/SNOBOL4-tiny)
+*A native SNOBOL4 compiler — x86-64 ASM, JVM bytecode, MSIL — faster than SPITBOL*
 
-### [SNOBOL4](https://github.com/SNOBOL4-plus/SNOBOL4)
-*Shared corpus — programs, libraries, and grammars*
+The compiler. Every expression — pattern or arithmetic — compiles to inlined α/β/γ/ω gotos with no runtime dispatch. Stackless. Goal-directed like Icon. Built on the Forth kernel discipline: eight irreducible primitive nodes in C, everything else derived and written in SNOBOL4 itself.
 
-Lon Cherryholmes's personal SNOBOL4 library, accumulated over decades: ~90 `.inc` library files, ~72 `.sno` programs covering everything from a full SNOBOL4 beautifier/pretty-printer to SQL tools to web API clients, 33 social-media listener programs from the early Twitter/Facebook era, and formal EBNF grammar definitions for SNOBOL4 and SPITBOL. This corpus is the shared test and demo foundation for the whole project, included as a submodule in SNOBOL4-jvm.
+The Forth analogy is exact:
+
+| Forth | SNOBOL4-tiny |
+|-------|-------------|
+| ~12 native primitives | 8 irreducible pattern nodes: LIT, ANY, POS, RPOS, LEN, SPAN, BREAK, ARB |
+| NEXT (3-instruction inner loop) | α/β/γ/ω wiring — **0 instructions** at runtime |
+| `: word ... ;` defines new words | `NAME = pattern` defines new patterns |
+| Dictionary is self-extending | IR graph is self-extending via REF nodes |
+| Write Forth in Forth | Parser already written in SNOBOL4 (`Beautiful.sno`) |
+
+The bootstrap is already solved. `Beautiful.sno` (from SNOBOL4-dotnet) contains the full SNOBOL4 grammar as SNOBOL4 patterns. Serialize it to a `.h` file, include it in the 1,064-line seed kernel, add five lines of stdin loop — and the language parses itself, with no yacc, no lex, no new grammar infrastructure.
 
 ---
 
-## Did We Meet the Bar?
+## The Natural Language Horizon
 
-The SNOBOL4 community has two things it demands from any serious implementation:
+SNOBOL4 was the language of computational linguistics before computational linguistics had a name. Griswold knew it. The AI labs at MIT knew it. The humanities researchers who used it for decades knew it.
 
-**Full feature fidelity.** Not just pattern matching — the whole language. DEFINE, DATA, FIELD. CODE() and EVAL(). OPSYN. TABLE and ARRAY. Named I/O. The -INCLUDE preprocessor. TRACE. All of it. We did not stub out the hard parts. Both full implementations (dotnet and jvm) pass comprehensive test suites that cover every major feature of the language, validated against the reference oracles.
+SNOBOL4-plus is completing what they started.
 
-**Real performance.** SNOBOL4's reputation for slowness is a legacy of interpreter implementations. SPITBOL proved in 1971 that SNOBOL4 can be compiled and made fast. We took the same lesson to heart. SNOBOL4-dotnet's MSIL backend achieves 15.9× speedup over its Roslyn baseline. SNOBOL4-jvm's bytecode backend compiles directly to JVM `.class` files and lets the JIT do the rest.
+The same pattern engine that compiles SNOBOL4 source code also parses English sentences — backed by a real WordNet lexicon, with noun/verb/adjective/adverb classification, phrase-structure grammar, and the full Chomsky hierarchy expressible directly as named, mutually recursive patterns. A Penn Treebank parser fits in five lines of SNOBOL4. ELIZA fits in one readable file. A complete English grammar EBNF maps directly to SNOBOL4 pattern definitions.
 
-What the community gets from us that it doesn't get anywhere else: SNOBOL4 on the JVM. SNOBOL4 on .NET, with a Windows GUI. SNOBOL4 patterns in Python, on PyPI, with a C backend. SNOBOL4 patterns in C#, NuGet-ready. A plugin architecture for extending the runtime from C# and F#. LOAD/UNLOAD actually working.
+When SNOBOL4-tiny reaches Stage D — full statement model, self-hosting compiler — that same compiler will be capable of compiling grammars that reach from JSON to natural language, on three native platforms, with zero dispatch cost per node.
+
+That is the horizon.
 
 ---
 
@@ -87,18 +118,43 @@ DONE    OUTPUT  = "Vowels: " COUNT
 END
 ```
 
-The pattern language is where SNOBOL4 lives. Patterns compose. They backtrack. They capture. They can reference themselves recursively. They can express context-free grammars. They were the original inspiration for everything that came after — and they are still more powerful than what came after.
+The pattern language is where SNOBOL4 lives. Patterns compose. They backtrack. They capture. They reference themselves recursively. They can express context-free grammars. They were the original inspiration for everything that came after — and they are still more powerful than what came after.
+
+---
+
+## The Deeper Point
+
+McCarthy's LISP achieved notoriety not just because it was fast or portable, but because it gave serious people a language in which to *think about computation itself*. Homoiconicity — code as data, data as code — made the language a mirror for the problems it solved.
+
+SNOBOL4 has an equivalent property that has never been fully exploited: **pattern as grammar, grammar as pattern**. A SNOBOL4 pattern is not a description of what to match — it is an executable specification of a language. The pattern for an arithmetic expression *is* the grammar for arithmetic expressions: executable, composable, self-describing, and now compiled to native code with zero overhead.
+
+SNOBOL4-plus is building the infrastructure to make that property universal — available on every major platform, compiled to native speed, self-hosting in the language itself, and expressive enough to reach from machine protocols to human language.
+
+Griswold had the idea. We are finishing the proof.
+
+---
+
+## Status
+
+| Repo | Status |
+|------|--------|
+| [SNOBOL4-python](https://github.com/SNOBOL4-plus/SNOBOL4-python) | Active — v0.5.0, dual C/Python backend, on PyPI |
+| [SNOBOL4-dotnet](https://github.com/SNOBOL4-plus/SNOBOL4-dotnet) | Active — 1,484 tests passing, Windows/Linux/macOS |
+| [SNOBOL4-jvm](https://github.com/SNOBOL4-plus/SNOBOL4-jvm) | Active — 2,033 tests / 4,417 assertions / 0 failures |
+| [SNOBOL4-tiny](https://github.com/SNOBOL4-plus/SNOBOL4-tiny) | In progress — Sprint 0–1 underway; Sprint 5 bootstrap target |
+
+Correctness validated against three independent oracles: **SPITBOL x64**, **CSNOBOL4 2.3.3**, and the sibling implementations within this org. The test corpus spans the Gimpel algorithm library, the Shafto AI corpus, and a shared corpus submodule covering the full language.
 
 ---
 
 ## The People
 
-**Lon Jones Cherryholmes** is the author of SNOBOL4-jvm, SNOBOL4-python, SNOBOL4-csharp, and the shared corpus. He has been writing SNOBOL4 for decades.
+**Lon Jones Cherryholmes** ([@LCherryholmes](https://github.com/LCherryholmes)) — compiler architecture, x86-64 codegen, SNOBOL4-python, SNOBOL4-jvm, SNOBOL4-tiny.
 
-**Jeffrey Cooper, M.D.** is the author of SNOBOL4-dotnet — a complete, readable, correct C# implementation of SNOBOL4 and SPITBOL, built with care and precision.
+**Jeffrey Cooper, M.D.** ([@jcooper0](https://github.com/jcooper0)) — SNOBOL4-dotnet, MSIL target, `Beautiful.sno`, SNOBOL4-csharp.
 
 ---
 
 ## License
 
-Each repository carries its own license. See the individual repos for details.
+Each repository carries its own license. See the individual repos for details. Core libraries: GPL-3.0-or-later.
