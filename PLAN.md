@@ -212,10 +212,10 @@ This discipline turns the test suite from a collection of passing cases into a
 | `test/sprint6/gemini.c` | Gemini | `{x^2n \| n≥0}` | Regular | ✓ Sprint 6 |
 | `test/sprint6/ref_astar_bstar.c` | — | `a*b*` | Regular | Sprint 6 |
 | `test/sprint8/arb_any_string.c` | — | `Σ*` | Regular | Sprint 8 |
-| `test/sprint9/arbno_abb.c` | — | `(a\|b)*abb` | Regular | Sprint 9 |
-| `test/sprint11/ref_anbn.c` | — | `{a^n b^n \| n≥1}` | Context-Free | Sprint 11 |
-| `test/sprint11/ref_palindrome.c` | — | `{ww^R}` | Context-Free | Sprint 11 |
-| `test/sprint11/ref_balanced_parens.c` | — | Dyck language | Context-Free | Sprint 11 |
+| `test/sprint8/arbno_aorb_star_abb.c` | — | `(a\|b)*abb` | Regular | ✓ Sprint 8 |
+| `test/sprint9/ref_anbn.c` | — | `{a^n b^n \| n≥1}` | Context-Free | ✓ Sprint 9 |
+| `test/sprint10/ref_palindrome.c` | — | `{ww^R}` | Context-Free | ✓ Sprint 10 |
+| `test/sprint11/ref_balanced_parens.c` | — | Dyck language | Context-Free | ✓ Sprint 11 |
 | `test/sprint15/counter_anbncn.c` | — | `{a^n b^n c^n}` | Context-Sensitive | Sprint 15 |
 
 ### README Upgrade Protocol — Earn It Tier by Tier
