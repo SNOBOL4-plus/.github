@@ -6,11 +6,11 @@
 
 SNOBOL4 is one of the great languages. Invented at Bell Labs in the 1960s by Ralph Griswold, Ivan Polonsky, and David Farber, it introduced pattern matching as a first-class data type — a concept so powerful that every language since has been trying to catch up. SNOBOL4 patterns compose. They backtrack. They capture intermediate results. They reference themselves recursively. They can express BNF grammars directly — something regular expressions simply cannot do. Patterns in SNOBOL4 are objects you build, store, pass to functions, and combine at runtime. They are not strings. They are not syntax. They are values.
 
-SPITBOL (Speedy Implementation of SNOBOL) extended the language further — structured programming constructs, an external function plugin architecture, and a compiler that proved SNOBOL4 could be genuinely fast.
+SPITBOL (Speedy Implementation of SNOBOL) extended the language further — structured programming constructs, an external function plugin architecture, and a compiler that proved SNOBOL4 could be genuinely fast. Robert Dewar and Ken Belcher built the original SPITBOL at the Illinois Institute of Technology in the early 1970s, and it changed what people thought was possible.
 
-Today there are good implementations. Phil Budne's CSNOBOL4 is a faithful, actively maintained C interpreter that builds on nearly any platform. The SPITBOL x64 compiler brings raw speed to x86_64 Unix. Pattern matching bridges exist for Ada, Java, JavaScript, Lua, and Python.
+The tradition is alive today. Phil Budne maintains CSNOBOL4 — a faithful, actively maintained C interpreter that builds on nearly any platform with a C89 compiler: Linux, macOS, Windows, FreeBSD, and beyond. It is the reference implementation most people reach for first, and it deserves that reputation. Cheyenne Wills maintains SPITBOL x64, an actively developed compiler that brings genuine native-code speed to x86_64 Unix — and whose changelog credits Jeffrey Cooper for testing and feedback. Pattern matching bridges exist for Ada (in GNAT itself), Java, JavaScript, Lua, and Python. This is a community of serious, generous people who have kept a great language alive for decades, and we are proud to stand alongside them.
 
-What doesn't exist is SNOBOL4 as a first-class citizen of the JVM and .NET ecosystems — platforms where hundreds of millions of programs run today. No JVM bytecode compiler. No .NET runtime with a Windows GUI. No idiomatic Python or C# pattern libraries built from the ground up for those languages' communities. That is what we built.
+What we add to that tradition is SNOBOL4 as a first-class citizen of the JVM and .NET ecosystems — platforms where hundreds of millions of programs run today, and where no full SNOBOL4 implementation previously existed. A JVM bytecode compiler written in Clojure. A .NET runtime with a Windows GUI written in C#. Idiomatic pattern libraries for Python and C# built from the ground up for their communities. That is our contribution.
 
 ---
 
@@ -47,7 +47,7 @@ The full language is supported without compromise: DEFINE/DATA/FIELD, CODE(), EV
 pip install SNOBOL4python
 ```
 
-SNOBOL4-style pattern matching as a first-class Python library. This is not a regex wrapper. Patterns are objects. Matching is lazy and backtracking. The full primitive vocabulary is here — ANY, NOTANY, SPAN, BREAK, BREAKX, NSPAN, ARB, ARBNO, BAL, FENCE, POS, RPOS, LEN, TAB, RTAB, REM — along with Greek-letter constructors, conditional and immediate capture operators, cursor capture, inline predicates, a regex bridge, and a shift-reduce parser stack for building ASTs directly inside patterns. The library ships with a dual backend: a C extension wrapping Phil Budne's SPIPAT engine (**7–11× faster**) and a pure-Python fallback that works anywhere Python 3.10+ runs.
+SNOBOL4-style pattern matching as a first-class Python library. This is not a regex wrapper. Patterns are objects. Matching is lazy and backtracking. The full primitive vocabulary is here — ANY, NOTANY, SPAN, BREAK, BREAKX, NSPAN, ARB, ARBNO, BAL, FENCE, POS, RPOS, LEN, TAB, RTAB, REM — along with Greek-letter constructors, conditional and immediate capture operators, cursor capture, inline predicates, a regex bridge, and a shift-reduce parser stack for building ASTs directly inside patterns. The library ships with a dual backend: a C extension wrapping Phil Budne's excellent SPIPAT engine (**7–11× faster**) and a pure-Python fallback that works anywhere Python 3.10+ runs.
 
 ### [SNOBOL4-csharp](https://github.com/SNOBOL4-plus/SNOBOL4-csharp)
 *SNOBOL4 pattern matching for C#*
