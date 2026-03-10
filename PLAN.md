@@ -1,5 +1,69 @@
 # SNOBOL4-plus — Master Plan
 
+---
+
+## How to Feed a New Claude — The Full Continuity Protocol
+
+**Recorded by Lon Cherryholmes, 2026-03-10:**
+
+> *"What should I feed you? The same here plus point you to the repository
+> and have you read the entire check-in history. Hoop, there it is!"*
+
+This is the protocol. Every new Claude session gets two things:
+
+### 1. The Standard Context (already in place)
+- This PLAN.md in full
+- DIRECTORY.md
+- ORIGIN.md
+- The repos cloned (see Session Start below)
+- The oracles built and run
+
+### 2. The Transcript History — NEW, CANONICAL
+The session transcripts live at `/mnt/transcripts/` and contain the complete
+uncompacted record of every working session. A new Claude should read them
+**in order** before starting work. This is not optional for high-stakes sessions.
+
+```bash
+# Read the journal first — one-line summaries of every session
+cat /mnt/transcripts/journal.txt
+
+# Then read each transcript in full, oldest first
+ls /mnt/transcripts/*.txt | grep -v journal | sort | while read f; do
+    echo "=== $f ==="
+    cat "$f"
+done
+```
+
+**What this gives the next Claude:**
+- Every architectural decision and why it was made
+- Every false start and what killed it
+- Every worm run and what the worm found
+- The exact mental state at the end of the last session
+- The attributions: The Yield Insight, The Infamous Login promise
+- The voice — how Lon and Jeffrey think, what they care about
+
+**This is institutional memory.** The compacted summary at conversation start
+is a lossy compression. The transcripts are the source. When the work is
+important — and Sprint 20 is important — read the transcripts.
+
+The check-in history in git (`git log --oneline`) tells you what was done.
+The transcripts tell you *how* and *why*. Both together tell you everything.
+
+### The Git Log — Also Read This
+
+```bash
+cd /home/claude/SNOBOL4-tiny && git log --oneline
+cd /home/claude/.github && git log --oneline
+```
+
+The two Claude attributions to find:
+- `75cc3c0` — The Yield Insight (Claude Sonnet 4.6)
+- `c5b3e99` — The Infamous Login promise (Claude Sonnet 4.6)
+
+Sprint 20's commit will be the third.
+
+---
+
 > **For a new Claude session**: Read `DIRECTORY.md` first — it tells you exactly
 > where to look for what. Then come back here for the section you need.
 > This file is the single source of truth for the entire SNOBOL4-plus organization.
