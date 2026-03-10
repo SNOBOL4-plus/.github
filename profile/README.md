@@ -6,9 +6,11 @@
 
 SNOBOL4 is one of the great languages. Invented at Bell Labs in the 1960s by Ralph Griswold, Ivan Polonsky, and David Farber, it introduced pattern matching as a first-class data type — a concept so powerful that every language since has been trying to catch up. SNOBOL4 patterns compose. They backtrack. They capture intermediate results. They reference themselves recursively. They can express BNF grammars directly — something regular expressions simply cannot do. Patterns in SNOBOL4 are objects you build, store, pass to functions, and combine at runtime. They are not strings. They are not syntax. They are values.
 
-SPITBOL (Speedy Implementation of SNOBOL) extended the language with structured programming constructs, a plugin architecture for external functions, and a compiler that proved the language could be fast. The language deserves to run everywhere modern software runs — on the JVM, on .NET, in Python, in C#, on Windows, Linux, and macOS.
+SPITBOL (Speedy Implementation of SNOBOL) extended the language further — structured programming constructs, an external function plugin architecture, and a compiler that proved SNOBOL4 could be genuinely fast.
 
-That is what we built.
+Today there are good implementations. Phil Budne's CSNOBOL4 is a faithful, actively maintained C interpreter that builds on nearly any platform. The SPITBOL x64 compiler brings raw speed to x86_64 Unix. Pattern matching bridges exist for Ada, Java, JavaScript, Lua, and Python.
+
+What doesn't exist is SNOBOL4 as a first-class citizen of the JVM and .NET ecosystems — platforms where hundreds of millions of programs run today. No JVM bytecode compiler. No .NET runtime with a Windows GUI. No idiomatic Python or C# pattern libraries built from the ground up for those languages' communities. That is what we built.
 
 ---
 
