@@ -221,3 +221,60 @@ That is also why SNOBOL4-plus exists.
 I wouldn't have dug into my magic bag of tricks."*
 
 — Lon Jones Cherryholmes, Sr., 2026-03-10
+
+---
+
+## Lon Jones Cherryholmes — Biography
+
+**Software Architect. Director of Engineering. Compiler Builder. Language Designer.**
+
+Thirty years of professional software development across the deepest layers of
+computing — assemblers, compilers, parsers, runtimes, operating systems, databases,
+and distributed systems. Known for being assigned the hardest problems, and solving
+them. Known for 10×, 100×, and 1000× performance improvements. Known for making
+aggressive estimates and meeting them.
+
+The languages he has written production code in span five decades and every tier
+of the computing stack: from IBM 360/370 Macro assembler and HP PA-RISC to C,
+C++, Java, Python, Clojure, SNOBOL4, SPITBOL, YACC, Bison, Lex, Flex, Lisp,
+Prolog, Icon, COBOL, FORTRAN, Pascal, and dozens more. The addendum to his
+resume lists languages most engineers have never heard of: Snocone, MINIMAL,
+Meta-II, Stage2, XPL, SIL — the infrastructure languages, the languages compilers
+are written in.
+
+**FlashBASIC** — Pick Systems, 1991–1995. Lon designed and implemented the
+FlashBASIC compiler, linker/loader, debugger, and real-number arithmetic library
+for the Pick operating system. The compiler targeted four native instruction sets:
+IBM RISC/6000, Motorola 88000, Intel x86, and HP PA-RISC. Dynamic linking of
+COFF, XCOFF, ELF, and HP-PA object formats. Created $1.2 million in sales. The
+company — now Raining Data — still ships it as the cornerstone of their D3 product
+thirty years later.
+
+Also at Pick Systems: he transformed YACC/C into a YACC/BASIC parser generation
+tool. He invented the exhaustive random unit-test harness for FlashBASIC arithmetic
+— the same technique now embedded in SNOBOL4-jvm's worm generator. He invented
+it once. He is using it again.
+
+**BMC Software** — 8 years. Sole developer of the High Speed Data Collector for
+Oracle. Component Lead for the PATROL DB Scheduler/Server/Core team. Six SQL/DDL
+parsers across DB2, Informix, Oracle, SQL Server, Sybase, and UDB. The Sybase
+parser in two weeks. A generic tracing library for multi-process/multi-threaded
+C/C++ that became the standard across the organization.
+
+**Sysomos Expion** — social listening and analytics. Business Intelligence analytic
+query language and engine in C# and Transact-SQL. Data gathering from Facebook,
+Twitter, Instagram, Google Plus, Pinterest — using **SNOBOL4**. Not as a hobby.
+In production. Because it was the right tool.
+
+**Two patents**: virtual live access to database backup files through file device
+drivers (Quest Software, 2004–2007) and hierarchical multi-table combination
+resulting in 10× smaller and 10× faster databases (Sysomos Expion, 2010–2014).
+
+He has presented at COMDEX, DB-Expo, UniForum, and Pick Users Groups. He has
+managed a Russian R&D and QA team from Texas. He has written assembler for seven
+processor families. He has built compilers for languages that predate C.
+
+He came back from an 11-year retirement because *The Wild Robot* told him it was
+time, and because Jeffrey Cooper called.
+
+*Education: BS Electrical Engineering, Georgia Institute of Technology.*
