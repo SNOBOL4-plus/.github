@@ -61,6 +61,8 @@
 | Byrd Box α/β/γ/ω model | `SNOBOL4-tiny/doc/DESIGN.md` |
 | Bootstrap strategy (seed→self-hosting) | `SNOBOL4-tiny/doc/BOOTSTRAP.md` |
 | Architecture decisions (resolved) | `SNOBOL4-tiny/doc/DECISIONS.md` |
+| String escape rules (SNOBOL4 / C / Python) | `HQ/STRING_ESCAPES.md` |
+| Compiland reachability (inc files → C) | `HQ/COMPILAND_REACHABILITY.md` |
 | Snocone semantic rules + label gen | `PLAN.md` § Key Semantic Rules (from Koenig spec) |
 | JVM design decisions (immutable) | `PLAN.md` § Design Decisions (Immutable) — SNOBOL4-jvm |
 | JVM tradeoff prompt (read before every JVM decision) | `PLAN.md` § Tradeoff Prompt — SNOBOL4-jvm |
@@ -68,24 +70,81 @@
 
 ---
 
-## 6. Current Baselines (update at every handoff)
+## 6. Key Ideas (read before starting runtime work)
+
+| Idea | Where | Status |
+|------|-------|--------|
+| **The Pick Monitor** — pipe-based live execution monitor with ignore-points | `PLAN.md` § IDEA — The Pick Monitor | **NEXT for Sprint 20 hang diagnosis** |
+| Separate backtrack stack (FlatLoopEmitter) | `PLAN.md` § Separate Backtrack Stack vs Call Stack | Planned post-Sprint 20 |
+| Automata theory oracles (Chomsky tier proofs) | `PLAN.md` § Automata Theory Oracles | Sprints 6–13 done |
+| PDA benchmark vs YACC/Bison | `PLAN.md` § PDA Benchmark | Done — 20× |
+| RE benchmark vs PCRE2 | `PLAN.md` § RE Performance Benchmark | Done — 2.3× |
+| Exhaustive + random testing (Flash BASIC precedent) | `PLAN.md` § Exhaustive and Random Testing | Planned |
+| nPush / Shift / Reduce as engine nodes | `PLAN.md` § IDEA — nPush / Shift / Reduce | Sprint 10–11 |
+
+---
+
+## 7. Sprint 20 — Current State (as of 2026-03-10)
+
+**Goal:** `snoc` compiles Beautiful.sno → binary self-beautifies idempotently.
+
+**Oracle established:**
+```bash
+cd /home/claude/work/SNOBOL4-corpus/programs/inc
+snobol4 -f -P256k beauty_run.sno < beauty_run.sno > /tmp/pass1.txt  # 649 lines, exit 0
+snobol4 -f -P256k beauty_run.sno < /tmp/pass1.txt > /tmp/pass2.txt  # 649 lines, exit 0
+diff /tmp/pass1.txt /tmp/pass2.txt                                   # empty — IDEMPOTENT ✓
+```
+
+**Binary status:** `beautiful` compiles and links cleanly (zero errors).
+**Runtime status:** `./beautiful < beauty_run.sno` hangs — timeout exit 124.
+**Next action:** Implement the Pick Monitor to find the hang point.
+
+**Compile command:**
+```bash
+cd /home/claude/work/SNOBOL4-tiny/src/runtime/snobol4
+cc -o beautiful beautiful.c snobol4.c snobol4_pattern.c snobol4_inc.c \
+   ../engine.c ../runtime.c -I. -I.. -lgc -lm
+```
+
+**Paths:**
+```
+SNOBOL4-tiny/src/runtime/snobol4/beautiful.c     ← generated C
+SNOBOL4-tiny/src/runtime/snobol4/snobol4.c       ← runtime (add sno_comm_* here)
+SNOBOL4-tiny/src/codegen/emit_c_stmt.py          ← code generator (add COMM calls here)
+SNOBOL4-tiny/src/parser/sno_parser.py            ← parser
+SNOBOL4-corpus/programs/inc/beauty_run.sno       ← test driver
+SNOBOL4-corpus/programs/sno/beauty.sno           ← the program itself
+```
+
+---
+
+## 8. Current Baselines (update at every handoff)
 
 | Repo | Tests | Last commit |
 |------|-------|-------------|
 | SNOBOL4-dotnet | 1,607 / 0 | `63bd297` |
 | SNOBOL4-jvm | 1,896 / 4,120 assertions / 0 | `9cf0af3` |
 | SNOBOL4-cpython | 70+ / 0 | `330fd1f` |
-| SNOBOL4-tiny | Sprints 0–3 done, Sprint 4 next | `49d98b7` |
+| SNOBOL4-tiny | Sprint 20: binary links, runtime hangs | `6bb88d9` |
 
 ---
 
-## 7. What To Do Next (update at every handoff)
+## 9. What To Do Next (update at every handoff)
 
-**SNOBOL4-tiny**: Sprint 4 — ASSIGN (`$` immediate + `.` conditional capture).
-Write `test/sprint4/assign.c` oracle, then drive from `emit_c.py`.
+**SNOBOL4-tiny — Sprint 20 (CURRENT FOCUS):**
+1. Implement the Pick Monitor (`PLAN.md` § IDEA — The Pick Monitor)
+   - Add `sno_comm_*` to `snobol4.c`
+   - Add `sno_comm_line(N)` to `emit_c_stmt.py` (regenerate `beautiful.c`)
+   - Write `monitor.py` — Tkinter GUI, pipe reader, ignore-list, STEP/RUN/IGNORE
+2. Run `./beautiful --monitor | python monitor.py < beauty_run.sno`
+3. Find and fix the hang
 
-**SNOBOL4-cpython**: New repo live at `SNOBOL4-plus/SNOBOL4-cpython`. No immediate work needed — preserved for future SPIPAT replacement work.
+**SNOBOL4-tiny — Sprint 21 (after hang is fixed):**
+- DEFINE dispatch: `sno_apply("pp",...)` must call compiled C label
 
-**SNOBOL4-jvm / dotnet**: Snocone Step 3 — `if/else` → label/goto pairs (both targets).
+**SNOBOL4-jvm / dotnet:**
+- Snocone Step 3 — `if/else` → label/goto pairs (both targets)
 
-**Org**: Jeffrey needs to accept GitHub org invitation → promote to Owner.
+**Org:**
+- Jeffrey needs to accept GitHub org invitation → promote to Owner
