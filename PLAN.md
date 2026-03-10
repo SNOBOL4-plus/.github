@@ -2,8 +2,38 @@
 
 > **For a new Claude session**: Read this file first. This is the single plan
 > for the entire SNOBOL4-plus organization. All repos are developed together.
+> Clone all repos immediately (see **Session Start — Clone All Repos** below).
 > Then run the test suites in the repos you are working on to confirm baselines.
 > The Tradeoff Prompt for SNOBOL4-jvm is at the bottom of that repo's section.
+
+---
+
+## Session Start — Clone All Repos
+
+**Always clone all five repos at the start of every session.** Work spans multiple
+repos simultaneously — corpus changes, cross-platform validation, shared test
+programs. Having all repos present avoids mid-session interruptions.
+
+```bash
+cd /home/claude
+git clone https://github.com/SNOBOL4-plus/SNOBOL4-dotnet.git &
+git clone --recurse-submodules https://github.com/SNOBOL4-plus/SNOBOL4-jvm.git &
+git clone https://github.com/SNOBOL4-plus/SNOBOL4-python.git &
+git clone https://github.com/SNOBOL4-plus/SNOBOL4-csharp.git &
+git clone https://github.com/SNOBOL4-plus/SNOBOL4.git &
+wait
+echo "All clones done."
+```
+
+Verify with:
+```bash
+for repo in SNOBOL4-dotnet SNOBOL4-jvm SNOBOL4-python SNOBOL4-csharp SNOBOL4; do
+  echo "$repo: $(cd /home/claude/$repo && git log --oneline -1)"
+done
+```
+
+All five repos live under `/home/claude/`. The `.github` repo (this plan) clones to
+`/home/claude/.github`.
 
 ---
 
