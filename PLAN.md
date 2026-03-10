@@ -338,6 +338,82 @@ most powerful real-world validation the project has.
 
 ---
 
+## Separate Backtrack Stack vs Call Stack
+**Recorded**: 2026-03-10 by Lon
+
+### The Idea
+Currently the FuncEmitter uses the C **call stack** for backtracking — each
+pattern function is a real C function, `sno_enter` pushes a frame, the caller
+holds the frame pointer, and beta re-entry is a second call into the same
+function. This means every pattern node that can backtrack costs a function
+call on both alpha and beta paths.
+
+The alternative: a **separate explicit backtrack stack** — a dedicated arena
+stack managed by the runtime, completely decoupled from the C call stack.
+
+Instead of:
+```
+str_t ROOT(ROOT_t **zz, int entry) { ... sno_enter() ... }
+str_t AB(AB_t **zz, int entry)     { ... sno_enter() ... }
+```
+
+The generated code pushes a backtrack record onto an explicit stack and
+falls through — no function call, no return, no frame pointer indirection.
+On failure, the engine pops the top record and jumps to the saved beta label.
+
+### Why This Matters
+- **Eliminates function call overhead** on every Ref — currently the dominant
+  cost in the PDA benchmark (44 ns for `{a^n b^n}`, flat despite Proebsting).
+- **Cache locality** — all backtrack state is contiguous in one arena, not
+  scattered across C stack frames at different depths.
+- **Enables cross-pattern inlining** — once patterns are not C functions,
+  the Proebsting pass can propagate copies *across* Ref boundaries, not just
+  within a single function. This closes the gap between Round 2 (33 ns) and
+  Round 1 hand-optimized (5 ns).
+- **No recursion limit** — the C call stack limits recursion depth (typically
+  8 MB). An explicit stack is bounded only by the arena size, which is tunable.
+
+### Connection to Proebsting
+The Proebsting pass already eliminates goto chains *within* a function.
+The separate stack eliminates the function boundary itself. Together:
+- Proebsting: no goto-to-goto within a pattern
+- Separate stack: no call/return between patterns
+- Result: the entire match is a single flat loop over a goto-dispatch table,
+  with a contiguous backtrack stack. That is the architecture of SPITBOL's
+  inner loop — and it is what SNOBOL4-tiny should become.
+
+### Design Sketch
+```c
+typedef struct {
+    void  *beta_label;   /* indirect goto target on failure */
+    int64_t saved_delta; /* cursor to restore */
+    /* ... other saved state ... */
+} bt_record_t;
+
+static bt_record_t _bt_stack[BT_STACK_SIZE];
+static int         _bt_top = 0;
+
+#define BT_PUSH(lbl, delta)     (_bt_stack[_bt_top].beta_label = &&lbl,      _bt_stack[_bt_top].saved_delta = delta,      _bt_top++)
+
+#define BT_FAIL()     (--_bt_top, Delta = _bt_stack[_bt_top].saved_delta,      goto *_bt_stack[_bt_top].beta_label)
+```
+(Uses GCC computed gotos — `&&label` and `goto *ptr` — which are available
+on all targets SNOBOL4-tiny cares about.)
+
+### Priority
+**High** — this is the path to closing the Round 1 / Round 2 gap entirely.
+Implement after Sprint 14 (SNOBOL4 subset codegen) once the architecture
+is stable enough to support a runtime change of this magnitude.
+
+### Related
+- Proebsting pass (already in) — prerequisite: copy chains must be gone
+  before the flat-loop model makes sense
+- Arena allocator (already in) — the backtrack stack lives in the same arena
+- FuncEmitter → FlatLoopEmitter: new emitter class, FuncEmitter stays for
+  correctness reference and for patterns with external call conventions
+
+---
+
 ## Proebsting Optimization Pass — Copy Propagation + Branch Elimination
 **Paper**: "Simple Translation of Goal-Directed Evaluation" — Todd A. Proebsting, U of Arizona
 **Source**: ByrdBox.zip — test_icon.sno (1st pass: raw attribute grammar; 2nd pass: optimized)
