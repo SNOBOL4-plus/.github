@@ -9,7 +9,7 @@ cross-platform compatibility across all implementations.
 
 | Repo | Tests | Failures | Oracles | Last Confirmed |
 |------|------:|--------:|---------|----------------|
-| SNOBOL4-dotnet | 1,484 | 0 | — | 2026-03-07 |
+| SNOBOL4-dotnet | 1,466 | 0 | SPITBOL v4.0f, CSNOBOL4 2.3.3 | 2026-03-10 |
 | SNOBOL4-jvm | 2,033 (4,417 assertions) | 0 | SPITBOL v4.0f, CSNOBOL4 2.3.3 | 2026-03-09 |
 | SNOBOL4-python | — | — | — | 2026-03-02 |
 | SNOBOL4-csharp | 263 | 0 | — | 2026-03-07 |
@@ -20,7 +20,7 @@ cross-platform compatibility across all implementations.
 ## SNOBOL4-dotnet Assessment
 
 **Test runner**: `dotnet test TestSnobol4/TestSnobol4.csproj -c Release`
-**Total**: 1,484 passing / 0 failing
+**Total**: 1,466 passing / 0 failing
 
 ### Test Catalog — SNOBOL4-dotnet
 
@@ -40,7 +40,7 @@ cross-platform compatibility across all implementations.
 | ArraysTables | ✅ pass | |
 | StringComparison | ✅ pass | |
 | StringSynthesis | ✅ pass | |
-| LOAD/UNLOAD plugin system | ✅ pass | 1,413 → 1,484 range |
+| LOAD/UNLOAD plugin system | ✅ pass | All 1,466 pass including LOAD :F branch, real coercion, unload/reload |
 | MSIL emitter (Steps 1–13) | ✅ pass | |
 | TRACE hooks (Step 13) | ✅ pass | |
 
@@ -52,7 +52,7 @@ cross-platform compatibility across all implementations.
 | 2 | Deferred expressions in patterns `pos(*A)` — TEST_Pos_009 | Low |
 | 3 | TestGoto _DIRECT — CODE() dynamic compilation | Medium |
 | 4 | OPSYN custom operator `!` alias | Low |
-| 5 | DLL loading tests require local build of AreaLibrary.dll | Low |
+| 5 | ~~DLL loading tests require local build of AreaLibrary.dll~~ — **Fixed** 2026-03-10: all plugin DLLs auto-built via `ProjectReference` in `TestSnobol4.csproj` | ✅ Fixed |
 | 6 | Function.InputOutput — hangs on Linux (hardcoded Windows paths) | Low |
 
 ---

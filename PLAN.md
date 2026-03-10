@@ -165,6 +165,49 @@ cd /home/claude/SNOBOL4-dotnet && git add -A && git commit -m "..." && git push
 
 ---
 
+## Handoff Protocol
+
+At the end of every session — whether work is complete or mid-stream — perform
+the full handoff before closing. This is what the next Claude session needs to
+pick up without re-explanation.
+
+**Steps:**
+
+1. **Snapshot all repos with work** (see Snapshot Protocol above).
+   Commit + push every repo that was touched, even WIP. WIP commits get a `WIP:` prefix.
+
+2. **Update PLAN.md** (this file):
+   - Check off completed items in Outstanding Items.
+   - Add new problems discovered during the session.
+   - Add a session log entry: what was done, commit hashes, new test baseline.
+   - Update the repo index test counts.
+   - Push to `.github`.
+
+3. **Update all other MD files** affected by the session's changes:
+   - `ASSESSMENTS.md` — test counts, gaps resolved, new gaps found.
+   - `BENCHMARKS.md` — if any benchmark numbers changed.
+   - Repo-level `README.md` — if public-facing behavior changed.
+   - Push each affected repo.
+
+4. **Write the handoff prompt** — a small text block (fits in one chat input box)
+   for the next Claude session. It must contain:
+   - One sentence on what the project is.
+   - Current test baseline for each active repo.
+   - What was just completed this session (one line).
+   - What to do next (one line).
+   - Where to start.
+
+   Template:
+   ```
+   SNOBOL4-plus org: two-person project building SNOBOL4 for every platform.
+   Repos: SNOBOL4-dotnet ({pass}/{fail}), SNOBOL4-jvm ({tests}/{assertions}/0).
+   Just done: {one line summary of this session}.
+   Next: {top P1/P2 item from PLAN.md}.
+   Start: clone all repos per PLAN.md, then read /home/claude/.github/PLAN.md.
+   ```
+
+---
+
 ## Outstanding Items
 
 ### P1 — Blocking
