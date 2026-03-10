@@ -890,3 +890,137 @@ programs/
 - Never accumulate more than one logical unit of uncommitted work.
 - After every push, confirm with `git log --oneline -1` that the remote received it.
 - If a piece is not yet tested, commit it immediately as `WIP: <description>` so it is not lost.
+
+---
+---
+
+# Session Discussion — 2026-03-10 (Bootstrap, Increment, Protocols)
+
+## The Snocone Bootstrap
+
+Snocone is self-hosting. The compiler (`snocone.sc`) is written in Snocone itself.
+To exist at all, Koenig first hand-compiled a seed version to SNOBOL4 (`snocone.snobol4`).
+After that the system is self-sustaining: compile `snocone.sc` with the existing
+`snocone.snobol4` binary → new `snocone.snobol4`. If correct, running the new binary
+on `snocone.sc` produces bit-identical output — that is Step 9 of our plan.
+
+SNOBOL4 is the intermediate language the whole time. The pipeline is:
+
+```
+snocone.sc  →  [snocone.snobol4 running on SNOBOL4 engine]  →  new snocone.snobol4
+```
+
+Our target (Step 9): once Steps 2–8 are done, our dotnet and JVM Snocone front-ends
+compile `snocone.sc` to SNOBOL4 text, which feeds our own engines, and the output
+matches `snocone.snobol4` exactly. Two new bootstrap chains on two new platforms.
+
+**Running snocone on itself now** requires CSNOBOL4 or SPITBOL as the host engine
+(to run `snocone.snobol4`). The oracles live in `SNOBOL4-corpus`. The test is:
+```bash
+snobol4 snocone.snobol4 snocone.sc > output.snobol4
+diff output.snobol4 snocone.snobol4
+# empty diff = self-hosting confirmed
+```
+
+## Why Spec-First (Not Code-First)
+
+`snocone.sc` is Andrew Koenig's original source and carries a Phil Budne / Mark Emmer
+redistribution restriction. We use it only as a backup to resolve spec ambiguity —
+never as a template. Every design decision in our implementation is traced to the
+Koenig spec (`report.md`). If the spec is silent on a point, we note it and check
+the reference oracle output, not the source code.
+
+## Container Reset — What Was Lost
+
+Steps 2 implementation was written, all 62 dotnet parser tests passed (1634/0),
+JVM parser code was written, lein was downloading deps when the container reset.
+Nothing was pushed. Full Step 2 must be redone next session. That is why the
+Small Increments standing instruction was added.
+
+---
+---
+
+# Directive Words — Protocols
+
+Three actions the user can invoke by name at any time in a session.
+
+---
+
+## Directive: SNAPSHOT
+
+**What it means:** Save current state. Commit and push all repos touched this session.
+A WIP commit is fine. The point is: nothing is lost if the container resets right now.
+
+**Steps:**
+1. For every repo with uncommitted changes:
+   - If tests pass → `git add -A && git commit -m "<what was done>"`.
+   - If tests are not yet green → `git add -A && git commit -m "WIP: <what was done>"`.
+   - `git push` immediately after each commit.
+2. Update PLAN.md session log with what was done and current test counts.
+3. Push `.github`.
+4. Confirm each push: `git log --oneline -1`.
+
+**Does not require:** All tests passing. All work complete.
+**Does require:** Every change is on the remote.
+
+---
+
+## Directive: HANDOFF
+
+**What it means:** End of session. Full clean state for the next Claude session to
+pick up without re-explanation.
+
+**Steps (in order):**
+1. **SNAPSHOT** (run the full snapshot protocol above first).
+2. Verify all tests still pass on all touched repos (not just the files changed).
+3. Update PLAN.md:
+   - Check off completed Outstanding Items.
+   - Add any new problems discovered.
+   - Add session log entry: date, what was done, commit hashes, new test baseline.
+   - Update repo index test counts if they changed.
+4. Update any other affected MD files (`ASSESSMENTS.md`, `BENCHMARKS.md`, repo READMEs).
+5. Push `.github` last (it reflects the final state of everything else).
+6. Write the **handoff prompt** — a small block the user can paste into the next session:
+
+```
+SNOBOL4-plus org: two-person project building SNOBOL4 for every platform.
+Repos: SNOBOL4-dotnet (<pass>/<fail>), SNOBOL4-jvm (<tests>/<assertions>/0).
+Just done: <one-line summary of this session>.
+Next: <top P1/P2 item from PLAN.md Outstanding Items>.
+Start: clone all repos per PLAN.md git identity section, then read PLAN.md.
+```
+
+---
+
+## Directive: EMERGENCY HANDOFF
+
+**What it means:** Something is wrong or the session must end right now.
+Preserve everything possible, even if broken or mid-stream.
+
+**Steps (fast, in order):**
+1. `git add -A` on every repo that has any change at all — staged, unstaged, new files.
+2. Commit everything with `git commit -m "EMERGENCY WIP: <one sentence on what state we are in>"`.
+3. `git push` every repo immediately. Confirm each with `git log --oneline -1`.
+4. Append to PLAN.md (do not restructure — just append):
+   ```
+   ## EMERGENCY HANDOFF — <date>
+   State: <one sentence — what was in progress, what is broken or incomplete>.
+   Repos pushed: <list with commit hashes>.
+   Next session must: <what to do first — verify, fix, or continue>.
+   ```
+5. Push `.github`.
+6. Output the emergency handoff prompt to the user immediately:
+
+```
+EMERGENCY STATE — SNOBOL4-plus
+Repos pushed as-is (may be WIP or broken):
+  SNOBOL4-dotnet: <hash>
+  SNOBOL4-jvm:    <hash>
+State: <one sentence>.
+Next session: read PLAN.md EMERGENCY HANDOFF section first.
+```
+
+**Difference from HANDOFF:** No cleanup, no MD updates beyond the emergency note,
+no verification that tests pass. Speed over completeness. Get it on the remote.
+
+---
