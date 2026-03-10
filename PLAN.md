@@ -120,6 +120,7 @@ Used as submodule at `corpus/lon` in SNOBOL4-jvm and `corpus/` in SNOBOL4-dotnet
 | 2026-03-10 | Personal repos archived (read-only). To be deleted ~April 10, 2026. |
 | 2026-03-10 | Org profile README written and published via `.github`. |
 | 2026-03-09 | `SNOBOL4` repo renamed to `SNOBOL4-corpus`. Restructured: content under `programs/`, 14 canonical benchmark programs added to `benchmarks/`. `SNOBOL4-jvm` submodule URL updated. `SNOBOL4-dotnet` gains `corpus/` submodule + `benchmarks/Program.cs` runner. |
+| 2026-03-10 | Cross-engine benchmark pipeline (Step 6). SPITBOL `systm.c` patched (ns→ms). CSNOBOL4 built from source. SNOBOL4-dotnet `Time.cs` fixed (ElapsedMilliseconds). `arith_loop.sno` updated to 1M iters + TIME() wrappers. SNOBOL4-jvm uberjar fixed: thin AOT launcher `main.clj` (zero requires, dynamic delegate). Results: SPITBOL 20ms, CSNOBOL4 140ms, JVM uberjar 8486ms. |
 
 ---
 
@@ -211,6 +212,7 @@ TABLE/ARRAY, GOTO-driven runtime, multi-stage compiler.
 | 2026-03-08 (S23A–D) | 1865/4018/0 | EDN cache (22×), Transpiler (3.5–6×), Stack VM (2–6×), JVM bytecode gen (7.6×). |
 | 2026-03-08 (S25A–E) | — | -INCLUDE preprocessor, TERMINAL, CODE(), Named I/O channels, OPSYN. |
 | 2026-03-09 (s15) | **2033/4417/0** | All Sprint 25 confirmed. Stable baseline `e697056`. |
+| 2026-03-10 | **2033/4417/0** | Cross-engine benchmark pipeline (Step 6). Built SPITBOL (systm.c → ms) and CSNOBOL4 from source. arith_loop.sno at 1M iters: SPITBOL 20ms, CSNOBOL4 140ms, JVM uberjar 8486ms. Uberjar fixed via thin AOT launcher (main.clj) — zero requires, delegates to core at runtime. Preserves all Greek/symbol names in env/operators/engine_frame/match. commit `80c882e`. |
 
 ---
 
@@ -218,17 +220,32 @@ TABLE/ARRAY, GOTO-driven runtime, multi-stage compiler.
 
 Source archives in `/mnt/user-data/uploads/`. Extract at session start:
 ```bash
-tar xzf snobol4-2_3_3_tar.gz -C /home/claude/csnobol4-src/ --strip-components=1
-unzip x64-main.zip -d /home/claude/spitbol-src/
+mkdir -p /home/claude/csnobol4-src /home/claude/spitbol-src
+tar xzf /mnt/user-data/uploads/snobol4-2_3_3_tar.gz -C /home/claude/csnobol4-src/ --strip-components=1 &
+unzip -q /mnt/user-data/uploads/x64-main.zip -d /home/claude/spitbol-src/ &
+wait
+apt-get install -y build-essential libgmp-dev m4 nasm
 
-# Build CSNOBOL4
-apt-get install -y build-essential libgmp-dev m4
-cd /home/claude/csnobol4-src && ./configure --prefix=/usr/local && make -j4 && make install
+# Patch SPITBOL systm.c: nanoseconds → milliseconds (REQUIRED — default is ns)
+cat > /home/claude/spitbol-src/x64-main/osint/systm.c << 'EOF'
+#include "port.h"
+#include "time.h"
+int zystm() {
+    struct timespec tim;
+    clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &tim);
+    long etime = (long)(tim.tv_sec * 1000) + (long)(tim.tv_nsec / 1000000);
+    SET_IA(etime);
+    return NORMAL_RETURN;
+}
+EOF
 
-# Build SPITBOL
-apt-get install -y nasm
-cd /home/claude/spitbol-src/x64-main && make && cp sbl /usr/local/bin/spitbol
+# Build both in parallel
+(cd /home/claude/csnobol4-src && ./configure --prefix=/usr/local 2>&1|tail -1 && make -j4 && make install && echo "CSNOBOL4 DONE") &
+(cd /home/claude/spitbol-src/x64-main && make && cp sbl /usr/local/bin/spitbol && echo "SPITBOL DONE") &
+wait
 ```
+**CSNOBOL4 `mstime.c` already returns milliseconds — no patch needed.**
+**SPITBOL `systm.c` defaults to nanoseconds — always apply the patch above.**
 
 | Binary | Version | Invocation |
 |--------|---------|------------|
