@@ -421,3 +421,19 @@ every high-performance regex engine does internally. With that change:
 
 Round 2 is the honest number. Round 1 was a preview of what optimized
 hand-written code can do. Both rows tell the same story: SNOBOL4-tiny wins.
+
+### Production Runtime — Final Numbers
+
+After merging the arena allocator into `runtime.c` (the production runtime,
+not just the bench harness), the Round 2 numbers improve further:
+
+| Test | SNOBOL4-tiny (production) | Competitor | Tiny faster by |
+|------|:-------------------------:|:----------:|:--------------:|
+| `(a|b)*abb` vs PCRE2 JIT | **33.96 ns** | 78.60 ns | **2.3×** |
+| `{a^n b^n}` vs Bison LALR(1) | **43.36 ns** | 74.26 ns | **1.7×** |
+
+The arena allocator is now in `src/runtime/runtime.c` as the permanent
+implementation. `sno_enter()` bumps a pointer. `sno_arena_reset()` resets
+between matches. Zero malloc. Zero free. Zero system calls per match.
+
+**Commit**: `13248d9`
