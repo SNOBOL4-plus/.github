@@ -287,7 +287,7 @@ pick up without re-explanation.
 - [ ] Verify SNOBOL4python 0.5.1 published to PyPI (check Actions tab)
 - [ ] Remove old PyPI Trusted Publisher (`LCherryholmes/SNOBOL4python`)
 - [ ] **SNOBOL4-jvm Sprint 23E**: inline EVAL! in JVM codegen — eliminate arithmetic bottleneck
-- [ ] **Snocone front-end** — implement Snocone compiler targeting SNOBOL4-dotnet and SNOBOL4-jvm IR directly. See **Snocone Front-End Plan** section below.
+- [ ] **Snocone Step 2: expression parser** — `&&`, `||`, `~`, all comparison ops, `$`, `.`, precedence table. Steps 0 and 1 complete. See **Snocone Front-End Plan** section below.
 - [ ] **SNOBOL4-python / SNOBOL4-csharp**: cross-validate pattern semantics against JVM
 - [ ] Build unified cross-platform test corpus
 - [ ] **Cross-engine coverage grid** — run the existing test suite against each engine and
@@ -359,8 +359,8 @@ Called from `compiler.clj` before `CODE!`. Returns the same IR maps.
 
 | Step | What | Dotnet | JVM |
 |------|------|--------|-----|
-| 0 | Corpus: add Snocone reference files to SNOBOL4-corpus | — | — |
-| 1 | Lexer: tokenize `.sc` correctly (identifiers, operators, strings, `#`) | `SnoconeLexer.cs` | `snocone.clj` |
+| 0 | Corpus: add Snocone reference files to SNOBOL4-corpus | ✓ `ab5f629` | ✓ `ab5f629` |
+| 1 | Lexer: tokenize `.sc` correctly (identifiers, operators, strings, `#`) | ✓ `dfa0e5b` | ✓ `d1dec27` |
 | 2 | Expression parser: `&&`, `\|\|`, `~`, `==`, `<=`, `*deferred`, `$`, `.` | | |
 | 3 | `if/else` → label/goto pairs | | |
 | 4 | `while` / `do/while` → loop labels | | |
@@ -416,6 +416,9 @@ Generated labels: `sc_1`, `sc_2`, etc. Never reused within a compilation unit.
 | Date | What |
 |------|------|
 | 2026-03-10 | Plan written. Corpus populated: `snocone.sc`, `snocone.sno`, `snocone.snobol4`, Koenig spec, README added to `SNOBOL4-corpus/programs/snocone/`. commit `ab5f629`. Step 1 (lexer) is next. |
+| 2026-03-10 | **Licence research**: Phil Budne README states Emmer-restricted no-redistribution on snocone sources. Confirmed: `regressive.org/snobol4/csnobol4/curr/` updated May 2025 still states the restriction. Mark Emmer GPL'd SPITBOL 360 (2001) and Macro SPITBOL (2009) but Snocone restriction stands. |
+| 2026-03-10 | **Corpus cleanup**: Removed `snocone.sc`, `snocone.sno`, `snocone.snobol4` (Emmer-restricted). Added Budne's 4 patch files (`README`, `snocone.sc.diff`, `snocone.sno.diff`, `Makefile`). Updated corpus README with three-party attribution + download instructions. SNOBOL4-corpus commit `b101a07`. |
+| 2026-03-10 | **Step 1 complete — Snocone lexer (both targets)**. `SnoconeLexer.cs` + 57 tests (`TestSnoconeLexer.cs`) in SNOBOL4-dotnet commit `dfa0e5b`. `snocone.clj` + equivalent tests (`test_snocone.clj`) in SNOBOL4-jvm commit `d1dec27`. Self-tokenization of `snocone.sc`: 5,526 tokens, 728 statements, 0 unknown. Bug fixed in Clojure tokenizer (spurious `seg` arg). Step 2 (expression parser) is next. |
 
 ---
 ---
