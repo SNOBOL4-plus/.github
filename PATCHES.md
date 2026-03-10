@@ -22,7 +22,8 @@
 
 | # | File | Symptom | Root Cause | Status |
 |---|------|---------|------------|--------|
-| P001 | `snobol4.c` | `./beautiful` hangs forever | `&STLIMIT` declared but never enforced | **APPLYING NOW** |
+| P001 | `snobol4.c` | `./beautiful` hangs forever | `&STLIMIT` declared but never enforced | **RESOLVED** |
+| P002 | `snobol4.c`, `snobol4_pattern.c`, `snobol4.h` | Loop at STNO 160↔161 — `i` increments forever | `sno_array_get`/`get2` returned `SNO_NULL_VAL` on out-of-bounds instead of failure | **RESOLVED** |
 
 ---
 
@@ -135,3 +136,45 @@ that signal as `_ok = 0`.
 
 **Files to change**: `snobol4.c` (`sno_subscript_get2`), possibly `emit_c_stmt.py`
 **Status**: DIAGNOSING
+
+---
+
+## P002 — sno_subscript_get / get2 Never Signals Out-of-Bounds Failure
+**Date**: 2026-03-10
+**Found by**: Double-trace monitor — binary STNO stream, STNO 160↔161 looping, VAR i incrementing to 92000+
+**Symptom**: `./beautiful < beauty_run.sno` hangs. Variable `i` increments without bound in a SNOBOL4 array-iteration loop.
+
+**Diagnosis**:
+```
+STNO 160   VAR i "92018"
+STNO 161   VAR  ""
+STNO 160   VAR i "92019"
+...forever
+```
+Statement 161: `UTF_Array = UTF_Array` with replacement `UTF_Array[i][1]` using epsilon pattern.
+When `i` exceeds array bounds, `sno_array_get2` returned `SNO_NULL_VAL` (valid value).
+`sno_match_and_replace` with epsilon pattern always succeeds — null replacement is a valid empty string.
+`_ok = 1` always → goto STNO 160 forever.
+
+**SNOBOL4 semantics**: `arr[i]` where `i` is out of bounds **fails** — takes the F-branch.
+Our runtime had no failure sentinel distinct from null.
+
+**Root Cause**:
+1. `sno_array_get` and `sno_array_get2` in `snobol4.c` returned `SNO_NULL_VAL` on out-of-bounds — indistinguishable from a valid empty string result.
+2. No `SNO_FAIL` type existed in the runtime.
+3. `sno_match_and_replace` did not check if the replacement value signalled failure.
+
+**Fix**:
+1. Added `SNO_FAIL = 10` to `SnoType` enum in `snobol4.h`
+2. Added `SNO_FAIL_VAL` macro and `sno_is_fail()` inline to `snobol4.h`
+3. `sno_array_get`: return `SNO_FAIL_VAL` when `!a` or index out of bounds
+4. `sno_array_get2`: return `SNO_FAIL_VAL` when `!a`, row out of bounds, or col out of bounds
+5. `sno_match_and_replace`: return 0 (fail) immediately if `sno_is_fail(replacement)`
+6. `sno_to_str` / `sno_to_int` / `sno_to_real`: existing `default:` cases handle `SNO_FAIL` safely
+
+**Verification**:
+- Unit test `test_p002.c`: `arr[0]`, `arr[4]` → `SNO_FAIL`; `arr[1]`, `arr[3]` → correct values. PASS.
+- `match_and_replace` with `SNO_FAIL_VAL` → returns 0. PASS.
+- `smoke_gaps`: 40/40. No regressions.
+
+**Files changed**: `snobol4.h`, `snobol4.c`, `snobol4_pattern.c`
