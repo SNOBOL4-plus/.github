@@ -20,14 +20,14 @@ git clone https://github.com/SNOBOL4-plus/SNOBOL4-dotnet.git &
 git clone --recurse-submodules https://github.com/SNOBOL4-plus/SNOBOL4-jvm.git &
 git clone https://github.com/SNOBOL4-plus/SNOBOL4-python.git &
 git clone https://github.com/SNOBOL4-plus/SNOBOL4-csharp.git &
-git clone https://github.com/SNOBOL4-plus/SNOBOL4.git &
+git clone https://github.com/SNOBOL4-plus/SNOBOL4-corpus.git &
 wait
 echo "All clones done."
 ```
 
 Verify with:
 ```bash
-for repo in SNOBOL4-dotnet SNOBOL4-jvm SNOBOL4-python SNOBOL4-csharp SNOBOL4; do
+for repo in SNOBOL4-dotnet SNOBOL4-jvm SNOBOL4-python SNOBOL4-csharp SNOBOL4-corpus; do
   echo "$repo: $(cd /home/claude/$repo && git log --oneline -1)"
 done
 ```
@@ -62,7 +62,7 @@ Mission: **SNOBOL4 everywhere. SNOBOL4 now.**
 | [SNOBOL4-jvm](https://github.com/SNOBOL4-plus/SNOBOL4-jvm) | Clojure / JVM | Active | `main` | 2,033 / 4,417 assertions / 0 failures |
 | [SNOBOL4-python](https://github.com/SNOBOL4-plus/SNOBOL4-python) | Python + C | Active | `main` | — |
 | [SNOBOL4-csharp](https://github.com/SNOBOL4-plus/SNOBOL4-csharp) | C# | Active | `main` | 263 passing |
-| [SNOBOL4](https://github.com/SNOBOL4-plus/SNOBOL4) | SNOBOL4 | Corpus | `main` | — |
+| [SNOBOL4-corpus](https://github.com/SNOBOL4-plus/SNOBOL4-corpus) | SNOBOL4 | Corpus | `main` | — |
 
 ---
 
@@ -101,6 +101,13 @@ dotnet build -c Debug src/SNOBOL4
 dotnet test tests/SNOBOL4.Tests
 ```
 
+### SNOBOL4-corpus
+```bash
+git clone https://github.com/SNOBOL4-plus/SNOBOL4-corpus.git
+```
+Layout: `benchmarks/` (canonical .sno programs), `programs/` (lon/, ebnf/, rinky/, sno/, test/).
+Used as submodule at `corpus/lon` in SNOBOL4-jvm and `corpus/` in SNOBOL4-dotnet.
+
 ---
 
 ## Organization Setup Log
@@ -112,6 +119,7 @@ dotnet test tests/SNOBOL4.Tests
 | 2026-03-10 | `SNOBOL4`, `SNOBOL4-jvm`, `SNOBOL4-python`, `SNOBOL4-csharp` all created and mirrored. Submodule updated to org. PyPI Trusted Publisher configured. |
 | 2026-03-10 | Personal repos archived (read-only). To be deleted ~April 10, 2026. |
 | 2026-03-10 | Org profile README written and published via `.github`. |
+| 2026-03-09 | `SNOBOL4` repo renamed to `SNOBOL4-corpus`. Restructured: content under `programs/`, 14 canonical benchmark programs added to `benchmarks/`. `SNOBOL4-jvm` submodule URL updated. `SNOBOL4-dotnet` gains `corpus/` submodule + `benchmarks/Program.cs` runner. |
 
 ---
 
@@ -522,14 +530,35 @@ SNOBOL4 pattern matching library for C#. 263 tests passing.
 ---
 ---
 
-# SNOBOL4 (Corpus) — Plan
+# SNOBOL4-corpus — Plan
 
 ## What This Repo Is
 
-Shared SNOBOL4 programs, libraries, grammars. Used as submodule in SNOBOL4-jvm at `corpus/lon/`.
+Shared SNOBOL4 programs, libraries, grammars, and canonical benchmark programs
+for all SNOBOL4-plus implementations.
 
-**Repository**: https://github.com/SNOBOL4-plus/SNOBOL4
+**Repository**: https://github.com/SNOBOL4-plus/SNOBOL4-corpus
 
-## Outstanding Items — Corpus
+## Layout
+
+```
+benchmarks/     canonical .sno benchmark programs (shared by all impl runners)
+programs/
+  ebnf/         EBNF grammar programs
+  inc/           include files (TZ, ebnf, etc.)
+  rinky/         rinky programs
+  sno/           general SNOBOL4 programs
+  test/          test programs
+```
+
+## Submodule Usage
+
+| Repo | Path | Note |
+|------|------|------|
+| SNOBOL4-jvm | `corpus/lon` | Runner reads `corpus/lon/benchmarks/` |
+| SNOBOL4-dotnet | `corpus` | Runner reads `corpus/benchmarks/` |
+
+## Outstanding Items — SNOBOL4-corpus
 - [ ] Add beauty.sno include files when Lon supplies them
-- [ ] Grow unified cross-platform benchmark programs shared between dotnet and jvm
+- [ ] Grow unified cross-platform benchmark programs
+- [ ] Add `code_goto.sno` benchmark once CODE()+GOTO is working in dotnet
