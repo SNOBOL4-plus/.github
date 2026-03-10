@@ -15,6 +15,8 @@ This is the protocol. Every new Claude session gets two things:
 - This PLAN.md in full
 - DIRECTORY.md
 - ORIGIN.md
+- PATCHES.md — runtime patch log; every bug found by the monitor, root cause, fix, commit
+- MONITOR.md — double-trace monitor architecture, sync taxonomy, keyword grid
 - The repos cloned (see Session Start below)
 - The oracles built and run
 

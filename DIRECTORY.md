@@ -62,6 +62,7 @@
 | Bootstrap strategy (seed→self-hosting) | `SNOBOL4-tiny/doc/BOOTSTRAP.md` |
 | Architecture decisions (resolved) | `SNOBOL4-tiny/doc/DECISIONS.md` |
 | **The Double-Trace Monitor** — the story, architecture, telemetry loop | `HQ/MONITOR.md` |
+| **Runtime patch log** — every bug found, root cause, fix, commit | `HQ/PATCHES.md` |
 | String escape rules (SNOBOL4 / C / Python) | `HQ/STRING_ESCAPES.md` |
 | Compiland reachability (inc files → C) | `HQ/COMPILAND_REACHABILITY.md` |
 | Snocone semantic rules + label gen | `PLAN.md` § Key Semantic Rules (from Koenig spec) |
