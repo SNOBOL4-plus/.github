@@ -877,3 +877,16 @@ programs/
 - [ ] Add beauty.sno include files when Lon supplies them
 - [ ] Grow unified cross-platform benchmark programs
 - [ ] Add `code_goto.sno` benchmark once CODE()+GOTO is working in dotnet
+
+---
+
+## Standing Instruction — Small Increments, Commit Often
+
+**The container resets without warning. Anything not pushed is lost.**
+
+- Work in the smallest meaningful unit: one file, one function, or one test class.
+- Commit and push **before** moving on to the next unit.
+- For a new feature: write tests → push. Implement → push. Suite green → push.
+- Never accumulate more than one logical unit of uncommitted work.
+- After every push, confirm with `git log --oneline -1` that the remote received it.
+- If a piece is not yet tested, commit it immediately as `WIP: <description>` so it is not lost.
