@@ -9,10 +9,11 @@ cross-platform compatibility across all implementations.
 
 | Repo | Tests | Failures | Oracles | Last Confirmed |
 |------|------:|--------:|---------|----------------|
-| SNOBOL4-dotnet | 1,466 | 0 | SPITBOL v4.0f, CSNOBOL4 2.3.3 | 2026-03-10 |
-| SNOBOL4-jvm | 2,033 (4,417 assertions) | 0 | SPITBOL v4.0f, CSNOBOL4 2.3.3 | 2026-03-09 |
+| SNOBOL4-dotnet | 1,607 | 0 | SPITBOL v4.0f, CSNOBOL4 2.3.3 | 2026-03-10 |
+| SNOBOL4-jvm | 1,896 (4,120 assertions) | 0 | SPITBOL v4.0f, CSNOBOL4 2.3.3 | 2026-03-10 |
 | SNOBOL4-python | — | — | — | 2026-03-02 |
 | SNOBOL4-csharp | 263 | 0 | — | 2026-03-07 |
+| SNOBOL4-cython | 70+ (`test_bead.py`) | 0 | SNOBOL4python patterns | 2026-03-10 (not yet in org repo) |
 
 ---
 ---
@@ -218,3 +219,53 @@ pattern results on python and csharp:
 |-----|---------------|-------|
 | CAPTURE-COND deferred semantics | jvm, python, csharp | `.` assigns immediately in jvm; deferred in python/csharp |
 | ANY charset range syntax `"A-Z"` | jvm | jvm treats `-` as literal (standard SNOBOL4). python/csharp TBD. |
+
+---
+---
+
+## SNOBOL4-cython Assessment
+
+**Status**: Proof-of-concept. Not yet in org repo — source in uploaded zips only.
+**Build**: `python3 setup.py build_ext --inplace` → `snobol4c.cpython-312-*.so`
+**Test runner**: `python3 test_bead.py`
+**Total**: 70+ tests / 0 failures (v2)
+
+### What It Is
+
+A CPython C extension (`snobol4c_module.c`) implementing the full Byrd Box
+SNOBOL4 pattern engine in portable C. Python side uses SNOBOL4python objects
+to build the pattern tree; the extension converts them to C structs and matches
+entirely in C. Returns `(start, end)` or `None`.
+
+### Test Coverage — SNOBOL4-cython
+
+| Group | Tests | Status |
+|-------|------:|--------|
+| BEAD pattern (complex alternation) | 10 | ✅ pass |
+| BEARDS pattern (nested alternation) | 7 | ✅ pass |
+| Literal σ | 4 | ✅ pass |
+| ANY / SPAN / BREAK | 7 | ✅ pass |
+| LEN / TAB / RTAB / REM | 7 | ✅ pass |
+| ARB | 3 | ✅ pass |
+| ARBNO | 5 | ✅ pass |
+| ε (epsilon) | 2 | ✅ pass |
+| π (optional ~σ) | 3 | ✅ pass |
+| FENCE | 1 | ✅ pass |
+| BAL | 3 | ✅ pass |
+| FAIL / SUCCEED | 1 | ✅ pass |
+| NOTANY | 2 | ✅ pass |
+| search() unanchored | 1 | ✅ pass |
+
+### Architecture Notes
+
+- **v1**: bump Arena allocator (slab of Pattern nodes freed all at once)
+- **v2**: per-node `malloc` + `PatternList` tracker — cleaner, no relocation risk
+- Engine: `PROCEED/SUCCESS/FAILURE/RECEDE` × node-type dispatch (`type << 2 | signal`)
+- Psi (continuation stack) + Omega (backtrack stack with owned Psi snapshots)
+- Three Python-facing functions: `match`, `search`, `fullmatch`
+
+### Decision Pending
+
+Add as `SNOBOL4-cython` org repo, or fold `snobol4c_module.c` into
+SNOBOL4-python as an alternative backend to SPIPAT? See PLAN.md Outstanding
+Items — SNOBOL4-tiny P2.

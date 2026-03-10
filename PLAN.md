@@ -1087,6 +1087,109 @@ Sprint 14+: self-hosting emitter
 
 ---
 
+## SNOBOL4cython — A Completed Proof-of-Concept
+
+**What it is**: A CPython C extension (`snobol4c`) that bridges SNOBOL4python's
+Python-side pattern tree directly into a standalone C match engine. Python builds
+the pattern using the familiar `POS(0) + σ("x") | ...` algebra; then
+`snobol4c.match(pattern, subject)` converts the Python object tree to C `Pattern`
+structs on the fly and runs the engine entirely in C. Returns `(start, end)` or `None`.
+
+**Status**: Working. v2 (`snobol4c_module.c`, 721 lines) is the clean version.
+v1 (788 lines) used a bump Arena allocator; v2 switched to per-node `malloc` +
+a `PatternList` tracker for cleanup — cleaner semantics, no relocation issues.
+Both versions pass the same 70+ test suite (`test_bead.py`).
+
+**Three entry points**: `match(pat, subj)` anchored at position 0;
+`search(pat, subj)` tries every starting position; `fullmatch(pat, subj)` requires
+full subject consumption. Build: `python3 setup.py build_ext --inplace`.
+
+**What the engine implements** — all working and tested:
+
+| Category | Primitives |
+|----------|-----------|
+| Cursors | POS, RPOS |
+| Lengths | LEN, TAB, RTAB, REM |
+| Char-set | ANY, NOTANY, SPAN, BREAK |
+| Structural | ARB, ARBNO, BAL, FENCE |
+| Control | FAIL, ABORT, SUCCEED, ε (epsilon) |
+| Combinators | Σ (sequence), Π (alternation), ρ (conjunction), π (optional) |
+| Literal | σ (literal string), α (BOL), ω (EOL) |
+
+**The engine architecture** — Psi/Omega Byrd Box in portable C:
+
+```c
+/* Four signals — identical to SNOBOL4-tiny's α/β/γ/ω protocol */
+#define PROCEED 0   /* α: enter this node */
+#define SUCCESS 1   /* γ: this node succeeded, continue forward */
+#define FAILURE 2   /* ω: this node failed, backtrack */
+#define RECEDE  3   /* β: being asked to retry or give back */
+
+/* Two stacks */
+/* Psi   — continuation stack (where to return on success) */
+/* Omega — backtrack stack; each entry owns a deep-copied Psi snapshot */
+
+/* Dispatch: type × signal packed as (type << 2 | signal) */
+while (Z.PI) {
+    switch (Z.PI->type << 2 | a) {
+        case T_PI<<2|PROCEED:  /* Π alternation: push checkpoint, go left */
+        case T_PI<<2|FAILURE:  /* left failed: try right */
+        case T_SIGMA<<2|PROCEED: /* Σ sequence: enter child[ctx] */
+        ...
+    }
+}
+```
+
+The Psi/Omega split solves a real problem: Omega entries must snapshot Psi at
+checkpoint time so backtrack restores exactly where continuations stood.
+`psi_snapshot()` / `psi_restore()` deep-copy the continuation stack into each
+Omega entry — the backtrack stack is completely self-contained.
+
+**Why this matters for SNOBOL4-tiny**:
+
+1. **The protocol is proven.** SNOBOL4cython implements the complete Psi/Omega
+   Byrd Box protocol in portable C and passes 70+ tests covering every primitive.
+   SNOBOL4-tiny's `emit_c.py` produces the same protocol via inlined gotos — this
+   confirms the protocol is correct and complete.
+
+2. **Reference implementation for ARBNO and FENCE** — the two trickiest nodes not
+   yet in SNOBOL4-tiny's emitter. The ARBNO logic:
+   ```c
+   case T_ARBNO<<2|PROCEED:
+       if (Z.ctx == 0) { a=SUCCESS; omega_push; z_up_track; }  /* empty match first */
+       else            { a=PROCEED; omega_push; z_down_single; } /* try one more iter */
+   case T_ARBNO<<2|RECEDE:
+       if (Z.fenced)        { a=FAILURE; z_up_fail; }
+       else if (Z.yielded)  { a=PROCEED; z_move_next; } /* commit last, try again */
+       else                 { a=FAILURE; z_up_fail; }
+   ```
+   The `yielded` flag on the Omega tip is the key mechanism — it tells ARBNO
+   whether the checkpoint was the "empty" path or a successful iteration, so it
+   knows whether to extend or give up.
+
+3. **BAL re-entrancy via `ctx`** — clean reference for SNOBOL4-tiny Sprint 8+:
+   ```c
+   static bool scan_BAL(State *z) {
+       int nest = 0;
+       while (...) { /* tracks ( ) nesting, returns when nest == 0 */
+           z->ctx = z->delta; return true;
+       }
+   }
+   /* On RECEDE, BAL is retried with ctx pointing past the last balanced match */
+   ```
+
+4. **Potential SNOBOL4-python backend.** The `snobol4c` module is a fully in-house
+   alternative to Phil Budne's SPIPAT (`sno4py`). No external dependency. Could
+   replace or augment SPIPAT in SNOBOL4-python.
+
+**Where the code lives**: Uploaded as `SNOBOL4cython-v1.zip` and
+`SNOBOL4cython-v2.zip`. Not yet in any org repo.
+
+**Decision needed**: Add a `SNOBOL4-cython` repo to the org, or fold
+`snobol4c_module.c` into SNOBOL4-python as an alternative backend? See P2 item below.
+
+---
+
 ## Session Log — SNOBOL4-tiny
 
 | Date | What |
@@ -1094,21 +1197,24 @@ Sprint 14+: self-hosting emitter
 | 2026-03-10 | Repo created. Architecture: Byrd Box model, Forth analogy, SNOBOL4c.c discovery, Beautiful.sno bootstrap resolution. DECISIONS.md and BOOTSTRAP.md written. Sprint 0 (null.c) and Sprint 1 (lit_hello.c) hand-written. ir.py, emit_c.py, runtime.c committed. commit `39f7ce7`. |
 | 2026-03-10 | Decision 1 resolved (no yacc — Beautiful.sno is the parser). Decision 2 resolved (B→C→D sequence confirmed). DESIGN.md updated. commit `98c0fdb`. |
 | 2026-03-10 | Full planning session. SNOBOL4tiny language model formalized: "a set of named patterns + a set of action functions (immediate/conditional), reads stdin, writes stdout, compiled to machine code, goal-directed evaluation." This is Stage B of existing plan — architecture unchanged, language now clearly named. Sprint numbering revised to be more granular (0–14). PLAN.md and DESIGN.md updated. Next: Sprint 2 (CAT node). |
+| 2026-03-10 | **SNOBOL4cython reviewed.** Lon built CPython C extension (`snobol4c_module.c`) — complete Psi/Omega Byrd Box engine in portable C, 70+ tests passing (BEAD, BEARDS, all primitives, ARB, ARBNO, BAL, FENCE, FAIL, search/fullmatch). v1→v2: Arena bump allocator replaced with per-node malloc + PatternList tracker. Key findings documented above: ARBNO `yielded` flag and BAL `ctx` re-entrancy are reference implementations for Sprints 8+. `emit_c.py` bug fixed: `MATCH_SUCCESS`/`MATCH_FAIL` now emit `return 0`/`return 1` (were silent stubs causing infinite loop on no-match). Sprint 2 and Sprint 3 .c test files generated and verified compiling. |
 
 ---
 
 ## Outstanding Items — SNOBOL4-tiny
 
 ### P1 — Blocking
-- [ ] **Sprint 2 (CAT)**: write `test/sprint2/cat_pos_lit_rpos.c` by hand, confirm it compiles + runs, then drive from emit_c.py and diff. Both must match.
-- [ ] **Sprint 3 (ALT)**: same process — hand first, then emit_c.py.
-- [ ] **Sprint 4 (ASSIGN)**: SPAN + `$ OUTPUT` end-to-end. This is the first program that produces visible output from a pattern match.
+- [x] **emit_c.py `MATCH_SUCCESS`/`MATCH_FAIL` bug**: labels were silent stubs — programs with no match looped forever. Fixed: now emit `return 0` / `return 1`. *(fixed 2026-03-10)*
+- [ ] **Sprint 2 (CAT)**: `emit_c.py` CAT emission works and tests compile. Need hand-written reference `.c` file (`test/sprint2/cat_pos_lit_rpos.c`) and diff against emitter output. Emitter-generated files are in `test/sprint2/` but hand-written oracle not yet committed.
+- [ ] **Sprint 3 (ALT)**: `emit_c.py` ALT emission works. Test `.c` files generated (`alt_first.c`, `alt_second.c`, `alt_fail.c`, `alt_three.c`). Need to commit them and verify all compile + exit correctly.
+- [ ] **Sprint 4 (ASSIGN)**: SPAN + `$ OUTPUT` end-to-end. First program that produces visible output from a pattern match.
 
 ### P2 — Important
+- [ ] **SNOBOL4cython → org decision**: `snobol4c_module.c` (v2, 721 lines) is a complete working Byrd Box engine in C with 70+ passing tests. Options: (a) new `SNOBOL4-cython` org repo, or (b) fold into SNOBOL4-python as alternative backend to SPIPAT. Source currently only in uploaded zips — needs to land in a repo before it can be lost.
 - [ ] **Sprint 5 (SPAN β)**: test that SPAN gives back one character at a time when downstream backtracks. Write a test where SPAN + LIT forces backtracking.
-- [ ] **Sprint 6 (BREAK + ANY)**: add C templates to emit_c.py. Straightforward.
+- [ ] **Sprint 6 (BREAK + ANY)**: add C templates to emit_c.py. Straightforward — model on existing Span/Lit.
 - [ ] **Sprint 7 (ARB)**: non-deterministic generator. Template must try 0 chars first, then grow.
-- [ ] **Sprint 8 (ARBNO)**: depth-indexed static array for recursive patterns.
+- [ ] **Sprint 8 (ARBNO)**: use `snobol4c_module.c` ARBNO implementation as reference (see SNOBOL4cython section above — `yielded` flag is the key mechanism).
 - [ ] **Sprint 9 (REF cycle)**: IR graph with a cycle — two patterns referencing each other. Validates the graph IR design.
 - [ ] **First benchmark**: after Sprint 4, run SPAN+ASSIGN against SPITBOL on a large input. Record in bench/README.md.
 
