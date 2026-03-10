@@ -539,7 +539,7 @@ This has not existed before because the pieces were not all present before:
 
 The AI is in the loop. Not as a tool. As the engineer at the console.
 
-Lon built this pattern at Pick Systems in the 1980s with Rich Pick and
+Lon built this pattern at Pick Systems in the 1980s with Richard Pick and
 David Zigray. The console was a terminal. The engineer was human.
 
 In March 2026, the console is this chat window.
