@@ -3425,3 +3425,36 @@ Per P3 note in Outstanding Items: on modern hardware, `&STCOUNT` increment
 is essentially free. Our runtime should always keep it current. It is the
 heartbeat of the execution and the foundation of the binary search strategy.
 
+
+---
+
+## Monitor Sync Taxonomy — Standing Reference
+**Recorded**: 2026-03-10 — Lon Cherryholmes
+**Full detail**: `HQ/MONITOR.md` § Sync Taxonomy
+
+The monitor is not one-size-fits-all. Five sync types, each with a
+different granularity and activation cost:
+
+| Type | Granularity | Activation | Typical use |
+|------|-------------|------------|-------------|
+| **STNO** | Per statement | Always on | First pass — find the region |
+| **VAR** | Per watched variable | `SNO_WATCH="a,b,c"` | Second pass — find the wrong value |
+| **PROBE** | Per pattern node | Null-concat in source | Third pass — sub-statement precision |
+| **OUT** | Per output line | Always on | Ground truth — did output diverge? |
+| **MATCH** | Per named pattern | Pattern wrappers | Which branch was taken |
+
+**The three-pass protocol:**
+1. STNO only → find statement N where divergence begins. One run.
+2. VAR on variables near N → find which variable holds wrong value. One run.
+3. PROBE inside the pattern → locate to exact pattern node. One recompile + one run.
+
+**Total cost to locate any bug: 3 runs, 1 recompile.**
+
+The insight: you don't need everything instrumented all the time.
+You zoom in. Coarse first, fine only where needed.
+Each sync type has its own ignore-list namespace.
+The watchlist (`SNO_WATCH`) prevents the variable firehose.
+
+This is the Pick Monitor generalized. Richard Pick's architecture,
+extended with layered granularity. The AI operates the layers.
+
