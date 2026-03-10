@@ -904,6 +904,224 @@ programs/
 - [ ] Add `code_goto.sno` benchmark once CODE()+GOTO is working in dotnet
 
 ---
+---
+
+# SNOBOL4-tiny — Full Plan
+
+## What This Repo Is
+
+A native SNOBOL4 compiler using the **Byrd Box** compilation model. Every pattern
+node — and eventually every expression — compiles to four inlined labeled entry
+points (α/β/γ/ω) as straight C-with-gotos. No interpreter loop. No indirect
+dispatch. The wiring between nodes *is* the execution. Goal-directed evaluation
+exactly like Icon, compiled to native code.
+
+**Repository**: https://github.com/SNOBOL4-plus/SNOBOL4-tiny
+**Test runner**: `cc -o $test $test.c src/runtime/runtime.c && ./$test > got.txt && diff expected.txt got.txt`
+**Baseline**: Sprint 0–1 complete (hand-written reference C files). Sprints 2–4 empty.
+**Language**: C (runtime + emitted programs), Python (IR builder + emitter, Stages A–B)
+
+---
+
+## The Language Being Compiled — Three Stages
+
+### Stage A — Pattern Engine (Sprints 0–7): Primitives + Codegen
+A single pattern runs against a hardcoded subject. No user-visible language yet.
+These sprints prove the compilation model and establish the full primitive vocabulary.
+
+### Stage B — SNOBOL4tiny Language (Sprints 8–13): The Language
+A real, minimal, compiled language. This is the language Lon described:
+
+> *"Reads only from stdin, writes only to stdout. A set of patterns.
+> A set of functions for immediate/conditional actions."*
+
+```snobol4
+* A SNOBOL4tiny program is:
+*   1. A set of named pattern definitions
+*   2. Action functions on match: immediate ($ VAR) / conditional (. VAR)
+*   3. One entry point: MAIN (or last-defined pattern)
+*   Input: stdin only.  Output: stdout only.  Compiled to native code.
+
+DIGITS  = SPAN('0123456789')
+WORD    = SPAN('abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ')
+TOKEN   = DIGITS | WORD
+MAIN    = POS(0) ARBNO(TOKEN $ OUTPUT) RPOS(0)
+```
+
+Properties:
+- **Compiled** — emits C-with-gotos → cc → native binary
+- **Goal-directed** — α/β/γ/ω Byrd Box backtracking, exactly like Icon generators
+- **stdin→stdout only** — no files, no environment, no side channels
+- **Patterns + action nodes** — `$ OUTPUT` is immediate; `. VAR` is conditional
+- **Mutually recursive** — `*NAME` deferred REF nodes allow full CFG grammars
+
+This is Stage C from DECISIONS.md: named patterns, mutual recursion, the minimum
+that makes SNOBOL4tiny a language rather than a pattern engine. It is also
+Turing-complete for string recognition — it can express any context-free grammar.
+
+### Stage C — SNOBOL4 Subset (Sprint 14+): The Horizon
+Full SNOBOL4 statement model: subject, pattern, replacement, GOTO, variables,
+INPUT/OUTPUT, DEFINE, DATA, END. Programs run unchanged on CSNOBOL4 and SPITBOL.
+The λ bridge from Beautiful.sno maps the parse tree shape to IR directly.
+
+---
+
+## Architecture
+
+```
+SNOBOL4tiny source (.sno)
+    → Parser (Python / Beautiful.sno Sprint 11+)   → IR node graph
+    → emit_c.py                                     → C-with-gotos (.c)
+    → cc                                            → native binary
+    → stdin                                         → stdout
+```
+
+**Three codegen targets from one IR (Sprint 14+):**
+- C-with-gotos → cc → any C target (x86-64, ARM, RISC-V)
+- JVM bytecode via ASM library → ClassLoader
+- MSIL via ILGenerator → .NET DynamicMethod
+
+---
+
+## The Eight Irreducible Primitives
+
+Nothing smaller can express these. Everything else is derivable and should be
+written in SNOBOL4tiny, not hardcoded as C templates.
+
+| Primitive | α behavior | β behavior |
+|-----------|-----------|-----------|
+| LIT(s) | Match exact string s at cursor | Restore cursor, fail |
+| ANY(cs) | Match one char in charset cs | Restore cursor, fail |
+| SPAN(cs) | Match 1+ chars in cs (greedy) | Give back one char, retry |
+| BREAK(cs) | Match 0+ chars not in cs | Deterministic — fail |
+| LEN(n) | Advance cursor by n | Restore cursor, fail |
+| POS(n) | Assert cursor == n | Fail (deterministic) |
+| RPOS(n) | Assert cursor == len−n | Fail (deterministic) |
+| ARB | Try 0 chars first, then 1, 2… | Advance by 1, retry |
+
+**Derived (library words, not primitives):**
+`ARBNO(P)` — derivable from ARB + CAT + ALT once those work.
+`TAB(n)` — derivable from POS(n) after ARB.
+`RTAB(n)` — derivable from RPOS(n) after ARB.
+`NOTANY(cs)` — derivable from BREAK(cs) + LEN(1).
+
+**Discipline (Forth rule):** Before adding any node type to `emit_c.py`,
+write the derivation. If it can be expressed using existing primitives, it
+is a library pattern, not a primitive.
+
+---
+
+## Action Nodes (λ)
+
+Action nodes fire side effects. They do not advance the cursor.
+
+| Node | Fires | Backtracks? |
+|------|-------|-------------|
+| `$ VAR` (immediate assign) | Every time left pattern succeeds | No — deterministic |
+| `. VAR` (conditional assign) | Only when top-level match commits | No — deferred |
+| `@ CURSOR` | On match — records cursor as integer | No |
+| λ(fn) | Calls a named function on match | No |
+
+**The key distinction:** `$` fires multiple times if downstream backtracks and
+re-enters the enclosing pattern. `.` fires exactly once, after commit. This is
+standard SNOBOL4 semantics — preserved exactly in the compiled model.
+
+When `VAR == OUTPUT`, `$ OUTPUT` emits the captured span to stdout immediately.
+This is the primary output mechanism of the SNOBOL4tiny language.
+
+---
+
+## Sprint Plan (Revised and Granular)
+
+Each sprint adds exactly one mechanism. The hand-written C file is the spec.
+`emit_c.py` output must match the hand-written file exactly (modulo whitespace).
+
+| Sprint | Mechanism | Test file | Status |
+|--------|-----------|-----------|--------|
+| 0 | Null program — α/β/γ/ω skeleton, runtime links | `sprint0/null.c` | ✓ |
+| 1 | Single primitive — LIT, POS, RPOS | `sprint1/lit_hello.c` | ✓ hand-written |
+| 2 | **CAT** — concat wiring: P_γ→Q_α, Q_ω→P_β | `sprint2/cat_pos_lit_rpos.c` | next |
+| 3 | **ALT** — choice point: P_ω→Q_α, Q_ω→outer_ω | `sprint3/alt_a_or_b.c` | |
+| 4 | **ASSIGN ($)** — immediate capture + OUTPUT | `sprint4/span_digits_output.c` | |
+| 5 | **SPAN** β backtrack — give back one char at a time | `sprint5/span_backtrack.c` | |
+| 6 | **BREAK** and **ANY** — complete primitive set | `sprint6/break_any.c` | |
+| 7 | **ARB** — non-deterministic length generator | `sprint7/arb.c` | |
+| 8 | **ARBNO** — generator loop, γ→α rewire, depth stack | `sprint8/arbno.c` | |
+| 9 | **REF** — named pattern, cycle validation | `sprint9/mutual_ref.c` | |
+| 10 | **Python front-end** — parse SNOBOL4tiny source → ir.py | `sprint10/parser_test.py` | |
+| 11 | **Beautiful.sno** → SNOBOL4_EXPRESSION_PATTERN.h | `sprint11/parse_expr.c` | |
+| 12 | **Stage B language**: stdin loop, named patterns, `$ OUTPUT` | `sprint12/snobol4tiny_hello.sno` | |
+| 13 | **Mutual recursion** validated end-to-end | `sprint13/mutual_rec.sno` | |
+| 14 | **Stage C**: variables, INPUT/OUTPUT, goto, END | `sprint14/snobol4_subset.sno` | |
+
+---
+
+## What emit_c.py Can Emit Today
+
+**Implemented** (C templates working):
+`Lit`, `Pos`, `Rpos`, `Len`, `Span`, `Cat`, `Alt`, `Assign` ($ immediate), `Ref`
+
+**Not yet implemented** (emit TODO comment — Sprint 6–8):
+`Arb`, `Arbno`, `Break`, `Any`
+
+The Python IR builder (`ir.py`) has all node types. The gap is emitter templates
+for those four nodes. `Break` and `Any` are straightforward (model on Span/Lit).
+`Arb` and `Arbno` need the depth-indexed static array pattern.
+
+---
+
+## Bootstrap Path
+
+```
+Stage A/B (Sprints 0–13): Python emit_c.py drives everything
+    ir.py builds graph → emit_c.py emits C → cc compiles → run + diff
+
+Sprint 11: Beautiful.sno → SNOBOL4_EXPRESSION_PATTERN.h
+    Serialize snoExpr* patterns from Beautiful.sno into C struct format
+    #include in SNOBOL4c.c + 5-line stdin loop
+    Seed kernel now reads and parses SNOBOL4 source using SNOBOL4 patterns
+
+Sprint 14+: self-hosting emitter
+    Replace emit_c.py with emit.sno — SNOBOL4 program that reads IR, emits C
+    Python emit_c.py becomes bootstrap oracle — diff both outputs
+    Bootstrap closure: compile emit.sno with itself, diff against oracle
+```
+
+---
+
+## Session Log — SNOBOL4-tiny
+
+| Date | What |
+|------|------|
+| 2026-03-10 | Repo created. Architecture: Byrd Box model, Forth analogy, SNOBOL4c.c discovery, Beautiful.sno bootstrap resolution. DECISIONS.md and BOOTSTRAP.md written. Sprint 0 (null.c) and Sprint 1 (lit_hello.c) hand-written. ir.py, emit_c.py, runtime.c committed. commit `39f7ce7`. |
+| 2026-03-10 | Decision 1 resolved (no yacc — Beautiful.sno is the parser). Decision 2 resolved (B→C→D sequence confirmed). DESIGN.md updated. commit `98c0fdb`. |
+| 2026-03-10 | Full planning session. SNOBOL4tiny language model formalized: "a set of named patterns + a set of action functions (immediate/conditional), reads stdin, writes stdout, compiled to machine code, goal-directed evaluation." This is Stage B of existing plan — architecture unchanged, language now clearly named. Sprint numbering revised to be more granular (0–14). PLAN.md and DESIGN.md updated. Next: Sprint 2 (CAT node). |
+
+---
+
+## Outstanding Items — SNOBOL4-tiny
+
+### P1 — Blocking
+- [ ] **Sprint 2 (CAT)**: write `test/sprint2/cat_pos_lit_rpos.c` by hand, confirm it compiles + runs, then drive from emit_c.py and diff. Both must match.
+- [ ] **Sprint 3 (ALT)**: same process — hand first, then emit_c.py.
+- [ ] **Sprint 4 (ASSIGN)**: SPAN + `$ OUTPUT` end-to-end. This is the first program that produces visible output from a pattern match.
+
+### P2 — Important
+- [ ] **Sprint 5 (SPAN β)**: test that SPAN gives back one character at a time when downstream backtracks. Write a test where SPAN + LIT forces backtracking.
+- [ ] **Sprint 6 (BREAK + ANY)**: add C templates to emit_c.py. Straightforward.
+- [ ] **Sprint 7 (ARB)**: non-deterministic generator. Template must try 0 chars first, then grow.
+- [ ] **Sprint 8 (ARBNO)**: depth-indexed static array for recursive patterns.
+- [ ] **Sprint 9 (REF cycle)**: IR graph with a cycle — two patterns referencing each other. Validates the graph IR design.
+- [ ] **First benchmark**: after Sprint 4, run SPAN+ASSIGN against SPITBOL on a large input. Record in bench/README.md.
+
+### P3 — Polish
+- [ ] `test/sprint1/` is missing `pos0.c` and `rpos0.c` (README references them, files absent)
+- [ ] `emit_c.py`: Arb/Arbno/Break/Any should emit `#error "not implemented"`, not silent TODO comment
+- [ ] `runtime.h`: add `sno_exit` declaration (defined in runtime.c, missing from header)
+- [ ] `snapshots/` is empty — tag Sprint 0 and Sprint 1 outputs here
+
+
+---
 
 ## Standing Instruction — Small Increments, Commit Often
 
