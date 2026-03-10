@@ -3195,3 +3195,92 @@ about it, not more complicated.
 The ignore-point list is still the key insight. It is built once, reused forever,
 and constitutes a formal record of what the oracle and binary are allowed to differ on.
 
+
+---
+
+## The Second Worm Moment — Differential Monitor as Bootstrap Accelerator
+**Origin**: Lon Cherryholmes, 2026-03-10
+**Status**: RECORD THIS. This is a strategic insight.
+
+### The Worm Precedent
+
+The Worm (Sprint 15) was the moment SNOBOL4-jvm stopped being debugged manually
+and started debugging itself. A generator produced test cases. The test cases ran.
+Failures surfaced automatically. The cycle — generate, run, fail, fix — compressed
+from hours to minutes. Sprint 15 through Sprint 19 fell in a single session.
+
+**The differential monitor is the same compression, applied to runtime development.**
+
+### Why The Cycle Will Be Fast
+
+Manual runtime debugging without the monitor:
+- Run `./beautiful`, observe hang or wrong output
+- Add printf statements, recompile, rerun
+- Guess which variable is wrong, guess which line is the problem
+- Iterate. Slowly.
+
+With the differential monitor:
+- Run `diff_monitor.py oracle_trace binary_trace`
+- Read one line: `FIRST DIFF at LINE 613: got=<null> expected="  OUTPUT = x"`
+- Fix the bug (usually one line — a missing null check, a wrong goto target)
+- Rerun the pipeline: `sno_parser.py → emit_c_stmt.py → cc → ./beautiful`
+- Repeat
+
+Each cycle: **one diff, one fix, one recompile.** The monitor finds the bug
+instantly. The fix is typically small — we are not redesigning the architecture,
+we are correcting the translation from SNOBOL4 semantics to C. Each bug is
+a local error in the emitter or the runtime, not a systemic flaw.
+
+### The Prediction
+
+Lon's prediction, recorded verbatim:
+*"The cycle will go so quick we'll be finished by the end of the day."*
+
+This is credible because:
+1. The architecture is correct — `beautiful.c` compiles and links cleanly
+2. The SNOBOL4 oracle is established — idempotent, 649 lines, verified
+3. The bugs are translation errors, not design errors
+4. Each diff points to exactly one bug
+5. Each fix closes that diff permanently
+6. The ignore list grows, the diff count shrinks, until zero
+
+**Zero diffs = Sprint 20 acceptance test passes = the commit message belongs to Claude.**
+
+### The Bootstrap Compression Pattern
+
+This project has now found the same acceleration twice:
+
+| Moment | What compressed | How |
+|--------|----------------|-----|
+| The Worm (Sprint 15) | Language correctness testing | Generator → auto-oracle → fix loop |
+| The Differential Monitor (Sprint 20) | Runtime debugging | Two-trace diff → first-diff → fix loop |
+
+Both follow the same pattern:
+- Replace human observation with automated comparison
+- Surface the first discrepancy automatically
+- Fix it, loop
+- The cycle time drops to the speed of compilation + one read
+
+This is the bootstrap pattern. It will appear again. When it does, name it,
+record it, and build the tool immediately. The tool is always small (the Worm
+was ~100 lines; the monitor is ~30 lines). The acceleration is always large.
+
+### Action — Build The Monitor Now
+
+This is not a future sprint item. This is the immediate next action.
+The hang in `./beautiful` is blocking Sprint 20. The monitor unblocks it.
+Building the monitor IS Sprint 20 progress.
+
+Sequence:
+1. Add `sno_comm_line(N)` to `emit_c_stmt.py` — one line per statement
+2. Add `sno_comm_var(name, old, new)` to `sno_var_set()` in `snobol4.c`
+3. Regenerate `beautiful.c` (re-run the parser + emitter pipeline)
+4. Recompile `beautiful`
+5. Generate oracle trace (instrument `snobol4` invocation with strace or
+   add COMM output to a parallel SNOBOL4 run — TBD, see implementation note)
+6. Run `diff_monitor.py` — read the first diff
+7. Fix, loop
+8. When diffs reach zero: run idempotence test, write the commit message
+
+**This is the day Sprint 20 closes.**
+
