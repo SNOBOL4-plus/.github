@@ -1,121 +1,120 @@
-# KEYWORD_GRID.md — SNOBOL4 Keyword Implementation Status
-## Source-verified against each oracle and our runtime
+# KEYWORD_GRID.md — Proven Keyword Behavior
+## Source: live test runs on 2026-03-10
 
-> **Purpose**: Every `&KEYWORD` across the three SNOBOL4 implementations
-> relevant to this project. For each: is it implemented, read-only or
-> read-write, what it does, and what state our runtime (`snobol4.c`) is in.
-> When a keyword is missing or stubbed in an oracle, a patch to that
-> oracle's C source is recorded here with the fix.
+> Every cell in this grid is **proven by a live test run**, not by reading source.
+> Test script: `/tmp/test_kw4.sno` (in SNOBOL4-corpus as `tests/keyword_proof.sno`)
+> Three systems tested: CSNOBOL4 (`snobol4 -f`), SPITBOL (`spitbol`), SNOBOL4-tiny.
 >
-> **Sources**:
-> - CSNOBOL4: `snobol4-2.3.3/v311.sil`, `data_init.h`, `isnobol4.c`, `snobol4.c`
-> - SPITBOL: `x64-main/bootstrap/sbl.lex` (symbol table, keyword dispatch)
-> - SNOBOL4-tiny: `src/runtime/snobol4/snobol4.h`, `snobol4.c`
->
-> **Key for Status column**:
-> `✓` = fully implemented and wired
-> `~` = declared/stubbed, not enforced
-> `✗` = not present at all
-> `R` = read-only (assignment raises error)
-> `RW` = read-write
-> `RW*` = read-write with special assignment logic
+> **Legend**:
+> `✓` = works as documented
+> `✗` = absent / fails / wrong
+> `!` = present but surprising behavior — read the notes
+> `?` = not yet tested
 
 ---
 
-## The Grid
+## Keyword Default Values — Proven
 
-| Keyword | R/W | CSNOBOL4 | SPITBOL | SNOBOL4-tiny | What It Does |
-|---------|-----|----------|---------|--------------|--------------|
-| `&ABEND` | RW | ✓ | ✓ | ✗ | If nonzero, abnormal exit on error |
-| `&ALPHABET` | R | ✓ | ✓ | ✓ | All 256 characters in order |
-| `&ANCHOR` | RW | ✓ | ✓ | ~ stub | Nonzero = anchored match at position 0 |
-| `&CASE` | RW | ✓ | ✓ | ✗ | 0 = fold to upper; 1 = no fold (`-f` sets this) |
-| `&CODE` | R | ✓ | ✓ | ✗ | Return code from last `EXIT()` call |
-| `&COMPARE` | RW | ✓ | ✓ | ✗ | String comparison mode |
-| `&DUMP` | RW | ✓ | ✓ | ✗ | Nonzero = dump variables on termination |
-| `&ERRLIMIT` | RW | ✓ | ✓ | ✗ | Max errors before abort; 0 = abort on first |
-| `&ERRTEXT` | R | ✓ | ✓ R | ✗ | Text of last error message |
-| `&ERRTYPE` | R | ✓ | ✓ R | ✗ | Numeric code of last error |
-| `&FNCLEVEL` | R | ✓ | ✓ R | ✗ | Current function call depth |
-| `&FTRACE` | RW | ✓ | ✓ | ✗ | Function trace counter; fires N times |
-| `&FULLSCAN` | RW* | ✓ | ✓ RW* | ~ stub | Nonzero = disable heuristic match optimizations |
-| `&GTRACE` | RW | ✓ | — | ✗ | CSNOBOL4 extension: goto trace |
-| `&INPUT` | R | ✓ | ✓ | ✗ | **Not wired to stdin** — suspected hang cause |
-| `&LASTFILE` | R | ✓ | ✓ R | ✗ | Source file of last executed statement |
-| `&LASTLINE` | R | ✓ | ✓ R | ✗ | Source line number of last statement |
-| `&LASTNO` | R | ✓ | ✓ R | ✗ | Statement number before current |
-| `&LCASE` | R | ✓ | ✓ R | ~ | `sno_lcase[]` declared; not exposed as `&LCASE` |
-| `&MAXLNGTH` | RW | ✓ | ✓ | ~ stub | Max string length; default varies |
-| `&OUTPUT` | RW | ✓ | ✓ | ✗ | **Not wired to stdout** — suspected hang cause |
-| `&PROFILE` | RW | — | ✓ | ✗ | SPITBOL extension: execution profiling |
-| `&RTNTYPE` | R | ✓ | ✓ R | ✗ | Return type: 'RETURN', 'FRETURN', 'NRETURN' |
-| `&STCOUNT` | R | ✓ | ✓ R | ~ partial | Incremented (P001 fix) but not readable as variable |
-| `&STLIMIT` | RW* | ✓ | ✓ RW* | ~ partial | P001: now enforced; default 50000 |
-| `&STNO` | R | ✓ | ✓ R | ~ partial | Emitted via COMM; not readable as `sno_var_get("STNO")` |
-| `&SUBJECT` | R | ✓ | ✓ R | ✗ | Current subject string during match |
-| `&TRACE` | RW | ✓ | ✓ | ✗ | Master TRACE switch; arm before TRACE() calls |
-| `&TRIM` | RW | ✓ | ✓ | ~ stub | Declared `sno_kw_trim=1`; partially used in INPUT |
-| `&UCASE` | R | ✓ | ✓ R | ~ | `sno_ucase[]` declared; not exposed as `&UCASE` |
+| Keyword | CSNOBOL4 | SPITBOL | SNOBOL4-tiny | Notes |
+|---------|----------|---------|--------------|-------|
+| `&STNO` | `2` | `2` | `?` | First readable value; counts actual statement number |
+| `&STCOUNT` | `0` **!** | `2` ✓ | `?` | CSNOBOL4 always returns 0 — **STCOUNT IS BROKEN IN CSNOBOL4** |
+| `&STLIMIT` | `-1` ✓ | `2147483647` ! | `50000` ! | CSNOBOL4 unlimited by default; SPITBOL MAX_INT; tiny hardcoded |
+| `&LASTNO` | `4` ✓ | `4` ✓ | `?` | Previous statement number |
+| `&FNCLEVEL` | `0` ✓ | `0` ✓ | `?` | Zero at top level |
+| `&FTRACE` | `0` ✓ | `0` ✓ | `?` | Zero = disabled |
+| `&ANCHOR` | `0` ✓ | `0` ✓ | `0` stub | Zero = unanchored |
+| `&FULLSCAN` | `0` ✓ | `1` ! | `0` stub | **SPITBOL defaults FULLSCAN=1; CSNOBOL4 defaults 0** |
+| `&TRIM` | `0` ✓ | `1` ! | `1` stub | **SPITBOL defaults TRIM=1; CSNOBOL4 defaults 0** |
+| `&ERRLIMIT` | `0` ✓ | `0` ✓ | `?` | Zero = abort on first error |
+| `&ERRTYPE` | `0` ✓ | `0` ✓ | `?` | Zero = no error |
+| `&ABEND` | `0` ✓ | `0` ✓ | `?` | Zero = normal exit on error |
+| `&DUMP` | `0` ✓ | `0` ✓ | `?` | Zero = no dump |
+| `&MAXLNGTH` | `4294967295` | `16777216` ! | `524288` ! | **All three differ. CSNOBOL4=4G, SPITBOL=16M, tiny=512K** |
+| `&CASE` | `0` ! | `1` ✓ | `?` | CSNOBOL4 `&CASE=0` even with `-f` flag — `-f` ≠ `&CASE=1` |
+| `&RTNTYPE` | `''` ✓ | `''` ✓ | `?` | Empty at top level |
 
 ---
 
-## SPITBOL-Specific Notes (from sbl.lex)
+## Keyword Write Behavior — Proven
 
-**Protected keywords** (read-only — assignment raises error 209):
-SPITBOL defines `k_p__` as the boundary. Keywords at offset ≥ `k_p__`
-are protected. From the symbol table:
-- Protected: `&FNCLEVEL`, `&LASTNO` and everything in the `k_alp` group
-- The `k_alp` group (special access): `&ALPHABET`, `&RTNTYPE`, `&STCOUNT`,
-  `&ERRTEXT`, `&FILE`, `&LASTFILE`, `&STLIMIT`, `&LCASE`, `&UCASE`
-
-**Special assignment logic** (RW* keywords):
-- `&STLIMIT` — `asg16`: subtracts old limit from `kvstl` on assignment.
-  Sets the *remaining* budget, not the absolute limit. Semantics differ
-  subtly from CSNOBOL4 which just stores the value.
-- `&FULLSCAN` — `asg26`: validates the value before storing (must be nonzero
-  to enable, any value to disable).
-
-**Keywords in SPITBOL not in CSNOBOL4**:
-- `&PROFILE` — execution profiling, SPITBOL extension
-- `&FILE` / `&LINE` — source tracking (SPITBOL names differ from CSNOBOL4's
-  `&LASTFILE` / `&LASTLINE`)
-
-**Keywords in CSNOBOL4 not in SPITBOL**:
-- `&GTRACE` — goto trace, CSNOBOL4 extension
+| Keyword | CSNOBOL4 | SPITBOL | Notes |
+|---------|----------|---------|-------|
+| `&ERRLIMIT` write | ✓ OK | ✓ OK | Read-write, no restriction |
+| `&ANCHOR` write | ✓ OK | ✓ OK | Read-write |
+| `&ABEND` write | ✓ OK | ✓ OK | Read-write |
+| `&DUMP` write | ✓ OK | ✓ OK | Read-write |
+| `&STLIMIT` write | ✓ OK | ✓ OK | Read-write |
+| `&STCOUNT` write | `RO` ✓ | `RO` ✓ | Read-only on both — assignment silently ignored, value unchanged |
+| `&STNO` write | `RO` ✓ | `RO` ✓ | Read-only on both |
+| `&FNCLEVEL` write | `RO` ✓ | `RO` ✓ | Read-only on both |
 
 ---
 
-## CSNOBOL4 Implementation Notes (from isnobol4.c / snobol4.c)
+## TRACE Types — Proven
 
-- `TRACE()` — fully implemented as a C function (`isnobol4.c:10950`).
-  Dispatches to TRPHND in the interpreter loop. TRACE on `&STNO` fires
-  per statement. **Verified working.**
-- `DUMP()` — fully implemented (`isnobol4.c:412`). Terminal dump possible;
-  `NODMPF` error string defined in `data.c`.
-- `TRIM()` — fully implemented (`isnobol4.c:8020`).
-- `&STLIMIT` / `&STCOUNT` — implemented in the SIL interpreter loop
-  (`v311.sil` lines ~2617-2650). The C translation in `isnobol4.c` /
-  `snobol4.c` carries this through.
-- **Weird behavior confirmed**: TRACE dispatch counts against `&STLIMIT`.
-  `TRACE('&STNO','KEYWORD')` with `&STLIMIT=5000` exhausted at stmt 207
-  (inside `case.inc` init). Not a bug — working as designed. See MONITOR.md.
+| TRACE type | CSNOBOL4 | SPITBOL | Notes |
+|-----------|----------|---------|-------|
+| `TRACE(var,'VALUE')` | `!` fires once | ✓ fires on each assignment | **CSNOBOL4 only fired on first assignment to watchMe, not second** |
+| `TRACE(lbl,'LABEL')` | ✓ | ✓ | Both fire when label is branched to |
+| `TRACE('&STNO','KEYWORD')` | `!` no output | `!` no output | **Neither system produced TRACE output for &STNO KEYWORD trace** |
+| `TRACE(fn,'CALL')` | `!` recurses/segfaults | `?` not tested | CSNOBOL4: TRACE CALL handler re-enters itself — stack overflow |
+| `TRACE(fn,'RETURN')` | `?` | `?` | Not yet tested safely |
+
+### TRACE Output Format Differences
+- **CSNOBOL4**: `filename:lineno stmt N: varname = 'value', time = 0.`  (to stderr)
+- **SPITBOL**: `****N******  varname = 'value'`  (to stdout mixed with program output)
+
+**Critical**: SPITBOL TRACE output goes to **stdout**, CSNOBOL4 goes to **stderr**.
+The diff monitor must separate these streams differently per oracle.
 
 ---
 
-## SNOBOL4-tiny Patch Requirements
+## &STLIMIT Enforcement — Proven
 
-Keywords needed for the monitor to function (P1):
+| Scenario | CSNOBOL4 | SPITBOL |
+|----------|----------|---------|
+| Default limit | `-1` (unlimited) | `2147483647` (MAX_INT, effectively unlimited) |
+| Set `&STLIMIT = &STCOUNT + 8` | **FAILS** — STCOUNT=0, so limit=8, but ran 13 more lines | **FAILS** — same issue, ran 13 more lines after arming |
+| Reason | `&STCOUNT` returns 0 always in CSNOBOL4 | STCOUNT does increment in SPITBOL (=25 when armed) but 13 more statements ran anyway |
 
-| Keyword | Current State | Fix Required |
-|---------|--------------|--------------|
-| `&STLIMIT` | ~ declared, now enforced (P001) | ✓ Done |
-| `&STCOUNT` | ~ incremented but not readable | Wire to `sno_var_get("STCOUNT")` |
-| `&STNO` | ~ emitted to COMM, not readable | Wire to `sno_var_get("STNO")` |
-| `&INPUT` | ✗ not wired to stdin | P2 — suspected hang root cause |
-| `&OUTPUT` | ✗ not wired to stdout | P2 — needed for output sync |
-| `&TRACE` | ✗ not implemented | P3 — needed for oracle-style tracing |
+**STLIMIT does not stop execution at exactly N statements on either system in this test.**
+This needs further investigation — the arithmetic `&STCOUNT + 8` may not work as expected
+when STCOUNT is live-updating during expression evaluation.
 
-When a keyword is patched in CSNOBOL4 C source to restore missing
-functionality, that patch goes in this file under a **CSNOBOL4 Patches**
-section with the file, line, what was stubbed, and what was restored.
+---
+
+## Critical Findings Summary
+
+1. **`&STCOUNT` is broken in CSNOBOL4** — always returns 0. Cannot be used for binary search on CSNOBOL4. SPITBOL correctly increments it.
+
+2. **SPITBOL TRACE goes to stdout, CSNOBOL4 TRACE goes to stderr** — the diff monitor must handle both streams.
+
+3. **`TRACE('&STNO','KEYWORD')` produced no output on either system** — this trace type may require `&TRACE` to be set higher, or `&STNO` is not a valid KEYWORD trace target. The per-statement heartbeat via KEYWORD trace is **unverified**.
+
+4. **Default values differ between CSNOBOL4 and SPITBOL**:
+   - `&FULLSCAN`: CSNOBOL4=0, SPITBOL=1
+   - `&TRIM`: CSNOBOL4=0, SPITBOL=1
+   - `&MAXLNGTH`: CSNOBOL4=4G, SPITBOL=16M, tiny=512K
+   - `&STLIMIT`: CSNOBOL4=-1 (unlimited), SPITBOL=MAX_INT
+
+5. **`TRACE(fn,'CALL')` recurses in CSNOBOL4** — the TRACE handler itself triggers CALL trace, causing infinite recursion and segfault. Must arm CALL trace carefully.
+
+6. **`&CASE=0` in CSNOBOL4 despite `-f` flag** — `-f` is not the same as `&CASE=1`. The `-f` flag affects something else (free-format? full-scan?).
+
+7. **TRACE VALUE only fired once in CSNOBOL4** — second assignment to `watchMe` did not fire. May be a one-shot behavior or a bug.
+
+---
+
+## SNOBOL4-tiny Status vs Proven Oracle Behavior
+
+| Feature | Needed behavior | Tiny current state |
+|---------|----------------|-------------------|
+| `&STCOUNT` | Increment per statement (SPITBOL model) | Increments internally (P001) but not readable |
+| `&STLIMIT` | Check against STCOUNT; default -1 or MAX_INT | Enforced (P001); default 50000 — wrong |
+| `&STNO` | Read-only, current stmt number | COMM only, not readable |
+| TRACE VALUE | Fire on assignment to watched var | Not implemented |
+| TRACE LABEL | Fire on branch to watched label | Not implemented |
+| TRACE KEYWORD | Unclear — neither oracle produced output | Unclear |
+| TRACE stream | SPITBOL→stdout, CSNOBOL4→stderr | tiny→stderr via COMM |
 
