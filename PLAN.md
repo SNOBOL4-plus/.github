@@ -3734,3 +3734,303 @@ Given two files that differ at line N → reports exact line and values.
 | Date | What |
 |------|------|
 | 2026-03-10 | Four increments planned. Increment 1 is next: binary STNO heartbeat. Simple, testable, independently verifiable without the oracle. |
+
+---
+---
+
+# Trace/Debug/Spy — Full Architecture
+*Recorded 2026-03-10 — session work on keytrace.sno, ftrace.sno, debug.sno, SIL*
+
+## The Oracle Inventory (confirmed this session)
+
+Three oracles running. All agree.
+
+| # | System | Binary | Notes |
+|---|--------|--------|-------|
+| 1 | CSNOBOL4 2.3.3 | `/usr/local/bin/snobol4` | Primary oracle |
+| 2 | SPITBOL x64 4.0f | `/usr/local/bin/spitbol` | Pre-installed |
+| 3 | SPITBOL x64 (source) | `/home/claude/spitbol-x64/sbl` | Built this session |
+
+Not running: SPITBOL x32 (32-bit ELF, qemu-i386 segfaults), SPITBOL-88 (DOSBox needs display), SPITBOL NT (Wine can't run 32rtm).
+
+---
+
+## The Trace Mechanism — What We Learned From the SIL
+
+The SIL (`/home/claude/csnobol4-src/v311.sil`) is the original SNOBOL4 implementation language that `snobol4.c` was compiled from. It shows exactly what fires on every statement:
+
+```
+       MOVA    STNOCL,XCL         Update &STNO        ← EVERY statement
+       INCRA   EXNOCL,1           Increment &STCOUNT  ← EVERY statement
+       ACOMPC  TRAPCL,0,,RTNUL3  Check &TRACE        ← if &TRACE>0, dispatch
+       LOCAPT  ATPTR,TKEYL,STNOKY Check for STNO trace
+       RCALL   ,TRPHND,ATPTR      ← TRPHND fires
+       LOCAPT  ATPTR,TKEYL,STCTKY Check for STCOUNT trace
+       RCALL   ,TRPHND,ATPTR      ← TRPHND fires again
+```
+
+`TRPHND` (trace handler, line 5679 in v311.sil) is the universal dispatch point. It saves all system descriptors, sets `&TRACE = 0` and `&FTRACE = 0` (so the callback itself doesn't re-trigger), calls the trace function, restores everything, and returns.
+
+**`TRACE(V, R, T, F)` — four arguments:**
+- `V` — variable or keyword name to trace (e.g. `'STCOUNT'`, `'snoLine'`)
+- `R` — trace type: `'KEYWORD'`, `'VALUE'`, `'FUNCTION'`, `'CALL'`, `'RETURN'`
+- `T` — tag (optional, passed to callback)
+- `F` — **callback function name** (the fourth argument — this is the key)
+
+When `F` is provided, TRPHND calls your function on every trace event instead of printing. This is how `debug.sno` works. The function is looked up by name via `FINDEX`.
+
+**This is all in CSNOBOL4.** The SIL compiles to `snobol4.c`. The mechanism is present.
+
+---
+
+## Why Our Callback Tests Didn't Fire (and What To Do)
+
+We tested `TRACE('STCOUNT', 'KEYWORD', , 'tracer')` and the callback didn't fire. Two possible causes:
+
+1. `&TRACE` may need to already be high before the TRACE() call (debug.sno sets `&TRACE = 2097152` then jumps to START, so the callback is armed on entry to the user program)
+2. The test programs had no statements after the TRACE() call that would trigger the &STCOUNT increment past the trace threshold
+
+**The fix**: Set `&TRACE` very high, set `&STLIMIT` to match, arm the callback, then jump to the instrumented code. Exact debug.sno pattern:
+
+```snobol4
+        &TRACE = 2097152
+        TRACE('STCOUNT', 'KEYWORD', , 'my_callback')   :(START)
+```
+
+The `:(START)` jump is critical — execution must reach statements *after* the TRACE call for the per-statement hook to fire.
+
+**If CSNOBOL4 has removed the 4th-arg callback**: We have the SIL. We can add it back. The FINDEX lookup in TRACEP (SIL line ~5498) is already there for the callback path. Search `v311.sil` for `FINDEX` in the TRACEP section.
+
+---
+
+## COMM — Our Thing
+
+`COMM()` is **not** a SNOBOL4 primitive. It is not in CSNOBOL4. It is not in SPITBOL. Lon confirmed: **COMM is ours to define**.
+
+The pattern `(COMM(expr) rest-of-pattern)` means: evaluate `expr` as a side effect when this point in the pattern is reached during matching. This is a **pattern-level callback node** — it fires during the match scan, not at statement level.
+
+**How we implement it**: COMM is a SNOBOL4 function we define ourselves:
+
+```snobol4
+        DEFINE('COMM(expr)')        :(COMM_END)
+COMM    COMM = ''                   :(RETURN)
+COMM_END
+```
+
+When the pattern engine reaches `COMM(expr)` during matching:
+1. `expr` has already been evaluated (it's an argument)
+2. `COMM()` returns null-string (matches zero characters, always succeeds)
+3. The side effect of evaluating `expr` has already fired
+
+So `(COMM(n = n + 1) LEN(1))` increments `n` every time that point in the pattern is reached during matching, then matches one character. The side effect is the argument evaluation — standard SNOBOL4 semantics.
+
+**This is the SNOBOL4-side instrumentation mechanism Lon described.** No C changes needed. Pure SNOBOL4.
+
+---
+
+## The Bootstrap Problem — Recorded Here Per Lon's Instruction
+
+*"You need the parser to make the tree to instrument. But the parser IS beautiful.sno. Write all this down. Make a note."*
+
+To instrument `beautiful.sno` automatically (inject COMM() nodes at statement boundaries), we need:
+1. A SNOBOL4 parser — to find where each statement starts
+2. The parser IS `beautiful.sno`
+
+**This is a bootstrap.** Cart before the horse. First time Lon has hit it on this project.
+
+**Three options:**
+
+| Option | How | Trade-off |
+|--------|-----|-----------|
+| A | Instrument Level 1 by hand | Small enough, do it once, no bootstrap needed |
+| B | Line-number heuristic (8-column label field) | Fragile on continuation lines, but fast |
+| C | Use the SPITBOL listing file approach from debug.sno | Right answer — see below |
+
+**Option C is correct.** SPITBOL `-lo` flag (and CSNOBOL4 `-l`) generates a listing file with statement numbers. `debug.sno`'s `readlist()` function reads that listing to map statement numbers to source text. We reuse this: instrument using `TRACE('STCOUNT','KEYWORD',,'callback')` (which fires at the runtime level, not source level), and use `&LASTNO` (or `&STNO`) inside the callback to know which statement just fired.
+
+**No parser needed for the instrumentation.** The runtime already numbers the statements. TRACE gives us the hook. The listing gives us the source text if we need it.
+
+---
+
+## debug.sno — Mark Emmer's Debugger (V1.3, 1995)
+
+**File**: `/home/claude/SNOBOL4-corpus/programs/sno/debug.sno`
+**Author**: M.B. Emmer, Catspaw Inc / HARDBOL Software
+**Dialect**: SPITBOL (some CSNOBOL4 incompatibilities found and patched this session)
+
+### The Core Mechanism (exact, from reading the source)
+
+```snobol4
+              &TRACE           =    2097152
+              TRACE('STCOUNT', 'KEYWORD', , 'dbg_fnc')          :(START)
+```
+
+- `TRACE('STCOUNT','KEYWORD',,'dbg_fnc')` — fires `dbg_fnc()` on every statement
+- `&LASTNO` — statement number that just fired (available inside the callback)
+- `&FNCLEVEL` — function call depth (used for P=step-over vs T=step-into)
+- `STOPTR('STCOUNT','KEYWORD')` — disarms tracing
+
+### CSNOBOL4 Incompatibilities Found This Session
+
+1. **`OUTPUT(.dbg_scn, .dbg_scn, '[-f2 -r1 -w]')` — SPITBOL syntax, fails in CSNOBOL4.** The `-w` (write) option doesn't exist. Patched to `TERMINAL =` for output.
+
+2. **`INPUT(.listfile, unit, listfilename '[-l65536]')` — SPITBOL syntax.** CSNOBOL4 `INPUT()` signature is `INPUT(.var, unit, options, filename)` — four args, filename last. SPITBOL has filename embedded in the options string.
+
+3. **`HOST(4, 'DEBUGLIST')` — works in both.** CSNOBOL4 supports `HOST(4, name)` for environment variables.
+
+4. **`BREAKPOINT()` — CSNOBOL4 only, not in SPITBOL.** keytrace.sno uses it; SPITBOL errors on it.
+
+### Patched Version
+
+`/tmp/debug_cs.sno` — CSNOBOL4-compatible version. Works: debugger initializes, reads listing, runs user program with per-statement tracing.
+
+**Confirmed working**: `snobol4 -l /tmp/test.lst prog.sno` generates listing. `DEBUGLIST=/tmp/test.lst snobol4 prog.sno` runs with debugger active.
+
+---
+
+## The TRACE Test Files — What They Show
+
+**`keytrace.sno`** — tests all KEYWORD trace types including STNO and BREAKPOINT.
+- CSNOBOL4: fires STNO, STCOUNT, FNCLEVEL, STFCOUNT, ERRTYPE — all working
+- SPITBOL: fires STCOUNT, FNCLEVEL but NOT STNO (error 198 — not an appropriate name)
+- BREAKPOINT() — CSNOBOL4 only
+
+**`ftrace.sno`** — tests `&FTRACE` (function call tracing).
+- Uses `&FTRACE = 10000` — fires on every CALL and RETURN
+- Works on both systems
+
+**`trace1.sno` / `trace2.sno`** — basic VALUE trace.
+- Both systems agree: `TRACE('foo')` fires on first assignment only
+
+**`trfunc.sno`** — function trace types: `"F"`, `"C"`, `"R"`, `"FUNCTION"`, `"CALL"`, `"RETURN"`.
+- CALL: fires when function is called
+- RETURN: fires when function returns
+- FUNCTION = CALL + RETURN combined
+- These work on both systems
+
+---
+
+## Mark Emmer — What We Have, What To Find
+
+### What We Have
+- `debug.sno` — V1.3, 1995, SPITBOL debugger (in corpus)
+- `snobol4+.sno` — Phil Budne's CSNOBOL4 emulation of SNOBOL4+ functions (`ENVIRONMENT`, `EXECUTE`, `TELL`, `SEEK`) — at `/home/claude/csnobol4-src/snolib/snobol4+.sno`
+- SPITBOL-88 full distribution — `/home/claude/spitbol-88/` — entire Catspaw SPITBOL-88 including `CODE.SPT`, `SANDLP/` (BNF, BINTREE, CONCORD, GRAMMAR, etc.), external function examples
+- SPITBOL-88 README — full documentation of Catspaw SPITBOL-88 dialect differences
+
+### What SNOBOL4+ Was
+SNOBOL4+ was Mark Emmer's commercial SNOBOL4 implementation for MS-DOS and later systems, published by Catspaw Inc. It was a separate product from SPITBOL-386. Phil Budne's `snobol4+.sno` shim shows what SNOBOL4+ added beyond standard SNOBOL4:
+- `ENVIRONMENT(S)` — get environment variable (= `HOST(4,S)`)
+- `EXECUTE(S1,S2)` — run shell command
+- `TELL(UNIT)` — get current file position
+- `SEEK(UNIT,OFFSET,WHENCE)` — set file position
+
+There was also a real-to-string conversion (`REALCVT.C` in SPITBOL-88's EXTERNAL/C) with precision and format controls.
+
+### What To Find
+- **SNOBOL4+ manual** — Catspaw's published documentation for SNOBOL4+ dialect. May be at catspaw.com archive or regressive.org/snobol4.
+- **DEBUG.SPT** — the original SPITBOL version of the debugger (what we have is `debug.sno` which the V1.2 comment says was "Converted for use with SPITBOL instead of SNOBOL4+"). The SNOBOL4+ version predates it.
+- **What SNOBOL4+ added to patterns** — the COMM() node (if it existed there), any other pattern extensions.
+
+### The Lineage
+```
+SNOBOL4 (Griswold, Bell Labs, 1967)
+    ↓
+PC-SPITBOL (Robert Dewar, NYU, ~1980)
+    ↓
+SPITBOL-386 / SPITBOL-88 (Mark Emmer, Catspaw Inc, 1985–1995)
+    → SNOBOL4+ (Catspaw Inc — separate product with additional builtins)
+    → debug.sno / DEBUG.SPT (Emmer, 1987 SNOBOL4+ version → 1995 SPITBOL version)
+    ↓
+CSNOBOL4 (Phil Budne, 2002– ) — open source, active, v2.3.3 May 2025
+    → snobol4+.sno — emulates SNOBOL4+ functions on CSNOBOL4
+    → v311.sil — original SIL source, entire interpreter in 12,293 lines
+SPITBOL x64 (Dave Shields, Phil Budne, 2009– ) — open source, github.com/spitbol/spitbol
+```
+
+---
+
+## Instrumentation Strategy — Final Architecture
+
+Per Lon's directive: **instrument in SNOBOL4 source, not C**.
+
+### Oracle Side (SNOBOL4)
+
+```snobol4
+*  Instrument with TRACE — no source modification needed
+        DEFINE('mon_callback()')        :(mon_callback_end)
+mon_callback
+        TERMINAL = 'STNO ' &STNO       :(RETURN)
+mon_callback_end
+
+        &TRACE = 2097152
+        TRACE('STCOUNT', 'KEYWORD', , 'mon_callback')  :(START)
+```
+
+This fires `mon_callback()` on every statement. `&STNO` gives the statement number. No parser, no source modification, no C changes.
+
+For finer grain (variable changes):
+```snobol4
+        TRACE('snoLine', 'VALUE', , 'mon_callback')
+```
+
+This fires on every change to `snoLine`.
+
+### COMM Pattern Node — Our Definition
+
+```snobol4
+*  COMM(expr) — fires expr as side effect during pattern match
+*  Returns null-string (zero-width match), always succeeds
+        DEFINE('COMM(expr)')            :(COMM_end)
+COMM    COMM = ''                       :(RETURN)
+COMM_end
+```
+
+Usage:
+```snobol4
+        p = (COMM(n = n + 1) LEN(1))   * increment n at this point in match
+```
+
+The key: `expr` is evaluated when COMM() is called, which happens when the pattern engine reaches that node during matching. The return value (null-string) always succeeds as a zero-width match. The side effect IS the call.
+
+### The Subj Pattern → (COMM() Subj) Pattern Transformation
+
+Lon's exact words: *"Subj Pattern, (COMM() Subj) Pattern, give begin of each line."*
+
+This is the instrumentation idiom. A statement like:
+```snobol4
+        snoLine  snoStmtPat
+```
+
+Becomes:
+```snobol4
+        snoLine  (COMM(mon_stmt = &STNO) snoStmtPat)
+```
+
+The COMM node fires before `snoStmtPat` attempts to match, recording `&STNO` at that point. This gives sub-statement precision — we know not just that statement N fired, but that it reached the point of attempting `snoStmtPat`.
+
+**This is Option C of the PROBE sync type from the monitor taxonomy.** It requires one source modification per instrumented statement — but only for the statements we care about, not all of them.
+
+### The Bootstrap Resolution
+
+We do NOT need to instrument `beautiful.sno` automatically to get started. The bootstrap problem is real but not blocking:
+
+1. **Level 1** (main + bootstrap of beautiful.sno) — instrument by hand. Small enough. Maybe 20 statements.
+2. **Level 2** (+ pp + qq) — instrument by hand. Maybe 50 more statements.
+3. **Level 3** (+ INC files) — by then the monitor is proven and we use TRACE('STCOUNT') at the statement level, which needs no source modification at all.
+
+The parser-based auto-instrumentation (Option C from the bootstrap problem section) is a future optimization, not a blocker. We have three ways to get started without it.
+
+---
+
+## Action Items — This Section
+
+- [ ] Test `TRACE('STCOUNT','KEYWORD',,'callback')` with `&TRACE = 2097152` + `:(START)` jump pattern exactly as in debug.sno — confirm callback fires in CSNOBOL4
+- [ ] If callback does not fire: read CSNOBOL4 `snobol4.c` TRACEP section, check if 4th arg FINDEX lookup is present; if missing, add from SIL (it's in TRACEP around line 5498)
+- [ ] Define `COMM()` in SNOBOL4 source as described above — test it
+- [ ] Generate oracle trace for Level 1 using `TRACE('STCOUNT','KEYWORD')` — capture stderr
+- [ ] Write `tools/diff_monitor.py` — normalize CSNOBOL4 trace format vs binary format, find first diff
+- [ ] Find Emmer's SNOBOL4+ manual — search regressive.org/snobol4, catspaw.com archives, Internet Archive
+- [ ] Find DEBUG.SPT — the original SNOBOL4+ version of the debugger
+
+---
