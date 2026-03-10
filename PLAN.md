@@ -58,7 +58,7 @@ Mission: **SNOBOL4 everywhere. SNOBOL4 now.**
 
 | Repo | Language | Status | Branch | Tests |
 |------|----------|--------|--------|-------|
-| [SNOBOL4-dotnet](https://github.com/SNOBOL4-plus/SNOBOL4-dotnet) | C# / .NET | Active | `main` | 1,484 passing |
+| [SNOBOL4-dotnet](https://github.com/SNOBOL4-plus/SNOBOL4-dotnet) | C# / .NET | Active | `main` | 1,466 passing / 0 failing |
 | [SNOBOL4-jvm](https://github.com/SNOBOL4-plus/SNOBOL4-jvm) | Clojure / JVM | Active | `main` | 2,033 / 4,417 assertions / 0 failures |
 | [SNOBOL4-python](https://github.com/SNOBOL4-plus/SNOBOL4-python) | Python + C | Active | `main` | — |
 | [SNOBOL4-csharp](https://github.com/SNOBOL4-plus/SNOBOL4-csharp) | C# | Active | `main` | 263 passing |
@@ -137,18 +137,46 @@ After updating this file, always push to headquarters (`SNOBOL4-plus/.github`).
 
 ---
 
+## Snapshot Protocol
+
+A **snapshot** means: the repo is in a known-good state, committed, and pushed.
+A local commit without a push is not a snapshot.
+
+**When to snapshot:**
+- Whenever all tests pass (zero failures) after a meaningful change.
+- At the end of every session, regardless of state (commit WIP with a `WIP:` prefix if needed).
+- Before any large refactor or risky change.
+- Whenever this PLAN.md is updated.
+
+**How to snapshot (SNOBOL4-dotnet):**
+```bash
+export PATH=$PATH:/usr/local/dotnet
+dotnet test /home/claude/SNOBOL4-dotnet/TestSnobol4/TestSnobol4.csproj -c Release 2>&1 | tail -3
+# Must show: Passed! - Failed: 0 before committing a non-WIP snapshot.
+cd /home/claude/SNOBOL4-dotnet && git add -A && git commit -m "..." && git push
+```
+
+**Checklist before declaring a zero-failure snapshot:**
+1. `dotnet test` shows `Failed: 0`.
+2. Plugin DLLs are current — enforced automatically by the `ProjectReference` build-only
+   deps added to `TestSnobol4.csproj` on 2026-03-10.  No manual plugin rebuilds needed.
+3. `git push` completed — the remote is up to date.
+4. PLAN.md updated with new test count and session log entry, then pushed to `.github`.
+
+---
+
 ## Outstanding Items
 
 ### P1 — Blocking
 - [x] **SNOBOL4-dotnet**: `ErrorJump` field missing from `Executive.cs` — build failed entirely. Added `internal int ErrorJump` to `Executive` partial class. Build now clean (0 errors, 5 warnings). *(fixed 2026-03-09)*
-- [ ] **SNOBOL4-dotnet**: `MathLibrary` and `FSharpLibrary` not in `Snobol4.sln` and not referenced by `TestSnobol4.csproj` — on a clean clone `dotnet test` will not build these DLLs. Add both to solution and add `ProjectReference` entries to `TestSnobol4.csproj`.
+- [x] **SNOBOL4-dotnet**: `MathLibrary` and `FSharpLibrary` not in `Snobol4.sln` and not referenced by `TestSnobol4.csproj` — on a clean clone `dotnet test` will not build plugin DLLs. Fixed: added both to solution; added all three plugin projects as `ProjectReference ReferenceOutputAssembly="false"` in `TestSnobol4.csproj` so MSBuild rebuilds them automatically before every test run. *(fixed 2026-03-10, commit `3bce92c`)*
 - [ ] Jeffrey accepts GitHub org invitation → promote jcooper0 to Owner at https://github.com/orgs/SNOBOL4-plus/people
 
 ### P2 — Important
-- [ ] **SNOBOL4-dotnet**: 10 test failures after full build (1456 pass / 10 fail, total 1466):
-  - `Step6_InitFinalize_StatementLimitAborts` — SETEXIT/ErrorJump trap not firing on &STLIMIT exceeded; throws exception instead of branching.
-  - `Load_Area_StringArgCoercion`, `Load_Area_IntegerArgCoercion`, `Unload_Basic`, `Unload_ReloadAfterUnload`, `Load_Math_RealInRealOut`, `Load_Math_ThreeArgClamp`, `Load_FSharp_Hypot` (7 tests) — external library functions return real results as "49.0" not "49"; integer coercion of real return values not trimming .0.
-  - `Load_Area_FailureBranchBadClass`, `Load_Area_FailureBranchMissingFile` (2 tests) — LOAD() failure branch (:F) not taken on error; exception thrown instead.
+- [x] **SNOBOL4-dotnet**: 10 test failures — all fixed in commit `3bce92c` (2026-03-10), 1466/0:
+  - `Step6_InitFinalize_StatementLimitAborts` — `StatementControl.cs`: catch `CompilerException` in threaded path so error 244 is recorded in `ErrorCodeHistory` rather than propagating uncaught.
+  - 7 real-format tests — `RealConversionStrategy.TweakRealString`: suffix was `.0`; correct per SPITBOL (`sbl.min` gts27) and CSNOBOL4 (`lib/realst.c`) is trailing dot only — `"25."` not `"25.0"`. Changed to `str + "."`. Test assertions updated.
+  - `Load_Area_FailureBranchBadClass`, `Load_Area_FailureBranchMissingFile` — `Load.cs`: call `NonExceptionFailure()` instead of `LogRuntimeException()` so `:F` branch is taken on LOAD() error.
 - [ ] **SNOBOL4-dotnet**: No CI. F# is included in .NET 10 SDK (no separate workload needed — confirmed). Add GitHub Actions workflow: build solution in order, run full test suite.
 - [ ] **SNOBOL4-dotnet** `benchmarks/Benchmarks.csproj` targets `net8.0` — should be `net10.0`.
 - [ ] Verify SNOBOL4python 0.5.1 published to PyPI (check Actions tab)
@@ -425,7 +453,7 @@ Full SNOBOL4/SPITBOL implementation in C# targeting .NET/MSIL. GOTO-driven runti
 
 **Repository**: https://github.com/SNOBOL4-plus/SNOBOL4-dotnet
 **Test runner**: `dotnet test TestSnobol4/TestSnobol4.csproj -c Release`
-**Baseline**: 1,484 passing / 0 failing (2026-03-07)
+**Baseline**: 1,466 passing / 0 failing (2026-03-10, commit `3bce92c`)
 
 ```bash
 cd SNOBOL4-dotnet
@@ -443,6 +471,7 @@ dotnet test TestSnobol4/TestSnobol4.csproj -c Release
 | 2026-03-05 | Threaded execution refactor (Phases 1–5) complete. 15.9× speedup over Roslyn baseline on Roman. |
 | 2026-03-06 | UDF savedFailure bug fixed (`var savedFailure = Failure` not `ErrorJump > 0`). Phase 9: Roslyn removal + arg list pooling. Phase 10: integer fast path. |
 | 2026-03-07 | MSIL emitter Steps 1–13 complete. LOAD/UNLOAD plugin system. 1,413 → 1,484 tests. All merged to `main`. |
+| 2026-03-10 | Fixed all 10 failing tests (commit `3bce92c`): real-to-string format (`"25."` not `"25.0"` — verified against SPITBOL `sbl.min` and CSNOBOL4 `realst.c`); LOAD() `:F` branch on error; `&STLIMIT` exception swallowed gracefully. Plugin DLLs now auto-built via `ProjectReference` build-only deps in `TestSnobol4.csproj`. Baseline: **1,466 / 0**. |
 
 ---
 
