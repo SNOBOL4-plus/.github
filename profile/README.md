@@ -263,7 +263,7 @@ Paired with continuous random testing — the worm generator already running in 
 | [SNOBOL4-jvm](https://github.com/SNOBOL4-plus/SNOBOL4-jvm) | Active — 2,033 tests / 4,417 assertions / 0 failures |
 | [SNOBOL4-csharp](https://github.com/SNOBOL4-plus/SNOBOL4-csharp) | Active — C# pattern library, Jeffrey Cooper |
 | [SNOBOL4-corpus](https://github.com/SNOBOL4-plus/SNOBOL4-corpus) | Active — shared test corpus submodule, Gimpel + Shafto + oracle suite |
-| [SNOBOL4-tiny](https://github.com/SNOBOL4-plus/SNOBOL4-tiny) | In progress — Sprints 0–13 done; **complete Chomsky hierarchy proven — all four tiers** — 9 oracles, 124 cases, 0 failures |
+| [SNOBOL4-tiny](https://github.com/SNOBOL4-plus/SNOBOL4-tiny) | **Sprint 14 done** — `snoc` compiler runs first SNOBOL4 programs; Chomsky hierarchy proven — all four tiers; 9 pattern oracles + 7 compiler oracle cases; 0 failures |
 | [.github](https://github.com/SNOBOL4-plus/.github) | Active — PLAN.md master roadmap, this README |
 
 Correctness validated against three independent oracles: **SPITBOL x64**, **CSNOBOL4 2.3.3**, and the sibling implementations within this org. The test corpus spans the Gimpel algorithm library, the Shafto AI corpus, and a shared corpus submodule covering the full language.
