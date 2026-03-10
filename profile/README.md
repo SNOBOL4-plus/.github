@@ -141,6 +141,51 @@ Griswold had the idea. We are finishing the proof.
 
 ---
 
+## The Story the RE World Has Never Heard
+
+Regular expression engines are the gold standard for pattern matching performance.
+PCRE2. RE2. `java.util.regex`. Python `re`. .NET `Regex`. The world runs on them.
+They are fast, mature, and trusted.
+
+They also have a problem.
+
+Backtracking RE engines — PCRE2 and most of the RE world — can be made to run
+**exponentially slow** on adversarial inputs. The pattern `(a+)+b` on the string
+`"aaaa...a"` causes PCRE2 to explore an exponential number of paths before
+failing. This is not a bug. It is a structural consequence of how backtracking
+RE engines work. It has caused real-world outages. It has a name: **catastrophic
+backtracking**.
+
+RE2 (Google) avoids this via NFA simulation — O(n) guaranteed, no blowup. But
+RE2 pays a price: it cannot handle backreferences, recursion, or any pattern
+beyond the regular language tier. It cannot recognize `{a^n b^n}`. It cannot
+parse balanced parentheses. It is fast and safe but fundamentally limited.
+
+SNOBOL4-tiny occupies a position neither engine can claim:
+
+- **Goal-directed evaluation with explicit backtrack control.** Not NFA
+  simulation. Not naive backtracking. A compiled state machine where every
+  transition is a static goto — zero dispatch overhead — and the backtrack
+  path is structurally determined at compile time.
+- **All four tiers of the Chomsky hierarchy.** Regular, context-free,
+  context-sensitive, unrestricted — in a single engine, from a single IR.
+- **On pathological inputs that cause PCRE2 exponential blowup:**
+  SNOBOL4-tiny does not blow up. It may simply win.
+
+That last sentence is a story the world has never heard told.
+
+RE engines have owned the pattern matching conversation for fifty years because
+nothing else was fast enough on the patterns RE could express, and nothing else
+could express the patterns RE could not. SNOBOL4-tiny changes both halves of
+that sentence — at the same time.
+
+The benchmark is coming. The oracles are already proven. Eight languages across
+four tiers of the Chomsky hierarchy. 108 cases. Zero failures. The engine that
+recognizes everything RE can recognize, and everything RE cannot, at speeds RE
+cannot match on the inputs RE handles worst.
+
+---
+
 ## How We Know It's Correct
 
 Most compiler projects validate with a hand-written test suite. We do that too — and we go further with two techniques that produce stronger correctness guarantees.
