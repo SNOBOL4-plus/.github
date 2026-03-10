@@ -1020,3 +1020,79 @@ SPITBOL and CSNOBOL4 are **not equivalent** on beauty_run.sno:
 **For this project: CSNOBOL4 is the sole authoritative oracle.**
 SPITBOL is a secondary reference for keyword behavior only.
 
+
+---
+
+## Oracle Trace Strategy — Revised After Live Testing
+*Recorded 2026-03-10 — proven by live test runs, not theory*
+
+### What We Know Now (Proven)
+
+`TRACE(...,'KEYWORD')` is dead on both oracles:
+- CSNOBOL4: accepts, fires nothing
+- SPITBOL: error 198, rejects &-prefixed names entirely
+
+`TRACE(var,'VALUE')` works on both. That is our hook.
+
+`TRACE(lbl,'LABEL')` works on both. Secondary hook for branch points.
+
+**The per-statement heartbeat must come from a probe variable, not from KEYWORD trace.**
+
+### The Revised Oracle Trace Strategy
+
+Instrument `beauty_run.sno` with a probe variable assigned every statement:
+
+```snobol4
+*-- Monitor probe: assign snoSTEP on every statement via null-concat
+*-- TRACE fires on every assignment = per-statement heartbeat
+        &TRACE = 99999
+        TRACE('snoSTEP', 'VALUE')
+        :(SNO_TRACE_ARMED)
+SNO_TRACE_ARMED
+```
+
+Then in the body, the probe fires automatically because `beauty_run.sno`
+assigns variables constantly. The VALUE trace on key variables (`snoLine`,
+`snoSrc`, `snoOut`) gives us the oracle stream.
+
+**No null-concat injection needed in the source** — the program already
+assigns variables. We just watch the ones that matter.
+
+### The Three Watched Variables
+
+```snobol4
+        TRACE('snoLine', 'VALUE')   * current source line being processed
+        TRACE('snoSrc',  'VALUE')   * source accumulator
+        TRACE('snoOut',  'VALUE')   * output accumulator
+```
+
+These three variables changing = the program is making progress.
+Oracle stream: sequence of `snoLine=X`, `snoSrc=X`, `snoOut=X` events.
+Binary stream: `VAR snoLine "X"`, `VAR snoSrc "X"`, `VAR snoOut "X"` via COMM.
+
+First divergence = first bug.
+
+### CSNOBOL4 &STCOUNT Is Always Zero — Workaround
+
+`&STCOUNT` always returns 0 in CSNOBOL4. Binary search via
+`&STLIMIT = &STCOUNT + N` does not work. Use literal values:
+
+```snobol4
+        &STLIMIT = 500    * binary search: run exactly 500 statements
+```
+
+SPITBOL `&STCOUNT` works correctly. If we need binary search,
+run it under SPITBOL as a counting oracle, then locate in CSNOBOL4.
+
+### TRACE Output Format Per Oracle
+
+| Oracle | Stream | Format |
+|--------|--------|--------|
+| CSNOBOL4 | **stderr** | `file:line stmt N: var = 'value', time = 0.` |
+| SPITBOL | **stdout** | `****N*******  var = 'value'` |
+| SNOBOL4-tiny | **stderr** | `VAR varname "value"` (via COMM) |
+
+The diff monitor reads CSNOBOL4 stderr, binary stderr. Same fd. Clean.
+SPITBOL stdout mixes with program output — use SPITBOL only for counting,
+not for value comparison.
+
