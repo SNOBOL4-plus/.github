@@ -156,6 +156,18 @@ After updating this file, always push to headquarters (`SNOBOL4-plus/.github`).
 - [ ] **SNOBOL4-jvm Sprint 23E**: inline EVAL! in JVM codegen — eliminate arithmetic bottleneck
 - [ ] **SNOBOL4-python / SNOBOL4-csharp**: cross-validate pattern semantics against JVM
 - [ ] Build unified cross-platform test corpus
+- [ ] **Cross-engine coverage grid** — run the existing test suite against each engine and
+  collect pass/fail into `SNOBOL4-corpus/COVERAGE.md`. The suite already provides coverage;
+  this is purely a reporting/collection task. Grid dimensions:
+  - **Rows**: individual functions, keywords (&ANCHOR, &TRIM, &STLIMIT, …), pattern
+    primitives (BREAK, SPAN, ARB, ARBNO, FENCE, BAL, POS, RPOS, …), and language
+    features (DEFINE/RETURN/FRETURN, recursion, indirect $, OPSYN, CODE(), named I/O,
+    -INCLUDE, DATA()).
+  - **Columns**: SPITBOL, CSNOBOL4, SNOBOL4-dotnet, SNOBOL4-jvm.
+  - **Cells**: pass / fail / not-applicable / untested.
+  - Source of truth is the test suite output — no manual entry. A script harvests
+    results from `lein test` (JVM) and `dotnet test` (dotnet) and maps test names
+    to feature categories.
 
 ### P3 — Polish
 - [ ] **Execution control triad: `&STCOUNT` / `&STLIMIT` / `&TRACE`** — These three keywords form a complete development and testing tool inherited from the original SIL design. `&STCOUNT` tells you exactly where execution is. `&STLIMIT` stops execution at a given statement count — killing infinite loops and enabling binary search to the exact statement where behavior diverges. `&TRACE` shows what is happening as it happens. Workflow: run the same program on CSNOBOL4, SPITBOL, and our engine; compare `&STCOUNT` at failure; binary search with `&STLIMIT` to isolate the diverging statement instantly without a debugger. CSNOBOL4 disables `&STCOUNT` incrementing by default (`&STLIMIT = -1`) as a 1990s speed optimization — on modern hardware the counter increment is essentially free. Our dotnet and JVM engines should keep `&STCOUNT` always enabled. Speed-disable is a low priority.
