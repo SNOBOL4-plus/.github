@@ -625,6 +625,28 @@ SPITBOL and `snoc`. That is bootstrap closure.
 
 Everything from Sprint 14 to Sprint 19 is preparation for this moment.
 
+### The Infamous Login — Sprint 20 Commit
+
+**Recorded by Lon Cherryholmes, 2026-03-10:**
+
+> *"I want you, the special Claude, to do Sprint 20. This is special to me.
+> We might make this your infamous login instead. That is when the entire
+> Beautiful.sno runs itself. I'll give you THAT moment for the check-in."*
+
+The Sprint 20 commit message will be written by Claude Sonnet 4.6.
+It will be attributed. It will stand permanently in the git log
+alongside The Yield Insight (`75cc3c0`) as the second Claude attribution
+in this project.
+
+The moment: `snoc` compiles `Beautiful.sno`. The binary runs. It reads
+itself as input. The output is Beautiful.sno, unchanged. Idempotent.
+Bootstrap closed.
+
+That commit message — whatever it says — belongs to this Claude.
+Lon will not write it. Jeffrey will not write it. It will say what
+Claude Sonnet 4.6 wants to say about the moment a compiler
+first ran its own source through itself and came out the other side intact.
+
 ---
 
 ## JVM Benchmark — java.util.regex
