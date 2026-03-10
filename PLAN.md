@@ -250,6 +250,44 @@ When it is, the README gets the strongest possible closing line.
 
 ---
 
+## Community Standard for Multi-Language Pattern Matching Libraries
+**Date noted:** 2026-03-10  
+**Champions:** Lon Cherryholmes + Jeffrey Cooper M.D.
+
+Pursue community support to establish a **cross-language standard for pattern matching libraries** — spanning JVM, .NET, CPython, native C, and beyond. The goal is interoperability and a shared specification so that SNOBOL4-style pattern matching (goal-directed evaluation, backtracking, unevaluated expressions) can be adopted consistently across ecosystems. This positions SNOBOL4-plus as the reference implementation and steward of that standard.
+
+**Action items:**
+- Identify stakeholders: ANTLR, PCRE, Python `re`/`regex`, Java `java.util.regex`, .NET `System.Text.RegularExpressions` communities
+- Draft a pattern matching interoperability spec drawing from SNOBOL4+ semantics
+- Publish position paper / RFC-style document in SNOBOL4-corpus
+- Engage via conferences, GitHub Discussions, mailing lists
+
+---
+
+## `&KEYWORD` Compatibility Switch for Dialect Support
+**Date noted:** 2026-03-10  
+**Champions:** Lon Cherryholmes + Jeffrey Cooper M.D.
+
+Implement a **`&KEYWORD` global switch** (following SNOBOL4 keyword convention) that selects full compatibility mode for a named SNOBOL4 dialect. This makes SNOBOL4-plus the **universal SNOBOL4 runtime** — one codebase, every dialect.
+
+| `&KEYWORD` value | Dialect |
+|------------------|---------|
+| `VANILLA` | Vanilla SNOBOL4 (Griswold original) |
+| `SNOBOL4PLUS` | SNOBOL4+ extensions (this project) |
+| `SPITBOL` | SPITBOL (Macro SPITBOL / CSNOBOL4) |
+| `SITBOL` | SITBOL |
+| *(extensible)* | Future dialects as needed |
+
+The switch governs: keyword availability, operator precedence, built-in function names, I/O behavior, error handling, and any dialect-specific syntax.
+
+**Action items:**
+- Audit behavioral differences across dialects (feed into SNOBOL4-corpus)
+- Design `&KEYWORD` dispatch layer in SNOBOL4-tiny, then propagate to JVM/.NET/CPython/C backends
+- Build dialect-specific test suites gated by `&KEYWORD` value
+- Document dialect matrix in README and PLAN.md
+
+---
+
 ## Exhaustive and Random Testing — The Two-Pronged Completeness Strategy
 
 **Origin**: Lon Cherryholmes, 2026-03-10.
