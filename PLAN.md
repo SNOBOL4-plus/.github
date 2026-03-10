@@ -1029,28 +1029,112 @@ This is the primary output mechanism of the SNOBOL4tiny language.
 
 ---
 
-## Sprint Plan (Revised and Granular)
+## Sprint Plan — Beautiful.sno Target
 
-Each sprint adds exactly one mechanism. The hand-written C file is the spec.
-`emit_c.py` output must match the hand-written file exactly (modulo whitespace).
+**Goal**: Compile Beautiful.sno to a native binary that self-beautifies correctly
+and runs faster than SPITBOL. Every sprint adds exactly one mechanism needed to
+reach that goal — nothing else. Easy first, recursion last.
 
-| Sprint | Mechanism | Test file | Status |
-|--------|-----------|-----------|--------|
-| 0 | Null program — α/β/γ/ω skeleton, runtime links | `sprint0/null.c` | ✓ |
-| 1 | Single primitive — LIT, POS, RPOS | `sprint1/lit_hello.c` | ✓ hand-written |
-| 2 | **CAT** — concat wiring: P_γ→Q_α, Q_ω→P_β | `sprint2/cat_pos_lit_rpos.c` | next |
-| 3 | **ALT** — choice point: P_ω→Q_α, Q_ω→outer_ω | `sprint3/alt_a_or_b.c` | |
-| 4 | **ASSIGN ($)** — immediate capture + OUTPUT | `sprint4/span_digits_output.c` | |
-| 5 | **SPAN** β backtrack — give back one char at a time | `sprint5/span_backtrack.c` | |
-| 6 | **BREAK** and **ANY** — complete primitive set | `sprint6/break_any.c` | |
-| 7 | **ARB** — non-deterministic length generator | `sprint7/arb.c` | |
-| 8 | **ARBNO** — generator loop, γ→α rewire, depth stack | `sprint8/arbno.c` | |
-| 9 | **REF** — named pattern, cycle validation | `sprint9/mutual_ref.c` | |
-| 10 | **Python front-end** — parse SNOBOL4tiny source → ir.py | `sprint10/parser_test.py` | |
-| 11 | **Beautiful.sno** → SNOBOL4_EXPRESSION_PATTERN.h | `sprint11/parse_expr.c` | |
-| 12 | **Stage B language**: stdin loop, named patterns, `$ OUTPUT` | `sprint12/snobol4tiny_hello.sno` | |
-| 13 | **Mutual recursion** validated end-to-end | `sprint13/mutual_rec.sno` | |
-| 14 | **Stage C**: variables, INPUT/OUTPUT, goto, END | `sprint14/snobol4_subset.sno` | |
+### Operator Inventory — Beautiful.sno (complete)
+
+All operators used across `Beautiful.sno` + its 17 include files, exact count:
+
+**Primitives (already in engine.c):**
+
+| Operator | Count | In engine? |
+|----------|-------|------------|
+| `epsilon` | 105 | ✓ T_EPSILON |
+| `FENCE` | 73 | ✓ T_FENCE |
+| `POS(n)` | 53 | ✓ T_POS |
+| `SPAN(s)` | 42 | ✓ T_SPAN |
+| `BREAK(s)` | 26 | ✓ T_BREAK |
+| `RPOS(n)` | 19 | ✓ T_RPOS |
+| `LEN(n)` | 19 | ✓ T_LEN |
+| `REM` | 11 | ✓ T_REM |
+| `ANY(s)` | 9 | ✓ T_ANY |
+| `ARBNO(p)` | 8 | ✓ T_ARBNO |
+| `FAIL` | 6 | ✓ T_FAIL |
+| `ABORT` | 6 | ✓ T_ABORT |
+| `RTAB(n)` | 5 | ✓ T_RTAB |
+| `NOTANY(s)` | 4 | ✓ T_NOTANY |
+| `BAL` | 4 | ✓ T_BAL |
+| `ARB` | 4 | ✓ T_ARB |
+| `TAB(n)` | 2 | ✓ T_TAB |
+| `SUCCEED` | 2 | ✓ T_SUCCEED |
+| `σ(lit)` | many | ✓ T_LITERAL |
+| `Σ` (CAT) | structural | ✓ T_SIGMA |
+| `Π` (ALT) | structural | ✓ T_PI |
+
+**Not yet in engine.c / emit_c.py — needed for Beautiful.sno:**
+
+| Operator | Symbol | What it does | Count | Sprint |
+|----------|--------|-------------|-------|--------|
+| `*name` | ζ | Unevaluated (deferred) pattern ref | 200+ | 9 |
+| `p $ var` | δ | Immediate assign: capture span to var | many | 4 |
+| `p . var` | Δ | Conditional assign: capture on commit | many | 4 |
+| `p ~ tag` | Shift | Push tree node (OPSYN `~` → `shift`) | ~20 | 11 |
+| `"tag" & n` | Reduce | Pop n, wrap as tree node (OPSYN `&` → `reduce`) | ~20 | 11 |
+| `nPush()` | nPush | Push integer counter onto counter stack | 15 | 11 |
+| `nInc()` | nInc | Increment top counter | 12 | 11 |
+| `nTop()` | nTop | Read top counter | 21 | 11 |
+| `nPop()` | nPop | Pop counter stack | 15 | 11 |
+| `Pop(fn)` | Pop | Move vstack top to caller variable | 1 | 11 |
+| `@var` | cursor | Capture current cursor position to var | 5 | 10 |
+| `-INCLUDE` | — | Include file preprocessing | 17 | 10 |
+
+**SNOBOL4 statement features needed (pp/ss/visit/main loop):**
+
+| Feature | What | Sprint |
+|---------|------|--------|
+| `DEFINE(...)` | Function definition | 14 |
+| `APPLY(f,x)` | Indirect function call | 14 |
+| `DATA(...)` | User-defined datatype | 14 |
+| `ARRAY(...)` | Array allocation | 14 |
+| `EVAL(expr)` | Evaluate string as expression | 14 |
+| `OPSYN(a,b,n)` | Operator synonym | 10 |
+| `REPLACE(s,f,t)` | String replace | 14 |
+| `SIZE(s)` | String length | 14 |
+| `DUPL(s,n)` | Duplicate string | 14 |
+| `DIFFER(x,y)` | Fail if identical | 14 |
+| `IDENT(x,y)` | Fail if different | 14 |
+| `GT/GE/LT/LE/EQ/NE` | Arithmetic comparisons | 14 |
+| `SUBSTR(s,i,n)` | Substring | 14 |
+| `LPAD/RPAD` | Pad string | 14 |
+| `INPUT/OUTPUT` | I/O | 12 |
+| Named gotos `:S()F()` | Conditional goto | 12 |
+| `$name` | Indirect variable access | 12 |
+
+---
+
+### Sprint Plan — Easy to Hard, No Recursion First
+
+Each sprint: one mechanism, one hand-written `.c` oracle, `emit_c.py` matches it.
+
+| Sprint | Mechanism | Oracle file | Status |
+|--------|-----------|-------------|--------|
+| 0 | α/β/γ/ω skeleton + runtime | `sprint0/null.c` | ✓ |
+| 1 | LIT, POS, RPOS | `sprint1/lit_hello.c` | ✓ |
+| 2 | **CAT** (Σ) — P→Q wiring | `sprint2/cat_pos_lit_rpos.c` | next |
+| 3 | **ALT** (Π) — choice point | `sprint3/alt_a_or_b.c` | |
+| 4 | **ASSIGN** — `$` immediate + `.` conditional capture | `sprint4/assign.c` | |
+| 5 | **SPAN β** — backtrack one char at a time | `sprint5/span_backtrack.c` | |
+| 6 | **BREAK, ANY, NOTANY** — complete char-set primitives | `sprint6/break_any.c` | |
+| 7 | **LEN, TAB, RTAB, REM** — position/length primitives | `sprint7/len_tab.c` | |
+| 8 | **ARB** — non-deterministic length | `sprint8/arb.c` | |
+| 9 | **ARBNO** — loop + yielded flag | `sprint9/arbno.c` | |
+| 10 | **REF** (ζ) — unevaluated `*name` ref, no cycles yet | `sprint10/ref_simple.c` | |
+| 11 | **Mutual REF** — cycles, forward refs | `sprint11/mutual_ref.c` | |
+| 12 | **@cursor** capture + `-INCLUDE` preprocessor | `sprint12/cursor.c` | |
+| 13 | **cstack** — deferred-action queue in State | `sprint13/cstack.c` | |
+| 14 | **Shift/Reduce** — tree build nodes via cstack | `sprint14/shift_reduce.c` | |
+| 15 | **nPush/nInc/nTop/nPop** — counter stack via cstack | `sprint15/counter_stack.c` | |
+| 16 | **Python front-end** — parse Beautiful.sno → IR | `sprint16/parser_test.py` | |
+| 17 | **Stage B runtime** — INPUT/OUTPUT/goto/END/`$name` | `sprint17/hello.sno` | |
+| 18 | **DEFINE/APPLY/DATA/ARRAY** — function + data layer | `sprint18/define_apply.sno` | |
+| 19 | **EVAL/OPSYN** — runtime metaprogramming | `sprint19/eval_opsyn.sno` | |
+| 20 | **Beautiful.sno runs** — self-beautify oracle test | `sprint20/beautiful_self.sh` | |
+
+**Sprint 20 is done when**: `./beautiful < Beautiful.sno | ./beautiful | diff - Beautiful.sno.golden` exits 0 and runs faster than SPITBOL on the same input.
 
 ---
 
