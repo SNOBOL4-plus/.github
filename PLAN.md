@@ -490,6 +490,44 @@ All three are winnable. The architecture is the same. The emitter differs.
 
 ---
 
+## The Yield Insight — Recorded 2026-03-10
+**Do not lose this.**
+
+`Expressions.py` uses Python generators (`yield`) as its execution model.
+Every `for _1 in σ("x"):` is a Byrd Box. `yield` is succeed. Exhausted
+generator is fail. `next()` is backtrack.
+
+Claude noticed this and proposed "use yield / generators as a new idea for C."
+Lon stopped it immediately: **yield is Python. C doesn't have yield.**
+
+The resolution: **we already have yield in C. It's called alpha/beta.**
+
+```c
+ITEM_alpha:   /* enter — try to match */
+    ...
+    goto ITEM_MATCH_SUCCESS;   /* yield: succeeded */
+ITEM_beta:    /* resume — try next alternative */
+    ...
+    goto caller_beta;          /* exhausted: fail */
+```
+
+`_alpha` = enter the generator.
+`_beta`  = resume and try the next alternative.
+`goto`   = the generator protocol, compiled to metal.
+
+`Expressions.py` and `emit_c.py` are the SAME machine in two different
+syntaxes. Python generators ARE the interpretive form of the C goto model.
+The translation from `Expressions.py` to SNOBOL4 IR nodes is mechanical
+and exact — but the implementation is always compiled C gotos, not Python
+generators at runtime.
+
+**The interpreter idea is still valid** — a Python generator-based IR
+interpreter (like Expressions.py but running IR nodes directly) would be
+useful for debugging and the worm's second head. But it is a development
+tool, not a runtime. The compiler is the runtime. Always.
+
+---
+
 ## Sprint 16 — Bridge: Expressions.py → SNOBOL4
 **Recorded**: 2026-03-10
 
