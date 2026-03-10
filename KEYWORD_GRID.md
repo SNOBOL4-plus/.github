@@ -118,3 +118,65 @@ when STCOUNT is live-updating during expression evaluation.
 | TRACE KEYWORD | Unclear — neither oracle produced output | Unclear |
 | TRACE stream | SPITBOL→stdout, CSNOBOL4→stderr | tiny→stderr via COMM |
 
+
+---
+
+## &STNO / &STCOUNT / &STLIMIT — Live Test Results
+*Tested 2026-03-10 on all running implementations*
+
+### &STNO behavior
+
+| System | &STNO tracks current stmt? | Initial value |
+|--------|---------------------------|---------------|
+| CSNOBOL4 v2.3.3 | ✓ YES — increments 1,2,3... per statement | 2 (counts setup stmts) |
+| SPITBOL x64 v4.0f (installed) | ✓ YES — increments 1,2,3... per statement | 2 |
+| SPITBOL x64 v4.0f (from source) | ✓ YES — increments 1,2,3... per statement | 2 |
+
+**All three agree: `&STNO` is the current statement number, 1-based, accurate.**
+
+### &STCOUNT behavior
+
+| System | &STCOUNT tracks cumulative count? | Initial value |
+|--------|----------------------------------|---------------|
+| CSNOBOL4 v2.3.3 | **✗ NO** — always 0 | 0 |
+| SPITBOL x64 v4.0f (installed) | ✓ YES — counts every statement executed | 2 |
+| SPITBOL x64 v4.0f (from source) | ✓ YES — counts every statement executed | 2 |
+
+**CSNOBOL4 `&STCOUNT` is broken — always returns 0. SPITBOL both versions work correctly.**
+**Documented in previous grid above — confirmed again here.**
+
+### &STLIMIT behavior — loop termination
+
+Test: `&STLIMIT = 15` with an infinite loop `i = i+1 :(LOOP)`.
+
+| System | Terminates loop? | At i= | Error message |
+|--------|-----------------|-------|---------------|
+| CSNOBOL4 v2.3.3 | ✓ YES | i=5 | `Error 22: Limit on statement execution exceeded` |
+| SPITBOL x64 v4.0f (installed) | ✓ YES | i=4 | `error 244 -- statement count exceeds value of stlimit keyword` |
+| SPITBOL x64 v4.0f (from source) | ✓ YES | i=4 | `error 244 -- statement count exceeds value of stlimit keyword` |
+
+**All three enforce `&STLIMIT` correctly.** Different error numbers and messages, same behavior.
+
+Note: CSNOBOL4 stops at i=5, SPITBOL at i=4. This is because CSNOBOL4's `&STCOUNT`
+is broken (always 0) so it counts differently internally — but `&STLIMIT` still works.
+SPITBOL counts 2 setup statements before the loop; CSNOBOL4 does not.
+
+### &STLIMIT default values
+
+| System | Default `&STLIMIT` |
+|--------|-------------------|
+| CSNOBOL4 | **-1** (unlimited) |
+| SPITBOL x64 | **2147483647** (INT_MAX — effectively unlimited) |
+
+Different defaults. Both mean "run forever unless set."
+
+### Implications for SNOBOL4-tiny
+
+Our runtime has:
+- `sno_kw_stlimit = 2000000` — enforced via P001 fix ✓
+- `sno_kw_stcount` incremented at every `sno_comm_stno()` call ✓
+- `&STNO` emitted via `sno_comm_stno()` ✓
+
+We match SPITBOL behavior on `&STCOUNT`. We differ from CSNOBOL4 (which is broken).
+Default `&STLIMIT` should be raised or set to -1 for production — 2,000,000 is
+artificially low for large programs. `beautiful.sno` needs more than that.
