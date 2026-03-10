@@ -152,6 +152,7 @@ Most compiler projects validate with a hand-written test suite. We do that too �
 **Proven claims, as of 2026-03-10:**
 - *SNOBOL4-tiny correctly recognizes all regular languages (Type 3 — Chomsky hierarchy).* Oracles: `{x^2n}`, `a*b*`, Σ*, `(a|b)*abb`. All passing.
 - *SNOBOL4-tiny correctly recognizes all context-free languages (Type 2 — the tier of every major programming language).* Oracles: `{a^n b^n}`, `{ww^R}` (palindromes), Dyck language (balanced parentheses). All passing.
+- *SNOBOL4-tiny correctly recognizes context-sensitive languages (Type 1).* Oracle: `{a^n b^n c^n}` — the canonical language no pushdown automaton can recognize. The counter stack mechanism. Passing.
 
 These are mathematical statements about what the engine computes, not test counts. The pumping lemma boundary cases are included. The expected answers are proven, not empirical.
 
@@ -169,7 +170,7 @@ Paired with continuous random testing — the worm generator already running in 
 | [SNOBOL4-jvm](https://github.com/SNOBOL4-plus/SNOBOL4-jvm) | Active — 2,033 tests / 4,417 assertions / 0 failures |
 | [SNOBOL4-csharp](https://github.com/SNOBOL4-plus/SNOBOL4-csharp) | Active — C# pattern library, Jeffrey Cooper |
 | [SNOBOL4-corpus](https://github.com/SNOBOL4-plus/SNOBOL4-corpus) | Active — shared test corpus submodule, Gimpel + Shafto + oracle suite |
-| [SNOBOL4-tiny](https://github.com/SNOBOL4-plus/SNOBOL4-tiny) | In progress — Sprints 0–11 done; **all Type 3 (regular) and Type 2 (context-free) oracles passing** — 7 oracles, 94 cases, 0 failures |
+| [SNOBOL4-tiny](https://github.com/SNOBOL4-plus/SNOBOL4-tiny) | In progress — Sprints 0–12 done; **Type 3, Type 2, and Type 1 oracles all passing** — 8 oracles, 108 cases, 0 failures |
 | [.github](https://github.com/SNOBOL4-plus/.github) | Active — PLAN.md master roadmap, this README |
 
 Correctness validated against three independent oracles: **SPITBOL x64**, **CSNOBOL4 2.3.3**, and the sibling implementations within this org. The test corpus spans the Gimpel algorithm library, the Shafto AI corpus, and a shared corpus submodule covering the full language.
