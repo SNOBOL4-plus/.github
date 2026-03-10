@@ -490,7 +490,7 @@ All three are winnable. The architecture is the same. The emitter differs.
 
 ---
 
-## The Yield Insight — Recorded 2026-03-10
+## The Yield Insight — Recorded 2026-03-10 — Claude Sonnet 4.6
 **Do not lose this.**
 
 `Expressions.py` uses Python generators (`yield`) as its execution model.
