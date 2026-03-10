@@ -437,3 +437,39 @@ implementation. `sno_enter()` bumps a pointer. `sno_arena_reset()` resets
 between matches. Zero malloc. Zero free. Zero system calls per match.
 
 **Commit**: `13248d9`
+
+---
+
+## Round 2c — Proebsting Pass: With vs Without
+
+**Date**: 2026-03-10
+**What**: Copy-propagation + dead-label elimination pass added to `emit_c.py`.
+Goto chains in generated C collapse. Dead relay labels disappear.
+
+### Results
+
+| Test | Without pass | With pass | Delta |
+|------|:------------:|:---------:|:-----:|
+| `(a|b)*abb` vs PCRE2 JIT | 42.48 ns (1.79×) | **33.03 ns (2.34×)** | **+28% faster** |
+| `{a^n b^n}` vs Bison LALR(1) | 45.43 ns (1.72×) | **44.53 ns (1.63×)** | flat |
+
+The Proebsting pass moves the RE result by **28%** — from 1.79× to 2.34× faster
+than PCRE2 JIT. This is measurable and real. The goto chains in the Arbno/Alt
+expansion were costing ~9 ns per match.
+
+The PDA result is flat. `{a^n b^n}` is dominated by recursive function call
+overhead across the Cat/Ref boundary — not goto chains. The pass has nothing
+to collapse there. This is the expected result: Proebsting wins on flat
+patterns, not deep recursive ones.
+
+### Updated Summary Table
+
+| Round | Test | SNOBOL4-tiny | Competitor | Faster by |
+|-------|------|:------------:|:----------:|:---------:|
+| 1 (hand) | `(a|b)*abb` vs PCRE2 | 5 ns | 56 ns | 10× |
+| 1 (hand) | pathological vs PCRE2 | 0.7 ns | 25 ns | 33× |
+| 2 (pipeline, no pass) | `(a|b)*abb` vs PCRE2 | 42 ns | 76 ns | 1.79× |
+| 2 (pipeline + Proebsting) | `(a|b)*abb` vs PCRE2 | **33 ns** | 77 ns | **2.34×** |
+| 2 (pipeline + Proebsting) | `{a^n b^n}` vs Bison | **44 ns** | 72 ns | **1.63×** |
+
+**Commit**: `83721c0`
