@@ -890,6 +890,24 @@ programs/
 
 **The container resets without warning. Anything not pushed is lost.**
 
+**Push triggers — push immediately after ANY of these, no exceptions:**
+- A new file is created (even a skeleton with no tests running yet).
+- A test file is modified (even one test added or changed).
+- A source file is modified (even one line changed).
+- A file compiles clean for the first time.
+- A test goes green for the first time.
+
+**The sequence for every new file:**
+1. Create file (skeleton/stub). → `git add -A && git commit -m "..." && git push`
+2. Add first test. → push.
+3. Add each additional test or section. → push.
+4. Write implementation stub. → push.
+5. Implementation passes first test. → push.
+6. All tests green. → push.
+
+Do not write two tests then push. Do not write a test and its implementation then push.
+**One logical change. Push. Then the next change.**
+
 - Work in the smallest meaningful unit: one file, one function, or one test class.
 - Commit and push **before** moving on to the next unit.
 - For a new feature: write tests → push. Implement → push. Suite green → push.
