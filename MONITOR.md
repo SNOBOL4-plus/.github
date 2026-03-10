@@ -777,3 +777,75 @@ Pass 3 — PROBE sync inside the pattern that sets the wrong variable:
 Total: 3 runs, 1 recompile. Bug located to sub-statement precision.
 ```
 
+
+---
+
+## First Diagnosis Without the Oracle — Binary-Side STNO Only
+*Recorded 2026-03-10*
+
+### The Insight
+
+For the very first question — **where does `./beautiful` hang?** —
+you don't need the oracle at all.
+
+Run the binary with STNO sync enabled and a timeout:
+
+```bash
+SNO_MONITOR=1 timeout 5 ./beautiful \
+    < beauty_run.sno \
+    2>/tmp/binary_trace.txt
+echo "Exit: $?"
+tail -5 /tmp/binary_trace.txt
+```
+
+The STNO stream stops at the last statement executed before the hang.
+That statement number IS the bug location. No oracle. No diff. No ignore list.
+One run. One answer.
+
+```
+STNO 610
+STNO 611
+STNO 612
+STNO 613     ← last line in file — this is where it loops forever
+```
+
+### Why This Works for the Hang Case
+
+A hang is a special case of divergence: the binary executes statement N
+forever while the oracle moves past it. The diff would be infinite — the
+oracle stream ends, the binary stream repeats the same STNO forever.
+
+You don't need to compare streams to find this. You just need to see
+where the binary's stream stops growing. The timeout kills it;
+`tail -5` on the trace file shows the last few STNOs executed.
+The repeated one is the loop.
+
+### Then Use the Oracle for Subsequent Bugs
+
+Once the hang is fixed, the binary will produce output — possibly wrong output.
+That's when the full double-trace diff comes in: oracle vs binary, event by event,
+first real diff reported. The hang is a special case that doesn't need it.
+
+**Protocol:**
+1. Hang? → binary STNO only, timeout, `tail` the trace. One run.
+2. Wrong output? → full double-trace diff, oracle vs binary. Three passes.
+3. No output divergence but wrong result? → PROBE inside the suspected pattern.
+
+### The &STLIMIT / TRACE Interaction — Known Issue
+
+`TRACE('&STNO','KEYWORD')` on the oracle side counts its own TRACE dispatch
+calls against `&STLIMIT`. This caused the oracle to hit the limit in the
+initialization phase (statement 207) even with `&STLIMIT = 5000`.
+
+**Fix options:**
+1. Set `&STLIMIT = -1` (unlimited) when TRACE is armed — but then binary
+   search via `&STLIMIT` is unavailable while tracing.
+2. Use TRACE without `&STLIMIT` — let the oracle run to completion,
+   then use `&STLIMIT` in a separate non-traced run for binary search.
+3. Use the binary's STNO stream for location, oracle TRACE only for
+   value comparison — the two tools serve different purposes.
+
+**Chosen approach**: binary STNO for location (no &STLIMIT conflict),
+oracle TRACE for value verification (no &STLIMIT, run to completion).
+Binary search via `&STLIMIT` runs on a clean non-traced oracle invocation.
+
