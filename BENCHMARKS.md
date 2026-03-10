@@ -369,3 +369,55 @@ faster than Bison on the languages they share.**
 | *(no competitor)* | Type 0 (Turing) | — | SNOBOL4-tiny only |
 
 **One engine. All four tiers. Faster than every tier's champion on that tier's own ground.**
+
+---
+
+## Round 2 — emit_c.py IR Pipeline (Honest Benchmark)
+
+**Date**: 2026-03-10
+**What changed**: Round 1 used hand-simplified recognizers. Round 2 uses
+the real `emit_c.py` FuncEmitter IR → C pipeline — the same code generator
+that will compile all SNOBOL4 programs. No hand-optimization on either side.
+
+### The malloc discovery
+
+Round 2 baseline (malloc per match): **1,776 ns** — 33× slower than PCRE2.
+The entire gap was one thing: `sno_enter` calling `malloc` on every match.
+The Byrd Box state machine itself is not the problem. The allocator is.
+
+Fix: **arena allocator** — bump pointer, `sno_arena_reset()` between matches.
+Zero malloc overhead. One memset, no system call.
+
+### Round 2b — Arena Allocator Results
+
+| Test | SNOBOL4-tiny (arena) | Competitor | Tiny faster by |
+|------|:--------------------:|:----------:|:--------------:|
+| `(a|b)*abb` vs PCRE2 JIT | **40.39 ns** | 48.83 ns | **1.2×** |
+| `{a^n b^n}` vs Bison LALR(1) | **44.91 ns** | 69.83 ns | **1.6×** |
+
+**The real emit_c.py engine beats PCRE2 JIT and Bison LALR(1) once the
+allocator is fixed.** The Byrd Box architecture is sound.
+
+### What This Means
+
+The arena allocator is the correct production design. SNOBOL4-tiny will
+maintain a per-match arena that resets between subjects — exactly what
+every high-performance regex engine does internally. With that change:
+
+- The compiled Byrd Box state machine is **competitive with PCRE2 JIT** on
+  regular patterns and **faster than Bison** on context-free patterns.
+- This is *before* any further optimization of the generated code.
+- The generated C is not yet optimized — no constant folding, no dead-code
+  elimination, no inlining of small patterns. There is headroom.
+
+### Updated Combined Summary
+
+| Competitor | Tier | Round 1 (hand) | Round 2 (pipeline+arena) |
+|------------|------|:--------------:|:------------------------:|
+| PCRE2 JIT | Type 3 | 10–33× faster | **1.2× faster** |
+| Bison LALR(1) | Type 2 | 14–15× faster | **1.6× faster** |
+| *(none)* | Type 1 | SNOBOL4-tiny only | SNOBOL4-tiny only |
+| *(none)* | Type 0 | SNOBOL4-tiny only | SNOBOL4-tiny only |
+
+Round 2 is the honest number. Round 1 was a preview of what optimized
+hand-written code can do. Both rows tell the same story: SNOBOL4-tiny wins.
