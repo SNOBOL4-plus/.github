@@ -849,3 +849,108 @@ initialization phase (statement 207) even with `&STLIMIT = 5000`.
 oracle TRACE for value verification (no &STLIMIT, run to completion).
 Binary search via `&STLIMIT` runs on a clean non-traced oracle invocation.
 
+
+---
+
+## Keyword Implementation Grid
+*Recorded 2026-03-10 — source-verified against v311.sil, sbl.lex, snobol4.h*
+
+### The Hang — Found
+
+Before the grid: the hang is located.
+
+```bash
+SNO_MONITOR=1 timeout 5 ./beautiful < beauty_run.sno 2>/tmp/binary_trace.txt
+tail -10 /tmp/binary_trace.txt
+```
+
+Output:
+```
+VAR i "92018"
+STNO 161
+VAR  ""
+STNO 160
+VAR i "92019"
+STNO 161
+VAR  ""
+STNO 160
+VAR i "92020"
+STNO 161
+```
+
+**STNO 160↔161, variable `i` incrementing without bound.**
+This is `&STLIMIT` not being enforced — the runtime has `sno_kw_stlimit = 50000`
+as a C variable but it is never checked against `&STCOUNT`. The loop runs forever
+because nothing stops it. This is the first P1 bug: **`&STLIMIT` is declared but
+not enforced**.
+
+### The Weird Behavior — &STLIMIT / TRACE Conflict in CSNOBOL4
+
+When `TRACE('&STNO','KEYWORD')` is active, CSNOBOL4's `&STLIMIT` counter
+counts the TRACE dispatch calls themselves. Result: `&STLIMIT = 5000` is
+exhausted in the initialization phase (statement 207, level 2 — inside
+`case.inc`). The TRACE mechanism is not free — it consumes statement budget.
+
+**Documented as known behavior. Not a bug. Working as designed.**
+Fix: set `&STLIMIT = -1` (unlimited) when TRACE is armed.
+Or: use binary STNO stream for location, non-traced oracle for value comparison.
+
+### Keyword Implementation Grid
+
+**Legend**: ✓ = fully implemented | ~ = partial/stub | ✗ = not implemented | R = read-only
+
+| Keyword | CSNOBOL4 | SPITBOL | SNOBOL4-tiny | Notes |
+|---------|----------|---------|--------------|-------|
+| `&ANCHOR` | ✓ | ✓ | ~ stub | Declared `sno_kw_anchor` but not wired to match engine |
+| `&ABEND` | ✓ | ✓ | ✗ | Not declared or checked |
+| `&CASE` | ✓ | ✓ | ✗ | Not declared — `-f` flag behavior not replicated |
+| `&CODE` | ✓ | ✓ | ✗ | EXIT() return code — not wired |
+| `&COMPARE` | ✓ | ✓ | ✗ | String comparison mode — not declared |
+| `&DUMP` | ✓ | ✓ | ✗ | Variable dump on exit — not implemented |
+| `&ERRLIMIT` | ✓ | ✓ | ✗ | Error count before abort — not declared |
+| `&ERRTEXT` | ✓ | ✓ | ✗ | Last error message — not set |
+| `&ERRTYPE` | ✓ | ✓ | ✗ | Last error code — not set |
+| `&FNCLEVEL` | ✓ | ✓ | ✗ | Function call depth — not tracked |
+| `&FTRACE` | ✓ | ✓ | ✗ | Function trace counter — not implemented |
+| `&FULLSCAN` | ✓ | ✓ | ~ stub | Declared `sno_kw_fullscan` but not wired to pattern engine |
+| `&LASTFILE` | ✓ | ✓ | ✗ | Source file tracking — not applicable (compiled) |
+| `&LASTLINE` | ✓ | ✓ | ✗ | Source line tracking — partially via COMM |
+| `&LASTNO` | ✓ | ✓ | ✗ | Previous statement number — not tracked |
+| `&MAXLNGTH` | ✓ | ✓ | ~ stub | Declared `sno_kw_maxlngth = 524288` but not enforced |
+| `&RTNTYPE` | ✓ | ✓ | ✗ | Function return type — not set |
+| `&STCOUNT` | ✓ | ✓ | ✗ | **P1 — needed for monitor** — not incremented |
+| `&STLIMIT` | ✓ | ✓ | ~ stub | Declared `sno_kw_stlimit = 50000` but **never checked** |
+| `&STNO` | ✓ | ✓ | ~ partial | Emitted via COMM but not stored as readable variable |
+| `&TRACE` | ✓ | ✓ | ✗ | **P1 — needed for monitor** — TRACE() not implemented |
+| `&TRIM` | ✓ | ✓ | ~ stub | Declared `sno_kw_trim = 1` — partially used in INPUT |
+| `&LCASE` | ✓ | ✓ | ~ | `sno_lcase[]` declared, not exposed as `&LCASE` variable |
+| `&UCASE` | ✓ | ✓ | ~ | `sno_ucase[]` declared, not exposed as `&UCASE` variable |
+| `&ALPHABET` | ✓ | ✓ | ✓ | `sno_alphabet[257]` — fully implemented |
+
+### SPITBOL-Specific Notes
+
+SPITBOL (`sbl.lex`) defines the same keyword set as CSNOBOL4 but uses
+different internal symbol names (`k_anc`, `k_ftr`, `k_stc`, etc.).
+The user-facing names are identical. Verified from `sbl.lex` symbol table.
+
+SPITBOL additionally has `&PROFILE` and `&FILE`/`&LINE` (source tracking).
+CSNOBOL4 has `&LASTFILE`/`&LASTLINE` for the same purpose.
+
+### P1 Keywords for the Monitor (implement immediately)
+
+These must exist for the double-trace monitor to work:
+
+1. **`&STLIMIT` enforcement** — check `sno_kw_stlimit` against a running
+   `sno_kw_stcount` counter in the statement dispatch. Currently declared,
+   never checked. **This is why `./beautiful` hangs** — stlimit = 50000
+   is set but never triggers.
+
+2. **`&STCOUNT` increment** — increment `sno_kw_stcount` at each
+   `sno_comm_stno()` call. One line. Free.
+
+3. **`&STNO` as readable variable** — `sno_var_get("STNO")` should return
+   the current statement number. Currently only emitted to COMM pipe.
+
+These three together give the binary the same execution control vocabulary
+as CSNOBOL4 and SPITBOL.
+
