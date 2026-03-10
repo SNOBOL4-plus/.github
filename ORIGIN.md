@@ -70,7 +70,8 @@ Artificial Intelligence at East Texas A&M University. That's my school and
 it's just down the road from here."*
 
 He did exactly that. All A+ grades. Then, during his fourth class, he realized
-he wanted better.
+he wanted better — a stronger program. He transferred to the University of
+North Texas (UNT).
 
 So, here he is.
 
