@@ -157,7 +157,7 @@ tab           \t (1 char)   \t   (C tab escape)
 | **CSNOBOL4** | 2.3.3 (Jan 2024) | ✅ | C (portable) | build from source or distro pkg | http://www.snobol4.org/csnobol4/curr/ |
 | **SPITBOL x64** | 4.0f | ✅ | MINIMAL + C + nasm | `./bin/sbl` pre-built in repo | https://github.com/spitbol/x64 |
 | **SPITBOL x32** | — | ❌ | MINIMAL + C | 32-bit ELF only — qemu-i386 segfaults | https://github.com/spitbol/x32 |
-| **SNOBOL5** | beta (Aug 2024) | ✅ | unknown | direct download binary | http://snobol5.org/ |
+| **SNOBOL5** | beta 5.0 (Aug 2024) | ✅ | x86-64 ASM + SIL macros (public domain) | statically linked binary, no GitHub | http://snobol5.org/ |
 | **SPITBOL 360** | historic | ❌ | IBM/360 ASM | IBM/360 only | https://github.com/spitbol/360 |
 | **SPITBOL NT** | 1.30.22 (Dec 2003) | ❌ | C + DOS extender | 32rtm, Wine can't run it | https://github.com/spitbol/windows-nt |
 
@@ -173,7 +173,8 @@ tab           \t (1 char)   \t   (C tab escape)
 |--------|-----------|---------------|------|
 | CSNOBOL4 | `gcc`, `make` | `./configure && make && make install` | ~1 min |
 | SPITBOL x64 | `gcc`, `nasm` | `make && ./sanity-check` | ~2 min |
-| SNOBOL5 | none (binary) | `chmod 555 /usr/bin/snobol5` | instant |
+| SNOBOL5 | none (binary-only) | `wget https://snobol5.org/snobol5 && chmod 555 snobol5` | instant |
+| SNOBOL5 (source) | `nasm`, Windows for full build | gens5.cmd (Windows-centric) — Linux final steps only | not straightforward |
 
 ---
 
@@ -238,9 +239,52 @@ tab           \t (1 char)   \t   (C tab escape)
 
 ---
 
-### SNOBOL5 (`snobol5 [options] file`)
+### SNOBOL5 (`snobol5 [options] [files] [:user data]`)
 
-Flags not yet fully documented here. Different from both CSNOBOL4 and SPITBOL — command-line syntax redesigned to be "nearly identical" on Windows and Linux. INPUT/OUTPUT functions use an extra parameter to separate filename from modifiers (FORTRAN formatting dropped). Not yet evaluated.
+| Flag | Effect |
+|------|--------|
+| `--work=N[b\|k\|m\|g]` | Workspace size |
+| `-ex` | Execute even if there are compile errors |
+| `-s` | Produce statistics |
+| `-d` | Set `&DUMP` to 1 (dump variables at termination) |
+| `-v` | Produce source listing and statistics |
+| `--help` | Show help and exit |
+| `-nn filename [attribs]` | Associate file with I/O unit `nn` (default unit is 5) |
+
+**File attributes**: `-a` (ASCII text), `-b` (binary), `-tabx`/`-ntabx` (tab handling), `-r` (replace on write), `-ap` (append), `-vl` (variable length read), `-fl` (fixed length), `-i`/`-ni` (include/snopath processing), `-std` (stdin/stdout/stderr by name), `-cr`/`-ncr` (carriage control).
+
+**Invocation example**: `snobol5 -v myprogram.sno -1 datafileA.txt -b`
+
+**No `-f` case-fold flag**: SNOBOL5 does not have `&CASE`. Case folding behavior differs from both CSNOBOL4 and SPITBOL — `&CASE` is an unknown keyword (Error 7). Lower-case identifiers appear to be handled differently.
+
+**No `-INCLUDE` in the traditional sense**: uses `snopath` environment variable for include file resolution.
+
+---
+
+## SNOBOL5 Assessment (2026-03-11)
+
+**Binary**: statically linked ELF64, stripped, 970K. `wget https://snobol5.org/snobol5`. Works immediately.
+
+**Source**: `s5source.zip` — public domain. 26,454 lines total. Core is `MAIN.A/B/C/D` (6,613 lines of SIL macro code, dated 1969–1982, the original Macro SNOBOL4 SIL code), `snobol5.asm` (1,333 lines, x86-64 NASM, Berstis's SIL interpreter), plus ~40 `.inc` files for runtime. Build is Windows-centric (`gens5.cmd`); Linux final step only. **Not straightforwardly buildable on Linux alone.**
+
+**Architecture**: SIL macros (the same 1960s/70s Bell Labs SIL used by the original Macro SNOBOL4) implemented by a custom x86-64 assembler runtime. This is the same lineage as CSNOBOL4 (which implements SIL in C) and SPITBOL (which implements SIL in MINIMAL → ASM). SNOBOL5 goes directly SIL → x86-64 ASM.
+
+**SNOBOL4 compatibility**: High. Standard patterns, SPAN/BREAK/ARB/ARBNO/FENCE/BAL, DEFINE/RETURN/FRETURN, TABLE/ARRAY, DATA/FIELD, EVAL(), CONVERT() all work correctly. N-queens (92 solutions) produces correct output.
+
+**Key differences from CSNOBOL4/SPITBOL**:
+- **64-bit integers and strings** — `&STLIMIT` = 9223372036854775807, `&MAXLNGTH` = 64G, integers are true 64-bit
+- **`&CASE` does not exist** — case folding handled differently; `&CASE` → Error 7 "Unknown keyword"
+- **`&STCOUNT` is read-only** — write attempt → Error 8 (unlike CSNOBOL4 where it silently returns 0, SNOBOL5 increments it correctly and protects it)
+- **OPSYN limited to single characters** — `++` → "Illegal character in element"; single-char operators work
+- **`CODE()` does not work** — `=?` assignment-to-code syntax produces syntax error
+- **`LOAD()`/`UNLOAD()` not yet implemented** — documented as planned
+- **Rich new function library**: trig (SIN/COS/TAN/ATAN), bit/hex/byte conversions, GETENV, SYSTEM, SORT, RAND, DATE, TIME (nanoseconds), SLEEP, REV, SPANNNOT, CENTER, SEEK, IO_FINDUNIT, ISLABEL
+
+**Performance** (FIB(20) recursive, 2026-03-11): ~13 ms. Competitive with CSNOBOL4.
+
+**Oracle fitness**: Untested against beauty_run.sno (corpus not available this session). Primary risk: `CODE()` broken, `&CASE` missing, OPSYN operator restrictions. For programs that don't use those features, likely viable.
+
+**Verdict**: A serious, working SNOBOL4 implementation with genuine 64-bit improvements. Not a drop-in oracle replacement — `&CASE` and `CODE()` gaps are significant. Worth keeping in the inventory. Build situation is a limitation.
 
 ---
 
@@ -248,20 +292,28 @@ Flags not yet fully documented here. Different from both CSNOBOL4 and SPITBOL �
 
 | Behavior | CSNOBOL4 | SPITBOL x64 | SNOBOL5 |
 |----------|----------|-------------|---------|
-| `&ANCHOR` default | 0 | **1** (v4.0+) | ? |
-| `&TRIM` default | 0 | **1** (v4.0+) | ? |
-| `&CASE` default | 0 (lower folds) | 0 (no fold, lower ok) | ? |
-| `&FULLSCAN` default | 0 | 1 | ? |
-| `&STCOUNT` | **broken — always 0** | increments correctly | ? |
-| `&STLIMIT` default | -1 (unlimited) | MAX_INT | ? |
-| `&MAXLNGTH` | 4G | 16M | ? |
-| TRACE output stream | stderr | **stdout** | ? |
-| `-INCLUDE` | ✅ | ✅ (different END handling) | ✅? |
-| BLOCKS extension | ✅ | ❌ | ? |
-| LOAD() plugin | ✅ | ❌ | ? |
+| `&ANCHOR` default | 0 | **1** (v4.0+) | 0 |
+| `&TRIM` default | 0 | **1** (v4.0+) | 0 |
+| `&CASE` | keyword exists | keyword exists | **unknown keyword (Error 7)** |
+| `&FULLSCAN` default | 0 | 1 | 0 |
+| `&STCOUNT` | **broken — always 0** | increments correctly | increments correctly; **write → Error 8 (read-only)** |
+| `&STLIMIT` default | -1 (unlimited) | MAX_INT (32-bit) | **9223372036854775807 (64-bit MAX)** |
+| `&MAXLNGTH` | 4G | 16M | **64G (64-bit)** |
+| Integer size | 32-bit | 32-bit | **64-bit** |
+| TRACE output stream | stderr | **stdout** | ? (not tested) |
+| `-INCLUDE` | ✅ | ✅ (different END handling) | ✅ (via `snopath` env var) |
+| BLOCKS extension | ✅ | ❌ | ❌ |
+| LOAD() plugin | ✅ | ❌ | ❌ (planned) |
 | Shebang `#!/...` | ✅ | ✅ | ? |
-| Implementation | C (interpreter) | MINIMAL+ASM (compiler) | ASM (compiler) |
-| Oracle fitness (beauty_run.sno) | ✅ **primary** | ❌ error 021 at END | untested |
+| OPSYN | ✅ (multi-char ok) | ✅ | ✅ (single-char only — `++` → Error "Illegal character") |
+| TABLE / ARRAY / DATA | ✅ | ✅ | ✅ |
+| EVAL() | ✅ | ✅ | ✅ |
+| CODE() | ✅ | ✅ | ❌ (syntax error — `=?` not recognized) |
+| CONVERT() | ✅ | ✅ | ✅ |
+| 64-bit integers | ❌ | ❌ | ✅ (`9000000000 * 2 = 18000000000`) |
+| New functions | — | — | HEX/BIT/BYTES conversions, trig, GETENV, SORT, SYSTEM, RAND, DATE, TIME, SLEEP, REV, SPANNNOT, INT, REAL, STR, CENTER, SEEK, IO_FINDUNIT, ISLABEL |
+| Implementation | C interpreter | MINIMAL+ASM compiler | SIL macros → x86-64 ASM |
+| Oracle fitness (beauty_run.sno) | ✅ **primary** | ❌ error 021 at END | **untested** (corpus not available this session) |
 
 ---
 
