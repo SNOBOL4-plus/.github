@@ -26,30 +26,33 @@ message is Claude's to write. Do not let that get lost.
 
 ## 2. Strategic Focus — What We Are Building Now
 
-**The three compiler/runtimes are the work. Everything else is support.**
+**The two compiler/runtimes are the harness targets. Tiny is still being born.**
 
-For the foreseeable future, all substantial development effort goes to exactly
-three repos:
+For the foreseeable future, harness crosscheck targets are exactly two engines:
 
-| Priority | Repo | What |
-|----------|------|------|
-| 1 | **SNOBOL4-dotnet** | Full SNOBOL4/SPITBOL compiler + runtime → .NET/MSIL |
-| 2 | **SNOBOL4-jvm** | Full SNOBOL4/SPITBOL compiler + runtime → JVM bytecode |
-| 3 | **SNOBOL4-tiny** | Native compiler → x86-64 ASM (Sprint 20: Beautiful.sno) |
+| Priority | Repo | Status |
+|----------|------|--------|
+| 1 | **SNOBOL4-jvm** | Full SNOBOL4/SPITBOL → JVM bytecode. Mature. Harness target. |
+| 2 | **SNOBOL4-dotnet** | Full SNOBOL4/SPITBOL → .NET/MSIL. Mature. Harness target. |
+| — | **SNOBOL4-tiny** | Native → x86-64. Still being born. Not a crosscheck target yet. |
 
-**SNOBOL4-python, SNOBOL4-csharp, SNOBOL4-cpython** — pattern libraries. No
-substantial new work until the three compiler/runtimes above are further along.
-They exist, they are tested, they are not the focus.
+**SNOBOL4-tiny** remains active development (Sprint 20: T_CAPTURE blocker,
+Beautiful.sno goal) but is excluded from harness crosscheck until it can run
+non-trivial programs reliably. It joins the crosscheck target list when it passes
+the systematic batch.
 
-**SNOBOL4-harness** — the new shared test infrastructure repo. Build it to
-serve all three compiler/runtimes. It is support work, not a fourth compiler —
-but it is the next thing to establish. See §6 below.
+**SNOBOL4-harness** — crosscheck infrastructure. Oracles are CSNOBOL4 +
+SPITBOL + SNOBOL5. Engines under test are JVM and dotnet. Generator feeds
+both. Monitor and probe apply to both.
 
-**SNOBOL4-corpus** — shared programs and inc files. Updated as needed to
-support the three compilers. Not a focus repo in itself.
+**SNOBOL4-corpus** — shared programs. Updated as needed.
 
-*Recorded 2026-03-11. Lon's directive: "We will not do anything substantial
-for a while but to these three SNOBOL4/SPITBOL compiler/runtimes."*
+**SNOBOL4-python, SNOBOL4-csharp, SNOBOL4-cpython** — pattern libraries.
+Not a focus.
+
+*Updated 2026-03-11: reduced crosscheck targets from three to two.
+Tiny excluded until Sprint 20 T_CAPTURE blocker is resolved and
+systematic batch passes.*
 
 ---
 
