@@ -963,3 +963,74 @@ Wire `Expressions.py` gen tier into a Python `crosscheck.py` that calls
 `run(oracle, src)` and `run(engine, src)` for each generated expression
 program. That gives us expression-level crosscheck for dotnet and tiny
 from the top level, same pattern as the JVM batch runner.
+
+---
+
+## 13. Corpus + Generator — Two Feeds for the Crosschecker
+
+**Decided 2026-03-11.**
+
+The crosschecker has two independent sources of programs to run:
+
+```
+SNOBOL4-corpus/          ← curated, permanent, version-controlled
+    benchmarks/          ← performance programs
+    programs/sno/        ← real-world programs (Lon's collection)
+    programs/test/       ← focused feature tests
+    programs/gimpel/     ← Gimpel book examples (to add)
+    programs/generated/  ← pinned worm outputs (regression guards)
+
+generators (live, on demand) ←─────────────────────────────────────
+    generator.clj            ← rand-program, gen-by-length (Clojure)
+    Expressions.py           ← rand_expression, gen_expression (Python)
+    [future] generator.py    ← full SNOBOL4 program generator in Python
+```
+
+### The two feeds are complementary
+
+**Corpus** — curated, stable, human-meaningful programs. Every program
+has a known purpose. Failures are regressions. Ideal for CI.
+
+**Generators** — infinite, systematic or random. Programs are
+structurally valid but machine-generated. Failures are new bugs.
+Ideal for fuzzing, coverage expansion, and gap-finding.
+
+### How generators feed the crosschecker
+
+```
+rand-program()  ──→  crosscheck(src, targets=[:jvm :dotnet])
+                         ├─ run(:csnobol4, src) → ground truth
+                         ├─ run(:jvm, src)      → compare
+                         └─ run(:dotnet, src)   → compare
+
+gen-by-length() ──→  same pipeline, exhaustive, sorted by complexity
+```
+
+The generator output that passes crosscheck can be pinned into
+`corpus/programs/generated/` as regression guards. The generator
+output that fails crosscheck is a bug report.
+
+### Pipeline (full picture)
+
+```
+[generator]  →  source string
+[corpus]     →  source string
+                    ↓
+             crosscheck(src)
+                    ↓
+         triangulate oracles (CSNOBOL4 + SPITBOL + SNOBOL5)
+                    ↓
+              ground truth
+                    ↓
+         run JVM    run dotnet
+                    ↓
+              agree? → :pass
+              differ? → :fail → probe/monitor to find divergence point
+```
+
+### What this means for SNOBOL4-corpus organization
+
+The corpus needs a `generated/` subdirectory for pinned generator
+outputs. Everything else (sno/, benchmarks/, gimpel/, test/) is
+hand-curated. The generator feeds the crosschecker directly — it does
+not need to land in the corpus first unless we want to pin it.
