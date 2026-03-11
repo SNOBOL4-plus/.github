@@ -100,10 +100,9 @@ apt-get install -y build-essential libgmp-dev m4 nasm
   mkdir -p /home/claude/csnobol4-src
   tar xzf /mnt/user-data/uploads/snobol4-2_3_3_tar.gz -C /home/claude/csnobol4-src/ --strip-components=1
   cd /home/claude/csnobol4-src
-  # Apply TRACE patch BEFORE configure/make (see below)
-  sed -i '/if (!chk_break(0))/{N;/goto L_INIT1;/d}' snobol4.c isnobol4.c
   ./configure --prefix=/usr/local 2>&1 | tail -1
-  # Use xsnobol4 target — skips regression suite (see KNOWN BUILD ISSUE below)
+  # Use xsnobol4 target — skips regression suite (see build note below)
+  # Do NOT apply any source patch — see §4 note for why
   make xsnobol4 2>&1 | tail -2
   cp xsnobol4 /usr/local/bin/snobol4
   echo "CSNOBOL4 DONE"
@@ -136,49 +135,49 @@ echo "Oracles ready."
 **Note**: SPITBOL x64 `systm.c` defaults to nanoseconds — always apply the patch above.
 **Note**: SPITBOL x32 `systm.c` already returns milliseconds via `times()`/`CLK_TCK` — no patch needed.
 
-**CSNOBOL4 TRACE patch** — required for `TRACE('STNO','KEYWORD')` to fire on every
-statement. Without it, the trace silently accepts the call but never emits output.
-Apply to both `snobol4.c` and `isnobol4.c` before building (4 lines total, 2 per file):
+**⚠ NO CSNOBOL4 PATCH NEEDED OR WANTED — Session 8 correction (2026-03-11)**
+
+**`TRACE('STNO','KEYWORD')` is gated on `BREAKPOINT()` by design.**
+
+The SIL spec (v311.sil PLB113, 2013) shows:
+```
+XCALLC  chk_break,(0),INIT1   Check for breakpoint
+LOCAPT  ATPTR,TKEYL,STNOKY,INIT1  Look for STNO trace
+RCALL   ,TRPHND,ATPTR
+INIT1:
+LOCAPT  ATPTR,TKEYL,STCTKY,...    STCOUNT trace (always fires)
+```
+`XCALLC fn,args,label` branches to `label` if `fn` returns zero. `chk_break()`
+returns zero unless a `BREAKPOINT(stmtno,1)` has been set for the current
+statement. So `&STNO` KEYWORD trace fires **only at breakpointed statements**.
+This is correct and intentional. `STCOUNT` trace (below `INIT1`) fires every
+statement regardless — that is the portable per-statement hook.
+
+The regression test `test/keytrace.sno` confirms this: `&STNO` trace events
+appear in `keytrace.ref` only at statements 15, 17, 19, 21 — exactly the four
+statements where `BREAKPOINT(n,1)` was called. `STCOUNT` fires everywhere.
+
+**The patch previously documented here was wrong.** Removing the `chk_break`
+gate makes `&STNO` fire every statement — technically possible but not spec
+behaviour, breaks the regression suite, and is not needed for harness use.
+Use `&STCOUNT` for per-statement tracing. Use `BREAKPOINT(n,1)` to set
+conditional `&STNO` breakpoints.
+
+**⚠ KNOWN BUILD ISSUE — `make install` fails, use `make xsnobol4` instead**
+
+`make snobol4` / `make install` run the regression suite. The `keytrace` test
+passes with the correct (unpatched) binary. **Do not apply any source patch.**
+The build issue is that `make install` re-runs the full suite and exits
+nonzero on any failure — even if the binary itself is correct. Use:
 
 ```bash
-# In both snobol4.c and isnobol4.c, delete these two lines:
-#     if (!chk_break(0))
-#         goto L_INIT1;
-# They appear immediately before:
-#     if (!LOCAPT(ATPTR,TKEYL,STNOKY))
-
-sed -i '/if (!chk_break(0))/{N;/goto L_INIT1;/d}' \
-    /home/claude/csnobol4-src/snobol4.c \
-    /home/claude/csnobol4-src/isnobol4.c
+make xsnobol4          # builds binary, skips regression suite
+cp xsnobol4 /usr/local/bin/snobol4
 ```
 
-Root cause: PLB113 edit gated the `&STNO` KEYWORD trace on `chk_break()`, which
-only returns nonzero after `BREAKPOINT(stmtno,1)` has been called. The v311.sil
-spec requires no such gate — if `&TRACE > 0` and `STNO` is in the keyword trace
-table, fire. `BREAKPOINT()` remains functional for debugger use.
-
-**⚠ KNOWN BUILD ISSUE — Session 8 (2026-03-11)**
-
-**Problem**: `make snobol4` and `make install` both fail with:
-```
-keytrace.ref keytrace.tmp differ: char 14, line 1
-make[1]: *** [Makefile2:400: snobol4] Error 1
-```
-The `snobol4` target runs the regression suite after building. The regression
-test `test/keytrace.sno` exercises `TRACE('STNO','KEYWORD')` and
-`BREAKPOINT()` together. Its reference file `keytrace.ref` was written against
-**unpatched** code — `&STNO` KEYWORD trace was silent without a prior
-`BREAKPOINT()` call. Our TRACE patch makes `&STNO` fire on every statement, so
-`keytrace.tmp` now contains far more trace lines than `keytrace.ref` expects.
-The diff fails → make aborts → `make install` never runs.
-
-**The binary is fine.** `xsnobol4` is built correctly before the test runs.
-The patch is correct. The regression baseline is stale.
-
-**Fix**: Use `make xsnobol4` (builds binary, skips regression suite) and copy
-manually. This is what the oracle build script above now does. `keytrace.ref`
-would need to be regenerated from patched code to fix the test properly — not
-worth doing since the test is validating behaviour we intentionally changed.
+`xsnobol4` = the freshly compiled binary, before regression tests are run.
+`snobol4` (Makefile target) = `xsnobol4` + regression suite + copy on pass.
+The binary is identical. Use `xsnobol4` target every session.
 
 | Binary | Invocation |
 |--------|------------|
@@ -582,10 +581,12 @@ Use `&STCOUNT` (not `&STNO`) as the portable statement counter across all oracle
 | `TRACE(fn,'FUNCTION')` | ✅ | ✅ | ✅ (inferred) | ✅ |
 | `TRACE(label,'LABEL')` | ✅ | ✅ | ✅ (inferred) | ✅ |
 | `TRACE('STCOUNT','KEYWORD')` | ✅ | ✅ | ? | ✅ |
-| `TRACE('STNO','KEYWORD')` | ✅ (patched) | ❌ error 198 | ❌ | ❌ silent |
+| `TRACE('STNO','KEYWORD')` | ✅ fires at breakpointed stmts only | ❌ error 198 | ❌ | ❌ silent |
 
 **All four monitor TRACE types (VALUE/CALL/RETURN/LABEL) work on all three
-runnable oracles.** STNO keyword trace is CSNOBOL4-only.
+runnable oracles.** STNO keyword trace is CSNOBOL4-only, and fires only at
+statements where `BREAKPOINT(n,1)` has been set — this is correct spec
+behaviour (PLB113). Use `STCOUNT` for portable per-statement tracing.
 
 ### TRACE output format (verified — matters for monitor pipe parsing)
 
@@ -612,22 +613,17 @@ monitor pipe reader must normalize per oracle.
 | `DEFINE()` / functions | ✅ | ✅ | ? | ✅ |
 | Pattern matching | ✅ | ✅ | ? | ✅ |
 
-### CSNOBOL4 TRACE patch (required)
+### CSNOBOL4 — no source patch needed
 
-`TRACE('STNO','KEYWORD')` silently accepted but never fires without this patch.
-Deletes 2 lines from each of `snobol4.c` and `isnobol4.c`:
-
-```bash
-sed -i '/if (!chk_break(0))/{N;/goto L_INIT1;/d}' \
-    /home/claude/csnobol4-src/snobol4.c \
-    /home/claude/csnobol4-src/isnobol4.c
-```
+`TRACE('STNO','KEYWORD')` fires only at statements where `BREAKPOINT(n,1)` has
+been set. This is by design (PLB113). No source modification needed or wanted.
+Use `STCOUNT` for per-statement tracing without breakpoints.
 
 ### Harness oracle roles
 
 | Oracle | Probe loop | Monitor | Output crosscheck |
 |--------|:----------:|:-------:|:-----------------:|
-| CSNOBOL4 (patched) | ✅ primary | ✅ primary | ✅ |
+| CSNOBOL4 | ✅ primary | ✅ primary | ✅ |
 | SPITBOL-x64 | ✅ | ✅ | ✅ |
 | SPITBOL-x32 | ✅ (when available) | ✅ (when available) | ✅ |
 | SNOBOL5 | ✅ | ✅ | ✅ |
@@ -724,7 +720,7 @@ The harness crosscheck pipeline is:
 ### 2026-03-11 — Session 6 (Harness Sprint H1 — Oracle Feature Grid + probe.py)
 
 **Oracle investigation:**
-- CSNOBOL4 TRACE patch confirmed working (`TRACE('STNO','KEYWORD')` fires every stmt)
+- CSNOBOL4 TRACE patch applied (`TRACE('STNO','KEYWORD')` fires every stmt) — **SESSION 8 CORRECTION: patch was wrong, see §4. STNO fires only at BREAKPOINT stmts by design. Patch reverted.**
 - SPITBOL x64 forked to `SNOBOL4-plus/x32` with Makefile cross-build patch
 - SNOBOL5 binary downloaded and tested (2024-08-29 build)
 - Full four-oracle feature grid written to PLAN.md §8
