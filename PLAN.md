@@ -662,3 +662,32 @@ The harness crosscheck pipeline is:
 3. Run subject program under SPITBOL-x64 with monitors → capture TRACE log
 4. Diff probe logs across oracles; diff monitor logs across oracles
 5. Any divergence is a compatibility gap to document or fix in SNOBOL4+
+
+### 2026-03-11 — Session 6 (Harness Sprint H1 — Oracle Feature Grid + probe.py)
+
+**Oracle investigation:**
+- CSNOBOL4 TRACE patch confirmed working (`TRACE('STNO','KEYWORD')` fires every stmt)
+- SPITBOL x64 forked to `SNOBOL4-plus/x32` with Makefile cross-build patch
+- SNOBOL5 binary downloaded and tested (2024-08-29 build)
+- Full four-oracle feature grid written to PLAN.md §8
+- TRACE keyword variant matrix: exhaustively tested `STNO`, `&STNO`, `STCOUNT`, `&STCOUNT`
+  — SPITBOL manual confirmed: only `ERRTYPE`, `FNCLEVEL`, `STCOUNT` are valid KEYWORD targets
+  — SPITBOL has no `&STNO`; equivalent is `&LASTNO`
+
+**Harness cornerstone documented (§9):**
+- Probe testing: `&STNO`/`&STCOUNT` + `&STLIMIT` — structural/path coverage
+- Monitor testing: `TRACE()` on variables, functions, labels — behavioral coverage
+- Both techniques documented as the foundation of all harness work
+
+**probe.py built and pushed to SNOBOL4-harness:**
+- Prepends `&STLIMIT=N` + `&DUMP=2` to subject source (two lines, no file modification)
+- Runs N times (stlimit=1..N), captures variable dump at each cutoff
+- Prints frame-by-frame diff: NEW/CHG for every variable after every statement
+- `--oracle csnobol4|spitbol|both` — both mode runs both and diffs frames
+- `--var VAR ...` — filter to specific variables
+- Commit: `8e10cbb`
+
+**State at snapshot:**
+- SNOBOL4-harness: `8e10cbb` — probe.py committed, smoke-tested
+- SNOBOL4-plus/.github: sections 8 and 9 added, oracle grid complete
+- All other repos unchanged from Session 5
