@@ -522,60 +522,89 @@ No code changes to any compiler this session.
 
 ## 8. Oracle Feature Coverage
 
-Quick reference — does the feature exist and minimally work across known oracles?
-SPITBOL-x32 is not testable in this container (kernel has 32-bit execution disabled).
+Verified against actual oracle binaries. SPITBOL-x32 not runnable in this
+container (32-bit kernel execution disabled) — values inferred from source.
 
-### TRACE keyword variant matrix
+### Harness requirements
 
-The SPITBOL manual (v3.7) explicitly states: only `ERRTYPE`, `FNCLEVEL`, and `STCOUNT`
-may be traced with `'KEYWORD'` type. `&STNO` does not exist in SPITBOL — the equivalent
-is `&LASTNO`. The `&` prefix in the TRACE first argument is always wrong (error 198).
+**Probe loop** needs: `&STLIMIT`, `&STCOUNT`/`&STNO`, `&DUMP`
+**Monitor** needs: `TRACE(var,'VALUE')`, `TRACE(fn,'CALL')`, `TRACE(fn,'RETURN')`, `TRACE(label,'LABEL')`
 
-| `TRACE(name,'KEYWORD')` | CSNOBOL4 | SPITBOL-x64 | SNOBOL5 | SPITBOL-x32 |
-|------------------------|:--------:|:-----------:|:-------:|:-----------:|
-| `'STNO'` | ✅ fires (patched) | ❌ error 198 | ❌ silent | ? |
-| `'&STNO'` | ❌ silent | ❌ error 198 | ❌ silent | ? |
-| `'STCOUNT'` | ✅ fires | ✅ fires | ✅ fires | ? |
-| `'&STCOUNT'` | ❌ silent | ❌ error 198 | ❌ silent | ? |
-| `'FNCLEVEL'` | ❌ silent | ❌ silent | ❌ silent | ? |
-| `'ERRTYPE'` | ❌ silent | ❌ silent | ❌ silent | ? |
+### Probe loop — keyword support
 
-**Key finding**: SPITBOL has no `&STNO` keyword. Its equivalent is `&LASTNO` (statement
-number of the *previous* statement executed). SPITBOL `TRACE('STNO','KEYWORD')` fails
-with error 198 — it is not merely unimplemented, it is explicitly rejected.
-CSNOBOL4's `STNO` keyword trace fires on every statement (after the 4-line patch).
+| Keyword | CSNOBOL4 | SPITBOL-x64 | SPITBOL-x32 | SNOBOL5 |
+|---------|:--------:|:-----------:|:-----------:|:-------:|
+| `&STLIMIT` | ✅ | ✅ | ✅ (inferred) | ✅ |
+| `&STCOUNT` | ✅ | ✅ | ✅ (inferred) | ✅ |
+| `&STNO` | ✅ | ❌ → use `&LASTNO` | ❌ | ? |
+| `&LASTNO` | ❌ | ✅ | ✅ (inferred) | ? |
+| `&DUMP=2` fires at `&STLIMIT` | ✅ | ✅ | ? | ✅ |
+
+**All three runnable oracles support the probe loop.**
+Use `&STCOUNT` (not `&STNO`) as the portable statement counter across all oracles.
+
+### Monitor — TRACE type support (verified)
+
+| TRACE type | CSNOBOL4 | SPITBOL-x64 | SPITBOL-x32 | SNOBOL5 |
+|-----------|:--------:|:-----------:|:-----------:|:-------:|
+| `TRACE(var,'VALUE')` | ✅ | ✅ | ✅ (inferred) | ✅ |
+| `TRACE(fn,'CALL')` | ✅ | ✅ | ✅ (inferred) | ✅ |
+| `TRACE(fn,'RETURN')` | ✅ | ✅ | ✅ (inferred) | ✅ |
+| `TRACE(fn,'FUNCTION')` | ✅ | ✅ | ✅ (inferred) | ✅ |
+| `TRACE(label,'LABEL')` | ✅ | ✅ | ✅ (inferred) | ✅ |
+| `TRACE('STCOUNT','KEYWORD')` | ✅ | ✅ | ? | ✅ |
+| `TRACE('STNO','KEYWORD')` | ✅ (patched) | ❌ error 198 | ❌ | ❌ silent |
+
+**All four monitor TRACE types (VALUE/CALL/RETURN/LABEL) work on all three
+runnable oracles.** STNO keyword trace is CSNOBOL4-only.
+
+### TRACE output format (verified — matters for monitor pipe parsing)
+
+| Oracle | Format |
+|--------|--------|
+| CSNOBOL4 | `file:LINE stmt N: EVENT, time = T.` |
+| SPITBOL-x64 | `****N*******  event` |
+| SNOBOL5 | `    STATEMENT N: EVENT,TIME = T` |
+
+All three carry statement number and event description. Formats differ —
+monitor pipe reader must normalize per oracle.
 
 ### Full feature grid
 
-| Feature | CSNOBOL4 2.3.3 | SPITBOL-x64 | SPITBOL-x32 | SNOBOL5 |
-|---------|:--------------:|:-----------:|:-----------:|:-------:|
+| Feature | CSNOBOL4 | SPITBOL-x64 | SPITBOL-x32 | SNOBOL5 |
+|---------|:--------:|:-----------:|:-----------:|:-------:|
 | `CODE(str)` | ✅ | ✅ | ? | ✅ |
 | `EVAL(str)` | ✅ | ✅ | ? | ✅ |
-| `LOAD(proto,lib)` | ✅ dlopen | ❌ stubbed (EXTFUN=0) | ❌ stubbed | ❌ error 23 (obj too large) |
+| `LOAD(proto,lib)` | ✅ dlopen | ❌ EXTFUN=0 | ❌ EXTFUN=0 | ❌ error 23 |
 | `UNLOAD(name)` | ✅ | ✅ | ? | ✅ |
-| `LABELCODE(name)` | ✅ | ❌ undefined | ? | ❌ undefined |
-| `DATA(proto)` | ✅ | ✅ (lowercase name) | ? | ✅ |
+| `LABELCODE(name)` | ✅ | ❌ undef | ? | ❌ undef |
+| `DATA(proto)` | ✅ uppercase | ✅ lowercase | ? | ✅ |
 | `ARRAY()` / `TABLE()` | ✅ | ✅ | ? | ✅ |
 | `DEFINE()` / functions | ✅ | ✅ | ? | ✅ |
-| `&STNO` keyword | ✅ | ❌ no such keyword (`&LASTNO` instead) | ❌ | ? |
-| `&STCOUNT` keyword | ✅ | ✅ | ? | ✅ |
-| `&STLIMIT` keyword | ✅ | ✅ | ? | ✅ |
-| `TRACE('STNO','KEYWORD')` | ✅ (patched) | ❌ error 198 | ? | ❌ silent |
-| `TRACE('STCOUNT','KEYWORD')` | ✅ | ✅ | ? | ✅ |
-| `TRACE(var,'VALUE')` | ✅ | ✅ | ? | ✅ |
 | Pattern matching | ✅ | ✅ | ? | ✅ |
-| `CODE()` execution `:<C>` | ✅ | ✅ | ? | ✅ |
 
-**Notes:**
-- SPITBOL manual §10 lists valid KEYWORD trace targets as only: `ERRTYPE`, `FNCLEVEL`, `STCOUNT`
-- SPITBOL uses `&LASTNO` where CSNOBOL4 uses `&STNO` — different keyword name for same concept
-- `&` prefix in TRACE first arg is always wrong in SPITBOL (error 198); always without ampersand
-- SNOBOL5 trace format: `    STATEMENT N: &VAR = V,TIME = T` — different from CSNOBOL4/SPITBOL
-- SPITBOL `DATA()` returns lowercase type name — corpus tests must normalize case
-- CSNOBOL4 `TRACE('STNO','KEYWORD')` requires the 4-line patch to `isnobol4.c`/`snobol4.c` (see §4)
+### CSNOBOL4 TRACE patch (required)
 
-**Harness implication**: CSNOBOL4 (patched) is the sole reliable per-statement trace oracle.
-SPITBOL-x64 and SNOBOL5 are output crosscheck oracles only.
+`TRACE('STNO','KEYWORD')` silently accepted but never fires without this patch.
+Deletes 2 lines from each of `snobol4.c` and `isnobol4.c`:
+
+```bash
+sed -i '/if (!chk_break(0))/{N;/goto L_INIT1;/d}' \
+    /home/claude/csnobol4-src/snobol4.c \
+    /home/claude/csnobol4-src/isnobol4.c
+```
+
+### Harness oracle roles
+
+| Oracle | Probe loop | Monitor | Output crosscheck |
+|--------|:----------:|:-------:|:-----------------:|
+| CSNOBOL4 (patched) | ✅ primary | ✅ primary | ✅ |
+| SPITBOL-x64 | ✅ | ✅ | ✅ |
+| SPITBOL-x32 | ✅ (when available) | ✅ (when available) | ✅ |
+| SNOBOL5 | ✅ | ✅ | ✅ |
+| SNOBOL4-jvm | via `run-to-step` | via `trace-register!` | ✅ |
+| SNOBOL4-dotnet | TBD | TBD | ✅ |
+| SNOBOL4-tiny | TBD | TBD | ✅ |
 
 ---
 
