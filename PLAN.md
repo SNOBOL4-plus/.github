@@ -860,3 +860,103 @@ not a pinned copy. Two options — decide later:
 - Switch `:jvm` entry in registry to a subprocess (`lein run` or uberjar)
 
 Subprocess is simpler and keeps the contract uniform. In-process is faster.
+
+---
+
+## 12. Test Code Generation — Three Techniques
+
+**Recorded 2026-03-11. Prior art inventoried.**
+
+The harness uses three distinct testing techniques, each complementary:
+
+```
+1. Probe     — step-by-step replay     (DONE: probe.py, test_helpers.clj)
+2. Monitor   — live three-process pipe (DESIGNED, not yet built)
+3. Generator — program synthesis       (DONE: generator.clj, Expressions.py)
+```
+
+### What we have — generator prior art
+
+**`adapters/jvm/generator.clj`** (migrated from SNOBOL4-jvm, Sprint 14/18)
+
+Two tiers already built:
+
+*Tier 1 — `rand-*` (probabilistic):*
+- `rand-program [n-moves]` — weighted random walk over a move table;
+  typed variable pools (int/real/str/pat), safe literals, no div-by-zero,
+  legible idiomatic SNOBOL4
+- `rand-statement []` — one random statement, all grammatical forms
+- `rand-batch [n]` — n random programs
+
+*Tier 2 — `gen-*` (exhaustive lazy sequences):*
+- `gen-assign-int/str`, `gen-arith`, `gen-concat`, `gen-cmp`, `gen-pat-match`
+  — cross-products of all vars × all literals for each construct
+- `gen-by-length []` — ALL constructs, sorted by source length, deduplicated;
+  canonical fixture preamble prepended so every program is self-contained
+- `gen-by-length-annotated []` — same, with `:band 0..5` complexity tag
+- `gen-error-class-programs []` — programs designed to hit each error class
+
+*Batch runners wired to harness:*
+- `run-worm-batch [n source-fn]` — runs N programs through diff-run,
+  saves to `golden-corpus.edn`, returns `{:records :summary :failures}`
+- `run-systematic-batch []` — exhaustive gen-by-length through harness
+- `emit-regression-tests [records ns]` — converts corpus records to
+  pinned Clojure deftests
+
+**`adapters/tiny/Expressions.py`** (Sprint 15, migrated from SNOBOL4-tiny)
+
+Two independent generation architectures for arithmetic expressions:
+
+*Tier 1 — `rand_*` (probabilistic recursive):*
+- `rand_expression/term/factor/element/item` — mutually recursive random
+  descent; weighted choices at each level; generates well-formed infix
+  expressions like `x+3*(y-z)/2`
+
+*Tier 2 — `gen_*` (systematic generator-based):*
+- `gen_expression/term/factor/element/item` — Python generator functions
+  that yield every expression in a deterministic exhaustive order;
+  self-referential (`gen_term` calls `gen_term` via `next()`) —
+  produces the full infinite grammar systematically
+
+*Also in Expressions.py:*
+- `parse_expression/term/factor/element/item` — generator-based
+  SNOBOL4-style pattern parser in Python (PATTERN/POS/RPOS/σ/SPAN
+  classes); the parse IS the test — proves the expression grammar
+- `evaluate(tree)` — tree evaluator (x=10, y=20, z=30)
+- `main()` — generates 100 random expressions, parses each, evaluates,
+  prints result; self-checking loop
+
+### The two generation philosophies
+
+**Probabilistic (`rand_*`)** — random weighted walk. Fast, finds
+surprising combinations, scales to any complexity. Non-reproducible
+without seed. Good for fuzzing and corpus growth.
+
+**Exhaustive (`gen_*`)** — systematic enumeration. Every combination
+at every complexity level. Reproducible. Finite at each band. Good for
+regression coverage and gap analysis.
+
+Both feed the same harness pipeline:
+```
+generator → program source → run(oracle, src) → outcome
+                           → run(engine, src) → outcome
+                                              → agree? → pass/fail
+```
+
+### What is missing
+
+- `Expressions.py` generator is standalone Python — not yet wired to
+  the harness `crosscheck` pipeline
+- No SNOBOL4-statement-level generator in Python (only expression level)
+- `generator.clj` is JVM-only — no Python equivalent for full SNOBOL4
+  programs (dotnet/tiny need this)
+- No generator for patterns beyond simple primitives (ARB, ARBNO, BAL,
+  recursive patterns)
+- No generator for DATA/DEFINE/CODE programs (higher-order constructs)
+
+### Next step (when we get here)
+
+Wire `Expressions.py` gen tier into a Python `crosscheck.py` that calls
+`run(oracle, src)` and `run(engine, src)` for each generated expression
+program. That gives us expression-level crosscheck for dotnet and tiny
+from the top level, same pattern as the JVM batch runner.
