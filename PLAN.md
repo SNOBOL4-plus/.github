@@ -799,3 +799,64 @@ already has `SNO_MONITOR=1` → stderr. JVM has `run-to-step`. Dotnet TBD.
 How each engine exposes its internal state for event-level monitoring is
 an open question. It does not block output-level crosscheck, which works
 today. Decide when we get there.
+
+---
+
+## 11. Developer Workflow — Calling the Harness from an Engine Repo
+
+**Decided 2026-03-11.**
+
+### The goal
+
+Jeffrey (or any engine developer) should be able to run the full harness
+test suite from inside their engine repo without leaving that directory:
+
+```bash
+cd ~/snobol4-plus/SNOBOL4-jvm
+make test-harness        # or: ../SNOBOL4-harness/run.sh jvm
+```
+
+The harness lives at `../SNOBOL4-harness/` relative to any sibling repo.
+The developer does not need to know the harness internals.
+
+### The contract
+
+Each engine repo exposes one thing to the harness: a way to run a SNOBOL4
+program from stdin and return stdout. The harness calls it as a subprocess.
+
+The harness registry (`harness.clj` `engines` map) already defines this
+for every known engine:
+
+```clojure
+:jvm     {:bin "lein" :args ["run"] :type :subprocess}   ; TBD — or uberjar
+:dotnet  {:bin "dotnet" :args ["run" "--project" "..."] ...}
+:tiny    {:bin ".../beautiful" :args [] ...}
+```
+
+### What needs to happen (open, not blocking crosscheck)
+
+1. **`SNOBOL4-harness/run.sh`** — thin shell entry point:
+   ```bash
+   #!/bin/bash
+   # Usage: run.sh <engine> [program.sno]
+   # Run from anywhere inside snobol4-plus/ tree
+   ```
+
+2. **Each engine repo gets a `Makefile` target** (or `justfile`):
+   ```makefile
+   test-harness:
+       ../SNOBOL4-harness/run.sh jvm
+   ```
+
+3. **The harness locates itself** via `$HARNESS_ROOT` env or by walking up
+   from `$PWD` until it finds `SNOBOL4-harness/`.
+
+### Note on JVM specifically
+
+`harness.clj` currently runs the JVM engine **in-process** (direct Clojure
+call). Jeffrey running from `SNOBOL4-jvm/` needs it to run the local build,
+not a pinned copy. Two options — decide later:
+- Keep in-process but load from local classpath (lein dependency)
+- Switch `:jvm` entry in registry to a subprocess (`lein run` or uberjar)
+
+Subprocess is simpler and keeps the contract uniform. In-process is faster.
