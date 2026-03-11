@@ -1290,18 +1290,18 @@ Called from `compiler.clj` before `CODE!`. Returns the same IR maps.
 
 ## Incremental Milestones
 
-| Step | What | Dotnet | JVM |
-|------|------|--------|-----|
-| 0 | Corpus: add Snocone reference files to SNOBOL4-corpus | ✓ `ab5f629` | ✓ `ab5f629` |
-| 1 | Lexer: tokenize `.sc` correctly (identifiers, operators, strings, `#`) | ✓ `dfa0e5b` | ✓ `d1dec27` |
-| 2 | Expression parser: `&&`, `\|\|`, `~`, `==`, `<=`, `*deferred`, `$`, `.` | ✓ dotnet `63bd297` | ✓ JVM `9cf0af3` |
-| 3 | `if/else` → label/goto pairs | | |
-| 4 | `while` / `do/while` → loop labels | | |
-| 5 | `for (e1, e2, e3)` → init/test/step labels | | |
-| 6 | `procedure` → `DEFINE()` + label + `:(RETURN)` | | |
-| 7 | `struct` → `DATA()` | | |
-| 8 | `#include` → file inclusion (reuse existing `-INCLUDE`) | | |
-| 9 | Self-test: compile `snocone.sc` and diff output against `snocone.snobol4` | | |
+| Step | What | Dotnet | JVM | SNOBOL4 (corpus) |
+|------|------|--------|-----|------------------|
+| 0 | Corpus: add Snocone reference files to SNOBOL4-corpus | ✓ `ab5f629` | ✓ `ab5f629` | ✓ `ab5f629` |
+| 1 | Lexer: tokenize `.sc` correctly (identifiers, operators, strings, `#`) | ✓ `dfa0e5b` | ✓ `d1dec27` | (no sep. lexer — patterns ARE the lexer) |
+| 2 | Expression parser: `&&`, `\|\|`, `~`, `==`, `<=`, `*deferred`, `$`, `.` | ✓ dotnet `63bd297` | ✓ JVM `9cf0af3` | in progress |
+| 3 | `if/else` → label/goto pairs | | | in progress |
+| 4 | `while` / `do/while` → loop labels | | | in progress |
+| 5 | `for (e1, e2, e3)` → init/test/step labels | | | in progress |
+| 6 | `procedure` → `DEFINE()` + label + `:(RETURN)` | | | in progress |
+| 7 | `struct` → `DATA()` | | | in progress |
+| 8 | `#include` → file inclusion (reuse existing `-INCLUDE`) | | | in progress |
+| 9 | Self-test: compile `snocone.sc` and diff output against `snocone.snobol4` | | | in progress |
 
 Each step: write tests first, then implement, then confirm baseline still green.
 
@@ -1344,6 +1344,61 @@ Each step: write tests first, then implement, then confirm baseline still green.
 Both implementations use a shared monotonic counter `sc_label_counter`.
 Generated labels: `sc_1`, `sc_2`, etc. Never reused within a compilation unit.
 
+## CANONICAL NOTE — Corpus is Shared by All Three Platforms
+
+**Recorded 2026-03-11. Do not lose this.**
+
+The `SNOBOL4-corpus` repository is the single shared source of truth for all
+SNOBOL4/SPITBOL/Snocone programs across all three compiler platforms:
+
+- `SNOBOL4-jvm` (Clojure → JVM)
+- `SNOBOL4-dotnet` (C# → MSIL/.NET)
+- `SNOBOL4-tiny` (C/Python → x86-64/JVM/MSIL)
+
+Every `.sno`, `.inc`, and `.spt` file lives in `SNOBOL4-corpus`. All three
+platforms use and share the corpus. Test programs, library includes, and the
+Snocone front-end itself are corpus files — not per-platform duplicates.
+
+## snocone.sno — Architecture (beauty.sno technique)
+
+**The SNOBOL4-corpus Snocone front-end (`programs/snocone/snocone.sno`) is
+written in SNOBOL4 and modeled exactly on `beauty.sno` (the SNOBOL4
+beautifier).** Key design points every new Claude must know:
+
+- **No separate lexer phase.** SNOBOL4 patterns ARE the lexer and parser
+  simultaneously. `scId`, `scString`, `scNumber`, etc. are patterns that
+  consume source text directly.
+- **`nPush()` / `nInc()` / `nTop()` / `nPop()`** — counter stack primitives
+  from `semantic.inc` / `counter.inc`. Used to count children during parse so
+  `Reduce(t, nTop())` knows how many nodes to pop.
+- **`shift(p,t)` aliased as `~`** — during pattern build time, `p ~ 'tag'`
+  produces a pattern that, when matched at runtime, calls `Shift('tag', matched_text)`.
+- **`reduce(t,n)` aliased as `&`** — `('tag' & N)` at build time produces a
+  pattern that calls `Reduce('tag', N)` at runtime.
+- **`Shift(t,v)`** — pushes `tree(t,v)` onto the parse stack (a leaf node).
+- **`Reduce(t,n)`** — pops `n` trees off the stack, makes them children of a
+  new `tree(t,,n,c)` node, pushes the result (an internal node).
+- **`pp(x)`** — recursive pretty-printer / code generator that walks the tree
+  and calls `Gen()` to emit SNOBOL4 output. One `pp_TYPE` label per node type.
+- **`Gen(str)`** — buffers output, handles continuation lines and indentation.
+- **`GenTab(pos)`** — tabs to column `pos`.
+- **`GenSetCont(char)`** — sets the continuation character (`+`) for multi-line output.
+- **`ss(x)`** — serializes a tree node to a string (used for single-line output).
+
+The `snocone.sno` compiler:
+1. Reads `.sc` source line by line via `scGetLine()`
+2. Builds logical statements (continuation handling, `#` comment stripping)
+3. Parses each statement with `scCompiland` (top-level pattern)
+4. Builds a parse tree via Shift/Reduce inside the patterns
+5. Walks the tree with `pp(x)` to emit plain SNOBOL4 source to stdout
+6. Output feeds directly into any SNOBOL4 engine (CSNOBOL4, SPITBOL, JVM, dotnet, tiny)
+
+**File location**: `SNOBOL4-corpus/programs/snocone/snocone.sno`
+**Includes used**: `global.inc`, `is.inc`, `FENCE.inc`, `io.inc`, `assign.inc`,
+`match.inc`, `counter.inc`, `stack.inc`, `tree.inc`, `ShiftReduce.inc`,
+`Gen.inc`, `semantic.inc`
+**Run with**: `snobol4 snocone.sno < input.sc` or `spitbol snocone.sno -b input.sc`
+
 ## Session Log — Snocone
 
 | Date | What |
@@ -1353,6 +1408,7 @@ Generated labels: `sc_1`, `sc_2`, etc. Never reused within a compilation unit.
 | 2026-03-10 | **Corpus cleanup**: Removed `snocone.sc`, `snocone.sno`, `snocone.snobol4` (Emmer-restricted). Added Budne's 4 patch files (`README`, `snocone.sc.diff`, `snocone.sno.diff`, `Makefile`). Updated corpus README with three-party attribution + download instructions. SNOBOL4-corpus commit `b101a07`. |
 | 2026-03-10 | **Step 1 complete — Snocone lexer (both targets)**. `SnoconeLexer.cs` + 57 tests (`TestSnoconeLexer.cs`) in SNOBOL4-dotnet commit `dfa0e5b`. `snocone.clj` + equivalent tests (`test_snocone.clj`) in SNOBOL4-jvm commit `d1dec27`. Self-tokenization of `snocone.sc`: 5,526 tokens, 728 statements, 0 unknown. Bug fixed in Clojure tokenizer (spurious `seg` arg). Step 2 (expression parser) is next. |
 | 2026-03-10 | **Step 2 complete — Expression parser (both targets)**. dotnet: shunting-yard `SnoconeParser.cs` + 35 tests (`TestSnoconeParser.cs`), commit `63bd297`. JVM: instaparse PEG grammar (`snocone_grammar.clj`) + `insta/transform` emitter (`snocone_emitter.clj`) + 35 tests (`test_snocone_parser.clj`), all real snocone.sc expressions parse. Grammar fixes: real before integer in atom, capop excludes digit-following dot, juxtaposition concat (blank), `?` removed from unary ops, aref tag for `[...]`. `scan-number` OOM bug fixed (leading-dot infinite loop). JVM commit `9cf0af3`. Step 3 (`if/else`) is next. |
+| 2026-03-11 | **Architecture decision — `snocone.sno` in SNOBOL4-corpus, shared by all platforms.** The Snocone front-end is written as `programs/snocone/snocone.sno` in SNOBOL4, modeled exactly on `beauty.sno`: patterns-as-parser (no separate lexer), nPush/nInc/nTop/nPop counter stack (from `semantic.inc`+`counter.inc`), `~` = `shift(p,t)`, `&` = `reduce(t,n)`, `Shift()`/`Reduce()` tree building (`ShiftReduce.inc`), `pp()` recursive code generator, `Gen()`/`GenTab()` output primitives (`Gen.inc`). Single SNOBOL4 file serves JVM, dotnet, and tiny — all three platforms share SNOBOL4-corpus. Runs on CSNOBOL4 or SPITBOL. See canonical architecture note in this section. |
 
 ---
 ---
