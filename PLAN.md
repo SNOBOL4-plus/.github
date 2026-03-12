@@ -3642,3 +3642,46 @@ survey actual git log and file state, verify understanding before writing any co
 
 **Plan confirmed**: Inject phantom FnDef entries for all runtime-owned functions
 whose source bodies appear in the expanded stream. Implementation is next.
+
+---
+
+## ⚡ KEY FINDING — Session 34: pp() and ss() are NOT in the bootstrap path
+
+**Recorded 2026-03-12, Session 34. Lon's observation confirmed.**
+
+### What pp() and ss() are
+
+`pp(x)` — **pretty-printer**: takes a parse tree node and emits formatted SNOBOL4 source.
+Called 27 times in beauty.sno. Defined at line 426 of beauty.sno with ~50 body labels
+(`pp_snoParse`, `pp_snoId`, `pp_snoString`, `pp_:()`, `ppUnOp`, `ppBinOp`, etc.).
+
+`ss(x, len)` — **string serializer**: converts a parse tree node to a string representation.
+Called 52 times in beauty.sno. Defined at line 640 of beauty.sno (`ssEnd` at close).
+Also exists as `ss.sno` in inc/ — but that is a completely different `SS` (SourceSafe
+interface, unrelated). beauty.sno's `ss` is its own inline definition.
+
+`qq(x, len)` — equivalent of ss in `pp.sno` (the standalone pretty-printer include).
+beauty.sno uses `ss`, not `qq`. pp.sno uses `qq`.
+
+### The critical finding
+
+**`pp.sno` is NOT in beauty.sno's -INCLUDE list.** beauty.sno defines `pp` and `ss`
+inline, in its own source. They are NOT implemented in `snobol4_inc.c`. They are NOT
+runtime-owned. They ARE compiled by snoc as ordinary DEFINE'd functions.
+
+**Therefore: pp and ss are NOT the bootstrap blocker.** They should compile and emit
+correctly via the normal `collect_functions()` path — IF the phantom function body
+absorption bug is fixed first (Shift/Reduce/Push/Pop bodies absorbing into wrong fns).
+
+### What this means for Milestone 3
+
+The beauty.sno self-beautification test exercises pp() and ss() on every token of
+beauty.sno itself. If the compiled binary produces correct output, pp and ss are working.
+If the diff shows garbled output (rather than zero output), pp/ss will be the next
+debugging target. But zero output = phantom bug = fix that first.
+
+**Prior sessions were NOT "chopping off pp and ss." They were producing ZERO output**
+because the program never reached main00. pp and ss were never reached at all.
+Once the phantom fix lands and the binary produces output, pp/ss correctness will
+be verifiable for the first time.
+
