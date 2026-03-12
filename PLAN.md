@@ -1605,3 +1605,84 @@ accordingly when Phase 1/2 begin.
 - [ ] Phase 0 `byrd_ir.py` — implement with locals-inside model
 - [ ] Phase 1 `emit_jvm.py` — JVM backend using this model
 - [ ] Phase 2 `emit_msil.py` — MSIL backend using this model
+
+---
+
+## 14. Self-Modifying C — The Native Byrd Box Instantiation Path
+
+### The Insight (Session 16, Lon)
+
+A C program can do this entirely in native code — **no JVM, no MSIL required
+as an intermediate step.** The running program reads the machine code it just
+executed (the Byrd Box block it came from), copies that memory region, performs
+relocation (relative jumps and absolute addresses), and the copy is live
+immediately.
+
+```
+TEXT section (executable, mmap'd RWX or RX+copy):
+
+  [ box_BREAK | box_SPAN | box_ALT | box_SEQ | ... ]
+        ↑
+        │  *X fires here
+        │
+        ▼
+  memcpy(new_region, box_X.text_start, box_X.text_len)
+  relocate(new_region, delta)   ← fix relative + absolute refs
+  new_region is now executable  ← mmap RWX or mprotect
+```
+
+DATA section runs in parallel:
+
+```
+DATA section:
+
+  [ box_BREAK.data | box_SPAN.data | box_ALT.data | ... ]
+        ↑
+        │  copy alongside TEXT
+        ▼
+  memcpy(new_data, box_X.data_start, box_X.data_len)
+  ← new instance has its own cursor, locals, captures
+```
+
+### Relocation
+
+Two cases, same as any linker/loader:
+
+- **Relative refs** (near jumps, calls within the box): add `delta`
+  (= `new_region - old_region`) to the offset field.
+- **Absolute refs** (pointers into the DATA section, external calls):
+  patch to point at the new DATA copy or leave as-is if pointing outside.
+
+The C compiler already emits position-independent code (`-fPIC`) or
+the box is written to be PIC from the start. Either way the relocation
+pass is mechanical.
+
+### Why This Is Better Than JVM/MSIL for the Native Path
+
+- Zero foreign runtime. No JVM startup. No CLR.
+- The box lives in the same address space as the rest of the program.
+- `mmap(RWX)` + `memcpy` + relocation loop = ~20 lines of C.
+- Cache behavior is identical to hand-written code — because it IS
+  hand-written code, just copied.
+
+### Relationship to JVM/MSIL Backends
+
+JVM and MSIL backends are still valid targets — they do the same
+logical operation (copy a method, relocate its internal labels) but
+inside the JVM/CLR's own code management. The native C path is
+**simpler and faster** and proves the model first.
+
+### Impact on Sprint 21+
+
+After Sprint 20 (beautiful.sno self-hosts via static C emission):
+
+- Sprint 21 target: `mmap` + copy + relocate working for a single
+  primitive box (e.g. `box_LIT`). Prove the copy-and-run loop.
+- Sprint 22: wire the copy loop into `*X` deferred reference execution.
+- Sprint 23: full dynamic Byrd Box instantiation in native C.
+
+JVM/MSIL ports become Phase 1/2 after the native model is proven.
+
+### Status
+- [x] Insight recorded (Session 16)
+- [ ] Sprint 21: mmap + copy + relocate proof of concept

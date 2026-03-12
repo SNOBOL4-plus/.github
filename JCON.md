@@ -419,3 +419,26 @@ Box N in DATA corresponds to box N in TEXT. Sequential = cache-friendly.
 
 **`byrd_ir.py` (Phase 0)** must carry `locals` inside the `ByrBox` node,
 not as a separate allocation. `CopyRelocate` is the IR node for `*X`.
+
+---
+
+## Native C Self-Modifying Path (Session 16, Lon)
+
+> This may be the primary path. JVM/MSIL become secondary targets.
+
+A running C program can instantiate Byrd Boxes natively:
+
+1. `mmap(RWX)` a region for the new box instance
+2. `memcpy` the TEXT block of the source box into it
+3. Relocate: relative jumps += delta, absolute pointers patched
+4. `memcpy` the DATA block alongside — new instance has own locals
+5. Jump in. The copy runs immediately.
+
+This is exactly what `*X` (deferred reference) means at the machine level.
+No foreign runtime. No intermediate bytecode. ~20 lines of C for the
+copy+relocate loop.
+
+Jcon's `gen_bc.icn` / `bytecode.icn` becomes the model for what the
+**relocation pass** looks like — but targeting native x86-64 instead of
+JVM `.class` format. The four-port IR from `ir.icn` / `irgen.icn` is
+still the right abstraction above the machine level.
