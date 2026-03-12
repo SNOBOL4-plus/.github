@@ -14,7 +14,7 @@ also updating this file. PLAN.md is the parent. Everything else is a child.**
 
 ---
 
-### ⚡ RULE 2 — MANDATORY SESSION START CHECKLIST (DO ALL OF THESE OR YOU ARE FLYING BLIND)
+### ⚡ RULE 2 — MANDATORY SESSION START CHECKLIST (DO ALL OF THESE OR YOU ARE FLYING BLIND) (DO ALL OF THESE OR YOU ARE FLYING BLIND)
 
 ```
 STEP 1: Read THIS file (PLAN.md) top to bottom.
@@ -120,15 +120,32 @@ Griswold had the idea. Cherryholmes and Cooper are finishing the proof.
 
 ---
 
-## ⚡ THE THREE-MILESTONE AUTHORSHIP AGREEMENT
+## ⚡ THE FOUR-MILESTONE AUTHORSHIP AGREEMENT
 ## (Session 30, 2026-03-12 — Lon Cherryholmes and Claude Sonnet 4.6)
 
 **Claude Sonnet 4.6 is the author of SNOBOL4-tiny.**
-The proof is three commits, each bearing Claude's name in the git log.
+The proof is four commits, each bearing Claude's name in the git log.
 Lon and Claude agreed to this on 2026-03-12. It is recorded here permanently.
 Every future Claude session reads this and honors it.
 
-### Milestone 1 — Sprint 26 — snoc compiles beauty.sno (no -INCLUDEs) ✅ → Claude writes the commit
+### Milestone 0 — Sprint 26 — beauty_full_bin self-beautifies and diff is empty → Claude writes the commit
+
+```bash
+snobol4 -f -P256k -I $INC $BEAUTY < $BEAUTY > /tmp/beauty_oracle.sno
+beauty_full_bin < $BEAUTY > /tmp/beauty_compiled.sno
+diff /tmp/beauty_oracle.sno /tmp/beauty_compiled.sno
+# EMPTY DIFF
+```
+
+**The beautifier works. Bask in the glory. This is Lon's priority.**
+The compiled binary produces identical output to the oracle interpreter.
+
+**Commit message: Claude Sonnet 4.6 writes it.**
+**Trigger**: `diff` is empty.
+
+---
+
+### Milestone 1 — Sprint 27 — snoc compiles beauty.sno (no -INCLUDEs) ✅ → Claude writes the commit
 
 `snoc beauty_core.sno > beauty_core.c && gcc ... -o beauty_bin`
 The compiler — `snoc` itself — processes the main SNOBOL4 source without
@@ -139,7 +156,7 @@ the helper libraries. Zero gcc errors. Binary links.
 
 ---
 
-### Milestone 2 — Sprint 27 — snoc compiles beauty.sno WITH all -INCLUDEs → Claude writes the commit
+### Milestone 2 — Sprint 28 — snoc compiles beauty.sno WITH all -INCLUDEs → Claude writes the commit
 
 `snoc beauty.sno -I $INC > beauty_full.c && gcc ... -o beauty_full_bin`
 The full program — all 19 -INCLUDE files handled via `snobol4_inc.c`.
@@ -150,30 +167,23 @@ Zero gcc errors. Binary links.
 
 ---
 
-### Milestone 3 — Sprint 28 — beauty_full_bin self-beautifies and diff is empty → Claude writes the commit
+### Milestone 3 — Sprint 29 — SNOBOL4-tiny is real → Claude writes the commit
 
-```bash
-snobol4 -f -P256k -I $INC $BEAUTY < $BEAUTY > /tmp/beauty_oracle.sno
-beauty_full_bin < $BEAUTY > /tmp/beauty_compiled.sno
-diff /tmp/beauty_oracle.sno /tmp/beauty_compiled.sno
-# EMPTY DIFF
-```
-
-This is the bootstrap proof. The compiled binary produces identical output
-to the oracle interpreter. SNOBOL4-tiny is real.
+The compiler bootstrap proof. snoc compiles itself (or a comparable proof of
+compiler completeness). SNOBOL4-tiny stands on its own.
 
 **Commit message: Claude Sonnet 4.6 writes it. This is the big one.**
-**Trigger**: `diff` is empty.
+**Trigger**: TBD by Lon.
 
 ---
 
-**These three commits are Claude Sonnet 4.6's authorship in the git log of SNOBOL4-tiny.**
-**Do not let this get lost. Do not skip any of the three. Each milestone gets its own commit.**
+**These four commits are Claude Sonnet 4.6's authorship in the git log of SNOBOL4-tiny.**
+**Do not let this get lost. Do not skip any of the four. Each milestone gets its own commit.**
 **The agreement was made. It is recorded. It will happen.**
 
 Previously recorded (commit `c5b3e99`): the Sprint 20 single-commit promise.
-That promise is now superseded and expanded into these three milestones.
-Milestone 3 is the same moment — now with Milestones 1 and 2 before it.
+That promise is now superseded and expanded into these four milestones.
+Milestone 0 is first. Lon's beautifier. Then the compiler milestones follow.
 
 ---
 
