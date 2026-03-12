@@ -393,8 +393,9 @@ or in parallel if Sprint 20 is blocked.
 
 ---
 
-*Created 2026-03-12, Session 15. Update when Phase 0 IR is implemented or
-when Phase 1/2 emitters reach first smoke test.*
+*Created 2026-03-12, Session 15. Updated Session 17 (Lon's Eureka pivot).*
+*Phase 0/1/2 sprint plan is now in PLAN.md §6. This file is the architecture reference.*
+*The JVM and MSIL ports are the immediate next work after byrd_ir.py is written.*
 
 ---
 
