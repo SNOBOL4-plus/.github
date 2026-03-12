@@ -474,6 +474,7 @@ the work specifically requires it.
 | `KEYWORD_GRID.md` | Pattern keyword reference |
 | `SESSION_LOG.md` | Full session-by-session history — architecture decisions, what failed, insights |
 | `REPO_PLANS.md` | Per-repo deep plans: dotnet, jvm, tiny sprint plan, Snocone front-end plan |
+| `JCON.md` | Jcon source architecture — Proebsting + Townsend, IR/gen_bc/bytecode layers, port guide |
 
 ---
 
@@ -1422,3 +1423,107 @@ No compiler code written this session.
 - `INTEGER(x)` is a predicate; use `CONVERT(x,'INTEGER')` for truncation
 - Three repos not cloned locally: SNOBOL4-cpython, SNOBOL4-python, SNOBOL4-csharp
   (intentionally absent — pattern libraries, not a current focus)
+
+### 2026-03-12 — Session 15 (Jcon source study + Byrd Box JVM+MSIL architecture)
+
+**Focus**: Source study of Jcon (Proebsting + Townsend, Arizona, 1999).
+Architectural decision to build two new compiler backends. No compiler code written this session.
+
+**Key discovery — Jcon source at `github.com/proebsting/jcon`:**
+
+Jcon is the exact artifact promised in the Proebsting Byrd Box paper: a working
+Icon → JVM bytecode compiler, by the same author. 1,196 commits. Public domain.
+94.6% Java. Written in Icon (the translator) + Java (the runtime).
+
+**Translator pipeline** (`tran/` directory, 9,904 lines total):
+- `irgen.icn` (1,559 lines) — AST → IR chunks. **Four-port Byrd Box encoding is explicit here.**
+  Every AST node gets `start/resume/success/failure` labels. `ir_a_Alt`, `ir_a_Scan`,
+  `ir_a_RepAlt` etc. each call `suspend ir_chunk(p.ir.start/resume/success/failure, [...])`
+  for exactly the four ports. This IS the Byrd Box compilation scheme, in source.
+- `ir.icn` (48 lines) — IR record types: `ir_chunk`, `ir_Goto`, `ir_IndirectGoto`,
+  `ir_Succeed`, `ir_Fail`, `ir_Tmp`, `ir_Label`, `ir_TmpLabel`. Tiny. Exact vocabulary.
+- `gen_bc.icn` (2,038 lines) — IR → JVM bytecode. Each `ir_Label` maps to a `j_label()`
+  object via `bc_ir2bc_labels`; `bc_transfer_to()` emits `j_goto_w`. Resumable functions
+  use `tableswitch` on a `PC` integer field — the computed-goto replacement for JVM.
+- `bytecode.icn` (1,770 lines) — `.class` file serializer (`j_ClassFile`, all opcodes).
+  Replaced entirely by ASM in our port.
+
+**Runtime** (`jcon/*.java`, 88 files): `vDescriptor` abstract base class; `null` return = failure.
+`vClosure` = suspended generator with `PC` int field + saved locals. Generators re-enter
+via `tableswitch`.
+
+**What this means for our JVM backend:**
+
+Jcon's IR is almost exactly the SNOBOL4 Byrd Box IR — but simpler. SNOBOL4 patterns
+have no co-expressions, no closures, no generators. The Byrd Box pattern IR is a strict
+subset of Jcon's IR. Our runtime is just `str_t = {char[] σ, int start, int len}`
+where `len == -1` is failure — three fields, not 88 Java files.
+
+The `bytecode.icn` serialization layer (1,770 lines) is replaced entirely by ASM.
+That's the whole point of using ASM — it handles `.class` file format, constant pool,
+stack frame verification. We write `mv.visitJumpInsn(GOTO, label)` not `j_goto_w(lab)`.
+
+**Architectural decision — two new compiler backends:**
+
+| Compiler | Input | Output | Runtime |
+|----------|-------|--------|---------|
+| SNOBOL4-tiny (existing) | `.sno` | native x86-64 via C | C runtime |
+| **new: JVM backend** | `.sno` | `.class` files | JVM JIT — no Clojure |
+| **new: MSIL backend** | `.sno` | `.dll`/`.exe` | .NET CLR — no C# |
+
+These are **independent compilers**, NOT replacing or modifying the existing
+SNOBOL4-jvm (Clojure interpreter) or SNOBOL4-dotnet (C# interpreter).
+They coexist. The Clojure and C# implementations are full SNOBOL4/SPITBOL.
+The new backends compile only the Byrd Box pattern engine — they produce
+`.class`/`.dll` that runs patterns as compiled code, not interpreted data structures.
+
+**Sprint plan — three phases:**
+
+*Phase 0 — Shared Byrd Box IR (1 sprint)*: Extract node types from `genc(t)` match cases
+in `byrd_box.py` into explicit Python dataclasses mirroring `ir.icn`. Nodes: `Lit`,
+`Span`, `Break`, `Any`, `Notany`, `Pos`, `Rpos`, `Seq`, `Alt`, `Arbno`, `Call`,
+`Subj`, `Match`. Four ports wired by `Goto`/`IndirectGoto`.
+
+*Phase 1 — JVM Byrd Box backend (3 sprints)*:
+- 1A: Value repr (`str_t` = two JVM locals `int start, int len`; `len==-1` = failure).
+  Global `Σ/Δ/Ω` = static fields. Primitives: `LIT/SPAN/BREAK/ANY` as tight bytecode
+  blocks with `Label` objects for four ports.
+- 1B: Composition nodes (`Seq`/`Alt`/`Arbno`) — pure goto wiring via ASM `Label` + `GOTO`.
+  Arbno backtrack state = local `int[]` for counter + saved cursor stack.
+- 1C: Named patterns as methods — `Call(name)` → `INVOKEVIRTUAL` to generated method
+  `str_t name(int entry)`. Method has `tableswitch` on `entry` dispatching to
+  `Label_α` and `Label_β`.
+
+*Phase 2 — MSIL Byrd Box backend (3 sprints)*: Identical structure. `ILGenerator` replaces
+ASM's `MethodVisitor`. `ILGenerator.MarkLabel()` + `OpCodes.Br/Brtrue/Brfalse`.
+Named patterns as `MethodBuilder` in `TypeBuilder` assembly. `entry` dispatch via
+`OpCodes.Switch`.
+
+**Dependencies:**
+```
+Phase 0 (shared IR)
+    ├── Phase 1A → 1B → 1C (JVM)
+    └── Phase 2A → 2B → 2C (MSIL)
+
+Sprint 21-22 (direct x86 ASM in tiny) → Phase 3 (executable mmap pages, C target only)
+```
+
+**The SNOBOL4-tiny T_CAPTURE blocker is still P0.** Phase 0 can begin in parallel
+but Sprint 20 (Beautiful.sno self-hosting) remains the immediate priority.
+
+**Repos affected**: `SNOBOL4-tiny` (Phase 0 IR + emit_jvm.py + emit_msil.py added here),
+potentially new repos `SNOBOL4-jvm-byrd` and `SNOBOL4-msil-byrd` — TBD with Lon.
+
+**Jcon cloned to** `/home/claude/jcon` — available for reference every session
+(re-clone from `github.com/proebsting/jcon`).
+
+**See `JCON.md` (new satellite) for full Jcon architecture notes.**
+
+**Repo commits this session:** None — architecture and planning only.
+
+**State at snapshot:** All repos unchanged from Session 14.
+
+**Next session — immediate actions:**
+1. **Provide token at session start**
+2. **Sprint 20 T_CAPTURE** — resume `cap_start`/`scan_start` offset fix
+3. **Phase 0** — define Python IR dataclasses mirroring `ir.icn`; 13 node types, ~60 lines

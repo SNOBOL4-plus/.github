@@ -170,3 +170,95 @@ Strategic focus declared and recorded:
 Design documented in PLAN.md §7. Empty — ready for first sprint.
 
 No code changes to any compiler or runtime this session.
+
+---
+
+## Session Log — 2026-03-12 (Session 15 — Jcon Source Study + Byrd Box JVM+MSIL Architecture)
+
+### What Happened
+
+Source study of Jcon (`github.com/proebsting/jcon`) — the exact artifact promised
+in Proebsting's 1996 Byrd Box paper. Cloned and read in full. Architectural decision
+made to build two new compiler backends targeting JVM bytecode and MSIL directly.
+No compiler code written this session.
+
+### The Jcon Discovery
+
+Proebsting and Townsend's Jcon (University of Arizona, 1999) is a working Icon → JVM
+bytecode compiler built on the four-port Byrd Box model. 1,196 commits, public domain,
+94.6% Java. The paper's promise ("these techniques will be the basis for a new Icon
+compiler targeting Java bytecodes") is fulfilled in this repository.
+
+The translator is written in Icon and has three layers:
+- `ir.icn` (48 lines) — The IR vocabulary. Tiny. `ir_chunk`, `ir_Label`, `ir_Goto`,
+  `ir_IndirectGoto`, `ir_Succeed`, `ir_Fail`, `ir_TmpLabel`, `ir_MoveLabel`. This is
+  the exact vocabulary for our SNOBOL4 pattern IR.
+- `irgen.icn` (1,559 lines) — AST → IR chunks. The four-port Byrd Box encoding is
+  **explicit here in source**: every Icon AST node gets `start/resume/success/failure`
+  ports, each wired with `ir_Goto`. `ir_a_Alt`, `ir_a_Scan`, `ir_a_RepAlt` each call
+  `suspend ir_chunk(p.ir.start/resume/success/failure, [...])` for exactly the four ports.
+- `gen_bc.icn` (2,038 lines) — IR → JVM bytecode. `bc_ir2bc_labels` maps each
+  `ir_Label` to a `j_label()` object. `bc_transfer_to()` emits `j_goto_w`. Resumable
+  functions use `tableswitch` on a `PC` integer field — the computed-goto replacement
+  for JVM. This is the `switch(entry)` pattern from `test_sno_3.c` in JVM form.
+- `bytecode.icn` (1,770 lines) — `.class` file serializer. Replaced entirely by ASM.
+
+Runtime: 88 Java files. `vDescriptor` abstract base, `null` return = failure.
+`vClosure` = suspended generator with `PC` int field. Our runtime is three fields:
+`char[] σ, int start, int len` where `len == -1` = failure.
+
+### The Architectural Decision
+
+Two new independent compiler backends, NOT replacing the existing Clojure/C# implementations:
+
+| Compiler | Input | Output | Runtime |
+|----------|-------|--------|---------|
+| SNOBOL4-tiny (existing) | `.sno` | native x86-64 via C | C runtime |
+| **new: JVM backend** | `.sno` | `.class` files | JVM JIT |
+| **new: MSIL backend** | `.sno` | `.dll`/`.exe` | .NET CLR |
+
+The Jcon IR is a strict superset of the SNOBOL4 Byrd Box pattern IR. We need
+only the pattern-relevant nodes — roughly 12 of Jcon's ~30 IR node types.
+No co-expressions, no closures, no generators, no dynamic typing, no GC.
+
+### Sprint Plan Decided
+
+Three phases, sequenced:
+
+Phase 0 — Shared Byrd Box IR (1 sprint): Python dataclasses mirroring `ir.icn`.
+Phase 1 — JVM backend (3 sprints): emit_jvm.py using ASM.
+Phase 2 — MSIL backend (3 sprints): emit_msil.py using ILGenerator.
+
+Full sprint plan documented in PLAN.md Session 15 entry and JCON.md.
+
+### Key Insight — Why Jcon Matters
+
+Jcon proves the IR design. We don't have to invent the four-port IR vocabulary
+from scratch — Proebsting already debugged it against a real language and a real
+JVM. Our job is to take the subset that covers SNOBOL4 patterns, replace the
+Icon-specific nodes, and wire it to ASM instead of `bytecode.icn`.
+
+The `bytecode.icn` layer (1,770 lines of `.class` serialization) was the hard
+part in 1999. ASM does all of that for us in 2026. The translation from
+`j_goto_w(label)` to `mv.visitJumpInsn(GOTO, label)` is mechanical.
+
+### What Did Not Happen
+
+Sprint 20 T_CAPTURE blocker (`cap_start`/`scan_start` offset arithmetic) was not
+touched this session. It remains the P0 blocker for Beautiful.sno self-hosting.
+The commit promise (Claude writes the Sprint 20 commit message) stands.
+
+### Commits This Session
+
+None. Architecture and planning only. New file: `.github/JCON.md`.
+
+### Repos At Session End
+
+| Repo | Commit | State |
+|------|--------|-------|
+| SNOBOL4-corpus | `3673364` | unchanged |
+| SNOBOL4-dotnet | `b5aad44` | unchanged |
+| SNOBOL4-jvm | `e002799` | unchanged |
+| SNOBOL4-tiny | `655fa7b` | unchanged |
+| SNOBOL4-harness | `8437f9a` | unchanged |
+| .github | **this commit** | PLAN.md + JCON.md updated |
