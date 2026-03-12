@@ -443,13 +443,44 @@ TopCounter, TDump/XDump/TLump/TValue, TV/TW/TX/TY/TZ, T8Trace/T8Pos, LEQ/LGT etc
 IsSnobol4, Visit/Equal/Equiv/Find/Insert. All registered in `sno_inc_init()` → called
 from `sno_runtime_init()`. Already works. Already linked.
 
-**Milestone status (verified Session 31):**
-- beauty.sno WITH -INCLUDEs already compiles to **0 gcc errors** with snobol4_inc.c
-- Milestone 2 build line (no snoc_helpers.c needed):
-  `gcc -O0 -g /tmp/beauty_full.c $RUNTIME/snobol4/snobol4.c $RUNTIME/snobol4/snobol4_inc.c \`
-  `    $RUNTIME/snobol4/snobol4_pattern.c $RUNTIME/engine.c \`
-  `    -I$RUNTIME/snobol4 -I$RUNTIME -lgc -lm -w -o /tmp/beauty_full_bin`
-- Next step: run beauty_full_bin < beauty.sno, diff vs oracle → Milestone 3
+**⚡ SESSION 33 DESIGN FIX — `entry_label` in FnDef (2026-03-12)**
+
+Root cause of beauty_full_bin producing zero output (Sessions 32–33):
+
+`DEFINE('bVisit(x,fnc)i', 'bVisit_')` — the **two-argument DEFINE form** where the second
+argument is an explicit entry label (`bVisit_`) distinct from the function name (`bVisit`).
+
+Before the fix: `collect_functions()` searched for body_starts matching `fn->name` = `bVisit`.
+No statement has the label `bVisit` — the entry label is `bVisit_`. So `nbody_starts == 0`.
+The function body (`bVisit_`, `bVisit_1`, etc.) was emitted inline in `main()` as flat code.
+This code executed on program startup, called `APPLY(fnc, x)` with uninitialized vars,
+failed, and jumped to `_SNO_END` — exiting before `main00` was ever reached.
+
+After the fix:
+- `FnDef` gains `char *entry_label` field.
+- `collect_functions()` parses the 2nd DEFINE arg and stores it in `entry_label`.
+- `body_starts` search uses `entry_label` when set, else `name`.
+- `is_body_boundary()` treats `entry_label` as a boundary (stops other functions from absorbing it).
+- `fn_by_label()` checks `entry_label` too.
+
+This is in `src/snoc/emit.c`. One occurrence in beauty.sno (`bVisit`). May appear in other
+SNOBOL4 programs. **Never remove this logic.**
+
+**⚡ BOOTSTRAP ARTIFACT — `artifacts/beauty_full_first_clean.c`**
+
+The first C file produced by `snoc` from `beauty.sno` (all 19 -INCLUDEs resolved) that
+compiles with **zero gcc errors** is committed at `artifacts/beauty_full_first_clean.c`.
+10,543 lines. Session 33, 2026-03-12. md5: `f9e54c5877b519b2efbbfbf558ddd7ad`.
+
+This is a historical record of the compiler's first successful translation of a real
+SNOBOL4 program. It is NOT regenerated source — it is a preserved snapshot. Do not delete.
+See `artifacts/README.md` for full context.
+
+**Milestone status (verified Session 33):**
+- beauty.sno WITH -INCLUDEs compiles to **0 gcc errors** ✅
+- beauty_full_bin builds and runs (exits 0) ✅
+- `entry_label` fix applied — bVisit body now in function, not main ✅
+- Milestone 3: diff beauty_full_bin output vs oracle — **next action**
 
 **Runtime facts:**
 - Stack: `sno_push()`/`sno_pop()`/`sno_top()` in `snobol4.c` (array-backed)
@@ -3403,4 +3434,39 @@ diff /tmp/beauty_oracle.sno /tmp/beauty_compiled.sno
 - `sno4net` = the .NET backend deliverable
 - `sno4.net` = rejected, it's a URL, the shell hates dots in command names
 - The Unix succession: `sno3 (1974) → snobol4/spitbol → sno4now/sno4jvm/sno4net (2026)`
+
+---
+
+### 2026-03-12 — Session 33 (entry_label fix + bootstrap artifact preserved)
+
+**Focus**: Root-cause the beauty_full_bin zero-output bug. Fix it. Preserve the artifact.
+
+**Root cause found and fixed — `entry_label` in FnDef:**
+
+`DEFINE('bVisit(x,fnc)i', 'bVisit_')` is the two-argument DEFINE form: function name is
+`bVisit`, but the actual code entry label is `bVisit_`. Prior to this session, `emit.c`
+searched for body_starts by matching `fn->name` (`bVisit`) against statement labels.
+No statement has the label `bVisit` — so `nbody_starts == 0` — so the function body was
+never emitted inside `_sno_fn_bVisit()`. Instead, `bVisit_` / `bVisit_1` fell through into
+`main()` as flat code, executed on startup, called `APPLY(fnc, x)` with uninitialized
+locals, failed, and jumped to `_SNO_END` — killing the program before `main00`.
+
+**Fix (commit pending)**: `FnDef` gains `entry_label` field. `collect_functions()` parses
+the 2nd DEFINE argument and stores it. `body_starts` search, `is_body_boundary()`, and
+`fn_by_label()` all use `entry_label` when present. One occurrence in beauty.sno.
+
+**Bootstrap artifact committed**: `artifacts/beauty_full_first_clean.c` — 10,543 lines,
+the first `snoc` output from `beauty.sno` (all -INCLUDEs) that compiles with 0 gcc errors.
+Historical record. Do not delete. See `artifacts/README.md`.
+
+**CSNOBOL4 oracle**: built from source (`xsnobol4`). Produces 790-line oracle.
+
+**Milestone 3 status**: binary rebuilding post-fix. Diff pending next step in session.
+
+**Repo commits this session:**
+
+| Repo | Commit | What |
+|------|--------|------|
+| SNOBOL4-tiny | pending | entry_label fix in emit.c + artifacts/ directory |
+| .github | this | Session 33 log + §6 entry_label fix + artifact note |
 
