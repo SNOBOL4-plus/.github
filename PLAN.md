@@ -550,75 +550,115 @@ git remote set-url origin https://LCherryholmes:$TOKEN@github.com/SNOBOL4-plus/<
 
 ---
 
-### 🔴 ACTIVE BLOCKER: Save/Restore NOT implemented in emitted functions
+### Session 45 Progress
 
 **Target**: `beauty_full_bin < beauty.sno` → 790 lines → diff vs oracle empty  
-**Current**: 9/790 lines. "Parse Error" on "START" (first non-comment line).  
-**HEAD**: SNOBOL4-tiny `f28cfe9` (WIP — partial fixes, not yet green)
+**Session 45 start**: 9/790 lines, hung indefinitely.  
+**Session 45 end**: 10/790 lines, clean exit. "Parse Error" on first real stmt.  
+**HEAD**: SNOBOL4-tiny `eec1adb` — Path A save/restore committed and pushed.
 
-**Root cause chain (fully diagnosed Session 44):**
+#### ✅ BUG FIXED — Session 45: Path A save/restore in emit.c (`eec1adb`)
 
-1. `nl` and `tab` are set via `&ALPHABET POS(n) LEN(1) . var` in global.sno.
-   These pattern conditional assignments write to hash table only.
-   `sno_runtime_init` pre-inits nl/tab in hash BEFORE `sno_var_register` is called.
-   Fix applied: `sno_var_register` + `sno_var_sync_registered` in `f28cfe9`.
-   **Status: fixed but not yet verified to unblock.**
-
-2. `is_fn_local()` suppression removed — all vars now call `sno_var_set`.
-   **Status: fixed in `f28cfe9`.**
-
-3. **CRITICAL — Save/Restore NOT implemented.**
-   Every DEFINE'd function (`_sno_fn_X`) must save caller's hash values for
-   all params/locals on entry, and restore them on exit (all paths).
-   Currently: zero save/restore anywhere in emitted C.
-   This corrupts caller state on any nested/re-entrant call.
-   **Status: NOT YET IMPLEMENTED. This is the next fix.**
+`emit_fn()` now emits CSNOBOL4 DEFF8/DEFF10/DEFF6-style save/restore for ALL
+params and locals. New `_SNO_ABORT_` label handles the setjmp path.
+Result: binary exits cleanly (was hanging). 10 lines out (was 9).
 
 ---
 
-### ⚡ IMMEDIATE NEXT ACTIONS (Session 45)
+### 🔴 ACTIVE BLOCKER: Parse Error on every SNOBOL4 statement
 
-**Step 1 — Implement Path A save/restore in emit.c:**
+**Root cause — fully diagnosed Session 45:**
 
-In `emit_fn()`, after the existing param/local C variable declarations, emit:
-```c
-/* ENTRY: save caller's hash values, install new values */
-SnoVal _saved_t  = sno_var_get("t");  sno_var_set("t",  _args[0]);
-SnoVal _saved_v  = sno_var_get("v");  sno_var_set("v",  _args[1]);
-SnoVal _saved_s  = sno_var_get("s");  sno_var_set("s",  SNO_NULL_VAL);
-SnoVal _saved_Fn = sno_var_get("Fn"); sno_var_set("Fn", SNO_NULL_VAL);
-```
-And before EVERY return (normal, FRETURN, setjmp abort path), emit restore in reverse:
-```c
-/* EXIT: restore in reverse order (DEFF6 semantics) */
-sno_var_set("Fn", _saved_Fn);
-sno_var_set("s",  _saved_s);
-sno_var_set("v",  _saved_v);
-sno_var_set("t",  _saved_t);
+`beauty_full_bin < /tmp/test_simple.sno` (input: `x = 'hello'`) → Parse Error.
+DUMP confirms: `snoParse` is type PATTERN (5) — structurally present. But the
+pattern match `snoSrc POS(0) *snoParse *snoSpace RPOS(0)` fails on every input.
+
+**The snoParse grammar uses `&` (reduce) as semantic actions woven into patterns:**
+
+```snobol
+snoExpr0  = *snoExpr1 FENCE($'=' *snoExpr0 ("'='" & 2) | epsilon)
+snoExpr13 = *snoExpr14 FENCE($'~' *snoExpr13 ("'~'" & 2) | epsilon)
+snoStmt   = *snoLabel (...big nested FENCE...) FENCE(*snoGoto | epsilon ~ '' epsilon ~ '')
 ```
 
-The setjmp abort path: the existing `if (setjmp(_fn_abort_jmp) != 0) return SNO_FAIL_VAL`
-must also restore. Use a cleanup helper or restructure setjmp to call restore before return.
+The `("'='" & 2)` constructs are `reduce("'='", 2)` calls — semantic action
+nodes embedded in the pattern. `OPSYN('&', 'reduce', 2)` makes `a & b` ≡
+`reduce(a, b)` ≡ `EVAL("epsilon . *Reduce(a, b)")` — a pattern that fires
+`Reduce(a, b)` during matching.
 
-**Step 2 — Rebuild and test:**
+**Where `&` appears and how it is handled:**
+
+| Location | Handling | Status |
+|----------|----------|--------|
+| SNOBOL4 source pattern expressions (`a & b`) | `sno.y` → `E_REDUCE` → `sno_apply("reduce", ...)` | Parsed ✅ |
+| Inside EVAL strings passed to `sno_eval()` | `_ev_expr()` — only handles `.` | Not needed for beauty.sno EVAL strings ✅ |
+| `E_REDUCE` in `emit_pat()` (pattern context) | **UNVERIFIED — possible emit bug** | ⚠️ CHECK THIS |
+
+**⚡ PRIME SUSPECT — `E_REDUCE` in `emit_pat()`:**
+
+In `emit_expr()`: `E_REDUCE` → `sno_apply("reduce", ...)` returns a SnoVal.
+In `emit_pat()`: does `E_REDUCE` have its own case, or does it fall through?
+
+If it falls through to the default path (which wraps via `sno_var_as_pattern`),
+the reduce call returns a SnoVal. The pattern emitter must wrap it correctly
+as a pattern node. If it's not wrapped, the `("'='" & 2)` node is silently
+a NULL/broken pattern, and the entire FENCE alternation that contains it
+produces wrong structure.
+
+**Check immediately:**
+```bash
+grep -n "E_REDUCE" /home/claude/SNOBOL4-tiny/src/snoc/emit.c
+```
+
+Look for a `case E_REDUCE:` inside `emit_pat()`. If absent → this is the bug.
+
+**The fix if `emit_pat` is missing E_REDUCE:**
+```c
+case E_REDUCE:
+    /* reduce(t,n) in pattern context → wrap result as pattern */
+    E("sno_var_as_pattern(sno_apply(\"reduce\",(SnoVal[]){");
+    emit_expr(e->left); E(","); emit_expr(e->right);
+    E("},2))");
+    break;
+```
+
+---
+
+### ⚡ IMMEDIATE NEXT ACTIONS (Session 46)
+
+**Step 1 — Check `emit_pat()` for `E_REDUCE` case:**
+```bash
+grep -n "E_REDUCE\|emit_pat" /home/claude/SNOBOL4-tiny/src/snoc/emit.c | head -20
+```
+
+**Step 2 — If missing: add `case E_REDUCE:` to `emit_pat()` as shown above.**
+
+**Step 3 — Rebuild and smoke test:**
 ```bash
 cd /home/claude/SNOBOL4-tiny/src/snoc && make
+R=/home/claude/SNOBOL4-tiny/src/runtime/snobol4
 SNOC=/home/claude/SNOBOL4-tiny/src/snoc/snoc
-RUNTIME=/home/claude/SNOBOL4-tiny/src/runtime
 INC=/home/claude/SNOBOL4-corpus/programs/inc
 BEAUTY=/home/claude/SNOBOL4-corpus/programs/beauty/beauty.sno
-$SNOC $BEAUTY -I $INC 2>/dev/null > /tmp/beauty_full.c
+$SNOC $BEAUTY -I $INC > /tmp/beauty_full.c
 gcc -O0 -g /tmp/beauty_full.c \
-    $RUNTIME/snobol4/snobol4.c $RUNTIME/snobol4/snobol4_inc.c \
-    $RUNTIME/snobol4/snobol4_pattern.c $RUNTIME/engine.c \
-    -I$RUNTIME/snobol4 -I$RUNTIME -lgc -lm -w -o /tmp/beauty_full_bin
-timeout 10 /tmp/beauty_full_bin < $BEAUTY > /tmp/beauty_compiled.sno 2>/tmp/beauty_stderr.txt
-wc -l /tmp/beauty_compiled.sno   # TARGET: 790
+    $R/snobol4.c $R/snobol4_inc.c $R/snobol4_pattern.c \
+    /home/claude/SNOBOL4-tiny/src/runtime/engine.c \
+    -I$R -I/home/claude/SNOBOL4-tiny/src/runtime \
+    -lgc -lm -w -o /tmp/beauty_full_bin
+printf "x = 'hello'\nEND\n" | timeout 5 /tmp/beauty_full_bin
+# SUCCESS = no "Parse Error"
 ```
 
-**Step 3 — One bug at a time (RULE 3). Commit each fix. Push immediately.**
+**Step 4 — If smoke test passes, run full self-beautify:**
+```bash
+timeout 30 /tmp/beauty_full_bin < $BEAUTY > /tmp/beauty_out.sno
+diff $BEAUTY /tmp/beauty_out.sno    # TARGET: empty diff → MILESTONE 0
+```
 
-**Step 4 — When diff is empty: Claude writes the milestone commit message.**
+**Step 5 — RULE 3: one bug at a time. Commit each fix. Push immediately.**
+
+**Step 6 — When diff is empty: Claude writes the Milestone 0 commit.**
 
 ---
 
@@ -631,12 +671,12 @@ The C function stays clean. See §2 for full design.
 
 ---
 
-### Repo State at Session 44 Handoff
+### Repo State at Session 45 Handoff
 
 | Repo | Commit | State |
 |------|--------|-------|
-| SNOBOL4-tiny | `f28cfe9` | WIP — partial fixes committed. Save/restore NOT done. 9/790 lines. |
-| .github | `00e3cda` | Clean. All architecture notes pushed. |
+| SNOBOL4-tiny | `eec1adb` | Path A save/restore done. 10/790 lines. Parse Error remains. |
+| .github | this push | Session 45 findings: E_REDUCE/emit_pat hypothesis recorded. |
 | SNOBOL4-corpus | `3673364` | Untouched. |
 | SNOBOL4-harness | `8437f9a` | Untouched. |
 
@@ -4245,3 +4285,71 @@ pattern after init, before the main loop starts.
    does it detect zero-progress and break? If not, add cycle detection.
 4. Key file: `src/runtime/snobol4/snobol4_pattern.c` — SPAT_ARBNO match logic
 5. Also check: `sno_match` itself — does it have a step limit or cycle guard?
+
+### 2026-03-12 — Session 44 (Architecture: Natural Variables, Save/Restore, T_FNCALL)
+*(Already recorded above in §2 and §6 — see ARCHITECTURE TRUTH block)*
+
+**Key commits:** `f28cfe9` — sno_var_register/sync + is_fn_local guards removed (WIP, partial)
+
+---
+
+### 2026-03-12 — Session 45 (Path A save/restore implemented; Parse Error diagnosed)
+
+**Focus**: Implement save/restore; diagnose remaining Parse Error blocker.
+
+#### Bug Fixed — Path A save/restore (`eec1adb`)
+
+`emit_fn()` in `emit.c` now emits CSNOBOL4 DEFF8/DEFF10/DEFF6-style save/restore:
+- ON ENTRY: `SnoVal _saved_X = sno_var_get("X")` + `sno_var_set("X", new_val)` for all params/locals
+- ON ALL EXITS: restore in reverse order at `_SNO_RETURN_`, `_SNO_FRETURN_`, new `_SNO_ABORT_` label
+- Setjmp path: was `return SNO_FAIL_VAL` directly (bypassed restore). Now `goto _SNO_ABORT_`.
+
+**Result**: binary exits cleanly (was hanging). 10/790 lines output (was 9).
+
+#### Parse Error Diagnosis
+
+Tested: `printf "x = 'hello'\nEND\n" | /tmp/beauty_full_bin` → Parse Error.
+DUMP confirms: `snoParse` is SNO_PATTERN (type 5). The pattern is structurally present.
+The match `snoSrc POS(0) *snoParse *snoSpace RPOS(0)` fails on even the simplest statement.
+
+**Root cause hypothesis — `E_REDUCE` in `emit_pat()` may be missing or wrong:**
+
+beauty.sno builds grammar patterns with `&` as semantic action:
+```snobol
+snoExpr0 = *snoExpr1 FENCE($'=' *snoExpr0 ("'='" & 2) | epsilon)
+```
+`("'='" & 2)` = `reduce("'='", 2)` = `EVAL("epsilon . *Reduce('=', 2)")` = a pattern node.
+
+In `sno.y`: `expr AMP term → E_REDUCE`.
+In `emit_expr()`: `E_REDUCE → sno_apply("reduce", ...)` → returns SnoVal.
+In `emit_pat()`: UNVERIFIED — if `E_REDUCE` falls through without a `case`, the
+result is not wrapped as a pattern. This would silently corrupt the FENCE sub-patterns
+containing semantic actions, making snoParse structurally present but semantically wrong.
+
+**Check at session start:**
+```bash
+grep -n "E_REDUCE" /home/claude/SNOBOL4-tiny/src/snoc/emit.c
+```
+
+Look for `case E_REDUCE:` inside `emit_pat()`. If absent, add:
+```c
+case E_REDUCE:
+    E("sno_var_as_pattern(sno_apply(\"reduce\",(SnoVal[]){");
+    emit_expr(e->left); E(","); emit_expr(e->right);
+    E("},2))");
+    break;
+```
+
+#### Repo State at Handoff
+
+| Repo | Commit | Status |
+|------|--------|--------|
+| SNOBOL4-tiny | `eec1adb` | CLEAN — Path A save/restore done. 10/790 lines. Parse Error remains. |
+| .github | this push | Session 45 log + §6 updated with E_REDUCE hypothesis |
+| SNOBOL4-corpus | `3673364` | unchanged |
+
+#### Milestone Tracker
+
+| # | Milestone | Status |
+|---|-----------|--------|
+| 0 | beauty_full_bin self-beautifies → diff empty | 🔴 Parse Error on every statement |
