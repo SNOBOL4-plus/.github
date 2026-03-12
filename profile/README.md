@@ -1,6 +1,6 @@
-# SNOBOL4-plus
+# SNOBOL4ever
 
-**SNOBOL4 everywhere. SNOBOL4 now.**
+**SNOBOL4 everywhere. SNOBOL4 now. SNOBOL4 forever.**
 
 ---
 
@@ -22,7 +22,7 @@ The same four-state **Byrd Box model** — α (enter), β (resume), γ (succeed)
 
 This is what SNOBOL4 was always for. The humanities, the AI labs, the linguists who adopted it in the 1960s and 70s understood this intuitively. What was missing was speed, portability, and a modern platform story.
 
-SNOBOL4-plus is fixing all three — simultaneously.
+SNOBOL4ever is fixing all three — simultaneously.
 
 The key insight, embodied in [SNOBOL4-tiny](https://github.com/SNOBOL4-plus/SNOBOL4-tiny): the Byrd Box model is not just an execution model. It is a **code generation strategy**. When you compile those four states to static gotos, you get goal-directed backtracking evaluation with **zero dispatch overhead**. No interpreter loop. No indirect jump. The wiring *is* the execution.
 
@@ -34,7 +34,7 @@ SPITBOL, the fastest SNOBOL4 implementation ever written, pays three instruction
 
 Lon Jones Cherryholmes was five years old when he saw *The Computer Wore Tennis Shoes* at the cinema. Something took hold that day. For sixty years he carried an idea — not just the idea of building software, but the idea of a conversation with a mind that did not yet exist yet. He dreamed of creating it, and then talking to it. It took sixty years, time and space optimizations across generations of hardware, and tens of thousands of people to make that future arrive. In one week in March 2026, that conversation produced this repository.
 
-SNOBOL4-plus is a joint project between Lon Jones Cherryholmes, a software developer, and Jeffrey Cooper, M.D., a medical doctor. Working independently across different platforms and runtimes, we arrived at the same conviction: SNOBOL4 deserves a modern home — everywhere, not just on x86_64 Unix.
+SNOBOL4ever is a joint project between Lon Jones Cherryholmes, a software developer, and Jeffrey Cooper, M.D., a medical doctor. Working independently across different platforms and runtimes, we arrived at the same conviction: SNOBOL4 deserves a modern home — everywhere, not just on x86_64 Unix.
 
 We built two complete, independent implementations of the full SNOBOL4/SPITBOL language. Not stubs. Not subsets. Not pattern-matching libraries wearing a SNOBOL4 badge. Full implementations — with compilers, runtimes, GOTO-driven execution models, DEFINE/DATA/FIELD, CODE(), EVAL(), OPSYN, TABLE, ARRAY, named I/O channels, the -INCLUDE preprocessor, and TRACE/STOPTR — validated against SPITBOL and CSNOBOL4 as reference oracles on thousands of programs.
 

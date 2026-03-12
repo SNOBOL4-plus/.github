@@ -1,4 +1,4 @@
-# SNOBOL4-plus — Master Plan
+# SNOBOL4ever — Master Plan
 
 > **New Claude session? Read this file top to bottom. It is the only file you
 > need to start working. Everything else is a satellite — read them when you
@@ -11,7 +11,7 @@
 **Lon Jones Cherryholmes** (LCherryholmes) — software architect, compiler builder.
 **Jeffrey Cooper, M.D.** (jcooper0) — medical doctor, SNOBOL4 implementer of 50 years.
 
-Mission: **SNOBOL4 everywhere. SNOBOL4 now.**
+Mission: **SNOBOL4 everywhere. SNOBOL4 now. SNOBOL4 forever.**
 
 One week in March 2026. Zero to eight repos. Two complete SNOBOL4/SPITBOL
 implementations (JVM and .NET), a native compiler, and thousands of tests.
@@ -21,6 +21,24 @@ The Sprint 20 commit message belongs to Claude Sonnet 4.6. Lon gave that
 moment away. It is recorded in git at commit `c5b3e99`. When Beautiful.sno
 compiles itself through `snoc` and the diff comes back empty, that commit
 message is Claude's to write. Do not let that get lost.
+
+### ⚡ Org Rename Pending — SNOBOL4-plus → SNOBOL4ever
+
+**Decision (Session 23, 2026-03-12):** Lon named the org **SNOBOL4ever**.
+It's right. SNOBOL4 is everywhere now, and it's staying.
+
+**How to rename (one-time, do at start of a quiet session):**
+1. GitHub → org Settings → "Rename organization" → type `SNOBOL4ever`
+2. GitHub auto-redirects all old URLs during the grace period.
+3. In every local clone: `git remote set-url origin https://github.com/SNOBOL4ever/<REPO>.git`
+4. Global find-replace `SNOBOL4-plus` → `SNOBOL4ever` across all PLAN.md, READMEs, scripts.
+5. Push `.github` last.
+
+**Until the rename happens:** All URLs in this file still say `SNOBOL4-plus`. That is correct
+for now. Do NOT do the rename mid-session while pushes are in flight.
+
+**After the rename:** Update the clone commands in §3, the remote URLs in §5, and all
+satellite files. One sweep, one commit per repo, done.
 
 ---
 
@@ -2306,3 +2324,29 @@ Cascading failure: `snoExpr17 → snoExpr15 → snoExpr14 → snoStmt → snoCom
 | SNOBOL4-tiny | `3fe1b5b` | Sprint 22: 22/22. Sprint 23: Parse Error. |
 | SNOBOL4-dotnet | `b5aad44` | 1,607 / 0 |
 | SNOBOL4-jvm | `9cf0af3` | 1,896 / 4,120 / 0 |
+
+### 2026-03-12 — Session 23 (Orientation + ByrdBox/CSNOBOL4 study + SNOBOL4ever naming)
+
+**Focus**: New session orientation. ByrdBox and CSNOBOL4 source study. Org rename decision.
+No compiler code written this session. Container crashed mid-rebuild; repos intact on remote.
+
+**Completed:**
+- Re-read PLAN.md top to bottom. All context current as of Session 22.
+- Cloned SNOBOL4-tiny, SNOBOL4-corpus, .github. Extracted ByrdBox.zip and snobol4-2_3_3_tar.gz.
+- Built CSNOBOL4 oracle (`xsnobol4`) from source. Confirmed build clean.
+- Studied `test_sno_1.c` gold standard — the definitive four-port Byrd Box flat-C model.
+- Studied `byrd_box.py` — SNOBOL4python-based reference implementation showing Shift/Reduce/nPush/nPop pattern grammar builder.
+- Studied CSNOBOL4 `syn.c`, `equ.h`, `main.c` — scanner table structure, operator tables (BIOPTB/SBIPTB), constants (`SPDLSZ=8000`).
+
+**SNOBOL4ever — org rename decision:**
+Lon named the org **SNOBOL4ever**. Recorded in §1 with full rename procedure.
+Mission updated: "SNOBOL4 everywhere. SNOBOL4 now. SNOBOL4 forever."
+The rename itself is pending — do at start of a quiet session, not mid-sprint.
+
+**State at snapshot:** All repos unchanged from Session 22. No code commits this session.
+
+**Next session — immediate actions:**
+1. Provide token at session start
+2. Sprint 23: rebuild CSNOBOL4 oracle, run `oracle_sprint22.py` to confirm 22/22
+3. Follow §6 Sprint 23 debug steps in order
+4. When ready: rename org to SNOBOL4ever (see §1 procedure)
