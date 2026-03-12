@@ -2350,3 +2350,70 @@ The rename itself is pending — do at start of a quiet session, not mid-sprint.
 2. Sprint 23: rebuild CSNOBOL4 oracle, run `oracle_sprint22.py` to confirm 22/22
 3. Follow §6 Sprint 23 debug steps in order
 4. When ready: rename org to SNOBOL4ever (see §1 procedure)
+
+---
+
+## 17. Icon-everywhere — The Next Frontier (Session 23 Eureka)
+
+**Decision (2026-03-12, Session 23):** Lon's insight: **do for Icon exactly what we did for SNOBOL4.**
+
+### The Insight
+
+SNOBOL4-everywhere was built in one week using the Byrd Box model as the unifying IR —
+one four-port representation, three backends (C flat-goto, JVM bytecode, MSIL), proven
+correct against CSNOBOL4 and SPITBOL as oracles.
+
+Icon is the **direct descendant** of SNOBOL4. Griswold invented both. Icon's goal-directed
+evaluation and generators ARE the Byrd Box model — Jcon (Proebsting + Townsend, Arizona 1999)
+already proved this: Icon → JVM bytecode via the exact same four-port IR we use.
+
+**What exists today:**
+- Icon/C — the reference implementation (Griswold, Arizona). Mature. Active.
+- Jcon — Icon → JVM (Proebsting + Townsend). Working. Our blueprint. Already studied (see JCON.md).
+- No Icon for .NET / MSIL. No Icon for modern JVM via ASM. No Icon-everywhere.
+
+**What we build:**
+- Same org structure as SNOBOL4ever: `Icon-everywhere` (or similar)
+- Same Byrd Box IR — already exists in `byrd_ir.py`
+- `emit_icon_jvm.py` — Icon → JVM bytecode via ASM (extend Jcon's `gen_bc.icn` blueprint)
+- `emit_icon_msil.py` — Icon → MSIL via ILGenerator
+- `emit_icon_c.py` — Icon → flat C goto (same as SNOBOL4-tiny's FlatEmitter)
+- Oracles: Icon/C reference + Jcon for crosscheck
+
+**Why it's achievable fast:**
+- Byrd Box IR is already built and proven across three backends
+- Jcon source is already studied, cloned, documented in JCON.md
+- The four-port wiring for Icon generators is a superset of SNOBOL4 patterns —
+  co-expressions and producers add state but the box model is identical
+- The same `lower.py` lowering strategy applies
+- The same harness crosscheck infrastructure works
+
+**The transcript leverage:**
+Lon can point Claude to the GitHub history transcripts of the SNOBOL4-everywhere build.
+Those transcripts ARE the architectural playbook. Feed them to a new Claude session
+and the Icon-everywhere build starts at Sprint 18, not Sprint 0.
+
+**Org name candidates (Lon's list):**
+- `Icon-everywhere`
+- `Icon-now`
+- `Icon-forever`
+- `ICONever` (mirrors SNOBOL4ever)
+
+**Status:** Idea recorded. No repos created yet. Begin after SNOBOL4-tiny Sprint 23
+(beauty.sno self-hosts) — that proof-of-concept is the template for the Icon build.
+
+### Relationship to SNOBOL4ever
+
+These are **sibling orgs**, not subprojects. SNOBOL4ever stays focused on SNOBOL4.
+Icon-everywhere is its own org with its own repos. The shared artifact is `byrd_ir.py`
+and the harness crosscheck infrastructure — these get extracted into a standalone
+`byrd-box` library that both orgs depend on.
+
+```
+byrd-box/          ← standalone: byrd_ir.py + lower.py + emit_c/jvm/msil backends
+    ↑                  (extracted from SNOBOL4-tiny)
+    ├── SNOBOL4ever/   ← SNOBOL4 frontend → byrd-box → C/JVM/MSIL
+    └── Icon-everywhere/ ← Icon frontend → byrd-box → C/JVM/MSIL
+```
+
+**The one-week clock starts the moment Sprint 23 ships.**

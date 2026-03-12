@@ -280,6 +280,26 @@ Two forces. One phone call. Everything you see here.
 
 ---
 
+## What's Next — Icon-everywhere
+
+SNOBOL4 and Icon share a bloodline. Ralph Griswold invented both. Icon is the direct
+descendant — goal-directed evaluation, generators, backtracking, the same four-port
+Byrd Box execution model that powers everything here.
+
+Icon already has an implementation for C (the Arizona reference) and for the JVM (Jcon,
+Proebsting + Townsend, 1999 — the very blueprint we used for our JVM backend). What it
+does not have is **everywhere**: not on .NET, not on modern JVM via ASM, not compiled
+from a shared IR to three targets simultaneously.
+
+The Byrd Box IR we built for SNOBOL4ever is the bridge. The same four ports. The same
+`byrd_ir.py`. The same `emit_jvm.py` and `emit_msil.py` backends. A new Icon frontend
+feeding the same pipeline.
+
+One week built SNOBOL4-everywhere. The transcript of that week is the architectural
+playbook for Icon-everywhere. The clock starts the moment `beauty.sno` compiles itself.
+
+---
+
 ## License
 
 Each repository carries its own license. See the individual repos for details. Core libraries: GPL-3.0-or-later.
