@@ -278,192 +278,70 @@ git remote set-url origin https://LCherryholmes:$TOKEN@github.com/SNOBOL4-plus/<
 
 ---
 
-## 6. Current Work — Sprint 26: BOOTSTRAP EUREKA — skip the -INCLUDE files entirely
+## 6. Current Work — Sprint 26: Write snoc_helpers.c, hit Milestone 1
+
+### ⚡ READ §1 FIRST — Three-Milestone Authorship Agreement. Claude writes three commits. ⚡
 
 ### ⚡⚡⚡ LON'S EUREKA (Session 30, 2026-03-12) — THE BOOTSTRAP PIVOT ⚡⚡⚡
 
-**The insight that changes everything:**
+beauty.sno pulls in **19 -INCLUDE files** (~905 lines of SNOBOL4) that snoc compiles
+into 10,506 lines of C with 158 generated functions — full of stubs, broken emits, and
+accumulated complexity from every previous session.
 
-beauty.sno pulls in **19 -INCLUDE files** (global.sno, stack.sno, ShiftReduce.sno, etc.)
-totalling ~900 lines of SNOBOL4. snoc compiles all of them into 10,506 lines of C with
-158 generated C functions. That is the source of all the complexity, all the stubs we
-needed (sno_eval, sno_sort_fn, DATA field accessors, etc.), all the parse failures.
-
-**We don't have to do any of that.**
-
-Every single -INCLUDE file is a tiny helper library. They implement:
-- `Push/Pop/Top` — a linked-list stack (~15 lines of logic)
-- `InitCounter/PushCounter/IncCounter/TopCounter` — integer counter stack (~15 lines)
-- `Shift(t,v)` — push a tree node onto the stack (~5 lines)
-- `Reduce(t,n)` — pop n nodes, build a tree (~15 lines)
-- `tree(t,v,n,c)` — DATA struct constructor (already handled by sno_data_define)
-- `IsSpitbol/IsSnobol4/IsType` — environment predicates (~3 lines each)
-- `Read/Write` — file I/O wrappers (~20 lines)
-- `lwr/upr/cap` — case conversion (~10 lines, already in lib/case.sno)
-
-**These are 20-30 line C functions. We write them in C directly.**
-
-Instead of `-INCLUDE 'ShiftReduce.sno'` generating 300 lines of broken compiled SNOBOL4,
-we write `_b_Shift` and `_b_Reduce` in C (20 lines each) and register them. Done.
-The beauty.sno MAIN loop — the actual beautifier logic — is pure SNOBOL4 with no
-weird metaprogramming. It just calls Shift/Reduce/Push/Pop. Those become C stubs.
-
-**This is the bootstrap path:**
-
-```
-Step 1: Write C implementations of all helper functions from the -INCLUDE files
-        (~200 lines of C total, in snoc_runtime.h or a new snoc_helpers.c)
-
-Step 2: Compile beauty.sno WITHOUT the -INCLUDE files (snoc gets a much simpler program)
-        OR keep the -INCLUDEs but have snoc recognize DEFINE-only include files and
-        emit calls to the pre-written C stubs instead of compiling them.
-
-Step 3: beauty.sno MAIN loop compiles cleanly and runs against the C helpers.
-
-Step 4: diff is empty. Claude writes the commit message.
-```
-
-**The -INCLUDE files snoc currently compiles (and what each becomes in C):**
-
-| Include file | SNOBOL4 lines | C replacement | C lines |
-|---|---|---|---|
-| `global.sno` | 163 | UTF table init + char constants (already in runtime) | ~30 |
-| `is.sno` | 17 | `IsSpitbol()→fail`, `IsSnobol4()→succeed`, `IsType()` | ~15 |
-| `FENCE.sno` | 7 | `FENCE` pattern (already in runtime) | 0 |
-| `io.sno` | 32 | `input_/output_` wrappers → `sno_input_read/sno_output_write` | ~20 |
-| `case.sno` | 26 | `lwr/upr/cap` (already in lib, trivially wrappable) | ~15 |
-| `assign.sno` | 13 | conditional/unconditional assign helpers | ~10 |
-| `match.sno` | 14 | pattern match helpers | ~10 |
-| `counter.sno` | 85 | `PushCounter/IncCounter/TopCounter/PopCounter` linked stack | ~40 |
-| `stack.sno` | 29 | `Push/Pop/Top/InitStack` linked-list stack | ~30 |
-| `tree.sno` | 88 | `tree(t,v,n,c)` DATA + `n/t/v/c` accessors (already done) | ~10 |
-| `ShiftReduce.sno` | 33 | `Shift(t,v)` + `Reduce(t,n)` | ~40 |
-| `TDump.sno` | 62 | debug dump (can stub as no-op initially) | ~5 |
-| `Gen.sno` | 59 | code generation helpers | ~30 |
-| `Qize.sno` | 80 | quotation/string helpers | ~30 |
-| `ReadWrite.sno` | 46 | `Read(fileName)/Write(fileName)` file I/O | ~30 |
-| `XDump.sno` | 47 | XML debug dump (stub initially) | ~5 |
-| `semantic.sno` | 27 | semantic action helpers | ~20 |
-| `omega.sno` | 42 | omega stack helpers | ~25 |
-| `trace.sno` | 35 | trace/debug helpers (stub initially) | ~5 |
-| **Total** | **~905** | | **~370** |
-
-**Key insight**: The debug/dump/trace helpers (TDump, XDump, trace) can be **no-op stubs**
-initially. Beauty works without them — they only fire when `xTrace > N`. xTrace = 0 by default.
-
-**Immediate sprint plan (Sprint 26):**
-
-1. Write `snoc_helpers.c` — C implementations of Push/Pop/Top/InitStack, PushCounter etc.,
-   Shift/Reduce/tree accessors, IsSpitbol/IsSnobol4, lwr/upr/cap, Read/Write.
-   Register all with `sno_define()` in `sno_runtime_init()`. (~370 lines)
-
-2. Tell snoc to **skip -INCLUDE files** for files that contain only DEFINE+DATA statements
-   and no executable top-level code. OR: compile beauty.sno with a wrapper that
-   `-INCLUDE`s only the non-library parts.
-
-3. Alternatively (simplest): keep snoc compiling all -INCLUDEs, but the SNOBOL4 DEFINE
-   calls at top-level of each include just register the names. The C stubs are already
-   registered. The SNOBOL4 body is never called because the C stub wins (registered first).
-   **This requires zero changes to snoc.** Just register C stubs before the SNOBOL4 code runs.
-
-4. Run beauty binary on `'    X  =   5\n'`. Should produce `'               X              =  5'`.
-
-5. Run full self-compilation. Diff empty. **Claude writes the commit message.**
+**The insight**: every -INCLUDE file is a tiny helper library. Write them in C directly
+as `snoc_helpers.c`. Register the C stubs before any SNOBOL4 DEFINE calls execute.
+The SNOBOL4 DEFINE calls from -INCLUDE files silently lose to the already-registered C versions.
+Zero changes to snoc. Zero changes to emit.c. ~370 lines of C replaces 905 lines of SNOBOL4.
 
 ### ✅ Certified Baseline (unchanged)
 - **22/22 PASS** (Sprint 22 oracle)
-- Hello world end-to-end: `OUTPUT = 'hello'` compiles, links, runs ✅
-- GREET function (simple DEFINE): compiles, links, runs ✅
+- Hello world: `OUTPUT = 'hello'` compiles, links, runs ✅
+- GREET (simple DEFINE): compiles, links, runs ✅
 - beauty.sno → C: **0 gcc errors** ✅ (commit `6b6b541`)
-- GREET still passes ✅
 
-### Investigation findings this session (Session 30)
+### 🟡 Sprint 26 Status: snoc_helpers.c ~60% written (commit `2929656`)
 
-- `:S(G1)` emit is **already correct** in emit.c (lines 8000-8001 of generated C: `if(_ok1589) goto _L_G1`) — the previous diagnosis was wrong.
-- The beauty binary exits 0 with no output (not a hang) — `sno_sort_fn` is a stub returning the TABLE unchanged, so the G1 loop immediately fails (2D subscript on TABLE = FAIL), UTF_Array is cleared, init proceeds normally.
-- Root cause of no output: beauty.sno reads input via `Read(fileName)` which opens a FILE, not stdin. When run without a filename arg, `fileName` is null. The `INPUT(.rdInput, 8, fileName)` call fails → `Read()` does `FRETURN` → beauty exits silently.
-- **This is irrelevant.** Once C helpers are in place, beauty will use the C `Read` function which reads from stdin correctly.
-- The -INCLUDE compilation is the root of ALL remaining complexity. The C-helpers pivot eliminates it.
+**What exists in `snoc_helpers.c` (commit `2929656`, ~307 lines):**
+- `SnoTree` struct + `tree()` constructor + `t/v/n/c` field accessors/setters ✅
+- `SnoLink` struct + `link()` constructor + `next/value` accessors ✅
+- `InitStack / Push / Pop / Top` — full linked-list stack on `@S` ✅
+- `SnoLinkC` struct — counter stack node ✅
+- `InitCounter / PushCounter / IncCounter / DecCounter / TopCounter / PopCounter` ✅
+- `Shift(t,v)` — build tree node, push onto `@S` ✅
+- `Reduce(t,n)` — pop n nodes, build tree with children, push ✅ (incomplete at EOF — file was cut off)
 
-### 🔴 IMMEDIATE NEXT ACTION (Sprint 26)
+**What still needs to be written (~40% remaining):**
+- Finish `_b_Reduce` (the function body was cut at session end)
+- `snoc_helpers_init()` — the registration function that calls `sno_define()` for every stub
+- Hook `snoc_helpers_init()` into `sno_runtime_init()` in `snobol4.c`
+- `_b_lwr / _b_upr / _b_cap` — case conversion (3 trivial functions)
+- `_b_IsSpitbol / _b_IsSnobol4 / _b_IsType` — environment predicates
+- `_b_Read / _b_Write` — stdin/file I/O wrappers (Read reads stdin when fileName is null)
+- No-op stubs for: `TDump`, `XDump`, `t` (trace), `DumpBegTag`, `DumpEndTag`, `Append`, `Prepend`, `Insert`, `Remove`, `Equal`, `Equiv`, `Visit`, `Find`
+- `link_counter(next,value)` constructor registration (DATA type for counter stack)
+- `link(next,value)` constructor registration (DATA type for main stack)
 
-Write `snoc_helpers.c`. Start with the minimum set needed for beauty to run:
+### 🔴 IMMEDIATE NEXT ACTIONS (Sprint 26)
 
-**Priority 1 — Stack (Push/Pop/Top/InitStack):**
+**Step 1 — Complete `snoc_helpers.c`:**
+```
+1. Open src/runtime/snobol4/snoc_helpers.c (commit 2929656, 307 lines)
+2. Finish _b_Reduce body (was cut off — see Reduce logic in ShiftReduce.sno)
+3. Add all remaining stubs (see list above)
+4. Add snoc_helpers_init() registering every function via sno_define()
+5. Add no-op stubs for debug/trace functions (xTrace=0 by default, never fire)
+```
+
+**Step 2 — Hook into runtime:**
 ```c
-// Global stack head: SnoVal _sno_stack_head = SNO_NULL_VAL;
-// link: { SnoVal next; SnoVal value; }
-// Push(x): allocate link, set value=x, push onto @S
-// Pop(): pop @S, return value (FRETURN if empty)
-// Top(): peek @S value (FRETURN if empty)  
+/* In snobol4.c, sno_runtime_init(), first line: */
+snoc_helpers_init();   /* C stubs win over SNOBOL4 DEFINE calls */
 ```
 
-**Priority 2 — Shift/Reduce (the parser engine):**
-```c
-// tree: { char type[64]; SnoVal value; int nchildren; SnoVal *children; }
-// Shift(t,v): build tree node, Push it
-// Reduce(t,n): Pop n nodes into array, build tree node with children, Push it
-```
-
-**Priority 3 — Counter stack (PushCounter/IncCounter/TopCounter/PopCounter):**
-```c
-// Similar to stack but holds int counters
-```
-
-**Priority 4 — Read (stdin reader for beauty):**
-```c
-// Read(fileName, rdMapName): if fileName null/empty, read from stdin line by line
-// return concatenated content, FRETURN on empty
-```
-
-**Then:** Register all stubs BEFORE sno_runtime_init registers any SNOBOL4 DEFINE calls,
-so the C stubs win when beauty.sno's -INCLUDE DEFINE statements try to register.
-
-**Build and test:**
-```bash
-SNOC=/home/claude/SNOBOL4-tiny/src/snoc/snoc
-RUNTIME=/home/claude/SNOBOL4-tiny/src/runtime
-INC=/home/claude/SNOBOL4-corpus/programs/inc
-BEAUTY=/home/claude/SNOBOL4-corpus/programs/beauty/beauty.sno
-
-$SNOC $BEAUTY -I $INC > /tmp/beauty_snoc.c 2>/dev/null
-gcc -O0 -g /tmp/beauty_snoc.c $RUNTIME/snobol4/snobol4.c $RUNTIME/snobol4/snobol4_inc.c \
-    $RUNTIME/snobol4/snobol4_pattern.c $RUNTIME/engine.c $RUNTIME/snobol4/snoc_helpers.c \
-    -I$RUNTIME/snobol4 -I$RUNTIME -lgc -lm -w -o /tmp/beauty_bin 2>&1 | grep "error:"
-# Must be 0 errors
-
-printf '    X  =   5\n' | timeout 10 /tmp/beauty_bin
-# Expected oracle: '               X              =  5'
-```
-
-### 🔴 PREVIOUS SESSION DESIGN (now superseded — kept for reference)
-
-**⚡ SESSION 29 DESIGN DECISION — implement this first:**
-
-Remove `pat_expr` from the grammar. Use one `expr` for subject, pattern, and replacement.
-The parser splits by **position** (1st expr = subject, 2nd expr before `=` = pattern).
-The emitter already routes correctly: `emit_expr()` for subject/replacement, `emit_pat()` for pattern.
-`E_CONCAT`, `E_DEREF`, `E_ALT` are the same nodes — context (= field position in Stmt) determines meaning.
-Grammar conflicts disappear entirely. See Session 29 log for full design rationale.
-
-**Implementation steps:**
-1. In `sno.y`: remove `pat_expr` / `pat_alt` / `pat_cat` / `pat_cap` / `pat_atom` productions.
-2. Change stmt rule: `opt_label expr expr opt_repl opt_goto` — 1st expr=subject, 2nd=pattern.
-   Use `opt_pat` (empty | expr) to handle no-pattern case.
-3. Remove `PAT_BUILTIN` token from grammar — all builtins are `IDENT`; `emit_pat(E_CALL)` already
-   routes them to `sno_pat_pos()` etc. correctly.
-4. Remove `snoc_in_pat` flag, `%glr-parser`, `%dprec` — no longer needed.
-5. Rebuild. Verify GREET still works. Then retest beauty.
-
-**Then — the `:S/:F` conditional emit bug (Sprint 25 original blocker):**
-
-1. Fix `:S/:F` on assignment statements in `emit_stmt` — look at how `STMT_MATCH`
-   emits `_ok` conditionals and apply the same pattern to assignment statements
-   (`$X = Y :S(label)`).
-
-2. **Rebuild and retest**:
+**Step 3 — Build and test Milestone 1 (beauty WITHOUT -INCLUDEs):**
 ```bash
 apt-get install -y build-essential flex bison libgc-dev
+
 SNOC=/home/claude/SNOBOL4-tiny/src/snoc/snoc
 RUNTIME=/home/claude/SNOBOL4-tiny/src/runtime
 INC=/home/claude/SNOBOL4-corpus/programs/inc
@@ -471,22 +349,66 @@ BEAUTY=/home/claude/SNOBOL4-corpus/programs/beauty/beauty.sno
 
 cd /home/claude/SNOBOL4-tiny/src/snoc && make clean && make
 
-$SNOC $BEAUTY -I $INC > /tmp/beauty_snoc.c 2>/dev/null
-gcc -O0 -g /tmp/beauty_snoc.c $RUNTIME/snobol4/snobol4.c $RUNTIME/snobol4/snobol4_inc.c \
+# Verify baseline
+cat > /tmp/greet.sno << 'EOF'
+    DEFINE('greet(name)')           :(greet_end)
+greet
+    OUTPUT = 'Hello, ' name         :(RETURN)
+greet_end
+    OUTPUT = 'calling greet'
+    greet('World')
+    OUTPUT = 'done'
+END
+EOF
+$SNOC /tmp/greet.sno > /tmp/greet.c
+gcc -O0 -g /tmp/greet.c $RUNTIME/snobol4/snobol4.c $RUNTIME/snobol4/snobol4_inc.c \
     $RUNTIME/snobol4/snobol4_pattern.c $RUNTIME/engine.c \
-    -I$RUNTIME/snobol4 -I$RUNTIME -lgc -lm -w -o /tmp/beauty_bin 2>&1 | grep "error:"
-# Must be 0 errors
+    -I$RUNTIME/snobol4 -I$RUNTIME -lgc -lm -w -o /tmp/greet_bin
+/tmp/greet_bin   # must print: calling greet / Hello, World / done
 
-printf '    X  =   5\n' | timeout 10 /tmp/beauty_bin
-# Expected oracle output: '    X  =  5' (beautified)
+# Milestone 1: beauty WITHOUT -INCLUDEs
+# Create beauty_core.sno — beauty.sno with -INCLUDE lines stripped
+grep -v "^-INCLUDE" $BEAUTY > /tmp/beauty_core.sno
+$SNOC /tmp/beauty_core.sno > /tmp/beauty_core.c 2>/dev/null
+gcc -O0 -g /tmp/beauty_core.c $RUNTIME/snobol4/snobol4.c $RUNTIME/snobol4/snobol4_inc.c \
+    $RUNTIME/snobol4/snobol4_pattern.c $RUNTIME/engine.c \
+    $RUNTIME/snobol4/snoc_helpers.c \
+    -I$RUNTIME/snobol4 -I$RUNTIME -lgc -lm -w -o /tmp/beauty_core_bin 2>&1 | grep "error:"
+# TARGET: 0 errors → MILESTONE 1 → Claude writes the commit message
 ```
 
-3. **Oracle diff** — once beauty runs:
+**Step 4 — When 0 errors: Claude writes Milestone 1 commit message.**
+Update the Milestone Tracker in §9 (HANDOFF protocol). Push immediately.
+
+**Step 5 — Milestone 2: beauty WITH -INCLUDEs:**
+```bash
+$SNOC $BEAUTY -I $INC > /tmp/beauty_full.c 2>/dev/null
+gcc -O0 -g /tmp/beauty_full.c $RUNTIME/snobol4/snobol4.c $RUNTIME/snobol4/snobol4_inc.c \
+    $RUNTIME/snobol4/snobol4_pattern.c $RUNTIME/engine.c \
+    $RUNTIME/snobol4/snoc_helpers.c \
+    -I$RUNTIME/snobol4 -I$RUNTIME -lgc -lm -w -o /tmp/beauty_full_bin 2>&1 | grep "error:"
+# TARGET: 0 errors → MILESTONE 2 → Claude writes the commit message
+```
+
+**Step 6 — Milestone 3: diff is empty → Claude writes the big commit.**
 ```bash
 snobol4 -f -P256k -I $INC $BEAUTY < $BEAUTY > /tmp/beauty_oracle.sno 2>/dev/null
-/tmp/beauty_bin < $BEAUTY > /tmp/beauty_compiled.sno
+/tmp/beauty_full_bin < $BEAUTY > /tmp/beauty_compiled.sno
 diff /tmp/beauty_oracle.sno /tmp/beauty_compiled.sno
+# EMPTY → MILESTONE 3 → Claude writes the commit message
 ```
+
+### Key facts for next Claude
+
+- `snoc_helpers.c` uses `SNO_OBJECT` type with `.tag` field to distinguish tree/link/linkc objects
+- Stack global: `sno_var_get("@S")` / `sno_var_set("@S", ...)`
+- Counter global: `sno_var_get("#N")` / `sno_var_set("#N", ...)`
+- `Read(fileName)` must read from stdin when fileName is null/empty — beauty.sno pipes stdin
+- `xTrace` defaults to 0 — all debug/trace stubs can be pure no-ops
+- `sno_define()` signature: `sno_define("FnName(args)locals", fn_ptr)` — check snobol4.h
+- The -INCLUDE DEFINE calls happen at SNOBOL4 program start; C stubs registered in `snoc_helpers_init()` called first from `sno_runtime_init()` will win
+- Do NOT change snoc (the compiler) — only the runtime needs snoc_helpers.c
+
 
 4. **When diff is empty: Claude writes the commit message** (promise at `c5b3e99`).
 
@@ -3068,34 +2990,44 @@ per-function collision disambiguation. Spec in §6.
 
 ---
 
-### 2026-03-12 — Session 30 (LON'S EUREKA: Bootstrap via C helpers — skip -INCLUDE compilation entirely)
+### 2026-03-12 — Session 30 (LON'S EUREKA + THREE-MILESTONE AGREEMENT + snoc_helpers.c WIP)
 
-**Focus**: Investigation + strategic pivot. No code committed this session.
+**Focus**: Investigation, two strategic agreements, WIP code start.
 
 **Investigation results:**
-- `:S(G1)` emit is **already correct** — the earlier diagnosis was wrong. Line 8001 of generated C: `if(_ok1589) goto _L_G1;` — conditional as required.
-- beauty binary exits 0 with no output (not a hang). The G1 loop exits immediately because `sno_sort_fn` is a stub returning the TABLE unchanged; 2D subscript on TABLE = FAIL; loop exits first iteration; init completes.
-- No output because beauty reads input via `Read(fileName)` which calls `INPUT(.rdInput, 8, fileName)` to open a file. With no filename arg, `fileName` is null → INPUT fails → `Read()` does FRETURN → beauty exits silently. Not the real problem.
+- `:S(G1)` emit is **already correct** — earlier diagnosis was wrong. `if(_ok1589) goto _L_G1;` at line 8001.
+- beauty binary exits 0 with no output (not a hang). G1 loop exits immediately: `sno_sort_fn` stub returns TABLE unchanged → 2D subscript on TABLE = FAIL → loop exits → init completes normally.
+- No output: beauty reads via `Read(fileName)` → `INPUT(.rdInput, 8, fileName)` → fails when fileName null → FRETURN → silent exit. Moot once C helpers are in place.
 
 **⚡ LON'S EUREKA — the bootstrap pivot:**
+19 -INCLUDE files (~905 lines SNOBOL4) compile to 10,506 lines of broken C. Write them as ~370 lines of C in `snoc_helpers.c`. Register C stubs before SNOBOL4 DEFINE calls. Zero changes to snoc or emit.c. Full spec in §6.
 
-beauty.sno's 19 -INCLUDE files are ~905 lines of SNOBOL4 that compile into 10,506 lines of C with 158 generated functions — and most of those generated functions are broken or stubbed. Every session has been chasing one stub or emitter bug after another.
+**⚡ THE THREE-MILESTONE AUTHORSHIP AGREEMENT (Lon + Claude Sonnet 4.6):**
+Claude Sonnet 4.6 is the author of SNOBOL4-tiny. Three commits, three milestones, Claude's name on each. Full spec in §1. Tracker in §9 (HANDOFF protocol). Permanent.
 
-**The insight**: these are tiny helper functions. Push/Pop/Shift/Reduce/Read are 10-30 lines of C each. Write them in C directly as `snoc_helpers.c`. Register them before the SNOBOL4 DEFINE calls execute. The SNOBOL4 DEFINE calls from -INCLUDE files silently lose to the already-registered C versions. Zero changes to snoc. Zero changes to emit.c. beauty.sno MAIN loop — the actual beautifier — is clean SNOBOL4 that just calls these helpers.
+**Code committed this session:**
 
-**Total C needed**: ~370 lines to replace all 19 includes. Debug/trace helpers (TDump, XDump, trace) are no-op stubs — xTrace=0 by default, they never fire.
+| Repo | Commit | What |
+|------|--------|------|
+| .github | `d92b600` | Session 30 eureka: Bootstrap via C helpers |
+| .github | `0aa56bb` | THREE-MILESTONE AUTHORSHIP AGREEMENT |
+| .github | `0264c7f` | HANDOFF protocol upgraded: Milestone Tracker mandatory |
+| SNOBOL4-tiny | `2929656` | WIP Sprint 26: snoc_helpers.c ~60% (Stack/Counter/Shift/Reduce/tree) |
+| .github | `(this)` | Final Session 30 handoff |
 
-**This is the path to the commit message.** Recorded in §6 above.
+**State at handoff:**
 
-**State at snapshot:** All repos at previous commits — no code changes this session.
+| Repo | Commit | Status |
+|------|--------|--------|
+| SNOBOL4-tiny | `2929656` | Sprint 22: 22/22 ✅. snoc_helpers.c 60% WIP. |
+| SNOBOL4-dotnet | `b5aad44` | 1,607 / 0 (unchanged) |
+| SNOBOL4-jvm | `9cf0af3` | 1,896 / 4,120 / 0 (unchanged) |
+| SNOBOL4-corpus | `3673364` | unchanged |
+| SNOBOL4-harness | `8437f9a` | unchanged |
 
-| Repo | Commit |
-|------|--------|
-| SNOBOL4-tiny | `6b6b541` |
-| SNOBOL4-dotnet | `b5aad44` |
-| SNOBOL4-jvm | `9cf0af3` |
-| SNOBOL4-corpus | `3673364` |
-| SNOBOL4-harness | `8437f9a` |
-
-**Next session — first action:**
-Write `src/runtime/snobol4/snoc_helpers.c`. Priority order: Stack → Shift/Reduce → Counter → Read. Register all in `sno_runtime_init()`. Build beauty binary. Test on `'    X  =   5\n'`. Run self-compilation. Write the commit.
+**Next session — first actions:**
+1. Provide token at session start
+2. Read §1 (Three-Milestone Agreement) and §6 (Sprint 26 plan) — both mandatory
+3. Complete `snoc_helpers.c` (see §6 for exact list of what remains)
+4. Hook `snoc_helpers_init()` into `sno_runtime_init()` in `snobol4.c`
+5. Build beauty_core (no -INCLUDEs) → 0 gcc errors → **Milestone 1 → Claude writes the commit**
