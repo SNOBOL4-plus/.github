@@ -42,6 +42,8 @@ We then brought the pattern matching engine to Python and C# as first-class libr
 
 And now we are building [SNOBOL4-tiny](https://github.com/SNOBOL4-plus/SNOBOL4-tiny): a native compiler that targets x86-64 ASM, JVM bytecode, and MSIL from a single IR — faster than SPITBOL, self-hosting in SNOBOL4, and expressive enough to compile grammars that reach from network protocols to natural language.
 
+As of Session 33 (2026-03-12), `snoc` successfully compiles `beauty.sno` — a 801-line SNOBOL4 beautifier with 19 `-INCLUDE` libraries — to a single C translation unit with zero compiler errors. The key design insight that unlocked this: the **two-argument DEFINE form** (`DEFINE('proto','entry_label')`) requires the compiler to distinguish a function's name from its code entry point. When those differ, as in `DEFINE('bVisit(x,fnc)i', 'bVisit_')`, a naïve compiler silently drops the function body. Catching and preserving that distinction is now encoded in `emit.c`'s `FnDef.entry_label` field — and the first successful compilation output, 10,543 lines of C, is committed to `artifacts/beauty_full_first_clean.c` as a permanent historical record.
+
 ---
 
 ## The Implementations
@@ -263,7 +265,7 @@ Paired with continuous random testing — the worm generator already running in 
 | [SNOBOL4-jvm](https://github.com/SNOBOL4-plus/SNOBOL4-jvm) | Active — 2,033 tests / 4,417 assertions / 0 failures |
 | [SNOBOL4-csharp](https://github.com/SNOBOL4-plus/SNOBOL4-csharp) | Active — C# pattern library, Jeffrey Cooper |
 | [SNOBOL4-corpus](https://github.com/SNOBOL4-plus/SNOBOL4-corpus) | Active — shared test corpus submodule, Gimpel + Shafto + oracle suite |
-| [SNOBOL4-tiny](https://github.com/SNOBOL4-plus/SNOBOL4-tiny) | **Sprint 14 done** — `snoc` compiler runs first SNOBOL4 programs; Chomsky hierarchy proven — all four tiers; 9 pattern oracles + 7 compiler oracle cases; 0 failures |
+| [SNOBOL4-tiny](https://github.com/SNOBOL4-plus/SNOBOL4-tiny) | **Sprint 33** — `snoc` compiles `beauty.sno` (all 19 -INCLUDEs) to 0 gcc errors; `entry_label` fix unlocked function bodies; bootstrap artifact committed; Milestone 3 (self-beautify diff) in progress |
 | [.github](https://github.com/SNOBOL4-plus/.github) | Active — PLAN.md master roadmap, this README |
 
 Correctness validated against three independent oracles: **SPITBOL x64**, **CSNOBOL4 2.3.3**, and the sibling implementations within this org. The test corpus spans the Gimpel algorithm library, the Shafto AI corpus, and a shared corpus submodule covering the full language.
