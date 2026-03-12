@@ -18,10 +18,10 @@ also updating this file. PLAN.md is the parent. Everything else is a child.**
 
 ```
 STEP 1: Read THIS file (PLAN.md) top to bottom.
-STEP 2: Clone SNOBOL4-tiny. Run: git log --oneline -10
+STEP 2: Clone SNOBOL4-tiny. Run: git log --oneline --since="2 hours ago" (fallback: -5)
 STEP 3: Run REPO SURVEY: find /home/claude/SNOBOL4-tiny/src -type f | sort
 STEP 4: Read the HEAD commit diff: git show HEAD --stat
-STEP 5: Check .github: git log --oneline -5
+STEP 5: Check .github: git log --oneline --since="2 hours ago" (fallback: -5)
 STEP 6: Append session start note to §12 Session Log. Push .github.
 ```
 
@@ -76,6 +76,28 @@ log is zero-friction. Git history is archaeology.
 MANDATORY even though it is expensive in context. The cost of NOT reading it is
 higher — it has already caused a full session of wasted work (Session 30).
 Pay the context cost. Read the whole file. Every session.
+
+---
+
+### ⚡ RULE 5 — SESSION START: LIMIT GIT HISTORY TO 1-2 HOURS
+
+**Recorded 2026-03-12, Session 34. Lon's optimization.**
+
+The mandatory session-start `git log` was eating ~40% of context window by reading
+the entire commit history. PLAN.md is the source of truth for history — git log
+at session start is for ORIENTATION ONLY, not archaeology.
+
+```bash
+# CORRECT — last 2 hours only
+git log --oneline --since="2 hours ago"
+
+# If that returns nothing (gap between sessions), fall back to last 5 commits max
+git log --oneline -5
+```
+
+**RULE 5**: At session start, git log is bounded to `--since="2 hours ago"`.
+If that returns 0 commits, fall back to `git log --oneline -5` (five commits max).
+NEVER run bare `git log` or `git log --oneline` without a `--since` or `-N` limit.
 
 ---
 
@@ -3687,32 +3709,6 @@ be verifiable for the first time.
 
 
 ---
-
-## ⚡ RULE 5 — Session Start: Limit Git History Walk to 1-2 Hours
-
-**Recorded 2026-03-12, Session 34. Lon's optimization.**
-
-### The Problem
-The mandatory session-start `git log` was reading the entire commit history of both
-repos. On a long-lived project this consumes ~40% of context window before any real
-work begins. Wasteful and unnecessary.
-
-### The Fix
-At session start, ONLY read commits from the last 1-2 hours, not the full log.
-
-```bash
-# CORRECT — last 2 hours only
-git log --oneline --since="2 hours ago"
-
-# If that returns nothing (gap between sessions), extend to last 5 commits max
-git log --oneline -5
-```
-
-**RULE 5**: At session start, git log is bounded to `--since="2 hours ago"`.
-If that returns 0 commits, fall back to `git log --oneline -5` (five commits max).
-NEVER run bare `git log` or `git log --oneline` without a `--since` or `-N` limit.
-The goal is orientation, not archaeology. PLAN.md is the source of truth for history.
-
 
 ---
 
