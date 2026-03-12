@@ -1531,3 +1531,77 @@ perfectly. The Sprint 20 self-host gap is a bootstrap semantics problem, not
 a C engine bug. Marked and moved on per Lon's direction.
 
 **Commits**: `SNOBOL4-tiny a802e45`, `.github` this commit.
+
+---
+
+## 13. Byrd Box Architecture — Revised Model (Session 16, Lon)
+
+### The Insight
+
+The original implementation passed allocated temporary blocks *into* Byrd Box
+functions as arguments. **That was the wrong path.**
+
+### New Model: Locals Inside the Box
+
+Each Byrd Box is a **self-contained unit** — it carries both its data (locals,
+cursor, captured values) and its executable code. No external temp-block
+allocation. No passing state through function parameters.
+
+```
+Box layout:
+┌─────────────────────────┐
+│  DATA: cursor, locals,  │
+│        captures, ports  │
+├─────────────────────────┤
+│  CODE: PROCEED/SUCCEED/ │
+│        FAIL/RECEDE arms │
+└─────────────────────────┘
+```
+
+Boxes are laid out **linearly in memory** in two parallel sections:
+
+```
+DATA  section:  [ box0.data | box1.data | box2.data | ... ]
+TEXT  section:  [ box0.code | box1.code | box2.code | ... ]
+```
+
+Box N's data and code correspond positionally across the two sections.
+Sequential layout = cache-friendly traversal.
+
+### Deferred Reference — `*X` Semantics
+
+When `*X` (deferred pattern reference) is executed at match time:
+
+1. **Copy** the box block for X — both data and code.
+2. **Relocate** the code — patch any internal label/jump offsets.
+3. The copy gets its own independent locals. That's where the extra
+   locals come from for the new instance.
+
+Code duplication is **intentional and acceptable** — each instantiation
+is independent, runs fast, stays hot in cache.
+
+### JVM / MSIL Mapping
+
+- **JVM**: Each box = a method. `*X` instantiation = `INVOKEVIRTUAL` on a
+  cloned method object. Locals = JVM local variable slots inside the method.
+  The JVM JIT handles cache locality.
+- **MSIL**: Each box = a `MethodBuilder` in a `TypeBuilder`. `*X` = emit a
+  new `MethodBuilder` cloning the IL stream. `ILGenerator` locals stay inside
+  the method.
+
+### Impact on Phase 0/1/2
+
+Phase 0 IR (`byrd_ir.py`) should reflect this model:
+- `ByrBox` node carries `locals: list[Local]` directly.
+- No `TempBlock` or passed-in allocation nodes.
+- `CopyRelocate` is the IR node for `*X` instantiation.
+
+This supersedes the earlier emit design that passed temp blocks as
+function arguments. Update `emit_jvm.py` and `emit_msil.py` design
+accordingly when Phase 1/2 begin.
+
+### Status
+- [x] Insight recorded (Session 16)
+- [ ] Phase 0 `byrd_ir.py` — implement with locals-inside model
+- [ ] Phase 1 `emit_jvm.py` — JVM backend using this model
+- [ ] Phase 2 `emit_msil.py` — MSIL backend using this model

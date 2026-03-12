@@ -395,3 +395,27 @@ or in parallel if Sprint 20 is blocked.
 
 *Created 2026-03-12, Session 15. Update when Phase 0 IR is implemented or
 when Phase 1/2 emitters reach first smoke test.*
+
+---
+
+## Revised Box Architecture (Session 16, Lon)
+
+> This supersedes the earlier design where temporaries were passed as
+> allocated blocks into Byrd Box functions.
+
+**Locals live inside the box.** Each box is self-contained: data + code
+together. When `*X` fires at match time, the box is copied and the code
+is relocated. That copy is the new instance's independent local storage.
+Duplication is fine — fast, cache-hot.
+
+**Memory layout** — two parallel linear sections:
+
+```
+DATA:  [ box0 | box1 | box2 | ... ]
+TEXT:  [ box0 | box1 | box2 | ... ]
+```
+
+Box N in DATA corresponds to box N in TEXT. Sequential = cache-friendly.
+
+**`byrd_ir.py` (Phase 0)** must carry `locals` inside the `ByrBox` node,
+not as a separate allocation. `CopyRelocate` is the IR node for `*X`.
