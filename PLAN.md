@@ -209,6 +209,40 @@ satellite files. One sweep, one commit per repo, done.
 
 ## 2. Strategic Focus — What We Are Building Now
 
+---
+
+### ⚡ ARCHITECTURE TRUTH — NATURAL VARIABLES (Session 44 — DO NOT FORGET THIS)
+
+**In CSNOBOL4/SIL, ALL variables are NATURAL VARIABLES. Every single one. Hashed.**
+
+This means:
+- Function parameters, function locals, return-value variables, global variables —
+  **ALL of them** live in the same flat hashed namespace. There is no "local scope"
+  at the variable-storage level.
+- The hash table IS the ground truth. C statics are just a performance cache.
+- `sno_var_set(name, val)` must be called for **every** assignment, everywhere,
+  with no exceptions. The `is_fn_local()` suppression introduced in Session 40
+  was **architecturally wrong** and has been removed in Session 44.
+- SPITBOL implements this differently (its own calling convention). If targeting
+  SPITBOL semantics, revisit. For CSNOBOL4 compatibility: all vars hashed, always.
+
+**What Session 40 got wrong:**
+- `is_fn_local(varname)` suppressed `sno_var_set` for declared params/locals.
+- This caused `i` in `Reduce` to be a pure C static, never in the hash table.
+- When EVAL or SPAT_REF looked up `i` by name, it got stale/null.
+- The fix that "worked" in Session 40 was actually just masking a deeper problem.
+
+**The correct two-store model (Session 44):**
+- C statics `_varname`: fast-path read/write via `sno_get`/`sno_set` macros.
+- Hash table: authoritative store, always kept in sync.
+- `sno_var_set(name, val)` called after EVERY `sno_set()`, no exceptions.
+- `sno_var_register(name, &_varname)` registered at main() startup for ALL globals,
+  so that hash-only writes (pattern `.` assignment, pre-init) also update the C static.
+- `sno_var_sync_registered()` called once after all registrations, to pull
+  pre-initialized vars (nl, tab, etc. set by sno_runtime_init) into C statics.
+
+---
+
 **Updated 2026-03-12 (Session 17 — Lon's Eureka): The Byrd Box pivot.**
 
 The SNOBOL4-tiny flat-C Byrd Box model is proven and working. All 29 C tests
@@ -4431,12 +4465,17 @@ diagnostic tools for this class of bug — we should have used them from the sta
   current function. Global variables assigned inside functions (like `snoParse` assigned
   inside `UserDefs()`) ARE synced correctly because they're not in `fn->args/locals`.
 
-#### Architecture Note (permanent — add to §2)
+#### Architecture Note — ⚠️ SUPERSEDED BY SESSION 44 — SEE §2
 
-**The two-store problem is now correctly solved:**
-- C statics `_snoParse`, `_snoSrc` etc.: updated by `sno_set()` macro.
-- Hash table `sno_var_get/set()`: used by `SPAT_REF`, pattern captures, EVAL.
-- Rule: emit `sno_var_set(name, val)` after `sno_set()` IFF `!is_fn_local(name)`.
+**~~The two-store problem is now correctly solved:~~** ← THIS WAS WRONG. See §2.
+- ~~C statics `_snoParse`, `_snoSrc` etc.: updated by `sno_set()` macro.~~
+- ~~Hash table `sno_var_get/set()`: used by `SPAT_REF`, pattern captures, EVAL.~~
+- ~~Rule: emit `sno_var_set(name, val)` after `sno_set()` IFF `!is_fn_local(name)`.~~
+- ~~This correctly syncs globals (including globals assigned inside functions) while~~
+  ~~leaving function locals isolated to their C stack frame.~~
+
+**The real rule (Session 44):** ALL variables are NATURAL VARIABLES (hashed).
+`sno_var_set` must be emitted for EVERY assignment. `is_fn_local` suppression removed.
 - This correctly syncs globals (including globals assigned inside functions) while
   leaving function locals isolated to their C stack frame.
 

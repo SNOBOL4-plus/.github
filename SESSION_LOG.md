@@ -517,3 +517,50 @@ snobol4 -f -P256k -I $INC $BEAUTY < $BEAUTY > /tmp/beauty_oracle.sno 2>/dev/null
 timeout 10 /tmp/beauty_full_bin < $BEAUTY > /tmp/beauty_compiled.sno 2>/tmp/beauty_stderr.txt
 wc -l /tmp/beauty_compiled.sno  # TARGET: 790
 ```
+
+---
+
+### Session 44 — Natural Variable Architecture Correction
+
+**Critical design insight from Lon (Session 44 start):**
+
+In CSNOBOL4/SIL, **ALL variables are NATURAL VARIABLES — every one of them is hashed.**
+Function parameters, locals, return values, globals — all live in one flat hashed namespace.
+The hash table is the ground truth. C statics are just a performance cache.
+
+**What this means for our compiler:**
+
+The `is_fn_local()` suppression introduced in Session 40 was architecturally wrong.
+It prevented `sno_var_set` from being called for function params/locals, treating them
+as pure C statics. But in SNOBOL4 semantics, `i` in `Reduce(t, n, i)` IS a natural
+variable — it must be in the hash table, because EVAL and SPAT_REF look up variables
+by name through the hash table.
+
+**Fixes applied this session:**
+
+1. Removed `is_fn_local()` guard from `emit_assign_target()` in emit.c —
+   `sno_var_set` now emitted for every assignment, everywhere, no exceptions.
+
+2. Removed `is_fn_local()` guard from subject writeback in emit.c (pattern match
+   replacement path).
+
+3. Added `sno_var_register(name, SnoVal*)` to snobol4.c — registers C static pointer
+   so that future `sno_var_set(name, val)` calls also update the C static.
+
+4. Added `sno_var_sync_registered()` to snobol4.c — pulls pre-initialized vars
+   (nl=CHAR(10), tab=CHAR(9), etc. set by sno_runtime_init before registrations exist)
+   into their C statics. Called once in main() after all `sno_var_register()` calls.
+
+5. emit.c emits `sno_var_register(name, &_name)` for every global var at main() startup,
+   followed by `sno_var_sync_registered()`.
+
+**Root cause of "Parse Error" on "START":**
+- global.sno sets `nl = CHAR(10)` and `tab = CHAR(9)` via `&ALPHABET POS(n) LEN(1) . var`
+- These pattern conditional assignments write to hash table only
+- `sno_runtime_init` pre-initializes nl/tab in hash table but registrations weren't yet active
+- snoLabel = BREAK(' ' tab nl ';') used `sno_get(_nl)` → C static {0} → BREAK(' ;')
+- BREAK(' ;') on "START" fails → snoCommand fails → ARBNO 0 iters → RPOS(0) fails
+
+**Note on SPITBOL:** Lon indicated SPITBOL implements variable storage differently.
+If/when targeting SPITBOL semantics, revisit. For CSNOBOL4 compatibility: all vars hashed.
+
