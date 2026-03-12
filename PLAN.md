@@ -2354,6 +2354,22 @@ Cascading failure: `snoExpr17 → snoExpr15 → snoExpr14 → snoStmt → snoCom
 | SNOBOL4-dotnet | `b5aad44` | 1,607 / 0 |
 | SNOBOL4-jvm | `9cf0af3` | 1,896 / 4,120 / 0 |
 
+### 2026-03-12 — Session 27 (Eureka: Byrd Box + exception hygiene architecture)
+
+**No code written. Architecture insight recorded.**
+
+**⚡ EUREKA (Lon, Session 27):** Normal Byrd Box gotos handle success/failure/backtrack
+with zero overhead — exactly as in `test_sno_1.c`. C exceptions (`longjmp`) are for
+**ABORT and genuinely bad things only** — FENCE bare, runtime errors, divide-by-zero.
+Each SNOBOL4 statement is a `setjmp` catch boundary for abort signals. Each DEFINE'd
+function is also a catch boundary. Hot path: zero exception overhead. Cold path:
+stack unwinds cleanly through statement and function boundaries. Stack unwinding IS
+the cleanup — no omega stack needed for abnormal termination.
+
+Recorded in `SNOBOL4-tiny/PLAN.md §6`.
+
+---
+
 ### 2026-03-12 — Session 23 (Orientation + ByrdBox/CSNOBOL4 study + SNOBOL4ever naming)
 
 **Focus**: New session orientation. ByrdBox and CSNOBOL4 source study. Org rename decision.
