@@ -278,26 +278,80 @@ git remote set-url origin https://LCherryholmes:$TOKEN@github.com/SNOBOL4-plus/<
 
 ---
 
-## 6. Current Work — Sprint 26: Write snoc_helpers.c, hit Milestone 1
+## 6. Current Work — Sprint 26: Hit Milestone 3, then migrate test suite to C
 
 ### ⚡ READ §1 FIRST — Three-Milestone Authorship Agreement. Claude writes three commits. ⚡
 
-### ⚡⚡⚡ LON'S EUREKA (Session 30, 2026-03-12) — THE BOOTSTRAP PIVOT ⚡⚡⚡
+### ⚡⚡⚡ THE BOOTSTRAP PIVOT — ALREADY DONE ⚡⚡⚡
 
-beauty.sno pulls in **19 -INCLUDE files** (~905 lines of SNOBOL4) that snoc compiles
-into 10,506 lines of C with 158 generated functions — full of stubs, broken emits, and
-accumulated complexity from every previous session.
-
-**The insight**: every -INCLUDE file is a tiny helper library. Write them in C directly
-as `snoc_helpers.c`. Register the C stubs before any SNOBOL4 DEFINE calls execute.
-The SNOBOL4 DEFINE calls from -INCLUDE files silently lose to the already-registered C versions.
-Zero changes to snoc. Zero changes to emit.c. ~370 lines of C replaces 905 lines of SNOBOL4.
+`snobol4_inc.c` implements all 19 -INCLUDE helper libraries in C (773 lines, Sprint 20).
+`snoc_helpers.c` is dead — do not touch it. See §6 Key Facts and §9 INVENTORY RULE.
+beauty.sno WITH -INCLUDEs compiles to **0 gcc errors** today with snobol4_inc.c.
+Next action: build the oracle, run the binary, diff. Milestone 3 is close.
 
 ### ✅ Certified Baseline (unchanged)
-- **22/22 PASS** (Sprint 22 oracle)
+- **22/22 PASS** (Sprint 22 oracle — Python driver)
 - Hello world: `OUTPUT = 'hello'` compiles, links, runs ✅
 - GREET (simple DEFINE): compiles, links, runs ✅
 - beauty.sno → C: **0 gcc errors** ✅ (commit `6b6b541`)
+
+---
+
+### ⚡ DESIGN DECISION (Session 31, 2026-03-12) — Test Suite Must Move to C
+
+**The Python test infrastructure is now dead weight. Here is why, and what replaces it.**
+
+**What exists today:**
+- `test/sprint0–13/` — hand-written C Byrd Box pattern tests. Still valid. Keep them.
+- `test/sprint14–22/` — Python oracle drivers (`oracle_sprint22.py` etc.). Each calls
+  `sno_parser.py` → `emit_c_stmt.py` → gcc → run. **These use the old Python pipeline.**
+- `snoc` at repo root — Python script wrapping the old pipeline. **Superseded.**
+- `src/snoc/snoc` — the real compiler: C binary (flex/bison), built by `src/snoc/Makefile`.
+  **This is the compiler. The Python pipeline is retired.**
+
+**The mismatch**: the Sprint 22 oracle (22/22 PASS) runs the Python pipeline, not `src/snoc/snoc`.
+It tests a different code path than what beauty.sno actually uses. As snoc grows, these
+tests will silently diverge and give false green.
+
+**What the test suite must become — three layers:**
+
+```
+Layer 1 — .sno input → expected output (the test cases themselves)
+  Format: a .sno file + a .expected file. That's it.
+  Lives in: test/cases/ (new flat directory, replaces sprint14–22 python oracles)
+  Examples: hello.sno, greet.sno, loop.sno, pattern_match.sno, beauty_smoke.sno
+
+Layer 2 — test runner: run_tests.sh (shell script, zero Python)
+  For each test/cases/*.sno:
+    src/snoc/snoc $file > /tmp/test.c
+    gcc /tmp/test.c [runtime] -o /tmp/test_bin
+    /tmp/test_bin > /tmp/actual.txt
+    diff test/cases/$name.expected /tmp/actual.txt
+  Report PASS/FAIL per test. Exit 1 if any fail.
+
+Layer 3 — integration: beauty self-test (the Milestone 3 diff)
+  This is already the capstone test. run_tests.sh calls it last.
+```
+
+**What to do with the existing Python oracles:**
+- Sprint 0–13 C tests: keep as-is. They test the Byrd Box engine directly, not the compiler.
+- Sprint 14–22 Python oracles: **retire them**. Extract their .sno test cases into
+  `test/cases/` with `.expected` files. Delete the `.py` drivers.
+- `snoc` Python wrapper at repo root: **delete it**. `src/snoc/snoc` is the compiler.
+- `src/codegen/emit_c_stmt.py`, `src/parser/sno_parser.py` etc.: keep for now as
+  reference/history but they are no longer the active pipeline.
+
+**Why shell not Python for the runner:**
+- Zero dependencies. Any Linux box with gcc and libgc can run it.
+- The compiler is already C. The runtime is C. The tests should be C.
+- Python was the right tool when the compiler was Python. It isn't anymore.
+
+**Sprint 27 work (after Milestone 3 is committed):**
+1. Write `test/run_tests.sh` — the new shell test runner
+2. Create `test/cases/` with extracted .sno + .expected pairs from sprint14–22
+3. `git rm snoc` (Python wrapper at root)
+4. Verify `test/run_tests.sh` gives all green on the cases that sprint22 oracle passed
+5. Add the beauty self-test as the final case in run_tests.sh
 
 ### 🟡 Sprint 26 Status: snoc_helpers.c ~60% written (commit `2929656`)
 
