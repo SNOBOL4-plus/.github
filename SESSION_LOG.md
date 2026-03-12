@@ -369,6 +369,60 @@ sno_parser.py → emit_c_stmt.py → gcc → binary
 | SNOBOL4-harness | `8437f9a` | Untouched. |
 | .github | **this commit** | Session 19 log |
 
+---
+
+## Session 43 — 2026-03-12
+
+### State at session start
+| Repo | Commit | State |
+|------|--------|-------|
+| SNOBOL4-tiny | `9443425` | beauty_full_bin: 9 lines out (target 790). snoParse match fails on `"START\n"`. |
+| .github | `831b1d4` | Session 42 log |
+| SNOBOL4-corpus | `3673364` | Untouched |
+| SNOBOL4-harness | `8437f9a` | Untouched |
+
+### What happened
+- Session start checklist run. All binaries confirmed present in container.
+- No code changes this session — orientation + design.
+
+### 🌟 VISION DROP — Two-Dimensional Design Space
+
+**Lon articulated the full project vision:**
+
+> *SNOBOL4 everywhere. SNOBOL4 for all. SNOBOL4 for now. SNOBOL4 forever.*
+> — `SNOBOL4everywhere`, `SNOBOL4all`, `SNOBOL4now`, `SNOBOL4ever`
+
+**The project is a 2D matrix:**
+
+| | **SNOBOL4** | **SPITBOL** | **SNOCONE** | **REBUS** |
+|---|---|---|---|---|
+| **C / native** | SNOBOL4-tiny (snoc) | — | — | — |
+| **JVM** | SNOBOL4-jvm | — | snocone.clj | — |
+| **.NET** | SNOBOL4-dotnet | — | snocone.cs | — |
+| **ASM** | — | — | — | — |
+
+- **Rows = backends** (C/native, JVM, .NET, ASM, ...)
+- **Columns = front-ends / source languages** (SNOBOL4, SPITBOL, SNOCONE, REBUS, ...)
+- Any cell = a working compiler/runtime for that (language × platform) pair
+- The vision is to fill the matrix
+
+This reframes the whole org: not "a SNOBOL4 compiler" but **a polyglot string-processing language platform** targeting every modern runtime, with multiple source dialects.
+
+### Active blocker (carried to Session 44)
+`snoParse` match fails on `"START\n"` — 9 lines out, target 790.
+Diagnosis complete (see Session 42). Next: fix the match failure.
+
+### Commits this session
+None (orientation + design session).
+
+### Repos at session end
+| Repo | Commit | State |
+|------|--------|-------|
+| SNOBOL4-tiny | `9443425` | Unchanged |
+| .github | **this commit** | Session 43 log + vision |
+
+---
+
 ### Sprint 23 — What To Do Next Session
 
 Goal: `beauty.sno` compiles itself. `diff` empty. **Claude writes the commit message** (recorded at `c5b3e99`).

@@ -1,6 +1,8 @@
 # SNOBOL4ever
 
-**SNOBOL4 everywhere. SNOBOL4 now. SNOBOL4 forever.**
+**SNOBOL4 everywhere. SNOBOL4 for all. SNOBOL4 for now. SNOBOL4 forever.**
+
+`SNOBOL4everywhere` · `SNOBOL4all` · `SNOBOL4now` · `SNOBOL4ever`
 
 ---
 
@@ -43,6 +45,29 @@ We then brought the pattern matching engine to Python and C# as first-class libr
 And now we are building [SNOBOL4-tiny](https://github.com/SNOBOL4-plus/SNOBOL4-tiny): a native compiler that targets x86-64 ASM, JVM bytecode, and MSIL from a single IR — faster than SPITBOL, self-hosting in SNOBOL4, and expressive enough to compile grammars that reach from network protocols to natural language.
 
 As of Session 33 (2026-03-12), `snoc` successfully compiles `beauty.sno` — a 801-line SNOBOL4 beautifier with 19 `-INCLUDE` libraries — to a single C translation unit with zero compiler errors. The key design insight that unlocked this: the **two-argument DEFINE form** (`DEFINE('proto','entry_label')`) requires the compiler to distinguish a function's name from its code entry point. When those differ, as in `DEFINE('bVisit(x,fnc)i', 'bVisit_')`, a naïve compiler silently drops the function body. Catching and preserving that distinction is now encoded in `emit.c`'s `FnDef.entry_label` field — and the first successful compilation output, 10,543 lines of C, is committed to `artifacts/beauty_full_first_clean.c` as a permanent historical record.
+
+---
+
+## The Map — A Two-Dimensional Platform
+
+The org is a **compiler matrix**. Two dimensions. Every cell is a working implementation.
+
+|                | **SNOBOL4** | **SPITBOL** | **SNOCONE** | **REBUS** | *(more)* |
+|----------------|:-----------:|:-----------:|:-----------:|:---------:|:--------:|
+| **C / native** | SNOBOL4-tiny ← *here* | — | — | — | |
+| **JVM**        | SNOBOL4-jvm | — | snocone.clj | — | |
+| **.NET**       | SNOBOL4-dotnet | — | snocone.cs | — | |
+| **Python**     | SNOBOL4-python | — | — | — | |
+| **ASM**        | — | — | — | — | |
+| *(more)*       | | | | | |
+
+**Rows = targets / backends.** C/native, JVM, .NET, Python, ASM, WASM — wherever programs run, SNOBOL4 can run there too.
+
+**Columns = source languages / front-ends.** SNOBOL4 is the core. SPITBOL is its compiled superset. SNOCONE is a modern structured front-end. REBUS is the natural language horizon. More to come.
+
+The mission: fill the matrix. Every cell represents a community of programmers who can now use SNOBOL4's pattern model natively on their platform — without porting, without FFI, without compromise.
+
+`SNOBOL4everywhere` · `SNOBOL4all` · `SNOBOL4now` · `SNOBOL4ever`
 
 ---
 
