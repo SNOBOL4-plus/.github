@@ -504,6 +504,101 @@ if (cap->var_name && cap->var_name[0] == '*') {
 during matches. The counter machinery is completely broken until this is fixed.
 However, this is NOT the root cause of `snoCommand` returning 0 chars — the match
 failure is a separate issue (the FENCE alternatives all fail before counter state matters).
+**Because `.` is deferred and the epsilon pattern is zero-length, the missing counter
+actions do NOT manifest during matching — they only matter after the match succeeds.
+Find the real match failure elsewhere.**
+
+---
+
+### ⚡ ARCHITECTURE TRUTH — `NAME` DATATYPE AND NRETURN (Session 49 — from v311.sil)
+
+**NRETURN = "return by name". It returns an l-value, not a value.**
+
+This is the deepest truth about the `.` deferred assignment and `*f()` indirect targets.
+
+#### The NAME datatype in SNOBOL4
+
+SNOBOL4 has a `NAME` datatype — a first-class l-value / reference / pointer to a
+variable cell. You create a NAME with the unary `.` operator:
+
+```
+n = .x          → n holds the NAME "x" (a pointer to x's storage cell)
+$n = 'hello'    → indirect assignment: sets x = 'hello' via the NAME in n
+```
+
+`DATATYPE(n)` returns `'NAME'` (or `'STRING'` for simple variable names).
+`$n` dereferences the NAME — resolves it to the variable it points at.
+
+#### What NRETURN actually means (from v311.sil `RRTURN ZPTR,3`)
+
+When a function returns via `:(NRETURN)`:
+- CSNOBOL4 SIL: `DEQL RETPCL,NRETCL,RTZPTR` → branch to `RTZPTR`
+- `RTZPTR`: `RRTURN ZPTR,3` — return **ZPTR** (the function's return-variable descriptor)
+  by exit path 3, which is "return by name/value" for indirect use.
+- The caller receives a **descriptor pointing to the function's return variable cell**.
+
+The function's return variable is `funcname` itself (e.g. `IncCounter` for `IncCounter()`).
+The NRETURN descriptor IS the l-value for `IncCounter` — a NAME pointing to that cell.
+
+So `IncCounter = .dummy :(NRETURN)` means:
+1. Set `IncCounter` variable to `.dummy` (the NAME of `dummy`)
+2. NRETURN: return the NAME/descriptor of `IncCounter` itself to the caller
+
+The caller of `*IncCounter()` in `epsilon . *IncCounter()` receives this NAME descriptor
+and queues it in the **name list** for deferred assignment.
+
+#### The name list (v311.sil `NMD` procedure)
+
+CSNOBOL4 builds a name list during matching. Each `.` node appends:
+```
+(matched_specifier, variable_descriptor)
+```
+where `variable_descriptor` is the NAME — the actual descriptor pointer to the cell.
+
+After the full match succeeds, `NMD` fires: iterates the name list, assigns each
+matched substring into its paired variable cell. No string lookup, no hashing —
+direct descriptor write.
+
+#### What `epsilon . *IncCounter()` really does (full picture)
+
+1. During the match: epsilon matches zero chars; `*IncCounter()` is called **right then**
+   (the `*` forces evaluation of `IncCounter()` to get the l-value). Wait — actually:
+
+   **Lon's refinement**: In `epsilon . *IncCounter()`, the `*` is **unevaluated expression**
+   (STR type — it's the `*expr` deferred-eval operator). The whole `*IncCounter()` is an
+   unevaluated/deferred expression that is placed on the name list as-is. When `NMD` fires
+   post-match, it evaluates `*IncCounter()` at that point (via `EXPEVL` — see NMD's
+   `NAMEXN: RCALL TVAL,EXPEVL,...` branch for type `E` / EXPRESSION). `IncCounter()` is
+   then called, which increments the counter and returns via NRETURN — giving back the
+   NAME of `IncCounter`. The matched substring (empty string from epsilon) is then assigned
+   into that cell.
+
+   **Net effect**: `IncCounter()` is called exactly once, after the full match succeeds.
+   The counter is incremented. The return value (NAME of `IncCounter`) is written with `""`.
+   That's the entire side-effect vehicle.
+
+2. **Because epsilon is zero-length, the deferred action does NOT affect the match itself.**
+   The match either succeeds or fails on its own merits. The counter side-effects are
+   pure post-match bookkeeping.
+
+#### Implication for our runtime fix
+
+The `emit.c` `case E_COND` fix must recognize `*funcname()` on the RHS and:
+- Emit a capture node with the var-name encoded as `"*IncCounter"` (or similar)
+- In `apply_captures()`, when var_name starts with `*`: call `sno_apply(var_name+1, ...)`
+
+**BUT**: the SNOBOL4 semantics say the function is called at NMD time, and its NRETURN
+value (the NAME/cell it returns) is what gets assigned the matched string. For
+`IncCounter = .dummy :(NRETURN)`, the matched empty string gets written to `IncCounter`
+variable. The side effect (incrementing the counter) happened inside `IncCounter()`.
+
+For our runtime: calling `sno_apply("IncCounter", NULL, 0)` at deferred-fire time IS
+correct — the side effect fires, the return value is ignored (we don't need NAME datatype
+support to get the increment right). The call itself is the increment.
+
+**The NAME datatype in our runtime**: Not yet implemented. `SNO_NAME` type does not exist.
+This is acceptable for now — the `*f()` deferred-call path is the only place it matters,
+and we can fake it with `sno_apply(fname, NULL, 0)` in `apply_captures()`.
 
 ---
 
@@ -4715,16 +4810,27 @@ deeply (many Reduce/nPush/nPop calls) but `ARBNO(*snoCommand)` matches 0 times:
 
 ### 2026-03-12 — Session 49 (Conditional assignment `.` deferred semantics — Lon's Eureka)
 
-**Key discovery**: `pat . var` in SNOBOL4 is a **deferred** assignment, not immediate.
-The assignment is queued when the sub-pattern matches, but fires only AFTER the entire
-top-level match SUCCEEDS, left-to-right. This is distinct from `$` (immediate assignment,
-fires at sub-pattern match time regardless of later backtracking).
+**Two key discoveries this session:**
 
-**Consequence for `nInc_: nInc = epsilon . *IncCounter()`:**
-- `*IncCounter()` is an indirect deferred assignment: `IncCounter()` is called as a
-  side-effect only after the full match succeeds.
-- `emit.c` `case E_COND` only handles `E_VAR` on the RHS. When RHS is `*func()` (E_DEREF
-  of E_CALL), it falls back to `"?"` — silently dropping the call.
+**Discovery 1 — Deferred `.` assignment:**
+`pat . var` is a **deferred** assignment — queued when sub-pattern matches, fires only
+AFTER the entire top-level match SUCCEEDS, left-to-right. Distinct from `$` (immediate).
+Because epsilon is zero-length, missing deferred actions do NOT affect the match.
+Find the real match failure elsewhere.
+
+**Discovery 2 — NAME datatype and NRETURN (from v311.sil):**
+NRETURN = "return by name" (`RRTURN ZPTR,3` in SIL). The function returns an l-value
+descriptor (NAME datatype) — a pointer to the function's return-variable cell.
+`epsilon . *IncCounter()`: `*IncCounter()` is an unevaluated STR-type expression.
+At deferred-fire time (NMD post-match), CSNOBOL4 evaluates it via EXPEVL, calls
+`IncCounter()`, which increments the counter and returns NRETURN (NAME of `IncCounter`).
+The empty string from epsilon is assigned into that cell. The counter increment IS the
+side effect. NAME datatype not needed in our runtime — `sno_apply("IncCounter",NULL,0)`
+at `apply_captures()` time is sufficient and correct.
+
+**E_COND bug confirmed:**
+- `emit.c` `case E_COND` only handles `E_VAR` on RHS. When RHS is `*func()` (E_DEREF
+  of E_CALL), falls back to `"?"` — silently dropping the call.
 - All `nInc/nDec/nPush/nPop` counter operations are broken (no-ops) during matches.
 - Fix: detect E_DEREF of E_CALL on RHS, emit `"*funcname"` as capture var; in
   `apply_captures()` check for leading `*` and call the function as side-effect.
