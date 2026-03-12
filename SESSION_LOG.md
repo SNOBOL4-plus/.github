@@ -703,3 +703,34 @@ integrate with Byrd Box backtracking (RECEDE/CONCEDE restores state).
 
 This is NOT an edge case. This is the fundamental design.
 
+
+### Commits this session
+| Commit | Repo | Description |
+|--------|------|-------------|
+| `f28cfe9` | SNOBOL4-tiny | WIP: sno_var_register/sync + is_fn_local guards removed |
+| `334e1ea` | .github | Natural variable architecture truth — all vars hashed |
+| `f582c7f` | .github | SPITBOL variable semantics from x64-main source |
+| `f3995ed` | .github | CORRECTED: all dialects save/restore on function call |
+| `dd62377` | .github | Confirmed: no save/restore in emitted functions. Critical bug. |
+| `3f07275` | .github | Byrd Box implicit restore does NOT cover DEFINE functions |
+| `03e2bbd` | .github | §2 TWO WORLDS architecture truth |
+| `380f517` | .github | §2 Byrd Box wrapper pattern for save/restore (Lon's design) |
+| `00e3cda` | .github | T_FNCALL wrapper is universal — any CONCAT context |
+
+### Session 44 summary
+Primarily architecture. Three major truths established from source (v311.sil, sbl.asm):
+1. ALL SNOBOL4 variables are natural/hashed. ALL dialects save/restore on function call.
+2. SNOBOL4-tiny has TWO WORLDS: pattern engine (implicit restore via Byrd Box) vs
+   DEFINE'd functions (separate C functions, explicit save/restore required).
+3. T_FNCALL Byrd Box wrapper is the correct design — wrapper owns save/restore,
+   C function stays clean. Universal: needed anywhere a function call appears in CONCAT.
+Save/restore bug confirmed in emitted C (zero save/restore). Path A fix (explicit
+save/restore in emit.c) is the immediate next action for Session 45.
+
+### Repos at session end
+| Repo | Commit | State |
+|------|--------|-------|
+| SNOBOL4-tiny | `f28cfe9` | WIP committed. Save/restore not done. 9/790 lines. |
+| .github | `(this)` | Clean. Full architecture documented. |
+| SNOBOL4-corpus | `3673364` | Untouched. |
+

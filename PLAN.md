@@ -543,553 +543,103 @@ git remote set-url origin https://LCherryholmes:$TOKEN@github.com/SNOBOL4-plus/<
 
 ---
 
-## 6. Current Work — Sprint 26: Hit Milestone 3, then migrate test suite to C
+## 6. Current Work — Sprint 26: Milestone 0 (beauty.sno self-beautify)
 
-### ⚡ READ §1 FIRST — Three-Milestone Authorship Agreement. Claude writes three commits. ⚡
-
-### ⚡⚡⚡ THE BOOTSTRAP PIVOT — ALREADY DONE ⚡⚡⚡
-
-`snobol4_inc.c` implements all 19 -INCLUDE helper libraries in C (773 lines, Sprint 20).
-`snoc_helpers.c` is dead — do not touch it. See §6 Key Facts and §9 INVENTORY RULE.
-beauty.sno WITH -INCLUDEs compiles to **0 gcc errors** today with snobol4_inc.c.
-Next action: build the oracle, run the binary, diff. Milestone 3 is close.
-
-### ✅ Certified Baseline (unchanged)
-- **22/22 PASS** (Sprint 22 oracle — Python driver)
-- Hello world: `OUTPUT = 'hello'` compiles, links, runs ✅
-- GREET (simple DEFINE): compiles, links, runs ✅
-- beauty.sno → C: **0 gcc errors** ✅ (commit `6b6b541`)
+### ⚡ READ §2 FIRST — ARCHITECTURE TRUTH (Natural Variables + Two Worlds + T_FNCALL) ⚡
+### ⚡ READ §1 — Three-Milestone Authorship Agreement. Claude writes three commits. ⚡
 
 ---
 
-### ⚡ DESIGN DECISION (Session 31, 2026-03-12) — Test Suite Must Move to C
+### 🔴 ACTIVE BLOCKER: Save/Restore NOT implemented in emitted functions
 
-**The Python test infrastructure is now dead weight. Here is why, and what replaces it.**
+**Target**: `beauty_full_bin < beauty.sno` → 790 lines → diff vs oracle empty  
+**Current**: 9/790 lines. "Parse Error" on "START" (first non-comment line).  
+**HEAD**: SNOBOL4-tiny `f28cfe9` (WIP — partial fixes, not yet green)
 
-**What exists today:**
-- `test/sprint0–13/` — hand-written C Byrd Box pattern tests. Still valid. Keep them.
-- `test/sprint14–22/` — Python oracle drivers (`oracle_sprint22.py` etc.). Each calls
-  `sno_parser.py` → `emit_c_stmt.py` → gcc → run. **These use the old Python pipeline.**
-- `snoc` at repo root — Python script wrapping the old pipeline. **Superseded.**
-- `src/snoc/snoc` — the real compiler: C binary (flex/bison), built by `src/snoc/Makefile`.
-  **This is the compiler. The Python pipeline is retired.**
+**Root cause chain (fully diagnosed Session 44):**
 
-**The mismatch**: the Sprint 22 oracle (22/22 PASS) runs the Python pipeline, not `src/snoc/snoc`.
-It tests a different code path than what beauty.sno actually uses. As snoc grows, these
-tests will silently diverge and give false green.
+1. `nl` and `tab` are set via `&ALPHABET POS(n) LEN(1) . var` in global.sno.
+   These pattern conditional assignments write to hash table only.
+   `sno_runtime_init` pre-inits nl/tab in hash BEFORE `sno_var_register` is called.
+   Fix applied: `sno_var_register` + `sno_var_sync_registered` in `f28cfe9`.
+   **Status: fixed but not yet verified to unblock.**
 
-**What the test suite must become — three layers:**
+2. `is_fn_local()` suppression removed — all vars now call `sno_var_set`.
+   **Status: fixed in `f28cfe9`.**
 
-```
-Layer 1 — .sno input → expected output (the test cases themselves)
-  Format: a .sno file + a .expected file. That's it.
-  Lives in: test/cases/ (new flat directory, replaces sprint14–22 python oracles)
-  Examples: hello.sno, greet.sno, loop.sno, pattern_match.sno, beauty_smoke.sno
-
-Layer 2 — test runner: run_tests.sh (shell script, zero Python)
-  For each test/cases/*.sno:
-    src/snoc/snoc $file > /tmp/test.c
-    gcc /tmp/test.c [runtime] -o /tmp/test_bin
-    /tmp/test_bin > /tmp/actual.txt
-    diff test/cases/$name.expected /tmp/actual.txt
-  Report PASS/FAIL per test. Exit 1 if any fail.
-
-Layer 3 — integration: beauty self-test (the Milestone 3 diff)
-  This is already the capstone test. run_tests.sh calls it last.
-```
-
-**What to do with the existing Python oracles:**
-- Sprint 0–13 C tests: keep as-is. They test the Byrd Box engine directly, not the compiler.
-- Sprint 14–22 Python oracles: **retire them**. Extract their .sno test cases into
-  `test/cases/` with `.expected` files. Delete the `.py` drivers.
-- `snoc` Python wrapper at repo root: **delete it**. `src/snoc/snoc` is the compiler.
-- `src/codegen/emit_c_stmt.py`, `src/parser/sno_parser.py` etc.: keep for now as
-  reference/history but they are no longer the active pipeline.
-
-**Why shell not Python for the runner:**
-- Zero dependencies. Any Linux box with gcc and libgc can run it.
-- The compiler is already C. The runtime is C. The tests should be C.
-- Python was the right tool when the compiler was Python. It isn't anymore.
-
-**Sprint 27 work (after Milestone 3 is committed):**
-1. Write `test/run_tests.sh` — the new shell test runner
-2. Create `test/cases/` with extracted .sno + .expected pairs from sprint14–22
-3. `git rm snoc` (Python wrapper at root)
-4. Verify `test/run_tests.sh` gives all green on the cases that sprint22 oracle passed
-5. Add the beauty self-test as the final case in run_tests.sh
-
-### 🟢 Sprint 26 Status: snobol4_inc.c is the implementation — 0 gcc errors confirmed (Session 31)
-
-**snoc_helpers.c is dead. Delete it first thing next session.**
-`git -C /home/claude/SNOBOL4-tiny rm src/runtime/snobol4/snoc_helpers.c && git commit -m "retire dead snoc_helpers.c — snobol4_inc.c already implements all 19 inc helpers" && git push`
-
-**What is true as of Session 31:**
-- `snobol4_inc.c` (773 lines) implements ALL 19 -INCLUDE helper libraries ✅
-- beauty.sno WITH -INCLUDEs compiles to **0 gcc errors** with snobol4_inc.c ✅
-- snoc binary builds clean: `src/snoc/snoc` ✅
-- greet.sno baseline: compiles, links, runs ✅
-
-### 🔴 IMMEDIATE NEXT ACTIONS (Session 39 — updated Session 38)
-
-**Active target**: Milestone 0 — `beauty_full_bin < beauty.sno` → 790 lines → diff empty.
-**Current state**: 0 output lines, 10s timeout. `EVAL partial` messages in stderr.
-**HEAD**: `90a1128` — EVAL/OPSYN/SORT registered ✅, `*(expr)` fix in `_ev_term` ✅. Both committed.
-
-**⚡ NEW BLOCKER: `_ev_args` / `_ev_expr` parsing gaps cause EVAL partial strings**
-
-Session 38 stderr analysis shows two gaps in `snobol4_pattern.c` `_ev_args`:
-1. `remain=')'` — closing paren of function args not consumed at some call site
-2. `remain='+ 1)'` / `remain=', 1)'` — `_ev_expr` stops at `+` and `,` inside arg values
-
-**Step 0 — Fix `_ev_args` and `_ev_expr` in `snobol4_pattern.c`:**
-
-The `_ev_args` function calls `_ev_expr` for each argument. But `_ev_expr` only handles
-dot-chained pattern expressions — it does NOT handle arithmetic (`+`, `-`) or nested
-function calls with comma-separated args. The arg values in beauty's EVAL strings include:
-- `GT(nTop(), 1)` — a function call with two args separated by `,`
-- `nTop() + 1` — arithmetic expression
-
-Fix needed: `_ev_args` should call `_ev_val` (the value evaluator, not `_ev_expr`) for
-each argument. `_ev_val` in `_ev_term` (line ~898) already handles: alpha identifiers,
-function calls with args, string literals. It does NOT handle `+`. Extend `_ev_val` to
-handle arithmetic `+` and `-` between subexpressions.
-
-Check also: does `_ev_term` correctly consume the `)` after `_ev_args` returns? The
-`remain=')'` pattern suggests it does NOT in some cases.
-
-**Commit**: `"snobol4_pattern.c: fix _ev_args/_ev_val to handle arithmetic + paren close"`
-
-**Step 1 — Verify no EVAL partial messages after fix:**
-```bash
-timeout 10 /tmp/beauty_full_bin < $BEAUTY > /tmp/beauty_compiled.sno 2>/tmp/beauty_stderr.txt
-grep "partial" /tmp/beauty_stderr.txt   # must be empty
-wc -l /tmp/beauty_compiled.sno          # should be > 9
-```
-
-**Step 2 — If EVAL clean but still timeout: trace Shift:**
-Patch `_w_Shift` in `snobol4_inc.c`:
-```c
-static SnoVal _w_Shift(SnoVal *a, int n) {
-    fprintf(stderr, "[Shift called t=%s]\n", n>0 ? sno_to_str(a[0]) : "null");
-    return sno_Shift(n>0?a[0]:SNO_NULL_VAL);
-}
-```
-
-**Step 3 — STLIMIT probe if Shift trace shows no calls (supersedes old Step 0):**
-The old "Step 0 — Commit EVAL/OPSYN/SORT" is DONE (commit `90a1128`). Skip it.
-The old "Step 1 — Fix *(expr)" is DONE (commit `90a1128`). Skip it.
-
-**⚠ DO NOT RE-APPLY these — they are already in HEAD `90a1128`.**
-If you see these listed below as "pending uncommitted fix" — IGNORE THEM. They are committed.
+3. **CRITICAL — Save/Restore NOT implemented.**
+   Every DEFINE'd function (`_sno_fn_X`) must save caller's hash values for
+   all params/locals on entry, and restore them on exit (all paths).
+   Currently: zero save/restore anywhere in emitted C.
+   This corrupts caller state on any nested/re-entrant call.
+   **Status: NOT YET IMPLEMENTED. This is the next fix.**
 
 ---
 
-**[SUPERSEDED — kept for history only]**
-**Pending uncommitted fix**: EVAL/OPSYN/SORT registration in `snobol4.c` — apply first.
+### ⚡ IMMEDIATE NEXT ACTIONS (Session 45)
 
-**Step 0 — Commit the pending snobol4.c changes (EVAL/OPSYN/SORT registration):**
-The snobol4.c changes from Session 36 were NOT committed. Re-apply:
+**Step 1 — Implement Path A save/restore in emit.c:**
+
+In `emit_fn()`, after the existing param/local C variable declarations, emit:
 ```c
-// After _b_DATATYPE wrappers in snobol4.c:
-extern SnoVal sno_eval(SnoVal);
-extern SnoVal sno_opsyn(SnoVal, SnoVal, SnoVal);
-extern SnoVal sno_sort_fn(SnoVal);
-static SnoVal _b_EVAL(SnoVal *a, int n)  { return sno_eval(n>0?a[0]:SNO_NULL_VAL); }
-static SnoVal _b_OPSYN(SnoVal *a, int n) {
-    return sno_opsyn(n>0?a[0]:SNO_NULL_VAL,n>1?a[1]:SNO_NULL_VAL,n>2?a[2]:SNO_NULL_VAL); }
-static SnoVal _b_SORT(SnoVal *a, int n)  { return sno_sort_fn(n>0?a[0]:SNO_NULL_VAL); }
-// In sno_runtime_init():
-sno_register_fn("EVAL",  _b_EVAL,  1, 1);
-sno_register_fn("OPSYN", _b_OPSYN, 2, 3);
-sno_register_fn("SORT",  _b_SORT,  1, 1);
+/* ENTRY: save caller's hash values, install new values */
+SnoVal _saved_t  = sno_var_get("t");  sno_var_set("t",  _args[0]);
+SnoVal _saved_v  = sno_var_get("v");  sno_var_set("v",  _args[1]);
+SnoVal _saved_s  = sno_var_get("s");  sno_var_set("s",  SNO_NULL_VAL);
+SnoVal _saved_Fn = sno_var_get("Fn"); sno_var_set("Fn", SNO_NULL_VAL);
 ```
-Commit immediately: `"Register EVAL/OPSYN/SORT as callable SNOBOL4 functions in runtime"`
-
-**Step 1 — Fix `*(expr)` in `_ev_term()` in `snobol4_pattern.c`:**
-`reduce('snoParse', *(GT(nTop(), 1) nTop()))` generates EVAL string containing `*(...)`.
-`_ev_term()` handles `*ident` and `*ident(args)` but not `*(expr)`.
-When `*` is followed by `(`, parse the parenthesized group as a concat of deferred terms:
+And before EVERY return (normal, FRETURN, setjmp abort path), emit restore in reverse:
 ```c
-if (c == '*') {
-    e->pos++;
-    _ev_skip(e);
-    if (e->s[e->pos] == '(') {
-        e->pos++;  /* consume '(' */
-        SnoVal inner = _ev_expr(e);  /* parse inner as pattern expr */
-        _ev_skip(e);
-        if (e->s[e->pos] == ')') e->pos++;  /* consume ')' */
-        return inner;
-    }
-    /* existing *ident / *ident(args) handling */
-    ...
-}
+/* EXIT: restore in reverse order (DEFF6 semantics) */
+sno_var_set("Fn", _saved_Fn);
+sno_var_set("s",  _saved_s);
+sno_var_set("v",  _saved_v);
+sno_var_set("t",  _saved_t);
 ```
-In `*(GT(nTop(), 1) nTop())`: space-juxtaposition inside parens = pattern concat.
-`_ev_expr` will see `GT(nTop(),1)` then space then `nTop()` → two terms → pat_cat them.
-Commit: `"snobol4_pattern.c: _ev_term handles *(expr) — deferred grouped pattern"`
 
-**Step 2 — Trace whether Shift is ever called during input match:**
-After the above fixes, patch `_w_Shift` in `snobol4_inc.c`:
-```c
-static SnoVal _w_Shift(SnoVal *a, int n) {
-    fprintf(stderr, "[Shift called t=%s]\\n", n>0 ? sno_to_str(a[0]) : "null");
-    return sno_Shift(n>0?a[0]:SNO_NULL_VAL);
-}
-```
-If Shift is not called after the fixes: the `snoParse` pattern match is failing to reach
-the `*Shift(...)` deferred calls. Trace `sno_eval` to see what pattern is being built.
+The setjmp abort path: the existing `if (setjmp(_fn_abort_jmp) != 0) return SNO_FAIL_VAL`
+must also restore. Use a cleanup helper or restructure setjmp to call restore before return.
 
-**Step 3 — &STLIMIT probe if Step 2 shows no Shift calls:**
-Patch generated C main():
-```c
-sno_kw_set("STLIMIT", SNO_INT_VAL(200));   // stop after 200 statements
-sno_kw_set("DUMP", SNO_INT_VAL(2));        // dump all vars at termination
-```
-Rebuild. Run. Observe which variables are set after 200 stmts. Verify `snoParse` has
-a non-null pattern value. Verify `@S` has content after the first Shift.
-
-**Step 4 — Build commands (copy-paste):**
+**Step 2 — Rebuild and test:**
 ```bash
-apt-get install -y build-essential flex bison libgc-dev
+cd /home/claude/SNOBOL4-tiny/src/snoc && make
 SNOC=/home/claude/SNOBOL4-tiny/src/snoc/snoc
 RUNTIME=/home/claude/SNOBOL4-tiny/src/runtime
 INC=/home/claude/SNOBOL4-corpus/programs/inc
 BEAUTY=/home/claude/SNOBOL4-corpus/programs/beauty/beauty.sno
-
-cd /home/claude/SNOBOL4-tiny/src/snoc && make clean && make
-
 $SNOC $BEAUTY -I $INC 2>/dev/null > /tmp/beauty_full.c
 gcc -O0 -g /tmp/beauty_full.c \
     $RUNTIME/snobol4/snobol4.c $RUNTIME/snobol4/snobol4_inc.c \
     $RUNTIME/snobol4/snobol4_pattern.c $RUNTIME/engine.c \
     -I$RUNTIME/snobol4 -I$RUNTIME -lgc -lm -w -o /tmp/beauty_full_bin
-
-timeout 10 /tmp/beauty_full_bin < $BEAUTY > /tmp/beauty_compiled.sno 2>/dev/null
+timeout 10 /tmp/beauty_full_bin < $BEAUTY > /tmp/beauty_compiled.sno 2>/tmp/beauty_stderr.txt
 wc -l /tmp/beauty_compiled.sno   # TARGET: 790
 ```
 
-### 🔴 IMMEDIATE NEXT ACTIONS (Session 33 — superseded, kept for history)
+**Step 3 — One bug at a time (RULE 3). Commit each fix. Push immediately.**
 
-**Step 1 — REPO SURVEY (mandatory per INVENTORY RULE §9):**
-```bash
-find /home/claude/SNOBOL4-tiny/src -type f | sort
-```
-
-**Step 2 — Rebuild everything (snoc + beauty_full_bin + oracle):**
-```bash
-apt-get install -y build-essential flex bison libgc-dev
-SNOC=/home/claude/SNOBOL4-tiny/src/snoc/snoc
-RUNTIME=/home/claude/SNOBOL4-tiny/src/runtime
-INC=/home/claude/SNOBOL4-corpus/programs/inc
-BEAUTY=/home/claude/SNOBOL4-corpus/programs/beauty/beauty.sno
-
-cd /home/claude/SNOBOL4-tiny/src/snoc && make clean && make
-
-# Verify baseline
-cat > /tmp/greet.sno << 'EOF'
-    DEFINE('greet(name)')           :(greet_end)
-greet
-    OUTPUT = 'Hello, ' name         :(RETURN)
-greet_end
-    OUTPUT = 'calling greet'
-    greet('World')
-    OUTPUT = 'done'
-END
-EOF
-$SNOC /tmp/greet.sno > /tmp/greet.c
-gcc -O0 -g /tmp/greet.c $RUNTIME/snobol4/snobol4.c $RUNTIME/snobol4/snobol4_inc.c \
-    $RUNTIME/snobol4/snobol4_pattern.c $RUNTIME/engine.c \
-    -I$RUNTIME/snobol4 -I$RUNTIME -lgc -lm -w -o /tmp/greet_bin
-/tmp/greet_bin   # must print: calling greet / Hello, World / done
-```
-
-**Step 4 — Milestone 1 (Sprint 26): beauty WITHOUT -INCLUDEs → 0 gcc errors → binary:**
-```bash
-grep -v "^-INCLUDE" $BEAUTY > /tmp/beauty_core.sno
-$SNOC /tmp/beauty_core.sno > /tmp/beauty_core.c 2>/dev/null
-gcc -O0 -g /tmp/beauty_core.c $RUNTIME/snobol4/snobol4.c $RUNTIME/snobol4/snobol4_inc.c \
-    $RUNTIME/snobol4/snobol4_pattern.c $RUNTIME/engine.c \
-    -I$RUNTIME/snobol4 -I$RUNTIME -lgc -lm -w -o /tmp/beauty_core_bin 2>&1 | grep "error:"
-# TARGET: 0 errors → MILESTONE 1 → Claude writes the commit message → update Milestone Tracker
-```
-
-**Step 5 — Milestone 2 (Sprint 27): beauty WITH -INCLUDEs → 0 gcc errors → binary:**
-```bash
-$SNOC $BEAUTY -I $INC > /tmp/beauty_full.c 2>/dev/null
-gcc -O0 -g /tmp/beauty_full.c $RUNTIME/snobol4/snobol4.c $RUNTIME/snobol4/snobol4_inc.c \
-    $RUNTIME/snobol4/snobol4_pattern.c $RUNTIME/engine.c \
-    -I$RUNTIME/snobol4 -I$RUNTIME -lgc -lm -w -o /tmp/beauty_full_bin 2>&1 | grep "error:"
-# TARGET: 0 errors → MILESTONE 2 → Claude writes the commit message → update Milestone Tracker
-```
-
-**Step 6 — Milestone 3 (Sprint 28): diff is empty → Claude writes the big commit:**
-```bash
-# Build CSNOBOL4 oracle first (if not present)
-# Then:
-/tmp/beauty_full_bin < $BEAUTY > /tmp/beauty_compiled.sno
-diff /tmp/beauty_oracle.sno /tmp/beauty_compiled.sno
-# EMPTY → MILESTONE 3 → Claude writes the commit message → update Milestone Tracker
-```
-
-### Key facts for next Claude
-
-**⚠ snoc_helpers.c IS DEAD — DO NOT COMPLETE IT.**
-
-`snobol4_inc.c` (`src/runtime/snobol4/snobol4_inc.c`, 773 lines) **already implements all
-19 -INCLUDE helper libraries in C**, fully registered, linked in every build since Sprint 20.
-Session 30 didn't find it and re-invented it as `snoc_helpers.c` — a broken duplicate.
-Confirmed by git archaeology (Session 31). snoc_helpers.c uses `SNO_OBJECT`/`.tag` fields
-that do not exist in `SnoVal`. It is wrong and dead. Delete it.
-
-`snobol4_inc.c` implements: lwr/upr/icase, assign, match/notmatch, Gen/GenTab/GenSetCont,
-IncLevel/DecLevel/SetLevel/GetLevel, Qize/SqlSQize, Shift/Reduce, Push/Pop/Top,
-TopCounter, TDump/XDump/TLump/TValue, TV/TW/TX/TY/TZ, T8Trace/T8Pos, LEQ/LGT etc.,
-IsSnobol4, Visit/Equal/Equiv/Find/Insert. All registered in `sno_inc_init()` → called
-from `sno_runtime_init()`. Already works. Already linked.
-
-**⚡ SESSION 33 DESIGN FIX — `entry_label` in FnDef (2026-03-12)**
-
-Root cause of beauty_full_bin producing zero output (Sessions 32–33):
-
-`DEFINE('bVisit(x,fnc)i', 'bVisit_')` — the **two-argument DEFINE form** where the second
-argument is an explicit entry label (`bVisit_`) distinct from the function name (`bVisit`).
-
-Before the fix: `collect_functions()` searched for body_starts matching `fn->name` = `bVisit`.
-No statement has the label `bVisit` — the entry label is `bVisit_`. So `nbody_starts == 0`.
-The function body (`bVisit_`, `bVisit_1`, etc.) was emitted inline in `main()` as flat code.
-This code executed on program startup, called `APPLY(fnc, x)` with uninitialized vars,
-failed, and jumped to `_SNO_END` — exiting before `main00` was ever reached.
-
-After the fix:
-- `FnDef` gains `char *entry_label` field.
-- `collect_functions()` parses the 2nd DEFINE arg and stores it in `entry_label`.
-- `body_starts` search uses `entry_label` when set, else `name`.
-- `is_body_boundary()` treats `entry_label` as a boundary (stops other functions from absorbing it).
-- `fn_by_label()` checks `entry_label` too.
-
-This is in `src/snoc/emit.c`. One occurrence in beauty.sno (`bVisit`). May appear in other
-SNOBOL4 programs. **Never remove this logic.**
-
-**⚡ BOOTSTRAP ARTIFACT — `artifacts/beauty_full_first_clean.c`**
-
-The first C file produced by `snoc` from `beauty.sno` (all 19 -INCLUDEs resolved) that
-compiles with **zero gcc errors** is committed at `artifacts/beauty_full_first_clean.c`.
-10,543 lines. Session 33, 2026-03-12. md5: `f9e54c5877b519b2efbbfbf558ddd7ad`.
-
-This is a historical record of the compiler's first successful translation of a real
-SNOBOL4 program. It is NOT regenerated source — it is a preserved snapshot. Do not delete.
-See `artifacts/README.md` for full context.
-
-**Milestone status (verified Session 33):**
-- beauty.sno WITH -INCLUDEs compiles to **0 gcc errors** ✅
-- beauty_full_bin builds and runs (exits 0) ✅
-- `entry_label` fix applied — bVisit body now in function, not main ✅
-- Milestone 3: diff beauty_full_bin output vs oracle — **next action**
-
-**⚡ SESSION 33 DESIGN INSIGHT — No SNOBOL4 label is ever truly dead (2026-03-12)**
-
-When investigating why `Shift`/`Reduce` body labels appeared "orphaned" in `main()` after the
-`snobol4_inc.c` runtime already owns those functions, Lon identified the deeper truth:
-
-**In SNOBOL4, no compiled label is ever truly unreachable.**
-
-Every compiled code region is a potential target of:
-- `*X` — unevaluated expression: defers pattern/expression, executes it at match time by
-  reference. Semantics: copy the code block, relocate internal jumps, execute the copy.
-  The copy is independent — its own locals, its own state. This IS the `*X` operator.
-- `APPLY(fnc, arg)` — dynamic function dispatch by name or value
-- `EVAL(str)` — evaluates a string as SNOBOL4 code at runtime
-- `CODE(str)` — compiles a string to a relocatable code object, assignable to a variable,
-  storable in a TABLE, passable to functions, executable via `*X`
-
-This means the `Shift`/`Reduce` source bodies in ShiftReduce.sno — even though
-`snobol4_inc.c` owns the runtime function registration — are **not orphans**. They are
-relocatable code thunks. Any SNOBOL4 construct that holds a reference to `Shift` or
-`Reduce` (including the `*Shift(...)` unevaluated pattern calls in semantic.sno and
-beauty.sno's parser patterns) can invoke them dynamically.
-
-**Implication for snoc**: The C emitter cannot statically determine which labels are
-reachable. Every DEFINE body in the expanded source is a live code region. The current
-approach — emitting each DEFINE body as a C static function — is architecturally correct.
-The problem is not dead code; it is **body attribution**: which C function does each
-SNOBOL4 statement belong to? Bodies from `snobol4_inc.c`-owned functions (Shift, Reduce,
-Push, Pop, Top, etc.) appear in the source stream but have no corresponding DEFINE for
-`collect_functions()` to find. So `is_body_boundary()` cannot stop body-absorption at
-their entry labels, and those bodies get absorbed into the preceding function (`refs`).
-
-**Root cause of beauty_full_bin silence (Session 33, still open)**:
-`Shift`/`Reduce` bodies absorbed into `_sno_fn_refs`. Their `:(NRETURN)` gotos emit
-`goto _SNO_FRETURN_refs` — which is correct within `refs`, but wrong at runtime: those
-paths are executing as Shift/Reduce logic and returning via refs' return slot, which may
-corrupt refs' return value or exit refs early before `main00` is reached.
-
-**The fix direction**: Inject phantom FnDef entries into `fn_table` for every function
-whose body labels appear in-stream but whose DEFINE is handled by `snobol4_inc.c`.
-Phantoms have: `name`, `end_label`, `nbody_starts = 0`, `define_stmt = NULL`. They exist
-solely to make `is_body_boundary()` recognize their entry labels as boundaries, preventing
-body-absorption into the wrong function. Actual C emission for phantoms: skip (no body to
-emit — `snobol4_inc.c` handles them at runtime).
-
-Known phantoms needed for beauty.sno: `Shift`/`ShiftEnd`, `Reduce`/`ReduceEnd`.
-General rule: any function in `snobol4_inc.c`'s `sno_inc_init()` registration list whose
-source body appears in an -INCLUDEd file is a phantom candidate.
-
-**Runtime facts:**
-- Stack: `sno_push()`/`sno_pop()`/`sno_top()` in `snobol4.c` (array-backed)
-- Counter: `sno_npush()`/`sno_ninc()`/`sno_ndec()`/`sno_ntop()`/`sno_npop()` in `snobol4.c`
-- Tree: `SNO_UDEF` + `sno_data_define("tree(t,v,n,c)")` — `sno_field_get/set`
-- `xTrace` defaults to 0 — T8Trace/TDump paths are no-ops in practice
-- Do NOT change snoc (the compiler)
-
-
-4. **When diff is empty: Claude writes the commit message** (promise at `c5b3e99`).
-
-### State at snapshot
-
-```
-SNOBOL4-tiny    2929656   Sprint 26: snoc_helpers.c dead (retire it). 0 gcc errors on beauty_full confirmed.
-SNOBOL4-dotnet  b5aad44   unchanged
-SNOBOL4-jvm     9cf0af3   unchanged
-SNOBOL4-corpus  3673364   unchanged
-SNOBOL4-harness 8437f9a   unchanged
-.github         7d5ed92   Session 31: INVENTORY RULE + sprint numbers + test suite migration plan
-```
-
-### Build Commands (next session)
-
-```bash
-apt-get install -y build-essential flex bison libgc-dev
-SNOC=/home/claude/SNOBOL4-tiny/src/snoc/snoc
-RUNTIME=/home/claude/SNOBOL4-tiny/src/runtime
-INC=/home/claude/SNOBOL4-corpus/programs/inc
-BEAUTY=/home/claude/SNOBOL4-corpus/programs/beauty/beauty.sno
-
-cd /home/claude/SNOBOL4-tiny/src/snoc && make clean && make
-
-# Verify GREET still works
-cat > /tmp/greet.sno << 'EOF'
-    DEFINE('greet(name)')           :(greet_end)
-greet
-    OUTPUT = 'Hello, ' name         :(RETURN)
-greet_end
-    OUTPUT = 'calling greet'
-    greet('World')
-    OUTPUT = 'done'
-END
-EOF
-$SNOC /tmp/greet.sno > /tmp/greet.c
-gcc -O0 -g /tmp/greet.c $RUNTIME/snobol4/snobol4.c $RUNTIME/snobol4/snobol4_inc.c \
-    $RUNTIME/snobol4/snobol4_pattern.c $RUNTIME/engine.c \
-    -I$RUNTIME/snobol4 -I$RUNTIME -lgc -lm -w -o /tmp/greet_bin 2>/dev/null
-/tmp/greet_bin   # must print: calling greet / Hello, World / done
-
-# beauty: compile + check errors
-$SNOC $BEAUTY -I $INC > /tmp/beauty_snoc.c 2>/dev/null
-gcc -O0 -g /tmp/beauty_snoc.c $RUNTIME/snobol4/snobol4.c $RUNTIME/snobol4/snobol4_inc.c \
-    $RUNTIME/snobol4/snobol4_pattern.c $RUNTIME/engine.c \
-    -I$RUNTIME/snobol4 -I$RUNTIME -lgc -lm -w -o /tmp/beauty_bin 2>&1 | grep "error:" | wc -l
-# Must be 0
-
-# Oracle
-snobol4 -f -P256k -I $INC $BEAUTY < $BEAUTY > /tmp/beauty_oracle.sno 2>/dev/null
-/tmp/beauty_bin < $BEAUTY > /tmp/beauty_compiled.sno
-diff /tmp/beauty_oracle.sno /tmp/beauty_compiled.sno
-```
-
-**When diff is empty: Claude writes the commit message (promise at `c5b3e99`).**
+**Step 4 — When diff is empty: Claude writes the milestone commit message.**
 
 ---
 
-Key paths:
-```
-SNOBOL4-tiny/src/codegen/emit_c.py       ← FlatEmitter — THE foundation
-SNOBOL4-tiny/src/ir/ir.py               ← IR node types
-SNOBOL4-tiny/src/parser/sno_parser.py   ← parser (solid, 1214 stmts)
-ByrdBox/test_sno_1.c                    ← gold standard reference
-```
+### 🔭 FUTURE: Path B — T_FNCALL Byrd Box wrapper (after Milestone 0)
+
+After beauty.sno works, replace Path A with Path B:
+A `T_FNCALL` node in engine.c wraps every function call site.
+PROCEED: save+install. RECEDE/CONCEDE: restore in reverse.
+The C function stays clean. See §2 for full design.
 
 ---
 
-### Port B — JVM Bytecodes (emit_jvm.py) — Sprint 21 parallel
+### Repo State at Session 44 Handoff
 
-Compile SNOBOL4 patterns directly to `.class` files using ASM.
-**This is NOT SNOBOL4-jvm** (the Clojure interpreter). This is a new standalone compiler.
+| Repo | Commit | State |
+|------|--------|-------|
+| SNOBOL4-tiny | `f28cfe9` | WIP — partial fixes committed. Save/restore NOT done. 9/790 lines. |
+| .github | `00e3cda` | Clean. All architecture notes pushed. |
+| SNOBOL4-corpus | `3673364` | Untouched. |
+| SNOBOL4-harness | `8437f9a` | Untouched. |
 
-Jcon reference: `github.com/proebsting/jcon` — the exact same model for Icon, already working.
-Key files: `tran/ir.icn` (IR vocab), `tran/irgen.icn` (four-port wiring), `tran/gen_bc.icn` (IR → JVM).
-
-Value representation:
-- Subject `Σ` = `char[]` static field
-- Cursor `Δ` = `int` local variable
-- String result = two int locals: `start` + `len` (len == -1 → failure)
-- No `vDescriptor`, no object hierarchy, no GC
-
-Four-port → JVM mapping:
-```
-box_α:  Label → visitLabel(alpha)
-box_β:  Label → visitLabel(beta)
-box_γ:  success → advance cursor, visitJumpInsn(GOTO, parent_alpha)
-box_ω:  failure → restore cursor, visitJumpInsn(GOTO, parent_omega)
-*X:     named pattern → INVOKEVIRTUAL cloned method
-Alt β:  tableswitch on saved int local (= Jcon's computed-goto model)
-```
-
-| Sprint | Goal |
-|--------|------|
-| 21A | `byrd_ir.py` — Python dataclasses mirroring `ir.icn`. ~60 lines. Locals inside ByrBox. |
-| 21B | `emit_jvm.py` Phase 1A — `LIT` primitive as JVM method. `javap` shows correct bytecode. |
-| 22A | Phase 1B — `Seq`/`Alt` composition. `Alt` backtrack via tableswitch. |
-| 22B | Phase 1C — `Arbno`. Named patterns as methods (`INVOKEVIRTUAL`). |
-| 23A | Smoke test: `POS(0) ARBNO('Bird'|'Blue'|LEN(1)) $ OUTPUT RPOS(0)` → `.class` → runs → matches `test_sno_1.c` output exactly. |
-
----
-
-### Port C — MSIL / .NET IL (emit_msil.py) — Sprint 21 parallel
-
-Compile SNOBOL4 patterns directly to `.dll`/`.exe` using `ILGenerator`.
-**This is NOT SNOBOL4-dotnet** (the C# interpreter). New standalone compiler.
-
-`ILGenerator` maps directly:
-```
-Goto         → il.Emit(OpCodes.Br, label)
-Fail         → il.Emit(OpCodes.Ldc_I4_M1); il.Emit(OpCodes.Ret)
-Succeed      → advance int local; il.Emit(OpCodes.Br, success_label)
-Alt β        → il.Emit(OpCodes.Switch, label_array)  (= tableswitch equivalent)
-Named pattern → MethodBuilder in TypeBuilder; il.Emit(OpCodes.Call, method)
-```
-
-| Sprint | Goal |
-|--------|------|
-| 21A | Share `byrd_ir.py` from JVM port (same IR). |
-| 21B | `emit_msil.py` Phase 2A — `LIT` primitive as ILGenerator method. `ildasm` shows correct IL. |
-| 22A | Phase 2B — `Seq`/`Alt`. `Switch` opcode for Alt backtrack. |
-| 22B | Phase 2C — `Arbno`. Named patterns as `MethodBuilder`. |
-| 23A | Smoke test: same pattern as JVM smoke test → `.dll` → runs → same output. |
-
----
-
-### The Three-Milestone Authorship Agreement (Session 30 — supersedes single promise)
-
-**Claude Sonnet 4.6 writes the commit message for all three milestones.** Full spec in §1.
-
-- **Milestone 1**: snoc compiles beauty_core (no -INCLUDEs) → 0 gcc errors
-- **Milestone 2**: snoc compiles beauty.sno WITH -INCLUDEs via snoc_helpers.c → 0 gcc errors  
-- **Milestone 3**: beauty_full_bin self-beautifies, diff vs oracle empty → **the big one**
-
-Original single promise at `c5b3e99` is now Milestone 3. All three happen. All three get Claude's name.
-
----
-
-### Patch History (see PATCHES.md for full root causes + fixes)
-
-| # | What | Commit | Status |
-|---|------|--------|--------|
-| P001 | `&STLIMIT` not enforced — hang forever | — | RESOLVED |
-| P002 | `sno_array_get/get2` never signals out-of-bounds failure | — | RESOLVED |
-| P003 | Conditional expression failure not propagated; flat function emission | `4a37a81`, `8e946d1` | RESOLVED |
-| T_CAPTURE | Bootstrap semantics gap in compiled binary | `a802e45` | CLOSED — not a C bug |
-
----
 
 ## 7. SNOBOL4-harness — What It Becomes
 
@@ -1297,7 +847,7 @@ The handoff prompt Lon gives the next Claude is exactly:
 |---|--------|-----------|--------|--------|
 | 1 | **26** | `snoc` compiles beauty.sno (no -INCLUDEs) → 0 gcc errors → binary links | ✅ DONE Session 32 | `cc0c88b` |
 | 2 | **27** | `snoc` compiles beauty.sno WITH -INCLUDEs (via `snobol4_inc.c`) → 0 gcc errors | ✅ DONE Session 32 | `cc0c88b` |
-| 0 | **26** | `beauty_full_bin` self-beautifies → `diff` vs oracle is **empty** | 🔴 0/790 lines, 10s timeout — EVAL/OPSYN/SORT ✅, *(expr) fix ✅ (commit `90a1128`), EVAL partial parsing gaps in `_ev_args` are next blocker | — |
+| 0 | **26** | `beauty_full_bin` self-beautifies → `diff` vs oracle is **empty** | 🔴 9/790 lines — nl/tab fix ✅, is_fn_local removed ✅, sno_var_register ✅ (`f28cfe9` WIP). **Save/restore NOT implemented** — next blocker. | — |
 
 **When a milestone is hit:**
 1. Claude writes the commit message (not Lon, not a script — Claude).
