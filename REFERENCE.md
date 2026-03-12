@@ -282,7 +282,7 @@ tab           \t (1 char)   \t   (C tab escape)
 
 **Performance** (FIB(20) recursive, 2026-03-11): ~13 ms. Competitive with CSNOBOL4.
 
-**Oracle fitness**: Untested against beauty_run.sno (corpus not available this session). Primary risk: `CODE()` broken, `&CASE` missing, OPSYN operator restrictions. For programs that don't use those features, likely viable.
+**Oracle fitness**: Untested against beauty.sno (corpus not available this session). Primary risk: `CODE()` broken, `&CASE` missing, OPSYN operator restrictions. For programs that don't use those features, likely viable.
 
 **Verdict**: A serious, working SNOBOL4 implementation with genuine 64-bit improvements. Not a drop-in oracle replacement — `&CASE` and `CODE()` gaps are significant. Worth keeping in the inventory. Build situation is a limitation.
 
@@ -313,7 +313,7 @@ tab           \t (1 char)   \t   (C tab escape)
 | 64-bit integers | ❌ | ❌ | ✅ (`9000000000 * 2 = 18000000000`) |
 | New functions | — | — | HEX/BIT/BYTES conversions, trig, GETENV, SORT, SYSTEM, RAND, DATE, TIME, SLEEP, REV, SPANNNOT, INT, REAL, STR, CENTER, SEEK, IO_FINDUNIT, ISLABEL |
 | Implementation | C interpreter | MINIMAL+ASM compiler | SIL macros → x86-64 ASM |
-| Oracle fitness (beauty_run.sno) | ✅ **primary** | ❌ error 021 at END | **untested** (corpus not available this session) |
+| Oracle fitness (beauty.sno) | ✅ **primary** | ❌ error 021 at END | **untested** (corpus not available this session) |
 
 ---
 
@@ -346,7 +346,7 @@ Build: `gcc` + `nasm`. Binary at `./bin/sbl`. Install: `make install` → `/usr/
 - `&TRIM` defaults to 1 (was null)
 - `&CASE` defaults to 0 (case-sensitive)
 
-**SPITBOL is disqualified as oracle for `beauty_run.sno` (Level 3)** — error 021 at `END`, indirect function call semantic difference. CSNOBOL4 is the sole authoritative oracle for Sprint 20.
+**SPITBOL is disqualified as oracle for `beauty.sno` (Level 3)** — error 021 at `END`, indirect function call semantic difference. CSNOBOL4 is the sole authoritative oracle for Sprint 20.
 
 ## What Runs On This Machine
 
@@ -373,7 +373,7 @@ cp sbl /usr/local/bin/spitbol
 
 # Sprint 20 — Compiland Reachability
 
-*Generated 2026-03-10 from `beauty_run.sno → beautiful.c` analysis.*
+*Generated 2026-03-10 from `beauty.sno → beautiful.c` analysis.*
 
 ## Pattern Constructors (snobol4_pattern.c) — 19/19 ✅
 

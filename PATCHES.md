@@ -30,7 +30,7 @@
 ## P001 — &STLIMIT Not Enforced
 **Date**: 2026-03-10
 **Found by**: Double-trace monitor (binary STNO stream, timeout run)
-**Symptom**: `./beautiful < beauty_run.sno` hangs. Exit 124 (timeout).
+**Symptom**: `./beautiful < beauty.sno` hangs. Exit 124 (timeout).
 STNO stream shows loop at statements 160↔161, variable `i` incrementing
 without bound (observed value: 92020+ after 5 seconds).
 
@@ -142,7 +142,7 @@ that signal as `_ok = 0`.
 ## P002 — sno_subscript_get / get2 Never Signals Out-of-Bounds Failure
 **Date**: 2026-03-10
 **Found by**: Double-trace monitor — binary STNO stream, STNO 160↔161 looping, VAR i incrementing to 92000+
-**Symptom**: `./beautiful < beauty_run.sno` hangs. Variable `i` increments without bound in a SNOBOL4 array-iteration loop.
+**Symptom**: `./beautiful < beauty.sno` hangs. Variable `i` increments without bound in a SNOBOL4 array-iteration loop.
 
 **Diagnosis**:
 ```
@@ -187,7 +187,7 @@ Our runtime had no failure sentinel distinct from null.
 **Symptom**: After P002, binary advances past statement 161 but loops at STNO 578↔579.
 `&STCOUNT` reaches 10,000,000+ with no output produced.
 
-**Source SNOBOL4** (beauty_run.sno line 578):
+**Source SNOBOL4** (beauty.sno line 578):
 ```snobol4
 findRefs_0  n  =  LT(n, n(x)) n + 1  :F(FRETURN)
 ```

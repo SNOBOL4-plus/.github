@@ -49,7 +49,7 @@ that underlies CSNOBOL4:
        RCALL   ,TRPHND,ATPTR      Perform trace       ← the hook
 ```
 
-Three lines at the top of `beauty_run.sno`:
+Three lines at the top of `beauty.sno`:
 
 ```snobol4
         TRACE('&STNO','KEYWORD')
@@ -203,12 +203,12 @@ This is the day Sprint 20 closes.
 
 ## What Sprint 20 Means
 
-When the monitor produces no diffs — when `beautiful < beauty_run.sno`
+When the monitor produces no diffs — when `beautiful < beauty.sno`
 produces a trace that matches the oracle trace exactly, modulo the ignore
 list — the idempotence test runs:
 
 ```bash
-./beautiful < beauty_run.sno > pass1.txt
+./beautiful < beauty.sno > pass1.txt
 ./beautiful < pass1.txt > pass2.txt
 diff pass1.txt pass2.txt   # empty
 ```
@@ -792,7 +792,7 @@ Run the binary with STNO sync enabled and a timeout:
 
 ```bash
 SNO_MONITOR=1 timeout 5 ./beautiful \
-    < beauty_run.sno \
+    < beauty.sno \
     2>/tmp/binary_trace.txt
 echo "Exit: $?"
 tail -5 /tmp/binary_trace.txt
@@ -860,7 +860,7 @@ Binary search via `&STLIMIT` runs on a clean non-traced oracle invocation.
 Before the grid: the hang is located.
 
 ```bash
-SNO_MONITOR=1 timeout 5 ./beautiful < beauty_run.sno 2>/tmp/binary_trace.txt
+SNO_MONITOR=1 timeout 5 ./beautiful < beauty.sno 2>/tmp/binary_trace.txt
 tail -10 /tmp/binary_trace.txt
 ```
 
@@ -963,20 +963,20 @@ as CSNOBOL4 and SPITBOL.
 
 **Oracle side** — two oracles available, NOT equivalent:
 
-| Oracle | Command | Result on beauty_run.sno | Stdout lines |
+| Oracle | Command | Result on beauty.sno | Stdout lines |
 |--------|---------|--------------------------|--------------|
-| CSNOBOL4 | `snobol4 -f -P256k beauty_run.sno < beauty_run.sno` | Exit 0 ✓ | **649 lines** |
-| SPITBOL | `spitbol beauty_run.sno < beauty_run.sno` | Exit 1 ✗ | 25 lines |
+| CSNOBOL4 | `snobol4 -f -P256k beauty.sno < beauty.sno` | Exit 0 ✓ | **649 lines** |
+| SPITBOL | `spitbol beauty.sno < beauty.sno` | Exit 1 ✗ | 25 lines |
 
 SPITBOL fails at line 630 (`END`) with error 021 — "function called by name
 returned a value." SPITBOL does not handle `-INCLUDE` directives the same way.
 The 649-line CSNOBOL4 output is the authoritative oracle.
-**SPITBOL is not a usable oracle for beauty_run.sno.**
+**SPITBOL is not a usable oracle for beauty.sno.**
 
 **Binary side** — `./beautiful` (SNOBOL4-tiny):
 
 ```
-SNO_MONITOR=1 timeout 5 ./beautiful < beauty_run.sno
+SNO_MONITOR=1 timeout 5 ./beautiful < beauty.sno
 Exit: 124 (timeout)
 Trace lines: 333,415
 Last events: STNO 160 ↔ STNO 161, VAR i incrementing to 83,311+
@@ -1011,7 +1011,7 @@ its first `OUTPUT =` statement.
 
 ### SPITBOL vs CSNOBOL4 — Oracle Divergence Documented
 
-SPITBOL and CSNOBOL4 are **not equivalent** on beauty_run.sno:
+SPITBOL and CSNOBOL4 are **not equivalent** on beauty.sno:
 - CSNOBOL4 handles `-INCLUDE` as a preprocessor directive. ✓
 - SPITBOL does not process `-INCLUDE` — treats it as a label or fails. ✗
 - SPITBOL error 021 at line 630: "function called by name returned a value"
@@ -1040,7 +1040,7 @@ SPITBOL is a secondary reference for keyword behavior only.
 
 ### The Revised Oracle Trace Strategy
 
-Instrument `beauty_run.sno` with a probe variable assigned every statement:
+Instrument `beauty.sno` with a probe variable assigned every statement:
 
 ```snobol4
 *-- Monitor probe: assign snoSTEP on every statement via null-concat
@@ -1051,7 +1051,7 @@ Instrument `beauty_run.sno` with a probe variable assigned every statement:
 SNO_TRACE_ARMED
 ```
 
-Then in the body, the probe fires automatically because `beauty_run.sno`
+Then in the body, the probe fires automatically because `beauty.sno`
 assigns variables constantly. The VALUE trace on key variables (`snoLine`,
 `snoSrc`, `snoOut`) gives us the oracle stream.
 

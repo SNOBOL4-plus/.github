@@ -212,8 +212,8 @@ git remote set-url origin https://LCherryholmes:$TOKEN@github.com/SNOBOL4-plus/<
 
 ```bash
 cd /home/claude/SNOBOL4-corpus/programs/inc
-snobol4 -f -P256k beauty_run.sno < beauty_run.sno > /tmp/pass1.txt   # 649 lines, exit 0
-snobol4 -f -P256k beauty_run.sno < /tmp/pass1.txt > /tmp/pass2.txt   # 649 lines, exit 0
+snobol4 -f -P256k beauty.sno < beauty.sno > /tmp/pass1.txt   # 649 lines, exit 0
+snobol4 -f -P256k beauty.sno < /tmp/pass1.txt > /tmp/pass2.txt   # 649 lines, exit 0
 diff /tmp/pass1.txt /tmp/pass2.txt                                     # empty — IDEMPOTENT ✓
 ```
 
@@ -223,7 +223,7 @@ diff /tmp/pass1.txt /tmp/pass2.txt                                     # empty �
 # Regen beautiful.c from source
 cd /home/claude/SNOBOL4-tiny/src/runtime/snobol4
 python3 -B /home/claude/SNOBOL4-tiny/src/codegen/emit_c_stmt.py \
-    /home/claude/SNOBOL4-corpus/programs/inc/beauty_run.sno \
+    /home/claude/SNOBOL4-corpus/programs/beauty/beauty.sno \
     > beautiful.c 2>/tmp/emit.log
 
 # Compile
@@ -232,12 +232,12 @@ cc -o beautiful beautiful.c snobol4.c snobol4_pattern.c snobol4_inc.c \
 
 # Run
 timeout 20 ./beautiful \
-    < /home/claude/SNOBOL4-corpus/programs/inc/beauty_run.sno \
+    < /home/claude/SNOBOL4-corpus/programs/beauty/beauty.sno \
     > /tmp/b_out.txt 2>/tmp/b_err.txt
 
 # Debug — STNO stream
 SNO_MONITOR=1 timeout 5 ./beautiful \
-    < /home/claude/SNOBOL4-corpus/programs/inc/beauty_run.sno \
+    < /home/claude/SNOBOL4-corpus/programs/beauty/beauty.sno \
     2>&1 | grep "STNO\|VAR"
 ```
 
@@ -250,7 +250,7 @@ SNOBOL4-tiny/src/runtime/snobol4/snobol4_pattern.c ← pattern engine
 SNOBOL4-tiny/src/runtime/snobol4/engine.c          ← Byrd Box engine
 SNOBOL4-tiny/src/codegen/emit_c_stmt.py            ← code generator
 SNOBOL4-tiny/src/parser/sno_parser.py              ← parser
-SNOBOL4-corpus/programs/inc/beauty_run.sno         ← test driver
+SNOBOL4-corpus/programs/beauty/beauty.sno         ← test driver
 SNOBOL4-corpus/programs/sno/beauty.sno             ← the program itself
 ```
 
