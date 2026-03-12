@@ -404,6 +404,10 @@ python tests/test_bead.py
 Write a file → push. Change a file → push. No exceptions. Do not accumulate
 two changes before pushing. Every logical change is exactly one push.
 
+**Commit trigger (Lon's standing order):** Any time a file compiles, a test
+passes, or a piece of code works the way it's supposed to — commit and push
+immediately. Don't wait for snapshot time.
+
 After every push: `git log --oneline -1` to confirm the remote received it.
 
 ### Directives (invoke by name)
