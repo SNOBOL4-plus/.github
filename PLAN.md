@@ -395,29 +395,59 @@ until SNOBOL4 has CODE type and compiled expressions natively built in.
 
 **The right temporary replacement — hand-rolled Pratt parser in `sno_eval()`:**
 
-~150 lines of C. Simple precedence table lookup. No ARBNO/FENCE/SPAT_REF overhead.
-Handles all 14 binary levels, all unary prefixes, postfix `[]`/`<>`, function calls.
-Faster than the pattern-based grammar for expression parsing inside EVAL strings.
+⚠️ **CORRECTION (Session 45, verified against v311.sil ELEMNT):**
+The Pratt parser must reach ALL the way to snoExpr17 — the primary level.
+snoExpr15–17 are NOT optional extras; they are the base case that the entire
+binary loop (snoExpr0–13) and unary chain (snoExpr14) bottom out into.
+Without a real primary parser, you can't parse a single token.
 
+**CSNOBOL4 structure (from v311.sil EXPR / ELEMNT):**
+```
+EXPR
+ └─ ELEMNT (= snoExpr14–17 combined)
+     ├─ UNOP chain    ← unary prefix: @X .X $X &X -X +X *X ?X !X #X %X /X \X |X
+     ├─ literal       ← integer (SPCINT), real (SPREAL), quoted string
+     ├─ variable      ← bare identifier → GENVUP
+     ├─ (expr)        ← parenthesized, recurses into EXPR
+     ├─ name(args...) ← function call, each arg recurses into EXPR (ELEFNC)
+     └─ name[...] / name<...> ← array/table ref, ELEM10 peek-ahead (ELEARN)
+ └─ EXPR2 (Pratt binary loop, left-prec / right-prec from OPTBL)
+```
+
+**CSNOBOL4 v311.sil OPTBL — authoritative binary precedence (left, right):**
+```
+X = Y   assignment          left=1,  right=1   (right-assoc — equal!)
+X ? Y   SPITBOL scan        left=3,  right=2
+X & Y   definable           left=5,  right=4
+X | Y   alternation         left=10, right=9
+X   Y   concatenation       left=20, right=19
+X @ Y   definable           left=25, right=24
+X + Y   addition            left=30, right=29
+X - Y   subtraction         left=30, right=29
+X # Y   definable           left=35, right=34
+X / Y   division            left=40, right=39
+X * Y   multiplication      left=42, right=41
+X % Y   definable           left=45, right=44
+X ** Y  exponentiation      left=50, right=50  (right-assoc — equal!)
+X $ Y   immediate naming    left=60, right=59
+X . Y   naming              left=60, right=59  (same as $)
+X \ Y   definable           left=70, right=70  (right-assoc — equal!)
+```
+Note: CSNOBOL4 encodes right-associativity as left_prec > right_prec (except
+= ** \ where left==right — these are also right-assoc by convention).
+Concatenation (whitespace) is an explicit operator with left=20, right=19.
+
+**Pratt parser structure needed (~250 lines of C):**
 ```c
-/* Pratt precedence table for sno_eval */
-static int op_prec(char c, const char *s) {
-    if (c == '=')             return 1;   /* assignment */
-    if (c == '?')             return 2;
-    if (c == '&')             return 3;
-    if (c == '|')             return 4;
-    /* whitespace = implicit concat */ return 5;
-    if (c == '@')             return 6;
-    if (c == '+' || c == '-') return 7;
-    if (c == '#')             return 8;
-    if (c == '/')             return 9;
-    if (c == '*')             return 10;
-    if (c == '%')             return 11;
-    if (c == '^' || c == '!') return 12;
-    if (c == '$' || c == '.') return 13;
-    if (c == '~')             return 14;
-    return 0;
-}
+SnoVal parse_expr(int min_prec);   // binary Pratt loop  (snoExpr0-13)
+SnoVal parse_unary();              // unary prefix chain  (snoExpr14)
+SnoVal parse_primary();            // primary + postfix   (snoExpr15-17)
+  // primary dispatches on next token:
+  //   integer / real / string literal → SnoVal
+  //   '(' → parse_expr(0) then expect ')'
+  //   name '(' → parse_args() for function call
+  //   name '[' or name '<' → parse_args() for array ref (ITEM)
+  //   name → variable reference
 ```
 
 **This is temporary.** When SNOBOL4-tiny has CODE type and compiled expressions,
