@@ -246,12 +246,34 @@ Our compiled C functions declare params/locals as C stack variables
 - On function EXIT (all return paths): restore each saved value via `sno_var_set`.
 This matches CSNOBOL4 DEFF8/DEFF10 (save+assign) and DEFF6 (restore).
 
+**⚠️ CONFIRMED BUG — NO SAVE/RESTORE IN EMITTED C FUNCTIONS (Session 44):**
+
+Checked `_sno_fn_Shift`, `_sno_fn_reduce`, etc. in beauty_full.c. There is
+ZERO save/restore of hash values for params/locals. `_t`, `_v`, `_s` are
+plain C stack locals. This means:
+- On entry: caller's hash value for `t`, `v`, `s` is silently overwritten.
+- On exit: caller's value is never restored.
+- Any nested call, recursive call, or pattern EVAL that touches the same
+  variable name will corrupt the caller's state.
+
+**The fix required in emit.c** (matching CSNOBOL4 DEFF8/DEFF10/DEFF6):
+```
+// ON ENTRY — for each param and local:
+SnoVal _saved_t = sno_var_get("t");   // save caller's hash value
+sno_var_set("t", _args[0]);           // set param to new arg
+SnoVal _saved_s = sno_var_get("s");   // save caller's hash value
+sno_var_set("s", SNO_NULL_VAL);       // set local to null
+
+// ON EXIT (ALL return paths, before return):
+sno_var_set("t", _saved_t);           // restore caller's value
+sno_var_set("s", _saved_s);           // restore caller's value
+```
+This must cover: normal RETURN, FRETURN, and the setjmp ABORT path.
+
 **What is working now (Session 44 partial fix):**
 - `sno_var_set` called for every assignment (is_fn_local guard removed).
 - `sno_var_register` + `sno_var_sync_registered` fix pre-init timing for nl/tab/etc.
-- Hash is always current for the active call frame.
-- Save/restore correctness: accidental for non-recursive calls; broken for recursive
-  calls or any case where a global and a local share a name across call frames.
+- Hash is always current for the active call frame — but caller's values are clobbered.
 
 ---
 

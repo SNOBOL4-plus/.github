@@ -564,3 +564,50 @@ by name through the hash table.
 **Note on SPITBOL:** Lon indicated SPITBOL implements variable storage differently.
 If/when targeting SPITBOL semantics, revisit. For CSNOBOL4 compatibility: all vars hashed.
 
+
+### Session 44 — Save/Restore Bug Confirmed
+
+**Lon's challenge:** "Do you not have a save area for function and perform an array
+of assigns in one way and out the backward way? If you do not do that, that is
+critical and that is your BUG."
+
+**Verdict: BUG CONFIRMED. We have NO save/restore.**
+
+Checked `_sno_fn_Shift` in beauty_full.c (compiled from current HEAD):
+```c
+static SnoVal _sno_fn_Shift(SnoVal *_args, int _nargs) {
+    SnoVal _Shift = {0};
+    SnoVal _t = (_nargs>0)?_args[0]:SNO_NULL_VAL;   // NO hash save
+    SnoVal _v = (_nargs>1)?_args[1]:SNO_NULL_VAL;   // NO hash save
+    SnoVal _s = {0};                                  // NO hash save
+    ...
+    return sno_get(_Shift);                           // NO hash restore
+}
+```
+
+No `sno_var_get` to save old hash values on entry.
+No `sno_var_set` to restore old values on exit.
+`emit.c` has zero save/restore logic. `snobol4_inc.c` has zero save/restore logic.
+
+**The correct pattern (CSNOBOL4 DEFF8/DEFF10 in / DEFF6 out):**
+```c
+// ENTRY — save caller's hash values, install new values
+SnoVal _saved_t = sno_var_get("t");
+sno_var_set("t", _args[0]);
+SnoVal _saved_s = sno_var_get("s");
+sno_var_set("s", SNO_NULL_VAL);
+
+// EXIT (all paths — RETURN, FRETURN, ABORT via setjmp)
+sno_var_set("t", _saved_t);
+sno_var_set("s", _saved_s);
+```
+
+**Why it hasn't crashed everything yet:** beauty.sno's functions are mostly
+non-recursive and the pattern engine doesn't re-enter them during matching.
+But EVAL inside patterns calls back into the interpreter, which CAN re-enter
+functions — and that is exactly where beauty.sno's snoParse/snoCommand loop
+lives. This is likely contributing to the current Parse Error failures.
+
+**Next action:** Implement save/restore in emit.c for all emitted functions.
+This is the NEXT fix after the nl/tab/sno_var_register fix.
+
