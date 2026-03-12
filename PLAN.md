@@ -56,8 +56,10 @@ last good state is preserved. If a fix is wrong, exactly one thing changed.
 
 **The stopping condition for a session is a ROADBLOCK** — a bug that requires
 information Claude doesn't have, a design decision that needs Lon, or a context
-window that is too full to continue safely. At a roadblock: HANDOFF immediately.
-Do not push through. Do not guess. Stop, document, push, hand off.
+window that is too full to continue safely. At a roadblock: **execute HANDOFF
+immediately and automatically. Do NOT ask Lon if you should hand off. Do NOT ask
+for permission. Do NOT say "shall I continue?". Just do the HANDOFF protocol and
+stop. Lon will start a new session. That is the system.**
 
 ---
 
