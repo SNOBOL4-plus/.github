@@ -351,9 +351,81 @@ save/restore semantics integrate with Byrd Box backtracking.
 This is NOT an edge case. This is the fundamental design of the system.
 
 **Two paths forward:**
-- **Path A (immediate):** emit explicit save/restore inside each `_sno_fn_X` in emit.c.
+- **Path A (immediate):** emit explicit save/restore inside each `_sno_fn_X` in emit.c. ✅ DONE (`eec1adb`)
 - **Path B (correct):** T_FNCALL Byrd Box wrapper node at call sites in engine.c.
 Path B is architecturally superior. Path A is the immediate fix to unblock beauty.sno.
+
+---
+
+### ⚡ ARCHITECTURE NOTE — beauty.sno EXPR GRAMMAR = 18-LEVEL PRATT TABLE (Session 45)
+
+**Lon's observation**: beauty.sno implements a Pratt/shunting-yard parser as a SNOBOL4
+pattern grammar. It has 18 named levels (snoExpr0–snoExpr17). This is temporary scaffolding
+until SNOBOL4 has CODE type and compiled expressions natively built in.
+
+**The 18 levels — complete operator precedence table:**
+
+| Level | Pattern var | Operator(s) | Assoc | Meaning |
+|-------|-------------|-------------|-------|---------|
+| 0 | snoExpr | — | — | Alias → snoExpr0 |
+| 1 | snoExpr0 | `=` | right | Assignment |
+| 2 | snoExpr1 | `?` | right | Conditional (ternary-ish) |
+| 3 | snoExpr2 | `&` | right | Logical AND / bool concat |
+| 4 | snoExpr3 / snoX3 | `\|` | left, n-ary | Alternation (nPush/nPop, counted) |
+| 5 | snoExpr4 / snoX4 | *(whitespace)* | left, n-ary | Concatenation (implicit, n-ary) |
+| 6 | snoExpr5 | `@` | right | Cursor position |
+| 7 | snoExpr6 | `+` `-` | left | Add / subtract |
+| 8 | snoExpr7 | `#` | right | Not-equal |
+| 9 | snoExpr8 | `/` | right | Division |
+| 10 | snoExpr9 | `*` | right | Multiplication |
+| 11 | snoExpr10 | `%` | right | Modulo |
+| 12 | snoExpr11 | `^` `!` `**` | right | Exponentiation |
+| 13 | snoExpr12 | `$` `.` | right | Indirect / cond-assign |
+| 14 | snoExpr13 | `~` | right | Pattern conditional assign |
+| 15 | snoExpr14 | unary `@ ~ ? & + - * $ . ! % / # = \|` | prefix | All unary prefix operators |
+| 16 | snoExpr15 / snoExpr16 | `[]` `<>` | postfix | Subscript / array ref |
+| 17 | snoExpr17 | `()` fn-call atoms | — | Primary: parens, calls, literals, identifiers |
+
+**Key observations:**
+- Levels 4 and 5 (alternation and concatenation) are **n-ary** — they use nPush/nPop
+  with a runtime counter rather than simple binary left-recursion.
+- Level 15 (unary) lists **14 different prefix operators** as alternatives.
+- The whole thing is implemented as deferred pattern references (`*snoExprN`)
+  — elegant, but each level costs a full SPAT_REF dereference at match time.
+
+**The right temporary replacement — hand-rolled Pratt parser in `sno_eval()`:**
+
+~150 lines of C. Simple precedence table lookup. No ARBNO/FENCE/SPAT_REF overhead.
+Handles all 14 binary levels, all unary prefixes, postfix `[]`/`<>`, function calls.
+Faster than the pattern-based grammar for expression parsing inside EVAL strings.
+
+```c
+/* Pratt precedence table for sno_eval */
+static int op_prec(char c, const char *s) {
+    if (c == '=')             return 1;   /* assignment */
+    if (c == '?')             return 2;
+    if (c == '&')             return 3;
+    if (c == '|')             return 4;
+    /* whitespace = implicit concat */ return 5;
+    if (c == '@')             return 6;
+    if (c == '+' || c == '-') return 7;
+    if (c == '#')             return 8;
+    if (c == '/')             return 9;
+    if (c == '*')             return 10;
+    if (c == '%')             return 11;
+    if (c == '^' || c == '!') return 12;
+    if (c == '$' || c == '.') return 13;
+    if (c == '~')             return 14;
+    return 0;
+}
+```
+
+**This is temporary.** When SNOBOL4-tiny has CODE type and compiled expressions,
+both the beauty.sno pattern grammar and the hand-rolled Pratt parser go away.
+The runtime will parse and compile expressions natively — no crutches.
+
+**Priority**: Fix the immediate E_REDUCE/Parse Error bug first. The Pratt
+replacement is a follow-on cleanup, not a blocker for Milestone 0.
 
 **What is working now (Session 44 partial fix):**
 - `sno_var_set` called for every assignment (is_fn_local guard removed).
