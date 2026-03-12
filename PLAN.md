@@ -482,6 +482,54 @@ See `artifacts/README.md` for full context.
 - `entry_label` fix applied — bVisit body now in function, not main ✅
 - Milestone 3: diff beauty_full_bin output vs oracle — **next action**
 
+**⚡ SESSION 33 DESIGN INSIGHT — No SNOBOL4 label is ever truly dead (2026-03-12)**
+
+When investigating why `Shift`/`Reduce` body labels appeared "orphaned" in `main()` after the
+`snobol4_inc.c` runtime already owns those functions, Lon identified the deeper truth:
+
+**In SNOBOL4, no compiled label is ever truly unreachable.**
+
+Every compiled code region is a potential target of:
+- `*X` — unevaluated expression: defers pattern/expression, executes it at match time by
+  reference. Semantics: copy the code block, relocate internal jumps, execute the copy.
+  The copy is independent — its own locals, its own state. This IS the `*X` operator.
+- `APPLY(fnc, arg)` — dynamic function dispatch by name or value
+- `EVAL(str)` — evaluates a string as SNOBOL4 code at runtime
+- `CODE(str)` — compiles a string to a relocatable code object, assignable to a variable,
+  storable in a TABLE, passable to functions, executable via `*X`
+
+This means the `Shift`/`Reduce` source bodies in ShiftReduce.sno — even though
+`snobol4_inc.c` owns the runtime function registration — are **not orphans**. They are
+relocatable code thunks. Any SNOBOL4 construct that holds a reference to `Shift` or
+`Reduce` (including the `*Shift(...)` unevaluated pattern calls in semantic.sno and
+beauty.sno's parser patterns) can invoke them dynamically.
+
+**Implication for snoc**: The C emitter cannot statically determine which labels are
+reachable. Every DEFINE body in the expanded source is a live code region. The current
+approach — emitting each DEFINE body as a C static function — is architecturally correct.
+The problem is not dead code; it is **body attribution**: which C function does each
+SNOBOL4 statement belong to? Bodies from `snobol4_inc.c`-owned functions (Shift, Reduce,
+Push, Pop, Top, etc.) appear in the source stream but have no corresponding DEFINE for
+`collect_functions()` to find. So `is_body_boundary()` cannot stop body-absorption at
+their entry labels, and those bodies get absorbed into the preceding function (`refs`).
+
+**Root cause of beauty_full_bin silence (Session 33, still open)**:
+`Shift`/`Reduce` bodies absorbed into `_sno_fn_refs`. Their `:(NRETURN)` gotos emit
+`goto _SNO_FRETURN_refs` — which is correct within `refs`, but wrong at runtime: those
+paths are executing as Shift/Reduce logic and returning via refs' return slot, which may
+corrupt refs' return value or exit refs early before `main00` is reached.
+
+**The fix direction**: Inject phantom FnDef entries into `fn_table` for every function
+whose body labels appear in-stream but whose DEFINE is handled by `snobol4_inc.c`.
+Phantoms have: `name`, `end_label`, `nbody_starts = 0`, `define_stmt = NULL`. They exist
+solely to make `is_body_boundary()` recognize their entry labels as boundaries, preventing
+body-absorption into the wrong function. Actual C emission for phantoms: skip (no body to
+emit — `snobol4_inc.c` handles them at runtime).
+
+Known phantoms needed for beauty.sno: `Shift`/`ShiftEnd`, `Reduce`/`ReduceEnd`.
+General rule: any function in `snobol4_inc.c`'s `sno_inc_init()` registration list whose
+source body appears in an -INCLUDEd file is a phantom candidate.
+
 **Runtime facts:**
 - Stack: `sno_push()`/`sno_pop()`/`sno_top()` in `snobol4.c` (array-backed)
 - Counter: `sno_npush()`/`sno_ninc()`/`sno_ndec()`/`sno_ntop()`/`sno_npop()` in `snobol4.c`
@@ -3437,7 +3485,7 @@ diff /tmp/beauty_oracle.sno /tmp/beauty_compiled.sno
 
 ---
 
-### 2026-03-12 — Session 33 (entry_label fix + bootstrap artifact preserved)
+### 2026-03-12 — Session 33 (entry_label fix + bootstrap artifact + dynamic dispatch insight)
 
 **Focus**: Root-cause the beauty_full_bin zero-output bug. Fix it. Preserve the artifact.
 
@@ -3451,22 +3499,42 @@ never emitted inside `_sno_fn_bVisit()`. Instead, `bVisit_` / `bVisit_1` fell th
 `main()` as flat code, executed on startup, called `APPLY(fnc, x)` with uninitialized
 locals, failed, and jumped to `_SNO_END` — killing the program before `main00`.
 
-**Fix (commit pending)**: `FnDef` gains `entry_label` field. `collect_functions()` parses
-the 2nd DEFINE argument and stores it. `body_starts` search, `is_body_boundary()`, and
-`fn_by_label()` all use `entry_label` when present. One occurrence in beauty.sno.
+**Fix committed (`9596466`)**: `FnDef` gains `entry_label` field. `collect_functions()`
+parses the 2nd DEFINE argument and stores it. `body_starts` search, `is_body_boundary()`,
+and `fn_by_label()` all use `entry_label` when present. Also covers semantic.sno's 8 
+two-arg DEFINEs (shift_, reduce_, pop_, nPush_, nInc_, nDec_, nTop_, nPop_).
 
 **Bootstrap artifact committed**: `artifacts/beauty_full_first_clean.c` — 10,543 lines,
 the first `snoc` output from `beauty.sno` (all -INCLUDEs) that compiles with 0 gcc errors.
 Historical record. Do not delete. See `artifacts/README.md`.
 
-**CSNOBOL4 oracle**: built from source (`xsnobol4`). Produces 790-line oracle.
+**Second bug found — phantom functions (body still silent after entry_label fix):**
 
-**Milestone 3 status**: binary rebuilding post-fix. Diff pending next step in session.
+`Shift`/`Reduce` from ShiftReduce.sno are registered by `snobol4_inc.c` at runtime, so
+`collect_functions()` never sees their DEFINE calls. But their source bodies ARE in the
+expanded stream — and `is_body_boundary()` can't stop body-absorption at `_L_Shift` /
+`_L_Reduce` because those labels are unknown to `fn_table`. Result: `Shift`/`Reduce`
+bodies get absorbed into `_sno_fn_refs`, their `:(NRETURN)` gotos become
+`goto _SNO_FRETURN_refs` — corrupting refs' execution and possibly killing the program
+before `main00` is reached.
+
+**Lon's insight — no SNOBOL4 label is ever dead:**
+
+When asked whether to treat these absorbed bodies as dead code, Lon identified the
+fundamental truth: in SNOBOL4, `*X`, `APPLY()`, `EVAL()`, and `CODE()` mean ANY compiled
+label is a live, relocatable code thunk. Shift/Reduce are called via `*Shift(...)` in
+beauty.sno's parser patterns — unevaluated expressions that execute the body at match time.
+This is the `*X` copy-and-relocate semantic (already documented in §14). No label is dead.
+
+**Fix direction for next session**: inject phantom FnDef entries for `Shift`/`ShiftEnd`
+and `Reduce`/`ReduceEnd` into `fn_table` after `collect_functions()`. Phantoms have name +
+end_label but no body to emit. `is_body_boundary()` sees them as boundaries; body
+absorption stops; `Shift`/`Reduce` code remains accessible as runtime-owned thunks.
 
 **Repo commits this session:**
 
 | Repo | Commit | What |
 |------|--------|------|
-| SNOBOL4-tiny | pending | entry_label fix in emit.c + artifacts/ directory |
-| .github | this | Session 33 log + §6 entry_label fix + artifact note |
+| SNOBOL4-tiny | `9596466` | entry_label fix + artifacts/ |
+| .github | `693d9af`, `b39f029` | PLAN.md + README HQ updates |
 
