@@ -672,3 +672,34 @@ RECEDE/CONCEDE into wrapper:
   B. Byrd Box wrapper node at call sites (cleaner, more correct for backtracking).
 Path B is architecturally superior. Path A is the immediate fix.
 
+
+### Session 44 — T_FNCALL wrapper is universal — not just patterns, anywhere in CONCAT
+
+**Lon's clarification:** "This will be true all over. This is when a function is
+called and returned from a PATTERN or anywhere CONCAT. Right?"
+
+**Answer: Yes. Exactly right.**
+
+The T_FNCALL Byrd Box wrapper is NOT a special case for pattern matching.
+It is the universal contract for every function call that appears anywhere
+the Byrd Box engine walks — which is:
+
+- Inside a pattern concat:  `*snoLabel *snoWhite foo(x) BREAK(nl)`
+- Inside a statement subject concat: `A B foo(x) C`
+- Inside replacement expressions
+- Inside goto conditions
+- Anywhere two or more things are sequenced and the engine can RECEDE back
+
+In ALL of these cases: if something to the RIGHT of foo(x) fails and the
+engine RECEDEs back leftward through foo(x), the T_FNCALL wrapper fires
+RECEDE and restores the saved variable values. Same node, same contract,
+everywhere in the concat tree.
+
+**The universal rule:**
+Every function call in a Byrd Box walkable context needs a T_FNCALL wrapper.
+The engine walks everything as a concat. Function calls are nodes in that tree.
+The wrapper is how SNOBOL4 function call semantics (save/restore natural vars)
+integrate with Byrd Box backtracking (RECEDE/CONCEDE restores state).
+
+This is NOT an edge case. This is the fundamental design.
+

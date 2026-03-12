@@ -329,6 +329,27 @@ Why this is the right design:
   restored — matching CSNOBOL4 DEFF8/DEFF10/DEFF6 via the Box.
 - This is what "the outside world wrapper does it for him" means.
 
+**⚡ T_FNCALL IS UNIVERSAL — not just patterns, anywhere in CONCAT (Session 44):**
+
+The wrapper is needed wherever the Byrd Box engine walks and a function call
+appears. That is EVERYWHERE — not just inside pattern expressions:
+
+```
+Pattern concat:    *snoLabel *snoWhite foo(x) BREAK(nl)
+Statement subject: A  B  foo(x)  C
+Replacement:       foo(x) bar(y)
+Goto condition:    foo(x)
+```
+
+In ALL of these: if something to the RIGHT of foo(x) fails and the engine
+RECEDEs leftward back through foo(x), the T_FNCALL wrapper fires RECEDE
+and restores the saved variable values.
+
+The Byrd Box walks everything as a concat tree. Function calls are nodes
+in that tree. The T_FNCALL wrapper is how SNOBOL4 natural-variable
+save/restore semantics integrate with Byrd Box backtracking.
+This is NOT an edge case. This is the fundamental design of the system.
+
 **Two paths forward:**
 - **Path A (immediate):** emit explicit save/restore inside each `_sno_fn_X` in emit.c.
 - **Path B (correct):** T_FNCALL Byrd Box wrapper node at call sites in engine.c.
