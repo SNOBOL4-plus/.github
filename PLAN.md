@@ -2118,3 +2118,93 @@ Deep investigation traced the actual blocker:
 - `TopCounter` body uses `DIFFER($'#N') value($'#N')` — `value()` is a DATA field accessor for `link_counter(next, value)`; `sno_data_define` registers the type but does NOT auto-register field accessor functions; `value()` must be manually registered (similar to `n/t/v/c` for tree)
 - Sprint 22 oracle 22/22 is the certified baseline — do not break it
 
+
+### 2026-03-12 — Session 21 (Sprint 23 WIP — sno_eval + AMP→reduce + emit fixes)
+
+**Focus**: Continued Sprint 23 debug of Parse Error. Three major fixes implemented.
+Sprint 22 oracle: 22/22 PASS (unchanged).
+
+**Context note**: Session was interrupted once mid-implementation (str_replace left
+`snobol4_pattern.c` partially mangled). Recovery via Python-based full replacement.
+Safe interrupt points are after compile results and git push confirmations.
+
+**Completed (commit `6f854e7`):**
+
+1. **`sno_eval()` — full recursive descent C parser** replacing the stub:
+   - Three static helpers: `_ev_val` (argument values, full var lookup),
+     `_ev_term` (pattern elements, STR sentinel trick), `_ev_expr` (dot-chained terms).
+   - `SnoEvalCtx` struct carries `{const char *s; int pos}` cursor.
+   - Key semantic: plain `IDENT` in term position returns `SNO_STR_VAL(name)` sentinel.
+     Dot handler then checks right operand type: `SNO_STR` → `assign_cond(left, right)`;
+     `SNO_PATTERN` → `pat_cat(left, right)`. This correctly disambiguates `thx` (capture
+     target) from `*Shift(...)` (pattern to concatenate).
+   - `*IDENT[(args)]` → `sno_pat_user_call` / `sno_pat_ref`.
+   - Quoted strings → `sno_pat_lit`. Function calls in val position → `sno_apply`.
+
+2. **Parser: AMP infix → `reduce()` call node** (OPSYN semantics):
+   - `_ExprParser.parse_concat`: AMP now emits `Expr(kind='call', name='reduce', args=[left,right])`
+     instead of `Expr(kind='concat')`. Models `OPSYN('&','reduce',2)` in beauty.sno.
+   - `_PatParser.parse_cat`: same, produces `PatExpr(kind='call', name='reduce', args=[left,right])`.
+   - This is correct for ALL uses of `&` in beauty.sno — every `&` is reduce, no plain concat.
+
+3. **Emitter: `reduce()`/`eval()` recognized as pattern-valued**:
+   - `_is_pattern_expr`: `REDUCE`/`EVAL` added to dynamic pattern set so `concat` of
+     reduce-result uses `sno_pat_cat` not `sno_concat_sv`.
+   - `emit_as_pattern`: `REDUCE`/`EVAL` added to `_KB2` → routes through `sno_apply()`
+     not `sno_pat_ref()`.
+   - `emit_pattern_expr`: `PatExpr(kind='call', name='reduce')` emits
+     `sno_var_as_pattern(sno_apply("reduce", args, 2))`.
+
+4. **Runtime: `value()`/`next()` field accessors for `link_counter` DATA type**:
+   - `_b_field_value` / `_b_field_next` via `sno_field_get()`, registered alongside
+     `n/t/v/c` tree accessors. Needed by `TopCounter` in `counter.sno`.
+
+**Current state**: Still `Parse Error` on `X = 5`. The `sno_var_as_pattern(sno_apply("reduce",...))` 
+is now emitted correctly in the C for snoParse. But at runtime, `reduce()` is a SNOBOL4
+user-defined function (in `ShiftReduce.sno`) that calls `EVAL(...)` — which calls our new
+`sno_eval()`. The chain is: `reduce('snoParse', nTop())` → `EVAL("epsilon . *Reduce(snoParse, nTop())")` →
+`sno_eval()` → returns a pattern. The pattern then goes into `sno_var_as_pattern()`.
+
+**Investigation needed next session**: Confirm that `reduce` is actually being called at
+runtime (add debug print or check via `SNO_PAT_DEBUG`). Verify that `sno_var_as_pattern`
+correctly wraps a `SNO_PATTERN` value (it should return it unchanged). If `reduce` is
+returning the right pattern but `sno_var_as_pattern` is discarding it, that's the next fix.
+Also verify `sno_pat_arbno` handles a reduce-built pattern as its child.
+
+**Repo commits this session:**
+
+| Repo | Commit | What |
+|------|--------|------|
+| SNOBOL4-tiny | `6f854e7` | WIP Sprint 23: sno_eval RD parser, AMP→reduce(), value/next accessors, emit fixes |
+
+**State at snapshot:**
+
+| Repo | Commit | Tests |
+|------|--------|-------|
+| SNOBOL4-tiny | `6f854e7` | Sprint 22: 22/22 PASS. Sprint 23 still Parse Error. |
+| SNOBOL4-dotnet | `b5aad44` | 1,607 / 0 (unchanged) |
+| SNOBOL4-jvm | `9cf0af3` | 1,896 / 4,120 / 0 (unchanged) |
+| SNOBOL4-corpus | `3673364` | unchanged |
+| SNOBOL4-harness | `8437f9a` | unchanged |
+
+**Next session — immediate actions:**
+
+1. Provide token at session start
+2. Add runtime debug to confirm `reduce()` is being called at runtime during the snoParse match.
+   `SNO_PAT_DEBUG=1 printf 'X = 5\n' | beauty_bin 2>&1 | grep -i reduce`
+3. Verify `sno_var_as_pattern()` behavior on `SNO_PATTERN` input — should pass through unchanged.
+4. If reduce is not being called: trace why — is `sno_var_as_pattern(sno_apply("reduce",...))` being
+   evaluated at pattern BUILD time or match time? It should be build time (at the assignment
+   `snoParse = ...`). If the assign is never executing, check the SNOBOL4 statement that sets snoParse.
+5. Once reduce is verified working, run full self-compilation.
+
+**Key invariants to preserve:**
+- Sprint 22 oracle: 22/22 PASS — do not break
+- `sno_eval` is in `snobol4_pattern.c` at the location of the old stub
+- `reduce`/`shift` are SNOBOL4 functions defined in `ShiftReduce.sno` (included by beauty.sno)
+- `value()`/`next()` are now registered; `TopCounter` should work
+- The AMP→reduce change affects ALL programs that use `&`. For programs without OPSYN,
+  `reduce` will not be defined → `sno_apply("reduce",...)` returns `SNO_NULL_VAL` →
+  `sno_var_as_pattern(null)` = epsilon. This is WRONG for programs that used `&` as concat.
+  **Flag**: Sprint 22 tests may be at risk. Verify oracle still 22/22 after the AMP change.
+
