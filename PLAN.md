@@ -213,42 +213,45 @@ satellite files. One sweep, one commit per repo, done.
 
 ### ⚡ ARCHITECTURE TRUTH — NATURAL VARIABLES (Session 44 — DO NOT FORGET THIS)
 
-**In CSNOBOL4/SIL, ALL variables are NATURAL VARIABLES. Every single one. Hashed.**
+**ALL SNOBOL4 variables are NATURAL VARIABLES. Every single one. Hashed/global.**
+**ALL dialects — CSNOBOL4/SIL, SPITBOL — use SAVE/RESTORE on function call.**
+**This has been true from the beginning of SNOBOL4. Proven from source. Not negotiable.**
 
-This means:
-- Function parameters, function locals, return-value variables, global variables —
-  **ALL of them** live in the same flat hashed namespace. There is no "local scope"
-  at the variable-storage level.
-- The hash table IS the ground truth. C statics are just a performance cache.
-- `sno_var_set(name, val)` must be called for **every** assignment, everywhere,
-  with no exceptions. The `is_fn_local()` suppression introduced in Session 40
-  was **architecturally wrong** and has been removed in Session 44.
-- SPITBOL implements this differently (its own calling convention). If targeting
-  SPITBOL semantics, revisit. For CSNOBOL4 compatibility: all vars hashed, always.
+**Confirmed from CSNOBOL4 v311.sil DEFFNC/DEFF8/DEFF10/DEFF6:**
+- Every variable lives in a global flat namespace (hashed by name).
+- On DEFINE'd function CALL (DEFF8 — args, DEFF10 — locals):
+  - Args: read current value from variable (`GETDC TPTR,ZPTR`), set variable to new
+    arg value (`PUTDC ZPTR,DESCR,ATPTR`), push old value to stack (`PUTDC YPTR,DESCR,TPTR`).
+  - Locals: read current value (`GETDC TPTR,ZPTR`), push it (`PUSH TPTR`), set to null.
+- On function RETURN (DEFF6):
+  - `POP XPTR` / `PUTDC YPTR,DESCR,XPTR` — restore every saved old value.
 
-**SPITBOL's model (from x64-main/bootstrap/sbl.asm — uploaded Session 44):**
-SPITBOL also has one flat global namespace of VRBLKs (Variable Blocks). Every
-variable is a VRBLK. BUT on DEFINE'd function call (bpf section):
-- **On call:** for each arg/local, PUSH the VRBLK's current `vrval` onto the stack,
-  then SET the VRBLK to the new arg value (or null for locals).
-- **On return (rtn):** for each arg/local, POP the saved old value back into the VRBLK.
-So SPITBOL variables are STILL global/natural — function calls temporarily shadow them
-via stack save/restore of the VRBLK entries. Same flat namespace, different call protocol.
+**Confirmed from SPITBOL x64-main/bootstrap/sbl.asm bpf/rtn — identical semantics:**
+- bpf: push vrval (current value), set vrval to new arg / null for locals.
+- rtn: pop stack back into vrval.
 
-**What Session 40 got wrong:**
-- `is_fn_local(varname)` suppressed `sno_var_set` for declared params/locals.
-- This caused `i` in `Reduce` to be a pure C static, never in the hash table.
-- When EVAL or SPAT_REF looked up `i` by name, it got stale/null.
-- The fix that "worked" in Session 40 was actually just masking a deeper problem.
+**What this means for SNOBOL4-tiny's compiled C:**
 
-**The correct two-store model (Session 44):**
-- C statics `_varname`: fast-path read/write via `sno_get`/`sno_set` macros.
-- Hash table: authoritative store, always kept in sync.
-- `sno_var_set(name, val)` called after EVERY `sno_set()`, no exceptions.
-- `sno_var_register(name, &_varname)` registered at main() startup for ALL globals,
-  so that hash-only writes (pattern `.` assignment, pre-init) also update the C static.
-- `sno_var_sync_registered()` called once after all registrations, to pull
-  pre-initialized vars (nl, tab, etc. set by sno_runtime_init) into C statics.
+Our compiled C functions declare params/locals as C stack variables
+(`SnoVal _i = {0}` inside `_sno_fn_Reduce`). This is WRONG because:
+1. The caller's value of `i` is never saved before our function overwrites `i` in the hash.
+2. The caller's value is never restored after our function returns.
+3. `sno_var_get("i")` from EVAL or SPAT_REF sees whatever is currently in the hash —
+   which after our call is the callee's final value, not the caller's saved value.
+
+**The required fix (not yet implemented as of Session 44):**
+`emit.c` must emit save/restore of hash values for every function's params/locals:
+- On function ENTRY: for each param/local, read `sno_var_get(name)` and save it,
+  then write the new value via `sno_var_set(name, val)`.
+- On function EXIT (all return paths): restore each saved value via `sno_var_set`.
+This matches CSNOBOL4 DEFF8/DEFF10 (save+assign) and DEFF6 (restore).
+
+**What is working now (Session 44 partial fix):**
+- `sno_var_set` called for every assignment (is_fn_local guard removed).
+- `sno_var_register` + `sno_var_sync_registered` fix pre-init timing for nl/tab/etc.
+- Hash is always current for the active call frame.
+- Save/restore correctness: accidental for non-recursive calls; broken for recursive
+  calls or any case where a global and a local share a name across call frames.
 
 ---
 
