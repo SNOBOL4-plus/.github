@@ -1335,3 +1335,90 @@ No compiler code written this session.
 4. **Sprint 20 T_CAPTURE** — resume `cap_start`/`scan_start` offset fix
    in `snobol4_pattern.c`, commit `883b802` is the base
 
+
+### 2026-03-12 — Session 14 (Source Study + Beauty Consolidation)
+
+**Focus**: SNOBOL4 source study from uploaded archives; corpus housekeeping.
+No compiler code written this session.
+
+**Completed:**
+
+- **SNOBOL4 source archives ingested** — `snobol4-2_3_3_tar.gz` (CSNOBOL4 2.3.3)
+  and `x64-main.zip` (SPITBOL x64) studied in depth. These are the ground-truth
+  sources for all scanner/parser behaviour questions.
+
+- **Scanner bug clarification — `a[i-1]`** — prior session log entry was wrong
+  on mechanism. Decoded `VARTB` table from `syn.c`; read `gensyn.sno` for
+  character class definitions. `CLASS<"BREAK"> = "._"` — dot and underscore only.
+  Hyphen/minus is `CLASS<"MINUS">`, NOT in `BREAK`, NOT in `ALPHANUMERIC`.
+  In `VARTB`, `-` (ASCII 45) = action 4 = **ERROR**, not "continue identifier".
+  The error message "Illegal character in element" is exact. Fix is unchanged
+  (write `a[i - 1]` with spaces) but the reason is: minus adjacent to an
+  identifier with no preceding space is a hard lexer error in `VARTB`, not a
+  misparse. The space causes `VARTB` to see TERMINATOR (action 1), close the
+  identifier cleanly, then the binary operator scanner (`BIOPTB`) handles `-`.
+
+- **`INTEGER()` confirmed as predicate** — canonical sources (`kalah.sbl` line
+  774/891/895, `eliza.sbl` line 84, `alis.sno` line 52) all use `INTEGER(x)` as
+  a boolean test in condition chains. `CONVERT(x, 'INTEGER')` is the explicit
+  truncation form (`kalah.sbl` line 164). Our workaround `(n * 9) / 10` in
+  `beauty.sno` is correct and idiomatic. `SPDLSZ = 8000` confirmed in `equ.h`
+  — our `-P 32000` for deep pattern stacks is correct.
+
+- **`Expression.sno` → `S4_expression.sno`** — renamed in SNOBOL4-corpus.
+  File header confirms original project name was `Beautiful.sno` (Windows dev
+  machine, `jcooper`). Contains a complete SNOBOL4 operator-precedence expression
+  parser (`snoExpr0`–`snoExpr17`), used as a standalone validator stub.
+  Five cross-repo doc references updated in SNOBOL4-tiny (BOOTSTRAP.md,
+  DECISIONS.md, DESIGN.md). Corpus commit `9c436d8`.
+
+- **`beautified/` folder removed** — eight `--auto`-beautified Shafto aisnobol
+  files removed from `programs/aisnobol/beautified/`. Work preserved in git
+  history (`6525595`). Will revisit. Corpus commit `da1a6d2`.
+
+- **Three beauty files merged into one** — `beauty.sno` is now the single
+  canonical file containing: core beautifier + `bVisit` SPITBOL-compat fix +
+  five corpus-calibrated profiles (--micro/--small/--medium/--large/--wide) +
+  `--auto` two-pass p90 mode + full argument parsing. `beauty_run.sno` and
+  `beauty_spitbol_compat.sno` deleted. All references updated across corpus,
+  harness, tiny, and .github (PLAN, MONITOR, PATCHES, REFERENCE).
+  Corpus commit `3673364`. Tiny commit `655fa7b`. Harness commit `8437f9a`.
+
+**Repo commits this session:**
+
+| Repo | Commit | What |
+|------|--------|------|
+| SNOBOL4-corpus | `9c436d8` | Rename Expression.sno → S4_expression.sno |
+| SNOBOL4-corpus | `da1a6d2` | Remove beautified/ folder |
+| SNOBOL4-corpus | `3673364` | Merge beauty_run.sno + beauty_spitbol_compat.sno → beauty.sno |
+| SNOBOL4-tiny | `ed9a51b` | Update Expression.sno refs → S4_expression.sno |
+| SNOBOL4-tiny | `655fa7b` | Update beauty_run.sno refs → beauty.sno |
+| SNOBOL4-harness | `8437f9a` | Update beauty_run.sno refs → beauty.sno |
+| .github | `9578377` | Update beauty_run.sno refs → beauty.sno |
+
+**State at snapshot:**
+
+| Repo | Commit | Tests |
+|------|--------|-------|
+| SNOBOL4-corpus | `3673364` | beauty.sno smoke-tested on csnobol4 ✓ |
+| SNOBOL4-dotnet | `b5aad44` | 1,607 / 0 (unchanged) |
+| SNOBOL4-jvm | `e002799` | 1,896 / 4,120 / 0 (unchanged) |
+| SNOBOL4-tiny | `655fa7b` | Sprint 20 T_CAPTURE blocker (unchanged) |
+| SNOBOL4-harness | `8437f9a` | unchanged |
+
+**Next session — immediate actions:**
+
+1. **Provide token at session start**
+2. **Sprint 20 T_CAPTURE** — resume `cap_start`/`scan_start` offset fix in
+   `snobol4_pattern.c`, base commit `883b802`
+3. **Write `crosscheck.py`** — enumerate `crosscheck/`, run each program through
+   csnobol4 + spitbol, report pass/fail table
+4. **Run beautifier on `lon/` and `gimpel/` programs** — now that `--auto` exists
+   and beauty.sno is consolidated, this is the natural next corpus action
+
+**Notes carried forward:**
+- `beauty.sno` usage: `snobol4 -b -P 32000 -I /SNOBOL4-corpus/programs/inc -f beauty.sno --auto`
+- `a[i - 1]` spacing rule: space before `-` required; no space = lexer ERROR in VARTB
+- `INTEGER(x)` is a predicate; use `CONVERT(x,'INTEGER')` for truncation
+- Three repos not cloned locally: SNOBOL4-cpython, SNOBOL4-python, SNOBOL4-csharp
+  (intentionally absent — pattern libraries, not a current focus)
