@@ -239,108 +239,115 @@ Total certified baseline: 22/22 PASS
 
 ---
 
-### 🔴 Sprint 23 IN PROGRESS — `beauty.sno` self-compilation (Sessions 21–24)
+### 🔴 Sprint 23 IN PROGRESS — `beauty.sno` self-compilation (Sessions 21–25)
 
-**Pipeline change (Session 24)**: Python pipeline permanently retired (OOM, container killed every
-attempt even on parse-only step). Replaced by **`snoc`** — a SNOBOL4→C compiler written in C
-using flex+bison. Lives at `src/snoc/`. Builds with `make` in that directory.
+**Pipeline**: `snoc` — SNOBOL4→C compiler in C (flex+bison). `src/snoc/`. Builds with `make`.
 
-**Last commit**: SNOBOL4-tiny `98d3626` (Session 24 — snoc compiler, 297→86 errors on beauty.sno).
+**Last commits**: SNOBOL4-tiny `6d3d1fa` (Session 25 — 0 errors, 1213 stmts, no crash).
 
 **snoc build:**
 ```bash
-apt-get install -y build-essential flex bison
+apt-get install -y build-essential flex bison libgc-dev
 cd /home/claude/SNOBOL4-tiny/src/snoc && make clean && make
 # → snoc binary, links cleanly
 ```
 
-**snoc usage:**
-```bash
-./snoc /home/claude/SNOBOL4-corpus/programs/beauty/beauty.sno \
-    -I /home/claude/SNOBOL4-corpus/programs/inc \
-    > /tmp/beauty_snoc.c 2>/tmp/snoc_err.txt
-echo "stmts=$(grep -c '^/\* line' /tmp/beauty_snoc.c) errors=$(wc -l < /tmp/snoc_err.txt)"
-head -5 /tmp/snoc_err.txt
-```
-Target: **1214 stmts, 0 errors.**
+**snoc status: PARSER DONE. RUNTIME MISSING.**
 
-**Current error count: 86** (down from 297 at session start).
+snoc generates 1213 stmts, 0 errors, no crash on beauty.sno. But the generated C
+**will not compile** because the runtime API it calls does not exist yet.
 
-**⚠ Active fix — computed goto (mid-edit at session end):**
-The `<GT>` lexer state needs to swallow `$(`…`)` computed gotos like `:S($('pp_' t))`.
-The fix is partially written. First action next session: rebuild and retest.
-
-**Root causes fixed this session (9 total):**
-1. Dual IR (PatExpr + Expr) → collapsed to single Expr, context-sensitive emitter
-2. PAT_BUILTIN over-eager (`tab`/`rem`/`nul` misidentified) → trailing context `{IDENT}/"("`
-3. PAT_BUILTIN in value expr (`SPAN('.')` in replacement) → added to `primary`
-4. Unary `.` (name ref) missing from `factor`
-5. Unary `*` (deref) missing from `factor`
-6. `PIPE` (`|`) missing from `expr` — fixed `*P1 | *P2` in replacement
-7. Empty replacement (`X POS(0) =`) → `opt_repl: EQ` with no expr → `E_NULL`
-8. Slash in IDENT (`pp_/`, `ss_/` labels) → extended IDENT char class
-9. Unary `+` missing from `factor`
-
-**Immediate next actions (in order):**
-
-1. Build deps and snoc:
-```bash
-apt-get install -y build-essential flex bison libgc-dev
-cd /home/claude/SNOBOL4-tiny/src/snoc && make clean && make
-```
-
-2. Run snoc on beauty.sno, check error count:
+Confirm parser state (should always show 1213 stmts, 0 errors):
 ```bash
 cd /home/claude/SNOBOL4-tiny/src/snoc
 ./snoc /home/claude/SNOBOL4-corpus/programs/beauty/beauty.sno \
     -I /home/claude/SNOBOL4-corpus/programs/inc \
     > /tmp/beauty_snoc.c 2>/tmp/snoc_err.txt
-echo "stmts=$(grep -c '^/\* line' /tmp/beauty_snoc.c) errors=$(wc -l < /tmp/snoc_err.txt)"
-head -5 /tmp/snoc_err.txt
+echo "stmts=$(grep -c '^/\* line' /tmp/beauty_snoc.c) errors=$(cat /tmp/snoc_err.txt | wc -l)"
+# Expected: stmts=1213 errors=0
 ```
 
-3. Binary-search the first error line in the joined source. Fix root cause. Repeat.
+**Two blockers confirmed — next Claude must fix both:**
 
-4. Once 0 errors: gcc compile the generated C against runtime:
+**Blocker 1: `_OUTPUT` undeclared** — snoc never emits variable declarations. Every SNOBOL
+variable used in the program (`_OUTPUT`, `_TRUE`, `_FALSE`, `_digits`, `_UTF`, …) needs to
+be declared before use. Fix: add symbol-collection pass over AST in `emit.c`, then emit
+`static SnoVal _varname = {0};` for each at top of `main()`.
+
+**Blocker 2: Runtime API missing** — the generated C calls functions that don't exist:
+`sno_str()`, `sno_int()`, `sno_kw()`, `sno_concat()`, `sno_alt()`, `sno_aref()`, `sno_aset()`,
+`sno_iset()`, `sno_deref()`, `sno_cursor_get()`, `sno_assign_expr()`, and macros
+`sno_get(v)`, `sno_set(v,x)`, `SNO_IS_FAIL(v)`, `SNO_NULL` (as SnoVal, not enum).
+
+Already in `snobol4.h` and usable as-is: `sno_add`, `sno_sub`, `sno_mul`, `sno_div`,
+`sno_apply`, `sno_is_fail` (inline), `sno_var_get`, `sno_var_set`, `sno_runtime_init`,
+`SNO_NULL_VAL`, `SNO_INT_VAL`, `SNO_STR_VAL`, `sno_pat_cat`, `sno_pat_alt`.
+
+**The fix: write `src/runtime/snobol4/snoc_runtime.h`** — a shim header:
+```c
+#pragma once
+#include "snobol4.h"
+#include "snobol4_inc.h"
+#undef  SNO_NULL
+#define SNO_NULL            SNO_NULL_VAL
+#define SNO_IS_FAIL(v)      sno_is_fail(v)
+#define sno_get(v)          (v)
+#define sno_set(v, x)       ((v) = (x))
+#define sno_assign_expr(v,x) ((v) = (x))
+static inline void    sno_init(void)       { sno_runtime_init(); }
+static inline void    sno_finish(void)     { }
+static inline SnoVal  sno_int(int64_t i)   { return SNO_INT_VAL(i); }
+static inline SnoVal  sno_str(const char*s){ char*p=GC_STRDUP(s); return (SnoVal){.type=SNO_STR,.s=p}; }
+static inline SnoVal  sno_kw(const char*n) { return sno_var_get(n); }
+static inline void    sno_kw_set(const char*n,SnoVal v){ sno_var_set(n,v); }
+static inline SnoVal  sno_concat(SnoVal a,SnoVal b){ /* FAIL-propagating, handles patterns */ ... }
+static inline SnoVal  sno_alt(SnoVal a,SnoVal b)   { ... }
+static inline SnoVal  sno_deref(SnoVal nv)          { return sno_var_get(sno_to_str(nv)); }
+static inline SnoVal  sno_aref(SnoVal arr,SnoVal*keys,int n)  { return sno_table_get(arr,keys[0]); }
+static inline void    sno_aset(SnoVal arr,SnoVal*keys,int n,SnoVal v){ sno_table_set(arr,keys[0],v); }
+/* sno_iset, sno_index, sno_cursor_get need match engine integration */
+```
+
+Also update `emit.c` line 327-328 to `#include "snoc_runtime.h"` instead of both old includes.
+
+**The milestone to reach: hello world end-to-end.**
 ```bash
-gcc -O0 -g -o /tmp/beauty_bin /tmp/beauty_snoc.c \
-    src/runtime/snobol4/snobol4.c \
-    src/runtime/snobol4/snobol4_inc.c \
-    src/runtime/snobol4/snobol4_pattern.c \
-    src/runtime/engine.c \
-    -Isrc/runtime/snobol4 -Isrc/runtime -lgc -lm -w
+cat > /tmp/hello.sno << 'EOF'
+    OUTPUT = 'hello'
+END
+EOF
+cd /home/claude/SNOBOL4-tiny/src/snoc
+./snoc /tmp/hello.sno > /tmp/hello.c
+gcc -O0 -g /tmp/hello.c \
+    ../runtime/snobol4/snobol4.c \
+    ../runtime/snobol4/snobol4_inc.c \
+    ../runtime/snobol4/snobol4_pattern.c \
+    -I../runtime/snobol4 -lgc -lm -w -o /tmp/hello_bin
+/tmp/hello_bin
+# Must print: hello
 ```
 
-5. Test: `printf '    X = 5\n' | /tmp/beauty_bin`
-
-6. Full self-compilation diff → **Claude writes the commit message** (recorded at `c5b3e99`).
+Once hello works: compile beauty_snoc.c the same way, run:
+```bash
+printf '    X = 5\n' | /tmp/beauty_bin
+```
+Full self-compilation diff → **Claude writes the commit message** (recorded at `c5b3e99`).
 
 **snoc architecture:**
 ```
 join_file()      reads raw SNOBOL4, strips comments, joins continuations,
                  resolves -INCLUDE, injects \x01 LABEL_MARK before labeled lines
 flex rules       tokenise joined buffer; <GT> condition for goto field;
-                 PAT_BUILTIN only when followed by '(' (trailing context)
+                 bstack: paren depth tracking, comma-as-ALT vs comma-as-separator
 bison LALR(1)    stmt → subject [pattern] [= replacement] [: goto]
                  ONE expr grammar; emit_pat() routes to sno_pat_* in pattern field
 emit.c           walks Expr IR, emits sno_*() or sno_pat_*() based on context
+                 ⚠ MISSING: symbol collection pass + var declaration emission
 ```
 
-**snoc files:** `src/snoc/snoc.h` (105L) · `sno.l` (296L) · `sno.y` (283L) · `emit.c` (326L) · `main.c` (54L)
+**snoc files:** `src/snoc/snoc.h` · `sno.l` · `sno.y` · `emit.c` · `main.c`
 
 **When diff is empty: Claude Sonnet 4.6 writes the commit message. Recorded at `c5b3e99`.**
-
-Compile standalone tests:
-```bash
-cd /home/claude/SNOBOL4-tiny
-gcc -o /tmp/t test/sprintN/test.c -lgc -lm && /tmp/t
-```
-
-Compile tests needing runtime:
-```bash
-gcc -o /tmp/t test/sprintN/test.c src/runtime/engine.c src/runtime/runtime.c \
-    -I src/runtime -lgc -lm && /tmp/t
-```
 
 **This is the certified baseline. T_CAPTURE is closed. Do not reopen it.**
 
@@ -2529,6 +2536,45 @@ Same `E_CONCAT`, `E_ALT`, `E_CALL` nodes routed differently. Grammar is clean LA
 | Repo | Commit | Tests |
 |------|--------|-------|
 | SNOBOL4-tiny | `98d3626` | Sprint 22: 22/22 (baseline). snoc: 86 errors on beauty.sno. |
+| SNOBOL4-dotnet | `b5aad44` | 1,607 / 0 (unchanged) |
+| SNOBOL4-jvm | `9cf0af3` | 1,896 / 4,120 / 0 (unchanged) |
+| SNOBOL4-corpus | `3673364` | unchanged |
+| SNOBOL4-harness | `8437f9a` | unchanged |
+
+### 2026-03-12 — Session 25 (snoc: 86→0 errors, runtime gap exposed)
+
+**Focus**: Drive snoc parse errors from 86 to 0, diagnose what remains.
+
+**Fixes applied (86→0 errors):**
+1. Missing `%}` closing C preamble in `sno.l` — caused flex "premature EOF" on every build
+2. bstack comma-as-alternation: `"("` pushes `last_was_callable`, `","` returns `PIPE` vs `COMMA`
+   based on whether we're inside a grouping paren or a function-call paren
+3. E_DEREF compound-expr crash: `emit_expr` case `E_DEREF` assumed `e->left` always `E_VAR`;
+   fixed to handle compound left expressions (`*(y 'f')` style)
+
+**What this session revealed:**
+- snoc produces **1213 stmts, 0 errors** on beauty.sno ✅
+- BUT the generated C **will not compile** — two structural gaps in emit.c:
+  1. No variable declaration pass (all `_OUTPUT`, `_TRUE`, etc. undeclared)
+  2. No runtime shim (`sno_str`, `sno_int`, `sno_kw`, `sno_concat`, `sno_alt`, etc. don't exist)
+- Attempting `gcc` on generated "hello world" confirms both blockers
+
+**Key clarification**: ByrdBox's `SNOBOL4c.c` is a C **pattern engine**, not a SNOBOL4→C compiler.
+snoc is the only SNOBOL4→C compiler in existence across all repos.
+
+**Repo commits:**
+
+| Repo | Commit | What |
+|------|--------|-------|
+| SNOBOL4-tiny | `d7f39d1` | WIP Sprint 23: bstack comma-as-alt + missing %} fix |
+| SNOBOL4-tiny | `6d3d1fa` | WIP Sprint 23: fix E_DEREF compound-expr crash — 1213 stmts, 0 errors |
+| .github | this | §6 + §12 session 25 handoff |
+
+**State at snapshot:**
+
+| Repo | Commit | Tests |
+|------|--------|-------|
+| SNOBOL4-tiny | `6d3d1fa` | Sprint 22: 22/22 (baseline). snoc: 1213 stmts, 0 errors. Generated C does not link. |
 | SNOBOL4-dotnet | `b5aad44` | 1,607 / 0 (unchanged) |
 | SNOBOL4-jvm | `9cf0af3` | 1,896 / 4,120 / 0 (unchanged) |
 | SNOBOL4-corpus | `3673364` | unchanged |
