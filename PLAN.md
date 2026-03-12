@@ -33,6 +33,50 @@ DO THE CHECKLIST. Every session. No exceptions.**
 
 ---
 
+### ⚡ RULE 3 — ONE BUG AT A TIME. COMMIT. REPEAT.
+
+**The debugging protocol is: fix ONE bug, commit, push, then find the next bug.
+Do NOT batch fixes. Do NOT fix two things in one commit. Do NOT speculate about
+the next bug while fixing the current one. The sequence is:**
+
+```
+1. Identify the ONE current blocker (from §6 or from the build output).
+2. Fix ONLY that bug. Nothing else.
+3. Build. Test. Confirm the specific bug is gone.
+4. Commit with a message describing exactly what was fixed.
+5. Push immediately (container resets without warning).
+6. Then and only then: identify the next bug.
+7. Repeat until diff is empty → Milestone 3 → Claude writes the commit.
+```
+
+**Why**: Every time Claude has tried to fix multiple things at once, the session
+has ended with broken state and no clear diagnosis of what worked. One bug at a
+time means every commit is a known-good checkpoint. If the container dies, the
+last good state is preserved. If a fix is wrong, exactly one thing changed.
+
+**The stopping condition for a session is a ROADBLOCK** — a bug that requires
+information Claude doesn't have, a design decision that needs Lon, or a context
+window that is too full to continue safely. At a roadblock: HANDOFF immediately.
+Do not push through. Do not guess. Stop, document, push, hand off.
+
+---
+
+### ⚡ RULE 4 — KEEP THE FULL GITHUB TRANSCRIPT HISTORY IN PLAN.md
+
+**The Session Log (§12) is append-only. Never trim it. Never summarize it away.**
+
+The full transcript history — every session's root causes found, every wrong turn,
+every fix — is the institutional memory that prevents re-diagnosing the same bug.
+A new Claude cannot retrieve git history without knowing what to look for. The live
+log is zero-friction. Git history is archaeology.
+
+**Additionally**: The full read of PLAN.md at session start (including §12) is
+MANDATORY even though it is expensive in context. The cost of NOT reading it is
+higher — it has already caused a full session of wasted work (Session 30).
+Pay the context cost. Read the whole file. Every session.
+
+---
+
 > **New Claude session? Read this file top to bottom. It is the only file you
 > need to start working. Everything else is a satellite — read them when you
 > need depth on a specific topic.**
