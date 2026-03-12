@@ -475,10 +475,62 @@ Layer 3 — integration: beauty self-test (the Milestone 3 diff)
 - snoc binary builds clean: `src/snoc/snoc` ✅
 - greet.sno baseline: compiles, links, runs ✅
 
-### 🔴 IMMEDIATE NEXT ACTIONS (Session 38 — updated Session 37)
+### 🔴 IMMEDIATE NEXT ACTIONS (Session 39 — updated Session 38)
 
 **Active target**: Milestone 0 — `beauty_full_bin < beauty.sno` → 790 lines → diff empty.
-**Current state**: 9 output lines (7 comment header + "Internal Error" + "START").
+**Current state**: 0 output lines, 10s timeout. `EVAL partial` messages in stderr.
+**HEAD**: `90a1128` — EVAL/OPSYN/SORT registered ✅, `*(expr)` fix in `_ev_term` ✅. Both committed.
+
+**⚡ NEW BLOCKER: `_ev_args` / `_ev_expr` parsing gaps cause EVAL partial strings**
+
+Session 38 stderr analysis shows two gaps in `snobol4_pattern.c` `_ev_args`:
+1. `remain=')'` — closing paren of function args not consumed at some call site
+2. `remain='+ 1)'` / `remain=', 1)'` — `_ev_expr` stops at `+` and `,` inside arg values
+
+**Step 0 — Fix `_ev_args` and `_ev_expr` in `snobol4_pattern.c`:**
+
+The `_ev_args` function calls `_ev_expr` for each argument. But `_ev_expr` only handles
+dot-chained pattern expressions — it does NOT handle arithmetic (`+`, `-`) or nested
+function calls with comma-separated args. The arg values in beauty's EVAL strings include:
+- `GT(nTop(), 1)` — a function call with two args separated by `,`
+- `nTop() + 1` — arithmetic expression
+
+Fix needed: `_ev_args` should call `_ev_val` (the value evaluator, not `_ev_expr`) for
+each argument. `_ev_val` in `_ev_term` (line ~898) already handles: alpha identifiers,
+function calls with args, string literals. It does NOT handle `+`. Extend `_ev_val` to
+handle arithmetic `+` and `-` between subexpressions.
+
+Check also: does `_ev_term` correctly consume the `)` after `_ev_args` returns? The
+`remain=')'` pattern suggests it does NOT in some cases.
+
+**Commit**: `"snobol4_pattern.c: fix _ev_args/_ev_val to handle arithmetic + paren close"`
+
+**Step 1 — Verify no EVAL partial messages after fix:**
+```bash
+timeout 10 /tmp/beauty_full_bin < $BEAUTY > /tmp/beauty_compiled.sno 2>/tmp/beauty_stderr.txt
+grep "partial" /tmp/beauty_stderr.txt   # must be empty
+wc -l /tmp/beauty_compiled.sno          # should be > 9
+```
+
+**Step 2 — If EVAL clean but still timeout: trace Shift:**
+Patch `_w_Shift` in `snobol4_inc.c`:
+```c
+static SnoVal _w_Shift(SnoVal *a, int n) {
+    fprintf(stderr, "[Shift called t=%s]\n", n>0 ? sno_to_str(a[0]) : "null");
+    return sno_Shift(n>0?a[0]:SNO_NULL_VAL);
+}
+```
+
+**Step 3 — STLIMIT probe if Shift trace shows no calls (supersedes old Step 0):**
+The old "Step 0 — Commit EVAL/OPSYN/SORT" is DONE (commit `90a1128`). Skip it.
+The old "Step 1 — Fix *(expr)" is DONE (commit `90a1128`). Skip it.
+
+**⚠ DO NOT RE-APPLY these — they are already in HEAD `90a1128`.**
+If you see these listed below as "pending uncommitted fix" — IGNORE THEM. They are committed.
+
+---
+
+**[SUPERSEDED — kept for history only]**
 **Pending uncommitted fix**: EVAL/OPSYN/SORT registration in `snobol4.c` — apply first.
 
 **Step 0 — Commit the pending snobol4.c changes (EVAL/OPSYN/SORT registration):**
@@ -1091,7 +1143,7 @@ The handoff prompt Lon gives the next Claude is exactly:
 |---|--------|-----------|--------|--------|
 | 1 | **26** | `snoc` compiles beauty.sno (no -INCLUDEs) → 0 gcc errors → binary links | ✅ DONE Session 32 | `cc0c88b` |
 | 2 | **27** | `snoc` compiles beauty.sno WITH -INCLUDEs (via `snobol4_inc.c`) → 0 gcc errors | ✅ DONE Session 32 | `cc0c88b` |
-| 0 | **26** | `beauty_full_bin` self-beautifies → `diff` vs oracle is **empty** | 🔴 9/790 lines — reduce() works (45 calls), Shift never called, Internal Error at main02 | — |
+| 0 | **26** | `beauty_full_bin` self-beautifies → `diff` vs oracle is **empty** | 🔴 0/790 lines, 10s timeout — EVAL/OPSYN/SORT ✅, *(expr) fix ✅ (commit `90a1128`), EVAL partial parsing gaps in `_ev_args` are next blocker | — |
 
 **When a milestone is hit:**
 1. Claude writes the commit message (not Lon, not a script — Claude).
@@ -4294,4 +4346,55 @@ is not invoking the deferred `*Shift(...)` calls.
 **Scaling rule**: Start with label/func-enter traces (cheap, binary info). Add var
 traces only when you know WHICH variable is wrong. Use &STLIMIT for init-phase bugs
 where the program dies before reaching the interesting code.
+
+
+
+### 2026-03-12 — Session 38 (CSNOBOL4 source study + EVAL partial diagnosis)
+
+**Focus**: Lon uploaded CSNOBOL4 2.3.3 source (snobol4-2_3_3_tar.gz). Studied STARFN/XSTAR
+unevaluated expression semantics in v311.sil. Verified current repo state — HEAD `90a1128`
+already has EVAL/OPSYN/SORT + *(expr) fix committed from Session 37.
+
+**Current binary state**: timeout at 10s, 0 output lines. `beauty_stderr.txt` shows EVAL
+partial messages — the *(expr) fix in `_ev_term` is working but `_ev_expr`/`_ev_args`
+has two parsing gaps:
+
+1. **`remain=')'` pattern**: `_ev_args` parses function args via `_ev_expr`, but the
+   closing `)` of function calls is not consumed somewhere in the chain. Manifests as
+   `consumed N/N+1 remain=')'` in the EVAL log.
+
+2. **`remain='+ 1)'` and `remain=', 1)'` patterns**: `_ev_expr` stops at `+` (arithmetic)
+   and `,` — neither is handled. `GT(nTop(), 1)` parses `nTop()` then stops at `,`.
+   The arithmetic sub-expressions inside function arguments need `_ev_expr` to recurse
+   through `+`, `-`, etc.
+
+3. **Timeout = infinite loop**: The EVAL partial sequence repeats twice identically in
+   stderr — the same 16 lines appear twice. This means snoParse is being built, partially
+   matched, rebuilt, partially matched again — a loop caused by malformed patterns from
+   the EVAL partials.
+
+**Immediate next actions (Session 39):**
+
+1. **Fix `_ev_expr` / `_ev_args` to handle arithmetic and proper paren close:**
+   - `_ev_args` inner expression: use `_ev_val` (not `_ev_expr`) for argument values,
+     OR extend `_ev_expr` to handle `+`, `-`, `*`, `/` as arithmetic ops returning SnoVal.
+   - Confirm `_ev_term` consumes `)` after `_ev_args` — check the exact call site.
+
+2. **After fix**: run binary, check stderr has no `EVAL partial` messages.
+
+3. **If clean**: check if output lines increase beyond 9. If still 9/timeout: add Shift
+   trace (fprintf in `_w_Shift` in `snobol4_inc.c`) to confirm whether Shift is called.
+
+4. **STLIMIT probe if needed**: patch generated C main() with
+   `sno_kw_set("STLIMIT", SNO_INT_VAL(500))` to cap execution and examine state.
+
+**Repo state at handoff:**
+
+| Repo | Commit | Status |
+|------|--------|--------|
+| SNOBOL4-tiny | `90a1128` | 0 gcc errors. beauty_full_bin: 0 lines, 10s timeout. EVAL partials in stderr. |
+| SNOBOL4-dotnet | `b5aad44` | unchanged |
+| SNOBOL4-jvm | `9cf0af3` | unchanged |
+| SNOBOL4-corpus | `3673364` | unchanged |
+| SNOBOL4-harness | `8437f9a` | unchanged |
 
