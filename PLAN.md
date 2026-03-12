@@ -3844,3 +3844,82 @@ The strcmp vs strcasecmp question is the crux.
 - **Lon's priority order**: Beautifier (Milestone 3) FIRST. Bask in glory. Compiler later.
 - Milestone 3: beauty_full_bin self-beautifies → `diff /tmp/beauty_oracle.sno /tmp/beauty_compiled.sno` empty
 
+
+---
+
+## ⚡ SESSION 34 HANDOFF (CONTINUATION) — Deep Diagnosis: _L_Shift in main()
+
+**Recorded 2026-03-12, Session 34 continued.**
+
+### Current SNOBOL4-tiny HEAD: `377fb13`
+0 gcc errors. Binary produces 0 output lines. Oracle = 790.
+
+### Administrative completed this continuation
+- **RULE 5 officialized**: moved into rules block (was floating), checklist STEP 2+5 updated. Commit `0975c73`.
+- **Milestone 0 inserted** at Sprint 26: beautifier diff-empty is now M0 (Lon's priority). Former M1/M2/M3 shift to M1/M2/M3 at sprints 27/28/29. M3 trigger = TBD by Lon. Commit `27086dc`.
+
+### Deep diagnosis performed this session
+
+**What we confirmed:**
+
+1. `emit_header()` IS present at line 1048 of emit.c — was never missing. Prior "1694 errors" were from stderr mixing into stdout. That ghost is dead.
+
+2. The generated C correctly has TWO separate functions:
+   - `_sno_fn_Shift` (line 342/2402) — from ShiftReduce.sno, collected as fn[42] name=`Shift` end=`ShiftEnd`
+   - `_sno_fn_shift` (line 364/4341) — from beauty.sno's own parser shift action
+
+3. `_L_Shift` at C line 8539 is inside `main()` — WRONG. It is at `/* line 385 */` of the expanded source = the ShiftReduce.sno Shift label.
+
+4. **The dedup in collect_functions uses `strcmp` (exact case)** — so `Shift` and `shift` are stored as SEPARATE entries. Both have `nbody_starts=1`. Both are real functions.
+
+5. **The ShiftReduce.sno Shift body has NO internal labels** between `Shift:` and `ShiftEnd` — so `is_body_boundary` cannot fire prematurely inside it.
+
+6. Yet `stmt_in_fn_body` fails to claim the Shift body stmts. They leak into main.
+
+### The open question for next Claude
+
+Why does `stmt_in_fn_body` fail to claim the stmts between `Shift:` and `ShiftEnd` in ShiftReduce.sno, given that fn[42] has name=`Shift`, end=`ShiftEnd`, nbody_starts=1, and body_starts[0] points to the correct stmt?
+
+**Strongest hypothesis**: `is_body_boundary` on line 770 of emit.c:
+```c
+if (t != bs && is_body_boundary(t->label, fn_table[i].name)) break;
+```
+The second arg is `fn_table[i].name` = `"Shift"`. Inside `is_body_boundary`, this checks
+"is this label a boundary relative to fn Shift?" — which includes checking if the label
+equals `Shift` itself (the entry label). If `is_body_boundary` returns 1 for the FIRST
+stmt after body_start (because its label is something that IS a boundary for another fn),
+the walk immediately breaks having only claimed body_starts[0] itself — and all subsequent
+stmts leak to main.
+
+**Next Claude: add this one targeted debug print to stmt_in_fn_body:**
+```c
+// After line 770 break:
+fprintf(stderr, "BOUNDARY_STOP fn=%s at label=%s (src line %d)\n",
+        fn_table[i].name, t->label ? t->label : "(null)", t->src_line);
+```
+Run and grep for `BOUNDARY_STOP fn=Shift`. That will pinpoint exactly which label
+is stopping the walk prematurely.
+
+### Build commands (copy-paste ready)
+```bash
+apt-get install -y build-essential flex bison libgc-dev
+SNOC=/home/claude/SNOBOL4-tiny/src/snoc/snoc
+RUNTIME=/home/claude/SNOBOL4-tiny/src/runtime
+INC=/home/claude/SNOBOL4-corpus/programs/inc
+BEAUTY=/home/claude/SNOBOL4-corpus/programs/beauty/beauty.sno
+
+cd /home/claude/SNOBOL4-tiny/src/snoc && make clean && make
+
+$SNOC $BEAUTY -I $INC 2>/dev/null > /tmp/beauty_full.c
+gcc -O0 -g /tmp/beauty_full.c \
+    $RUNTIME/snobol4/snobol4.c $RUNTIME/snobol4/snobol4_inc.c \
+    $RUNTIME/snobol4/snobol4_pattern.c $RUNTIME/engine.c \
+    -I$RUNTIME/snobol4 -I$RUNTIME -lgc -lm -w -o /tmp/beauty_full_bin
+
+/tmp/beauty_full_bin < $BEAUTY > /tmp/beauty_compiled.sno 2>/dev/null
+wc -l /tmp/beauty_compiled.sno   # TARGET: 790
+```
+
+### Milestone context
+- **Active target**: Milestone 0 — beauty_full_bin self-beautifies → diff empty
+- Lon's order: beautifier FIRST. Bask. Compiler after.
