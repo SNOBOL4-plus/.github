@@ -279,9 +279,28 @@ Look at how `match` statements emit `:S`/`:F` conditionals — assignment should
 
 ### 🔴 IMMEDIATE NEXT ACTION
 
-1. **Fix `:S/:F` on assignment statements in `emit_stmt`** — look at how `STMT_MATCH`
-   emits `_ok` conditionals and apply the same pattern to `STMT_ASSIGN` (or whichever
-   statement type covers `$X = Y :S(label)`).
+**⚡ SESSION 29 DESIGN DECISION — implement this first:**
+
+Remove `pat_expr` from the grammar. Use one `expr` for subject, pattern, and replacement.
+The parser splits by **position** (1st expr = subject, 2nd expr before `=` = pattern).
+The emitter already routes correctly: `emit_expr()` for subject/replacement, `emit_pat()` for pattern.
+`E_CONCAT`, `E_DEREF`, `E_ALT` are the same nodes — context (= field position in Stmt) determines meaning.
+Grammar conflicts disappear entirely. See Session 29 log for full design rationale.
+
+**Implementation steps:**
+1. In `sno.y`: remove `pat_expr` / `pat_alt` / `pat_cat` / `pat_cap` / `pat_atom` productions.
+2. Change stmt rule: `opt_label expr expr opt_repl opt_goto` — 1st expr=subject, 2nd=pattern.
+   Use `opt_pat` (empty | expr) to handle no-pattern case.
+3. Remove `PAT_BUILTIN` token from grammar — all builtins are `IDENT`; `emit_pat(E_CALL)` already
+   routes them to `sno_pat_pos()` etc. correctly.
+4. Remove `snoc_in_pat` flag, `%glr-parser`, `%dprec` — no longer needed.
+5. Rebuild. Verify GREET still works. Then retest beauty.
+
+**Then — the `:S/:F` conditional emit bug (Sprint 25 original blocker):**
+
+1. Fix `:S/:F` on assignment statements in `emit_stmt` — look at how `STMT_MATCH`
+   emits `_ok` conditionals and apply the same pattern to assignment statements
+   (`$X = Y :S(label)`).
 
 2. **Rebuild and retest**:
 ```bash
@@ -2342,6 +2361,74 @@ Cascading failure: `snoExpr17 → snoExpr15 → snoExpr14 → snoStmt → snoCom
 | SNOBOL4-tiny | `3fe1b5b` | Sprint 22: 22/22. Sprint 23: Parse Error. |
 | SNOBOL4-dotnet | `b5aad44` | 1,607 / 0 |
 | SNOBOL4-jvm | `9cf0af3` | 1,896 / 4,120 / 0 |
+
+### 2026-03-12 — Session 29 (Design Eureka: Unified Expression IR eliminates subject/pattern split)
+
+**No code written. Architecture insight recorded. THIS IS A MAJOR DESIGN DECISION.**
+
+**The problem that has recurred across Sessions 19–29:**
+
+snoc's grammar needs to split a SNOBOL4 statement into `subject / pattern / replacement`.
+The grammar uses one `expr` type for all three. The parser couldn't decide:
+- Is `POS(0)` after a subject the start of the pattern field, or juxtaposition-concat of the subject?
+- Is `*X` in a statement binary multiply or deref prefix (pattern ref)?
+- Is `|` string alternation or pattern alternation?
+
+Multiple failed approaches: mid-rule bison actions, `%glr-parser` with `%dprec`, `snoc_in_pat` flag.
+
+**Lon's question that cut through it:**
+
+> "Why do you need to distinguish at parse time? The subject is just the α entry action of the Byrd Box. The entire statement IS a Byrd Box."
+
+**The answer:**
+
+The entire SNOBOL4 statement is a Byrd Box:
+```
+label:  subject  pattern  =replacement  :S(x) :F(y)
+          α         →          γ            γ    ω
+```
+- **α** — evaluate subject → initialize Σ (string), Δ (cursor=0)
+- **pattern** — runs through the Byrd Box proper
+- **γ** — success: apply replacement, goto :S label
+- **ω** — failure: goto :F label
+
+The subject is not outside the box — it IS the α entry action.
+
+**The key insight that resolves the parser conflict:**
+
+`E_CONCAT` (juxtaposition), `E_MUL` (STAR), `E_ALT` (PIPE) are **the same node** in the IR.
+The **emitter** decides what to emit based on **position in the Stmt**:
+
+| Field | Emitter call | Result |
+|-------|-------------|--------|
+| `s->subject` | `emit_expr(E_CONCAT)` | `sno_concat()` — string concat |
+| `s->pattern` | `emit_pat(E_CONCAT)` | `sno_pat_cat()` — pattern cat |
+| `s->subject` | `emit_expr(E_DEREF)` | `sno_get()` — value deref |
+| `s->pattern` | `emit_pat(E_DEREF)` | `sno_pat_ref()` — deferred pattern ref |
+| `s->subject` | `emit_expr(E_ALT)` | `sno_alt()` — string alternation |
+| `s->pattern` | `emit_pat(E_ALT)` | `sno_pat_alt()` — pattern alternation |
+
+**The grammar collapses:**
+
+One expression grammar. No `pat_expr` / `expr` split. No conflicts.
+The `Stmt` still has `s->subject`, `s->pattern`, `s->replacement` fields.
+The parser fills them by **counting position** (1st expr = subject, 2nd expr before `=` = pattern).
+The emitter routes each through the correct emit function.
+
+**`emit_expr()` and `emit_pat()` already exist and already do this correctly.**
+The only bug was that the PARSER was failing to put nodes into `s->pattern` — instead
+folding them into `s->subject` via juxtaposition. Fix the parser split; the emitter is already correct.
+
+**Implementation:**
+
+Remove `pat_expr` from the grammar entirely. Use a single `expr` for all fields.
+After parsing the first `expr` (subject), the next `expr` before `=` is the pattern.
+The split is determined by counting exprs on the line, not by token type.
+The grammar conflicts disappear because there is no longer a separate `pat_expr` production.
+
+**Status:** Design recorded. Implementation pending (next session first action).
+
+---
 
 ### 2026-03-12 — Session 27 (Eureka: Byrd Box + exception hygiene architecture)
 
