@@ -1,5 +1,38 @@
 # SNOBOL4ever — Master Plan
 
+---
+
+## ⚠️ WARNING ⚠️ WARNING ⚠️ WARNING — CLAUDE: READ THIS FIRST OR YOU WILL FAIL
+
+### ⚡ RULE 1 — PLAN.md IS THE PARENT. IT IS THE GOD OF ALL MD FILES.
+
+**PLAN.md (this file) is the single source of truth. It supersedes every other
+markdown file in every repo. If any satellite file (PATCHES.md, REPO_PLANS.md,
+SESSION_LOG.md, any repo's own PLAN.md) contradicts this file — THIS FILE WINS.
+Do not trust satellite files over this file. Do not update satellite files without
+also updating this file. PLAN.md is the parent. Everything else is a child.**
+
+---
+
+### ⚡ RULE 2 — MANDATORY SESSION START CHECKLIST (DO ALL OF THESE OR YOU ARE FLYING BLIND)
+
+```
+STEP 1: Read THIS file (PLAN.md) top to bottom.
+STEP 2: Clone SNOBOL4-tiny. Run: git log --oneline -10
+STEP 3: Run REPO SURVEY: find /home/claude/SNOBOL4-tiny/src -type f | sort
+STEP 4: Read the HEAD commit diff: git show HEAD --stat
+STEP 5: Check .github: git log --oneline -5
+STEP 6: Append session start note to §12 Session Log. Push .github.
+```
+
+**If you skip ANY of these steps, you will re-invent work that already exists,
+break things that were fixed three sessions ago, and waste Lon's time.
+This has happened. Session 30 invented snoc_helpers.c — snobol4_inc.c
+already did the same thing. The INVENTORY RULE exists because of this.
+DO THE CHECKLIST. Every session. No exceptions.**
+
+---
+
 > **New Claude session? Read this file top to bottom. It is the only file you
 > need to start working. Everything else is a satellite — read them when you
 > need depth on a specific topic.**
