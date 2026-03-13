@@ -7,17 +7,17 @@
 
 ## Current State
 
-**Active sprint:** `smoke-tests` (2 of 4 toward M-BEAUTY-FULL)
+**Active sprint:** `beauty-runtime` (3 of 4 toward M-BEAUTY-FULL)
 **Milestone target:** M-BEAUTY-FULL
-**HEAD:** `3581830` — feat(snoc): space-token — 0 bison conflicts, unified grammar ✅
+**HEAD:** `8f68962` — fix(sno2c): emit_pat E_DEREF dangling-if, unop left/right contract
 
-**Sprint 1 (`space-token`) COMPLETE.** 0 bison conflicts, clean build.
-- `_` token (whitespace) is now explicit concat operator
-- `bstack`/`last_was_callable`/`PAT_BUILTIN` fully eliminated
-- Subject restricted to `term` — first space always separates subject from pattern
-- 159 conflicts → 0
+**Sprint 2 (`smoke-tests`) COMPLETE — 21/21.** `cfbcb29`/`8f68962`
+- Replaced flex/bison with hand-rolled `lex.c` + `parse.c`
+- Grammar confirmed LALR(1) once T_WS is explicit token
+- `snoc` renamed `sno2c` (SNOBOL4 to C); directory `src/snoc` → `src/sno2c`
+- `beauty_full_bin` builds clean from 12,292 lines of generated C
 
-**Next action:** Sprint 2 (`smoke-tests`): build `beauty_full_bin`, run `test/smoke/test_snoCommand_match.sh`, drive from 0/21 → 21/21.
+**Next action:** Sprint 3 (`beauty-runtime`): `beauty_full_bin < beauty.sno` exits cleanly.
 
 ## Pivot Log
 
@@ -77,7 +77,8 @@ and Claude Sonnet 4.6. When any milestone trigger fires, Claude writes the commi
 | Sprint | What | Status |
 |--------|------|--------|
 | `hand-rolled-parser` | Replace Bison/Flex with `lex.c` + `parse.c` | ⏸ Paused |
-| `smoke-tests` | 0/21 → 21/21 on `test_snoCommand_match.sh` | ❌ |
+| `smoke-tests` | 0/21 → 21/21 on `test_snoCommand_match.sh` | ✅ `8f68962` |
+| `beauty-runtime` | binary exits cleanly on beauty.sno input | ⏳ Active |
 | `beauty-full-diff` | `beauty_full_bin` diff empty → **M-BEAUTY-FULL** | ❌ |
 
 ### Toward M-COMPILED-SELF
