@@ -7,17 +7,28 @@
 
 ## Current State
 
-**Active sprint:** `beauty-runtime` (3 of 4 toward M-BEAUTY-FULL)
+**Active sprint:** `smoke-tests` (2/4 toward M-BEAUTY-FULL)
 **Milestone target:** M-BEAUTY-FULL
-**HEAD:** `8f68962` — fix(sno2c): emit_pat E_DEREF dangling-if, unop left/right contract
+**HEAD:** `a69971e` — fix(emit): field assignment lvalue — sno_field_set for E_CALL nargs==1
 
-**Sprint 2 (`smoke-tests`) COMPLETE — 21/21.** `cfbcb29`/`8f68962`
-- Replaced flex/bison with hand-rolled `lex.c` + `parse.c`
-- Grammar confirmed LALR(1) once T_WS is explicit token
-- `snoc` renamed `sno2c` (SNOBOL4 to C); directory `src/snoc` → `src/sno2c`
-- `beauty_full_bin` builds clean from 12,292 lines of generated C
+**Smoke tests: 0/21 — one fix remaining.**
 
-**Next action:** Sprint 4 (`beauty-full-diff`): diagnose line-wrap differences. Oracle=790 lines, compiled=801. Root cause: column-stop alignment in `ppStop[1..4]` / `Gen()` / `GetLevel()`. 19 lines differ in indentation only; remaining diffs are line-wrap column positions.
+Two bugs fixed this session, one remaining:
+
+1. ✅ `parse_expr3` for pattern field (`f359079`) — `|` alternation restored
+2. ✅ Field assignment lvalue (`a69971e`) — `sno_field_set` for `val(n) = expr`
+3. ❌ Capture var-name deferred evaluation — **NEXT ACTION**
+
+**Root cause of 0/21:** `epsilon . *IncCounter()` in `nInc_()` sets capture
+`var_name=NULL` at materialise time. `IncCounter()` needs to be called at
+**match time** to get the var name (and run its side effect). `Capture.var_name`
+is a static `char*` — needs a `var_fn` callback for deferred var expressions.
+
+**Fix location:** `src/runtime/snobol4/snobol4_pattern.c`, `SPAT_CAPTURE` case
+of `materialise()`. Add `var_fn`/`var_data` fields to `Capture` struct.
+In `apply_captures()`, if `var_fn` is set, call it to get name then assign.
+
+**Test to verify:** recreate `/tmp/test_ninc.sno` from SESSION.md. Expected: `matched, top=2`
 
 ## Pivot Log
 

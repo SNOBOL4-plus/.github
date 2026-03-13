@@ -4591,3 +4591,49 @@ Full design spec in §6a. WIP changes stashed in SNOBOL4-tiny (reference only, d
 3. Verify segfault still gone AND | works in patterns
 4. `make -C src/sno2c` → rebuild beauty → smoke tests → target 21/21
 5. If smoke passes → run crosscheck suite → fix failures → diff oracle
+
+---
+
+## Session 52 — 2026-03-13
+
+| Field | Value |
+|-------|-------|
+| **Repo** | SNOBOL4-tiny |
+| **Sprint** | `smoke-tests` (2/4 toward M-BEAUTY-FULL) |
+| **HEAD start** | `f359079` |
+| **HEAD end** | `a69971e` |
+
+### What happened
+
+Diagnosed and fixed two of three bugs in the 0/21 smoke test chain.
+
+**Fix 1 — parse_expr3 for pattern field** (`f359079` — previous session, confirmed)
+Changed `parse_body_field` to call `parse_expr3` instead of `parse_expr2`.
+Restores `|` alternation in pattern field. Segfault fix intact.
+
+**Fix 2 — field assignment lvalue** (`a69971e` — this session)
+`emit_assign_target` catch-all emitted `sno_iset(sno_apply("val",{n},1), rhs)`.
+`sno_iset` converts its first arg to a string → silently did nothing.
+Added `E_CALL && nargs==1` branch: now emits `sno_field_set(obj, "field", rhs)`.
+6 sites corrected in beauty_full.c. Direct counter calls confirmed working.
+
+**Also: T_FUNC engine node** — added `T_FUNC=44` to engine, `func`/`func_data`
+fields to `Pattern` struct. `SPAT_USER_CALL` side-effect path uses it. Not the
+active fix path but correct infrastructure.
+
+**Root cause found for 0/21:** `epsilon . *IncCounter()` — the `.` (conditional
+assignment) operator evaluates `*IncCounter()` at match time to get a variable
+name. Our `Capture.var_name` is a static `char*` — deferred var expressions
+store `NULL` → `var=?` at match time → IncCounter never called → top=0.
+
+**Artifacts:** `beauty_full_session52.c` — 12,744 lines, 6 field-assignment fixes.
+Diff from session51: exactly 6 `sno_iset` → `sno_field_set` substitutions.
+
+### Next session
+
+Fix capture var-name deferred evaluation in `snobol4_pattern.c`:
+- Add `var_fn`/`var_data` to `Capture` struct
+- In `apply_captures()`: call `var_fn` when set to get name at match time
+- In `SPAT_CAPTURE` materialisation: detect `SPAT_USER_CALL`/`SPAT_DEREF` var exprs
+- Test: `matched, top=2` from test_ninc.sno
+- Then: smoke 21/21 → crosscheck → sprint 3 (beauty-runtime) → sprint 4 (diff)
