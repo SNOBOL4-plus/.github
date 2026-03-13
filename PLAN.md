@@ -1147,6 +1147,13 @@ This is the token-level distinction our hand-rolled parser will use to know — 
 before any grammar rule fires — whether an IDENT is followed by `(`. The parser then
 decides in context (pat vs value) what that means.
 
+#### Bonus: CODE() Gets a Parser for Free
+
+When we eventually implement the `CODE` builtin (runtime parse + execute of a SNOBOL4
+string), we won't need a separate parser. `lex.c` + `parse.c` just get called from the
+runtime instead of from `main()`. One parser, two call sites. beauty.sno doesn't use
+`CODE` so this is post-Milestone-0, but the architecture already supports it.
+
 ### Implementation Order for Next Session
 
 1. **Write `src/snoc/lex.c`** — hand-rolled lexer. Continuation lines, string literals,
