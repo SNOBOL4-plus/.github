@@ -896,7 +896,25 @@ git remote set-url origin https://LCherryholmes:$TOKEN@github.com/SNOBOL4-plus/<
 
 ---
 
-## 6. Current Work — Sprint 26: Milestone 0 (beauty.sno self-beautify)
+## 6. Current Work — ⚡ PRIORITY SHIFT: Rebus Lexer/Parser (TR 84-9) ⚡
+
+### ⚡ 2026-03-13 — Lon has declared REBUS the current focus and priority. ⚡
+### Sprint 26 (Milestone 0 / beauty.sno) is PAUSED. Resume after Rebus parser is clean.
+
+**Current task:** Implement a complete Rebus (SNOBOL4/Icon hybrid, Griswold TR 84-9)
+lexer and parser in `SNOBOL4-tiny/src/rebus/`. No IL or emitter yet — language
+processing 101. Flex lexer + Bison grammar + AST + pretty-printer.
+
+**Status as of 2026-03-13 Session (Claude Sonnet 4.6):**
+- `src/rebus/`: rebus.l, rebus.y, rebus.h, rebus_print.c, rebus_main.c, Makefile
+- `test/rebus/`: word_count.reb, binary_trees.reb, syntax_exercise.reb
+- word_count.reb: ✅ PASS
+- binary_trees.reb: ✅ PASS
+- syntax_exercise.reb: ❌ 5 errors (all: control-struct `}` → next stmt missing `;`)
+- **One bug remaining:** `}` must re-enter `needs_semi` — suppressed before else/do/then
+  by the `next_is_continuation()` line-scan lookahead. One lexer edit away from 3/3.
+
+**When all 3 test files pass:** commit clean (not wip), push, then resume Sprint 26.
 
 ### ⚡ READ §2 FIRST — ARCHITECTURE TRUTH (Natural Variables + Two Worlds + T_FNCALL) ⚡
 ### ⚡ READ §1 — Three-Milestone Authorship Agreement. Claude writes three commits. ⚡
@@ -1513,6 +1531,38 @@ No code changes to any compiler this session.
 
 *This file is the single operational briefing. Update §6 (Current Work) and §12
 (Session Log) at every HANDOFF. Everything else is stable.*
+
+---
+
+### 2026-03-13 — Session (Rebus Lexer/Parser Sprint, Claude Sonnet 4.6)
+
+**Priority shift declared by Lon: REBUS is now the focus. Sprint 26 paused.**
+
+Implemented Rebus lexer/parser from scratch in `SNOBOL4-tiny/src/rebus/`:
+- `rebus.l`: Flex lexer — case-insensitive identifiers, full operator set, keyword
+  table, semicolon insertion with `next_is_continuation()` line-scan lookahead
+  (suppresses auto-semi before `else`/`do`/`then` continuation keywords).
+- `rebus.y`: Bison grammar — full TR 84-9 appendix grammar. Records, functions,
+  all control structures (if/unless/while/until/repeat/for/case), pattern match/
+  replace/repln, all expression operators including `:=:` exchange, `+:=` `-:=`
+  `||:=` compound assignment, `+:` substring.
+- `rebus.h`: Full AST (40+ REKind variants, RStmt, RDecl, RProgram).
+- `rebus_print.c`: AST pretty-printer for smoke testing.
+- `rebus_main.c`: Driver (`rebus [-p] file.reb`).
+- `test/rebus/`: word_count.reb, binary_trees.reb, syntax_exercise.reb (from TR 84-9).
+
+**Bugs found and fixed this session:**
+1. Multi-arg subscript `a[i,j]` — subscript rule used single `expr`, changed to `arglist`.
+2. `needs_semi` `}` removal broke control-struct → next-stmt. Added `compound_stmt`
+   path to `stmt_list_ne` (self-delimiting via `}`).
+3. `initial { ... }` — added explicit `T_INITIAL compound_stmt` production.
+4. `return expr\n  else` — `next_is_continuation()` was reading `rpos` (broken: flex
+   pre-buffers whole file). Fixed: line-scan via `yylineno` against `rbuf` directly.
+5. Bare `&` (pattern-cat) vs `&ident` (keyword ref) — correct lexer precedence.
+
+**Current state:** word_count ✅, binary_trees ✅, syntax_exercise ❌ (5 errors —
+one remaining lexer fix: `}` back in `needs_semi`). WIP commit pushed: `f81e501`.
+Next session: one-line fix → 3/3 green → clean commit → push → resume Sprint 26.
 
 ---
 
