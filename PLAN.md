@@ -915,6 +915,7 @@ processing 101. Flex lexer + Bison grammar + AST + pretty-printer.
   by the `next_is_continuation()` line-scan lookahead. One lexer edit away from 3/3.
 
 **When all 3 test files pass:** commit clean (not wip), push, then resume Sprint 26.
+**Full Rebus roadmap:** See §6b below.
 
 ### ⚡ READ §2 FIRST — ARCHITECTURE TRUTH (Natural Variables + Two Worlds + T_FNCALL) ⚡
 ### ⚡ READ §1 — Three-Milestone Authorship Agreement. Claude writes three commits. ⚡
@@ -1431,6 +1432,210 @@ cd /home/claude/SNOBOL4-dotnet && git add -A && git commit -m "..." && git push
 
 ---
 
+## 6b. REBUS FRONT-END PLAN — All Three Platforms
+
+**Reference:** Griswold TR 84-9, "Rebus — A SNOBOL4/Icon Preprocessor" (1984).
+Rebus is to SNOBOL4 what Snocone is, but with Icon syntax instead of C syntax.
+Structured control flow, strong pattern operators, function declarations with
+locals/initial blocks, record types — all translating to pure SNOBOL4 output.
+
+**Model:** Follow the Snocone precedent exactly:
+- Corpus (shared): `.reb` test files + oracle `.sno` outputs in `SNOBOL4-corpus`
+- SNOBOL4-tiny: Flex/Bison front-end in `src/rebus/` → emit SNOBOL4 source
+- SNOBOL4-jvm: Clojure front-end → emit SNOBOL4 source → existing JVM runtime
+- SNOBOL4-dotnet: C# front-end → emit SNOBOL4 source → existing MSIL runtime
+
+**Output target (all three platforms):** SNOBOL4 source text (`.sno`).
+Rebus is a preprocessor, not a compiler. The generated SNOBOL4 feeds each
+platform's existing compilation pipeline unchanged.
+
+---
+
+### Translation Rules (TR 84-9 §5 — Semantic Mapping to SNOBOL4)
+
+```
+REBUS CONSTRUCT              SNOBOL4 OUTPUT
+─────────────────────────────────────────────────────────────────────
+record R(f1, f2)           → DATA('R(f1,f2)')
+
+function F(p1,p2)          → DEFINE('F(p1,p2)local1,local2') :(F_end)
+  local l1, l2             F
+  initial { ... }            [initial stmts, run once via flag]
+  [body]                     [body stmts]
+  return expr              → F_ret_N FRETURN expr
+end                          F = [last expr]; FRETURN / :(F_ret_N)
+                           F_end
+
+if E then S                → [E]  :F(rb_else_N)
+                             [S]  :(rb_end_N)
+                           rb_else_N
+                           rb_end_N
+
+if E then S1 else S2       → [E]  :F(rb_else_N)
+                             [S1] :(rb_end_N)
+                           rb_else_N [S2]
+                           rb_end_N
+
+unless E then S            → [E]  :S(rb_end_N)
+                             [S]
+                           rb_end_N
+
+while E do S               → rb_top_N [E] :F(rb_end_N)
+                             [S] :(rb_top_N)
+                           rb_end_N
+
+until E do S               → rb_top_N [E] :S(rb_end_N)
+                             [S] :(rb_top_N)
+                           rb_end_N
+
+repeat S                   → rb_top_N [S] :(rb_top_N)
+                           rb_end_N   (exit lands here)
+
+for I from E1 to E2 do S   → rb_I_N = E1
+                           rb_top_N  GT(rb_I_N, E2)  :S(rb_end_N)
+                             [S]  rb_I_N = rb_I_N + 1  :(rb_top_N)
+                           rb_end_N
+
+for I from E1 to E2 by E3  → rb_I_N = E1  rb_step_N = E3
+                           rb_top_N  GT(rb_I_N, E2)  :S(rb_end_N)
+                             [S]  rb_I_N = rb_I_N + rb_step_N  :(rb_top_N)
+                           rb_end_N
+
+case E of                  → rb_val_N = E
+  V1 : S1                    IDENT(rb_val_N, V1)  :S(rb_c1_N)
+  V2 : S2                    IDENT(rb_val_N, V2)  :S(rb_c2_N)
+  default : S0               :(rb_def_N)
+}                          rb_c1_N [S1] :(rb_end_N)
+                           rb_c2_N [S2] :(rb_end_N)
+                           rb_def_N [S0]
+                           rb_end_N
+
+exit                       → :(rb_end_N)   (nearest enclosing loop)
+next                       → :(rb_top_N)   (nearest enclosing loop)
+fail                       → :F(FRETURN)   or just FAIL label
+stop                       → END
+return E                   → F_ret_N FRETURN E    (or via RETURN label)
+return                     → :(RETURN)
+
+E1 := E2                   → E1 = E2               (SNOBOL4 assignment)
+E1 :=: E2                  → E1 :=: E2             (exchange — native SNOBOL4)
+E1 +:= E2                  → E1 = E1 + E2
+E1 -:= E2                  → E1 = E1 - E2
+E1 ||:= E2                 → E1 = E1 E2            (concatenation)
+E1 || E2                   → E1 E2                 (SNOBOL4 blank-concat)
+E1 ** E2                   → E1 ** E2
+E1 & E2                    → E1 E2  (pattern concat — adjacent in SNOBOL4)
+E1 | E2                    → (E1 | E2)             (pattern alternation)
+\E                         → \E                    (SNOBOL4 IDENT test)
+/E                         → /E                    (differ test)
+Pat . Var                  → Pat . Var             (immediate assignment)
+Pat $ Var                  → Pat $ Var             (deferred assignment)
+E1 ? E2                    → E1 ? E2               (pattern match — scan)
+E1 ? E2 <- E3              → E1 ? E2 = E3          (pattern replace)
+E1 ?- E2                   → E1 ? E2  :S(next)     (fail-if-matches)
+```
+
+---
+
+### Milestone Table
+
+| Step | What | Tiny | JVM | .NET |
+|------|------|------|-----|------|
+| R0 | Corpus: `.reb` test files + oracle `.sno` outputs | ✓ (lexer/parser done) | — | — |
+| R1 | Lexer | ✓ `01e5d30` | — | — |
+| R2 | Parser → AST | ✓ `01e5d30` | — | — |
+| R3 | Emitter: expressions → SNOBOL4 text | next | — | — |
+| R4 | Emitter: assignment variants (`:=` `:=:` `+:=` `-:=` `\|\|:=`) | — | — | — |
+| R5 | Emitter: if/unless → label/goto | — | — | — |
+| R6 | Emitter: while/until/repeat → label/goto | — | — | — |
+| R7 | Emitter: for (with and without `by`) | — | — | — |
+| R8 | Emitter: case/of/default | — | — | — |
+| R9 | Emitter: function/record declarations | — | — | — |
+| R10 | Emitter: exit/next/fail/stop/return | — | — | — |
+| R11 | Emitter: pattern stmts (`?` `?<-` `?-`) | — | — | — |
+| R12 | Round-trip test: `.reb` → `.sno` → run under CSNOBOL4, diff vs oracle | — | — | — |
+| R13 | JVM port: Clojure lexer + parser + emitter | — | next | — |
+| R14 | .NET port: C# lexer + parser + emitter | — | — | next |
+| R15 | Self-host: `rebus.reb` (Rebus written in Rebus) | — | — | — |
+
+---
+
+### File Layout
+
+```
+SNOBOL4-corpus/
+  programs/rebus/
+    README.md
+    word_count.reb          ← already in tiny test/rebus/
+    binary_trees.reb        ← already in tiny test/rebus/
+    syntax_exercise.reb     ← already in tiny test/rebus/
+    word_count.sno          ← oracle: hand-compiled expected SNOBOL4 output
+    binary_trees.sno        ← oracle
+    [more examples from TR 84-9 §3]
+
+SNOBOL4-tiny/
+  src/rebus/
+    rebus.h                 ← AST  ✓
+    rebus.l                 ← Flex lexer  ✓
+    rebus.y                 ← Bison parser  ✓
+    rebus_print.c           ← pretty-printer  ✓
+    rebus_emit.c            ← SNOBOL4 emitter  ← NEXT
+    rebus_main.c            ← driver  ✓
+    Makefile                ✓
+
+SNOBOL4-jvm/
+  src/SNOBOL4clojure/
+    rebus_lexer.clj         ← Step R13
+    rebus_grammar.clj
+    rebus_emitter.clj
+
+SNOBOL4-dotnet/
+  Snobol4.Common/Builder/
+    RebusLexer.cs           ← Step R14
+    RebusParser.cs
+    RebusEmitter.cs
+```
+
+---
+
+### Implementation Notes for `rebus_emit.c` (Step R3–R12)
+
+**Label counter:** Single global `int rb_label = 0;` — `rb_label++` per control struct.
+Every if/while/for/case claims its own N at entry, so nested structures never collide.
+
+**Loop stack:** `int rb_loop_top[64], rb_loop_end[64], rb_loop_depth = 0;`
+`exit` emits `:(rb_end_N)` using `rb_loop_end[rb_loop_depth-1]`.
+`next` emits `:(rb_top_N)` using `rb_loop_top[rb_loop_depth-1]`.
+
+**Function return:** Each function pushes its own return label. `return E` emits
+`FRETURN E` (or the label-goto idiom if multiple returns need merging).
+
+**Initial block:** Rebus `initial { ... }` semantics — runs once on first call.
+Standard SNOBOL4 idiom: guard with a per-function flag variable.
+```snobol4
+  IDENT(F_init_done) :S(F_body)
+  F_init_done = 1
+  [initial stmts]
+F_body
+```
+
+**Expression emission:** Walk `RExpr` tree recursively.
+- `RE_ASSIGN`: `emit(left) " = " emit(right)`
+- `RE_PATCAT` (`&`): `emit(left) " " emit(right)` (blank = pattern concat in SNOBOL4)
+- `RE_STRCAT` (`||`): `emit(left) " " emit(right)` (blank = string concat too)
+- `RE_ALT` (`|`): `"(" emit(left) " | " emit(right) ")"`
+- `RE_ADD`, `RE_SUB`, `RE_MUL`, `RE_DIV`: standard infix
+- `RE_POW` (`**`): `emit(left) " ** " emit(right)`
+- `RE_ADDASSIGN`: `emit(left) " = " emit(left) " + " emit(right)`
+- `RE_CAPTURE` (`.`): `emit(left) " . " emit(right)`
+- `RE_DEFER` (`$`): `emit(left) " $ " emit(right)`
+- `RE_IDENT_TEST` (`\`): `"\\" emit(operand)`
+- `RE_VALUE` (`/`): `"/" emit(operand)`
+- `RE_CALL`: `emit(func) "(" comma_join(args) ")"`
+- `RE_SUB_IDX`: `emit(base) "<" comma_join(indices) ">"` (SNOBOL4 subscript)
+
+---
+
 ## 10. Satellite Map
 
 Read these when you need depth. Do not read them at session start unless
@@ -1563,6 +1768,24 @@ Implemented Rebus lexer/parser from scratch in `SNOBOL4-tiny/src/rebus/`:
 **Current state:** word_count ✅, binary_trees ✅, syntax_exercise ❌ (5 errors —
 one remaining lexer fix: `}` back in `needs_semi`). WIP commit pushed: `f81e501`.
 Next session: one-line fix → 3/3 green → clean commit → push → resume Sprint 26.
+
+### 2026-03-13 — Session (Rebus Plan + HQ Update, Claude Sonnet 4.6)
+
+**Rebus parser sprint complete.** word_count ✅ binary_trees ✅ syntax_exercise ✅
+Clean commit `01e5d30` pushed to SNOBOL4-tiny.
+
+**Rebus front-end roadmap written (§6b).** Full 15-milestone plan covering all three
+platforms (Tiny/x86-32, JVM/Clojure, .NET/MSIL). Translation rules for every Rebus
+construct → SNOBOL4 text documented. File layout, label strategy, loop stack, initial
+block idiom, expression emission rules all specified. Follows the Snocone precedent
+exactly: corpus-first, shared test files, per-platform emitter, SNOBOL4 text as output.
+
+**Next steps in priority order:**
+1. `src/rebus/rebus_emit.c` — SNOBOL4 emitter (Steps R3–R12, Tiny)
+2. Corpus: `programs/rebus/` with oracle `.sno` files
+3. JVM: `rebus_lexer.clj` / `rebus_grammar.clj` / `rebus_emitter.clj` (Step R13)
+4. .NET: `RebusLexer.cs` / `RebusParser.cs` / `RebusEmitter.cs` (Step R14)
+5. Resume Sprint 26 (Milestone 0 — beauty.sno self-beautify) in parallel
 
 ---
 
