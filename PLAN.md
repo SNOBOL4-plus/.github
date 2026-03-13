@@ -104,3 +104,4 @@ Time's up or something broke. Speed over completeness.
 | [PATCHES.md](PATCHES.md) | Runtime patch audit trail (SNOBOL4-tiny) |
 | [SESSIONS_ARCHIVE.md](SESSIONS_ARCHIVE.md) | Full session history — append-only |
 | [MISC.md](MISC.md) | Origin story, JCON reference, keyword tables, background |
+| [RENAME.md](RENAME.md) | One-time rename plan — SNOBOL4-plus → snobol4ever, naming rules, 8-phase execution |
