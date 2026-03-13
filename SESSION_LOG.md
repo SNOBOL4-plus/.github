@@ -734,3 +734,82 @@ save/restore in emit.c) is the immediate next action for Session 45.
 | .github | `(this)` | Clean. Full architecture documented. |
 | SNOBOL4-corpus | `3673364` | Untouched. |
 
+
+---
+
+### Session 52 — Four Engine Fixes + Handoff
+
+**Date**: 2026-03-12  
+**Goal**: Milestone 0 — beauty_full_bin self-beautifies → diff empty  
+**Sprint**: 26  
+
+#### Bugs Found and Fixed This Session
+
+**Fix 1 — sno.y: STAR IDENT %prec UDEREF**  
+Root cause: `STAR IDENT` followed by `(` on a continuation line — bison shifted LPAREN and treated `IDENT(...)` as a function call, wrapping it in deref. `snoWhite` became `sno_apply("snoWhite", big_expr, 1)` instead of `sno_pat_ref("snoWhite")`.  
+Fix: Added `%prec UDEREF` to the `STAR IDENT` rule in `pat_atom` to force reduce before LPAREN is consumed.  
+Verified: Generated C now shows `sno_pat_ref("snoWhite")` ✓
+
+**Fix 2 — engine.c: T_PI|RECEDE tries next alt even when fenced**  
+Root cause: `T_PI|RECEDE` with `fenced=1` immediately CONCEDEd without trying remaining children. FENCE prevents the OUTER match loop from retrying (new start position), but inner alternation branches MUST still be tried.  
+Fix: Changed `if (!Z.fenced)` to `if (Z.ctx < Z.PI->n)` — tries next child if any remain, regardless of fenced state.
+
+**Fix 3 — engine.c: T_VARREF|PROCEED resets sigma/delta**  
+Root cause: When T_VARREF resolved a pattern and descended, it didn't reset `Z.sigma`/`Z.delta` to `Z.SIGMA`/`Z.DELTA`. Child pattern started from stale cursor position left by previous failed branch.  
+Fix: Added `Z.sigma = Z.SIGMA; Z.delta = Z.DELTA;` before `a = PROCEED` in T_VARREF|PROCEED.
+
+**Fix 4 — snobol4.c: sno_input_read returns SNO_FAIL_VAL on EOF**  
+Root cause: EOF returned `SNO_NULL_VAL`. Generated code checks `!SNO_IS_FAIL()` — NULL ≠ FAIL, so EOF was treated as successful read of empty string. `snoSrc` never accumulated properly; `snoParse` always matched epsilon; RPOS(0) always failed.  
+Fix: Changed `return SNO_NULL_VAL` → `return SNO_FAIL_VAL` in `sno_input_read()`.
+
+#### Current State After Fixes
+- Build: 0 gcc errors ✓
+- sno_pat_ref("snoWhite") correct in generated C ✓  
+- sno_input_read returns FAIL on EOF ✓  
+- snoSrc IS populated correctly: `"    X = 'hello'\n"` confirmed via debug ✓  
+- Smoke test: **still 0/21** — snoParse matches epsilon (ARBNO(snoCommand) iterates 0 times)
+
+#### Active Blocker: snoCommand fails to match any statement
+
+`snoSrc` is correctly populated. `snoParse` = `nPush() ARBNO(*snoCommand) ...`. ARBNO tries snoCommand once — it fails — ARBNO succeeds with 0 iterations. RPOS(0) then fails because cursor is at 0 not end. Outer match loop tries positions 1..N, same result.
+
+Root cause of snoCommand failure is the `sno_pat_deref(sno_str("?"))` nodes inside `snoStmt` — the E_COND emit.c bug. When `pat . *func()` is compiled, `case E_COND` falls back to varname `"?"` when RHS is E_DEREF of E_CALL. This creates bogus `sno_pat_cond(child, "?")` that captures into a variable named `"?"` rather than calling the function.
+
+#### Next Action (Session 53)
+
+**Fix emit.c E_COND for deref-of-call RHS:**
+```c
+case E_COND: {
+    if (e->right && e->right->kind == E_DEREF
+        && e->right->left && e->right->left->kind == E_CALL) {
+        // pat . *func() — side-effect capture
+        const char *fname = e->right->left->sval;
+        E("sno_pat_cond("); emit_pat(e->left); E(",\"*%s\")", fname); break;
+    }
+    const char *varname = (e->right && e->right->kind == E_VAR)
+                          ? e->right->sval : "?_UNRESOLVED";
+    E("sno_pat_cond("); emit_pat(e->left); E(",\"%s\")", varname); break;
+}
+```
+And in `snobol4_pattern.c apply_captures()`:
+```c
+if (cap->var_name[0] == '*') {
+    sno_apply(cap->var_name + 1, NULL, 0);  // side-effect call
+} else {
+    sno_var_set(cap->var_name, SNO_STR_VAL(text));
+}
+```
+
+After that fix, verify `sno_pat_deref(sno_str("?"))` is gone from generated C, rerun smoke tests.
+
+#### Commits This Session
+| Commit | Repo | Description |
+|--------|------|-------------|
+| `010529a` | SNOBOL4-tiny | Fix: STAR IDENT %prec UDEREF + T_PI RECEDE tries remaining alts + T_VARREF sigma reset + EOF returns FAIL |
+
+#### Repos at Session End
+| Repo | Commit | State |
+|------|--------|-------|
+| SNOBOL4-tiny | `010529a` | Clean. 4 fixes committed. Smoke test 0/21. |
+| .github | `(this)` | SESSION_LOG updated. |
+| SNOBOL4-corpus | `3673364` | Untouched. |
