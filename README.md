@@ -1,6 +1,6 @@
 # SNOBOL4ever
 
-**SNOBOL4 everywhere. SNOBOL4 now. SNOBOL4 forever.**
+**SNOBOL4everywhere. SNOBOL4now. SNOBOL4ever.**
 
 ---
 
@@ -208,7 +208,7 @@ Icon already has an implementation for C (the Arizona reference) and for the JVM
 
 The Byrd Box IR we built for SNOBOL4ever is the bridge. The same four ports. The same `byrd_ir.py`. The same `emit_jvm.py` and `emit_msil.py` backends. A new Icon frontend feeding the same pipeline.
 
-One week built SNOBOL4-everywhere. The transcript of that week is the architectural playbook for Icon-everywhere. The clock starts the moment `beauty.sno` compiles itself.
+One week built SNOBOL4everywhere. The transcript of that week is the architectural playbook for Icon-everywhere. The clock starts the moment `beauty.sno` compiles itself.
 
 ---
 
