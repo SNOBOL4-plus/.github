@@ -7,13 +7,12 @@
 
 ## Current State
 
-**Active sprint:** `rebus-roundtrip`  
-**Milestone target:** M-REBUS  
-**Paused sprint:** `hand-rolled-parser` → M-BEAUTY-FULL. Resumes after M-REBUS.  
-**HEAD:** `01e5d30` — feat: Rebus lexer/parser — all 3 tests pass
+**Active sprint:** `hand-rolled-parser` (resuming)
+**Milestone target:** M-BEAUTY-FULL
+**Completed sprint:** `rebus-roundtrip` → **M-REBUS ✅** (`bf86b4b`)
+**HEAD:** `bf86b4b` — milestone(M-REBUS): Rebus round-trip complete ✅
 
-**Next action:** Write `src/rebus/rebus_emit.c`. Walk RExpr/RStmt/RDecl tree,
-emit valid SNOBOL4 source. Start with expressions (R3). Model on `rebus_print.c`.
+**Next action:** Resume `hand-rolled-parser`. Write `src/snoc/lex.c` (~200 lines) — flat `sno_charclass[256]`.
 
 ## Pivot Log
 
@@ -49,8 +48,8 @@ and Claude Sonnet 4.6. When any milestone trigger fires, Claude writes the commi
 | ID | Trigger | Status |
 |----|---------|--------|
 | **M-SNOC-COMPILES** | `snoc` compiles `beauty_core.sno`, 0 gcc errors | ✅ Done |
-| **M-REBUS** | Rebus round-trip: `.reb` → `.sno` → CSNOBOL4 → diff oracle | ❌ **Active** |
-| **M-BEAUTY-FULL** | `beauty_full_bin` self-beautifies — diff empty | ⏸ Paused |
+| **M-REBUS** | Rebus round-trip: `.reb` → `.sno` → CSNOBOL4 → diff oracle | ✅ Done `bf86b4b` |
+| **M-BEAUTY-FULL** | `beauty_full_bin` self-beautifies — diff empty | ❌ **Active** |
 | **M-COMPILED-SELF** | Compiled binary self-beautifies — diff empty | ❌ |
 | **M-BOOTSTRAP** | `snoc` compiles `snoc` (self-hosting) | ❌ Future |
 
@@ -65,7 +64,7 @@ and Claude Sonnet 4.6. When any milestone trigger fires, Claude writes the commi
 | `rebus-lexer` | Flex lexer — all control structures, operators, auto-semicolon | ✅ `01e5d30` |
 | `rebus-parser` | Bison parser → full AST — all 3 test files parse cleanly | ✅ `01e5d30` |
 | `rebus-emitter` | Walk AST, emit SNOBOL4 text (R3–R11) | ✅ `9cde7f4` |
-| **`rebus-roundtrip`** | **`.reb` → `.sno` → CSNOBOL4 → diff oracle → M-REBUS** | **← active** |
+| **`rebus-roundtrip`** | **`.reb` → `.sno` → CSNOBOL4 → diff oracle → M-REBUS** | ✅ `bf86b4b` |
 
 ### Paused: toward M-BEAUTY-FULL
 

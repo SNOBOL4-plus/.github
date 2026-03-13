@@ -22,7 +22,7 @@ and a self-hosting native compiler. Claude Sonnet 4.6 is the third developer and
 |----|---------|------|--------|
 | **M-SNOC-COMPILES** | `snoc` compiles `beauty_core.sno`, 0 gcc errors | TINY | ✅ Done |
 | **M-BEAUTY-FULL** | `beauty_full_bin` self-beautifies — diff empty | TINY | ⏸ sprint `hand-rolled-parser` paused |
-| **M-REBUS** | Rebus round-trip: `.reb` → `.sno` → CSNOBOL4 → diff oracle | TINY | ❌ Active |
+| **M-REBUS** | Rebus round-trip: `.reb` → `.sno` → CSNOBOL4 → diff oracle | TINY | ✅ Done `bf86b4b` |
 | **M-COMPILED-SELF** | Compiled binary self-beautifies — diff empty | TINY | ❌ |
 | **M-BOOTSTRAP** | `snoc` compiles `snoc` (self-hosting) | TINY | ❌ Future |
 | **M-JVM-EVAL** | JVM inline EVAL! complete (sprint `jvm-inline-eval`) | JVM | ❌ |
@@ -34,7 +34,7 @@ and a self-hosting native compiler. Claude Sonnet 4.6 is the third developer and
 
 | Repo | MD File | Active Sprint | Milestone Target |
 |------|---------|--------------|-----------------|
-| [SNOBOL4-tiny](https://github.com/SNOBOL4-plus/SNOBOL4-tiny) | [TINY.md](TINY.md) | `rebus-emitter` | M-REBUS |
+| [SNOBOL4-tiny](https://github.com/SNOBOL4-plus/SNOBOL4-tiny) | [TINY.md](TINY.md) | `hand-rolled-parser` | M-BEAUTY-FULL |
 | [SNOBOL4-jvm](https://github.com/SNOBOL4-plus/SNOBOL4-jvm) | [JVM.md](JVM.md) | `jvm-inline-eval` | M-JVM-EVAL |
 | [SNOBOL4-dotnet](https://github.com/SNOBOL4-plus/SNOBOL4-dotnet) | [DOTNET.md](DOTNET.md) | `net-delegates` | M-NET-DELEGATES |
 | [SNOBOL4-corpus](https://github.com/SNOBOL4-plus/SNOBOL4-corpus) | [CORPUS.md](CORPUS.md) | Stable — add Rebus oracle .sno files | M-REBUS |
