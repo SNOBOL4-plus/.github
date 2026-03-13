@@ -10,52 +10,55 @@
 | Field | Value |
 |-------|-------|
 | **Repo** | SNOBOL4-tiny |
-| **Sprint** | `space-token` (1 of 4 toward M-BEAUTY-FULL) |
+| **Sprint** | `smoke-tests` (2 of 4 toward M-BEAUTY-FULL) |
 | **Milestone** | M-BEAUTY-FULL |
-| **HEAD** | `d224864` — WIP Session: space-token sprint — sno.l/sno.y partial, bstack refs still present in IDENT/comma rules |
+| **HEAD** | `3581830` — feat(snoc): space-token — 0 bison conflicts, unified grammar ✅ |
 
 ## Last Thing That Happened
 
-**Sprint plan restructured.** The old `hand-rolled-parser` plan (write lex.c/parse.c from scratch) was replaced by a 4-sprint plan that stays with bison/flex but fixes the grammar. The root conflict was always SPACE ambiguity, not a fundamental LALR(1) limit.
+**Sprint 1 (`space-token`) COMPLETE.** 159 conflicts → 0. Clean build. Committed and pushed.
 
-**Sprint 1 (`space-token`) is in progress but NOT complete.** `sno.l` and `sno.y` have been partially edited:
-
-- `sno.l`: `{WS} { return SPACE; }` ✅ — bstack declarations removed ✅ — LPAREN/RPAREN rules cleaned ✅ — **but IDENT block (lines 192–209) still references `bstack`, `last_was_callable`, `PAT_BUILTIN`, `is_pat_builtin` — NOT YET CLEANED**
-- `sno.l`: comma rule (lines 229–231) **still references `bstack`** — NOT YET CLEANED
-- `sno.y`: `%token PAT_BUILTIN` removed, `pat_expr`/`pat_alt`/`pat_cat`/`pat_cap`/`pat_atom` removed ✅ — unified grammar in progress
-
-**Build is broken.** `make -C src/snoc` fails with `'bstack' undeclared` from the remaining stale IDENT rules.
+Key decisions made this session:
+- `SPACE` token renamed to `_` (Lon's suggestion — bison allows it, zero warnings)
+- Subject in stmt rules restricted to `term` (not `expr`) — eliminates the core 106 RR conflicts. First space always separates subject from pattern per SNOBOL4 semantics. Concat in subject requires parens.
+- `bstack`/`last_was_callable`/`PAT_BUILTIN`/`is_pat_builtin` fully eliminated from sno.l
+- `opt_expr → empty` removed — arglist empty handled by `arglist → empty` only
+- `IDENT[...]` array syntax kept only in `atom` rule (removed from `primary`)
+- `%nonassoc SUBJ` precedence resolves remaining SR conflicts
+- Unreachable `<GT>.` catch-all removed from sno.l
 
 ## One Next Action
 
-**Finish sprint 1 (`space-token`) — clean the remaining bstack references in `sno.l`:**
+**Start Sprint 2 (`smoke-tests`):**
 
-1. Replace IDENT block (lines ~192–209 in `src/snoc/sno.l`) — remove `PAT_BUILTIN`/`bstack`/`last_was_callable`. Replace with:
-```
-    /* ---- identifiers ---- */
-{IDENT}/"("     { yylval.sval = intern(yytext); return IDENT; }
-{IDENT}         { yylval.sval = intern(yytext); return IDENT; }
+1. Clone SNOBOL4-corpus (needed for beauty.sno and inc/):
+```bash
+git clone https://github.com/SNOBOL4-plus/SNOBOL4-corpus.git
 ```
 
-2. Replace comma rule (lines ~229–231) — `bstack_top > 0 && bstack[bstack_top-1] == 0` logic needs to go. In the SPACE-token grammar, `(expr, expr)` grouping vs function-call paren is handled by the grammar rule, not the lexer. Comma always returns `COMMA`. Remove the bstack branch, return `COMMA` unconditionally (grammar will produce E_ALT from arglist position).
+2. Find and build `beauty_full_bin`:
+```bash
+find SNOBOL4-tiny -name Makefile | xargs grep -l beauty 2>/dev/null
+```
 
-3. `make -C src/snoc` — must be clean.
+3. Run the smoke test harness:
+```bash
+bash SNOBOL4-tiny/test/smoke/test_snoCommand_match.sh /tmp/beauty_full_bin
+```
 
-4. `bison src/snoc/sno.y` — must report **0 conflicts**.
+4. Drive from 0/21 → 21/21. Each failure = one parser/emitter routing bug.
 
-5. If conflicts remain, read `sno.y` carefully — check that `expr SPACE expr` precedence is declared and that `opt_space` (if used) doesn't introduce new ambiguity.
-
-6. When 0 conflicts + clean build: commit `feat(snoc): space-token — 0 bison conflicts, unified grammar`.
+5. **Commit when:** All 21 pass. Zero "Parse Error" lines.
 
 ## Pivot Log
 
 | Date | What changed | Why |
 |------|-------------|-----|
-| 2026-03-13 | `hand-rolled-parser` → 4-sprint `space-token` plan | SPACE token fixes LALR(1) conflicts without rewriting parser |
+| 2026-03-13 | Sprint 1 (`space-token`) complete → Sprint 2 (`smoke-tests`) active | 0 conflicts achieved |
+| 2026-03-13 | `_` token name (was `SPACE`) | Lon suggestion, cleaner |
+| 2026-03-13 | `hand-rolled-parser` → 4-sprint `space-token` plan | SPACE token resolves LALR(1) conflicts without parser rewrite |
 | 2026-03-13 | HQ PLAN.md rewritten with 4 correct sprints | Previous session had wrong 5-sprint list |
-| 2026-03-13 | M-REBUS fired → `hand-rolled-parser` resumes | `rebus-roundtrip` sprint complete, bf86b4b |
-| 2026-03-13 | `rebus-emitter` complete → `rebus-roundtrip` active | Sprint finished |
-| 2026-03-13 | Branding/rename session — RENAME.md created, naming rules locked | Lon pivot before public launch |
+| 2026-03-13 | M-REBUS fired → `rebus-roundtrip` sprint complete, bf86b4b | Rebus milestone done |
 | 2026-03-13 | `hand-rolled-parser` paused → `rebus-emitter` active | Lon declared Rebus priority |
 | 2026-03-12 | Bison/Flex → `hand-rolled-parser` decision | Session 53: LALR(1) unfixable (139 RR conflicts) |
 | 2026-03-12 | M-BEAUTY-FULL inserted before M-COMPILED-SELF | Lon's priority: beautifier first |

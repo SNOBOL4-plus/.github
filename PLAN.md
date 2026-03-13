@@ -21,7 +21,7 @@ and a self-hosting native compiler. Claude Sonnet 4.6 is the third developer and
 | ID | Trigger | Repo | Status |
 |----|---------|------|--------|
 | **M-SNOC-COMPILES** | `snoc` compiles `beauty_core.sno`, 0 gcc errors | TINY | ✅ Done |
-| **M-BEAUTY-FULL** | `beauty_full_bin` self-beautifies — diff empty | TINY | ⏳ sprint 1/4 `space-token` active |
+| **M-BEAUTY-FULL** | `beauty_full_bin` self-beautifies — diff empty | TINY | ⏳ sprint 2/4 `smoke-tests` active |
 | **M-REBUS** | Rebus round-trip: `.reb` → `.sno` → CSNOBOL4 → diff oracle | TINY | ✅ Done `bf86b4b` |
 | **M-COMPILED-SELF** | Compiled binary self-beautifies — diff empty | TINY | ❌ |
 | **M-BOOTSTRAP** | `snoc` compiles `snoc` (self-hosting) | TINY | ❌ Future |
@@ -34,7 +34,7 @@ and a self-hosting native compiler. Claude Sonnet 4.6 is the third developer and
 
 | Repo | MD File | Active Sprint | Milestone Target |
 |------|---------|--------------|-----------------|
-| [SNOBOL4-tiny](https://github.com/SNOBOL4-plus/SNOBOL4-tiny) | [TINY.md](TINY.md) | `space-token` (1/4 toward M-BEAUTY-FULL) | M-BEAUTY-FULL |
+| [SNOBOL4-tiny](https://github.com/SNOBOL4-plus/SNOBOL4-tiny) | [TINY.md](TINY.md) | `smoke-tests` (2/4 toward M-BEAUTY-FULL) | M-BEAUTY-FULL |
 | [SNOBOL4-jvm](https://github.com/SNOBOL4-plus/SNOBOL4-jvm) | [JVM.md](JVM.md) | `jvm-inline-eval` | M-JVM-EVAL |
 | [SNOBOL4-dotnet](https://github.com/SNOBOL4-plus/SNOBOL4-dotnet) | [DOTNET.md](DOTNET.md) | `net-delegates` | M-NET-DELEGATES |
 | [SNOBOL4-corpus](https://github.com/SNOBOL4-plus/SNOBOL4-corpus) | [CORPUS.md](CORPUS.md) | Stable — add Rebus oracle .sno files | M-REBUS |
@@ -48,19 +48,17 @@ Four sprints. In order. Each gates the next. Each ends with a commit.
 
 ---
 
-### Sprint 1 of 4 — `space-token` ⏳ Active
+### Sprint 1 of 4 — `space-token` ✅ Complete `3581830`
 
-**What:** Eliminate all parser conflicts. Return `SPACE` as a real token so concat is unambiguous.
+**What:** Eliminate all parser conflicts. Return `_` (whitespace) as a real token so concat is unambiguous.
 
-Root cause of 20 SR + 139 RR conflicts: `WS` was silently skipped, so `*snoWhite (expr)` looked identical to `snoWhite(expr)` (function call) in LALR(1). Fix: `{WS} { return SPACE; }`. Concat becomes `expr SPACE term`. Function call stays `IDENT LPAREN` with no intervening space. `*var (expr)` is now unambiguously `concat(deref(var), grouped(expr))` — the `STAR IDENT` reduces before the `SPACE` is consumed, so `(` can never be mistaken for a call paren.
+Root cause of 20 SR + 139 RR conflicts: `WS` was silently skipped. Fix: `{WS} { return _; }`. Token named `_` (Lon's choice — bison allows it, cleaner than SPACE). Subject restricted to `term` — first space always separates subject from pattern. 159 conflicts → 0.
 
-**Files:** `sno.l` (WS→SPACE, remove PAT_BUILTIN/bstack/last_was_callable), `sno.y` (add `%token SPACE`, `expr SPACE term` for concat, unify expr grammar, remove `pat_expr` split and `PAT_BUILTIN` token).
-
-**Commit when:** `bison sno.y` reports **0 conflicts** and `make -C src/snoc` is clean.
+**Commit:** `3581830` — `feat(snoc): space-token — 0 bison conflicts, unified grammar`
 
 ---
 
-### Sprint 2 of 4 — `smoke-tests` ❌
+### Sprint 2 of 4 — `smoke-tests` ⏳ Active
 
 **What:** Drive `test_snoCommand_match.sh` from 0/21 → 21/21.
 

@@ -7,13 +7,17 @@
 
 ## Current State
 
-**Active sprint:** `space-token` (1 of 4 toward M-BEAUTY-FULL)
+**Active sprint:** `smoke-tests` (2 of 4 toward M-BEAUTY-FULL)
 **Milestone target:** M-BEAUTY-FULL
-**HEAD:** `d224864` — WIP: space-token sprint in progress, build broken
+**HEAD:** `3581830` — feat(snoc): space-token — 0 bison conflicts, unified grammar ✅
 
-**Sprint status:** sno.l/sno.y partially edited. LPAREN/RPAREN cleaned. IDENT block and comma rule still reference dead `bstack`/`last_was_callable`/`PAT_BUILTIN` symbols → `make` fails.
+**Sprint 1 (`space-token`) COMPLETE.** 0 bison conflicts, clean build.
+- `_` token (whitespace) is now explicit concat operator
+- `bstack`/`last_was_callable`/`PAT_BUILTIN` fully eliminated
+- Subject restricted to `term` — first space always separates subject from pattern
+- 159 conflicts → 0
 
-**Next action:** Clean remaining `bstack` references from `sno.l` IDENT block (~line 192) and comma rule (~line 229). Then `make -C src/snoc` clean + `bison sno.y` 0 conflicts → commit sprint 1.
+**Next action:** Sprint 2 (`smoke-tests`): build `beauty_full_bin`, run `test/smoke/test_snoCommand_match.sh`, drive from 0/21 → 21/21.
 
 ## Pivot Log
 
