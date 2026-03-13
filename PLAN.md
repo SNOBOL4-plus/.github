@@ -1,6 +1,6 @@
 # SNOBOL4ever — HQ
 
-**SNOBOL4 everywhere. SNOBOL4 now. SNOBOL4 forever.**
+**SNOBOL4everywhere. SNOBOL4now. SNOBOL4ever.**
 
 Lon Jones Cherryholmes (compiler, architecture) and Jeffrey Cooper M.D. (SNOBOL4-dotnet, MSIL)
 building full SNOBOL4/SPITBOL implementations on JVM, .NET, and native C — plus Rebus, Snocone,
