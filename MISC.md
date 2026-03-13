@@ -98,4 +98,4 @@ Every cell proven by live test on 2026-03-10 against CSNOBOL4 and SPITBOL.
 
 ## What's Next: Icon-everywhere
 
-SNOBOL4 and Icon share a bloodline — Griswold invented both. The Byrd Box IR built for SNOBOL4ever is the bridge. Same four ports. Same `byrd_ir.py`. New Icon frontend feeding the same pipeline. One week built SNOBOL4everywhere. The clock starts the moment `beauty.sno` compiles itself.
+SNOBOL4 and Icon share a bloodline — Griswold invented both. The Byrd Box IR built for SNOBOL4ever is the bridge. Same four ports. Same `byrd_ir.py`. New Icon frontend feeding the same pipeline. snobol4ever runs everywhere. The clock starts the moment `beauty.sno` compiles itself.

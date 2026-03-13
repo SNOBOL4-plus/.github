@@ -2,7 +2,7 @@
 
 **SNOBOL4 everywhere. SNOBOL4 for all. SNOBOL4 for now. SNOBOL4 forever.**
 
-`SNOBOL4everywhere` · `SNOBOL4all` · `SNOBOL4now` · `SNOBOL4ever`
+`snobol4now` · `snobol4ever`
 
 ---
 
@@ -67,7 +67,7 @@ The org is a **compiler matrix**. Two dimensions. Every cell is a working implem
 
 The mission: fill the matrix. Every cell represents a community of programmers who can now use SNOBOL4's pattern model natively on their platform — without porting, without FFI, without compromise.
 
-`SNOBOL4everywhere` · `SNOBOL4all` · `SNOBOL4now` · `SNOBOL4ever`
+`snobol4now` · `snobol4ever`
 
 ---
 

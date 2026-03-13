@@ -63,7 +63,6 @@ Edit all `.md` files. **Do not push yet.**
 |------|---------|
 | `SNOBOL4ever` | `snobol4ever` |
 | `SNOBOL4now` | `snobol4now` |
-| `SNOBOL4everywhere` | `snobol4everywhere` |
 | `SNOBOL4-tiny` (repo refs) | `snobol4-all` |
 | `SNOBOL4-jvm` (repo refs) | `snobol4-jvm` |
 | `SNOBOL4-dotnet` (repo refs) | `snobol4-dotnet` |
