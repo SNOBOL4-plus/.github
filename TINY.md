@@ -7,7 +7,7 @@
 
 ## Current State
 
-**Active sprint:** `rebus-emitter`  
+**Active sprint:** `rebus-roundtrip`  
 **Milestone target:** M-REBUS  
 **Paused sprint:** `hand-rolled-parser` → M-BEAUTY-FULL. Resumes after M-REBUS.  
 **HEAD:** `01e5d30` — feat: Rebus lexer/parser — all 3 tests pass
@@ -19,6 +19,7 @@ emit valid SNOBOL4 source. Start with expressions (R3). Model on `rebus_print.c`
 
 | Date | What changed | Why |
 |------|-------------|-----|
+| 2026-03-13 | `rebus-emitter` complete → `rebus-roundtrip` active | Sprint finished |
 | 2026-03-13 | `hand-rolled-parser` paused → `rebus-emitter` active | Lon declared Rebus priority |
 | 2026-03-12 | Bison/Flex → `hand-rolled-parser` decision | Session 53: LALR(1) unfixable (139 RR conflicts) |
 | 2026-03-12 | M-BEAUTY-FULL inserted before M-COMPILED-SELF | Lon's priority: beautifier first |
@@ -63,8 +64,8 @@ and Claude Sonnet 4.6. When any milestone trigger fires, Claude writes the commi
 |--------|------|--------|
 | `rebus-lexer` | Flex lexer — all control structures, operators, auto-semicolon | ✅ `01e5d30` |
 | `rebus-parser` | Bison parser → full AST — all 3 test files parse cleanly | ✅ `01e5d30` |
-| **`rebus-emitter`** | **Walk AST, emit SNOBOL4 text (R3–R11)** | **← active** |
-| `rebus-roundtrip` | `.reb` → `.sno` → CSNOBOL4 → diff oracle → **M-REBUS** | ❌ |
+| `rebus-emitter` | Walk AST, emit SNOBOL4 text (R3–R11) | ✅ `9cde7f4` |
+| **`rebus-roundtrip`** | **`.reb` → `.sno` → CSNOBOL4 → diff oracle → M-REBUS** | **← active** |
 
 ### Paused: toward M-BEAUTY-FULL
 

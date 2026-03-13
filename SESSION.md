@@ -10,34 +10,59 @@
 | Field | Value |
 |-------|-------|
 | **Repo** | SNOBOL4-tiny |
-| **Sprint** | `rebus-emitter` |
+| **Sprint** | `rebus-roundtrip` |
 | **Milestone** | M-REBUS |
-| **HEAD** | `01e5d30` — feat: Rebus lexer/parser — all 3 tests pass |
+| **HEAD** | `9cde7f4` — fix(rebus): \expr→DIFFER/RE_NOT, void calls RB_=, binary_trees round-trip passes |
 
 ## Last Thing That Happened
 
-HQ branding/rename session — no code written. SNOBOL4-tiny repo unchanged at `01e5d30`.
+`rebus-emitter` sprint completed. Full SNOBOL4 emitter written and debugged across this session.
 
-Decisions made:
-- Org rename: `SNOBOL4-plus` → `snobol4ever` (approved, not yet executed on GitHub)
-- Naming rules locked: marketing=nodash lowercase, repo=one-dash lowercase, cli=sno4 prefix
-- Full name grid settled for all repos (see RENAME.md)
-- `SNOBOL4-cpython` renamed `snobol4-artifact` (signals: experimental, do not depend on)
-- Brand text: `SNOBOL4ever` → `snobol4ever`, `SNOBOL4now` → `snobol4now`, etc.
-- RENAME.md created in .github — 8-phase execution plan, locked naming rules, name grid
-- ONE OPEN QUESTION: native kernel name — `snobol4-tiny` (Ant-Man: small source/binary, universe power) vs `snobol4-all` (does everything). Lon attached to `tiny`. Decide before executing Phase 4 of RENAME.md.
-- Last .github commit: `dae46cb`
+Key fixes made (in order):
+- `FRETURN E` not valid in CSNOBOL4 — correct idiom is `FUNCNAME = E` / `:(RETURN)`
+- `fail` → `:(FRETURN)`, bare return → `:(RETURN)`, fall-off-end → `:(RETURN)`
+- `repeat S` exits by SNOBOL4 failure — added `rb_stmt_fail_label` to thread `:F(rb_end_N)` into body
+- Void function call as statement needs `RB_ = CALL(...)` prefix — bare call causes pattern-match loop
+- `\expr` was parsed as `RE_VALUE` (IDENT) — bug in rebus.y, fixed to `RE_NOT` (DIFFER)
+
+Round-trip results:
+- `word_count.reb` → correct word counts, clean exit ✅
+- `binary_trees.reb` → `a(b,c)` / `d(e(f,g),h)` → identical output, clean exit ✅
+
+CSNOBOL4 installed at `/usr/local/bin/snobol4` (version 2.3.3).
 
 ## One Next Action
 
-Write `src/rebus/rebus_emit.c` — walk the AST and emit valid SNOBOL4 source.
-Start with expression walk: RE_ASSIGN, RE_ADD, RE_CALL, etc.
-Model the structure on `rebus_print.c`. Full translation rules in TINY.md §Rebus.
+Start `rebus-roundtrip` sprint:
+1. Create `test/rebus/run_roundtrip.sh` — for each `.reb` file: emit → run under CSNOBOL4 → diff against oracle
+2. Write oracle output files: `test/rebus/word_count.expected`, `test/rebus/binary_trees.expected`
+3. Wire into Makefile `test` target
+4. Both passing = **M-REBUS fires** — write the milestone commit
+
+Input for word_count oracle: `"the cat sat on the mat the cat sat"`
+Expected output:
+```
+Word count:
+
+cat               2
+mat               1
+on                1
+sat               2
+the               3
+```
+
+Input for binary_trees oracle: `"a(b,c)\nd(e(f,g),h)"`
+Expected output:
+```
+a(b,c)
+d(e(f,g),h)
+```
 
 ## Pivot Log
 
 | Date | What changed | Why |
 |------|-------------|-----|
+| 2026-03-13 | `rebus-emitter` complete → `rebus-roundtrip` active | Sprint finished |
 | 2026-03-13 | Branding/rename session — RENAME.md created, naming rules locked | Lon pivot before public launch |
 | 2026-03-13 | `hand-rolled-parser` paused → `rebus-emitter` active | Lon declared Rebus priority |
 | 2026-03-12 | Bison/Flex → `hand-rolled-parser` decision | Session 53: LALR(1) unfixable (139 RR conflicts) |
