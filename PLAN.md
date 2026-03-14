@@ -586,3 +586,90 @@ Time's up or something broke. Speed over completeness.
 | [SESSIONS_ARCHIVE.md](SESSIONS_ARCHIVE.md) | Full session history — append-only |
 | [MISC.md](MISC.md) | Origin story, JCON reference, keyword tables, background |
 | [RENAME.md](RENAME.md) | One-time rename plan — SNOBOL4-plus → snobol4ever, naming rules, 8-phase execution |
+
+---
+
+## Architecture: Flat-Model C — Iota Function Kludge (Lon Cherryholmes, 2026-03-14)
+
+**The insight:** Static and dynamic Byrd boxes are the same bytes. A static box is
+machine code at a known linker address. A dynamic box is a `memcpy` of those same
+bytes relocated to a heap address. The only difference is that relative jump offsets
+and absolute DATA references must be patched (relocated) in the dynamic copy.
+`engine.c` is conceptually wrong — there is no interpreter. The box runs itself.
+The "engine" IS the CPU.
+
+**The kludge — avoiding the Technique 1 struct-passing entirely:**
+
+Instead of threading a `pat_X_t **zz` struct pointer through every named pattern
+function, use C functions purely as an addressing mechanism:
+
+### Rule 1 — Every labeled block becomes an iota function
+
+Every Byrd box block that starts with a label (α, β, γ, ω, any internal label)
+becomes its own C function — not because it is a SNOBOL4 function, but solely to
+give that block a **callable address**. Call these *iota functions*. They are tiny,
+often one or two instructions. Their address IS their identity.
+
+```c
+/* Example: lit_7_alpha becomes an iota function */
+static void iota_lit_7_alpha(void) {
+    if (cursor + 5 > subject_len) goto iota_lit_7_omega;
+    saved_7 = cursor;
+    cursor += 5;
+    goto iota_lit_7_gamma;   /* or: iota_lit_7_gamma() */
+}
+```
+
+### Rule 2 — Sequential multi-label blocks linked by sequencing
+
+Sequential labeled blocks that form a logical unit (a complete named pattern) are
+linked together for their sequencing. Their control flow is wired via direct calls
+or gotos between iota functions — same α/β/γ/ω port wiring as always.
+
+### Rule 3 — The sequence is wrapped in one more C function
+
+The entire sequence of iota functions for a named pattern is wrapped in **one
+outer C function** — again, not a SNOBOL4 function, just to give the sequence a
+**single starting address**.
+
+### Rule 4 — The iota struct is concatenated for the entire block
+
+The outer wrapper function takes a **single flat struct** containing ALL locals for
+ALL iota functions in the sequence concatenated together. This is the complete
+iota struct for the block. No per-iota-function struct threading. One struct,
+passed in at the top, holds everything.
+
+```c
+typedef struct {
+    int64_t  saved_7;          /* from lit_7 */
+    int64_t  saved_12;         /* from rpos_12 */
+    int      arbno_depth;      /* from arbno_15 */
+    int64_t  arbno_stack[64];  /* from arbno_15 */
+    /* ... all locals for all iota functions in this named pattern ... */
+} pat_snoParse_iota_t;
+
+static SnoVal pat_snoParse(pat_snoParse_iota_t *z, int entry) {
+    /* entry dispatches to the right iota function */
+    if (entry == 0) goto snoParse_alpha;
+    if (entry == 1) goto snoParse_beta;
+    snoParse_alpha: ...
+    snoParse_beta:  ...
+}
+```
+
+### Why this matters
+
+- **No struct-pointer threading** through every recursive call — the outer wrapper
+  owns the flat struct, passes it once.
+- **Every iota function has an address** — addressable for the dynamic box path:
+  a dynamic box is just `memcpy(iota_fn_address, len)` + relocate.
+- **Static and dynamic boxes unify** — the static iota functions in the executable
+  ARE the template. Dynamic boxes are relocated copies of them. `engine.c` is never
+  needed because the box is already code.
+- **The kludge bridges Technique 1 and Technique 2** — it is flat-model C (no
+  mmap, no machine code) but structured so that each labeled block has an address,
+  making the transition to the native target (Technique 2) straightforward.
+
+**Status:** Recorded 2026-03-14. Not yet implemented. Current target is Technique 1
+(struct-passing) for M-BEAUTY-FULL. This iota-function approach is an alternative
+path — possibly simpler — worth revisiting after M-BEAUTY-FULL.
