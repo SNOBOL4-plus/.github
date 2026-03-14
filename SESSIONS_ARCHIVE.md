@@ -4877,3 +4877,42 @@ if (!block_open) {
 Sprint `block-fn` (3/9). Fix Pass 2 block logic → regenerate beauty_tramp.c →
 recompile → run → diff oracle. If diff empty: M-BEAUTY-FULL fires.
 SESSION.md has full One Next Action.
+
+---
+
+## Session 58 (2026-03-14)
+
+**Repos touched:** SNOBOL4-tiny, SNOBOL4-corpus, .github
+
+### Commits
+- `6d09bfa` (TINY) — fix(emit_byrd): E_COND/E_IMM accept E_STR varname + sanitize special chars
+- `d504d80` (CORPUS) — refactor(beauty): drop sno prefix from all pattern variable names
+- `5a51ab7` (CORPUS) — style(beauty): re-beautify after sno prefix rename [later superseded]
+- `9efd628` (CORPUS) — fix(beauty): restore full source after truncated re-beautify
+- `596cc5f` (CORPUS) — refactor(expression): rename S4_expression.sno → expression.sno
+
+### What happened
+
+**E_COND/E_IMM fix:** The `~` and `$` capture operators only accepted `E_VAR` as the
+capture variable name. `~ 'Label'` (E_STR) fell through to `"OUTPUT"`, emitting a
+memcmp literal instead of a capture. Fixed both operators to accept E_STR. Also added
+varname sanitization in `emit_imm` — special chars like `]`, `>`, `(` become `_` for
+valid C identifiers (`var__` instead of illegal `var_]`).
+
+**Beauty rename:** Dropped `sno` prefix from all 42 pattern variable names in beauty.sno
+(snoXXX → XXX). The beautifier then self-beautified the renamed file — a bootstrap
+moment: the oracle for M-BEAUTY-FULL is now self-referential. However, the CSNOBOL4
+interpreter itself has the same E_COND bug and truncates output at line 162/801.
+The full 801-line source was restored from git history.
+
+**Expression rename:** S4_expression.sno renamed to expression.sno. Same 42-name rename
+applied. Hard-coded Windows paths (`C:\Users\jcooper\Downloads\Beautiful\`) replaced
+with relative filenames. Beautified: 213 lines, 0 parse errors.
+
+### New blocker
+Binary compiles (gcc 0 errors), runs exit 0, but outputs only comments. Parse Error
+on first real statement. Root cause: all named pattern functions use `static` local
+variables — shared across all invocations — re-entrant calls stomp saved cursors.
+
+### Next session
+Implement Technique 1 struct-passing in `emit_byrd.c`. See SESSION.md ONE NEXT ACTION.

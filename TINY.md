@@ -7,20 +7,24 @@
 
 ## Current State
 
-**Active sprint:** `compiled-byrd-boxes-full` (3/4 toward M-BEAUTY-FULL)
+**Active sprint:** `pattern-block` (sprint 4/9 toward M-BEAUTY-FULL)
 **Milestone target:** M-BEAUTY-FULL
-**HEAD:** `35bc142` — artifact: beauty_full_session54.c (arch-only session, no code changes)
+**HEAD:** `6d09bfa` — fix(emit_byrd): E_COND/E_IMM accept E_STR varname + sanitize special chars
 
-**Status:** Architecture fully documented. Implementation of `byrd_emit_named_pattern` not yet started.
+**Status:** Binary compiles (gcc 0 errors), runs exit 0. Parse Error on first real
+statement — all non-comment input fails. Root cause: all named pattern functions
+(`pat_Stmt`, `pat_Label`, `pat_Command`, etc.) use `static` local variables.
+Static locals are shared across all invocations — re-entrant calls stomp saved
+cursors. Fix is Technique 1 struct-passing (see PLAN.md).
 
-Session 54 decisions recorded in HQ:
-- TWO TECHNIQUES for *X: Technique 1 (C target: struct+calloc) NOW; Technique 2 (mmap+memcpy+relocate) AFTER M-BEAUTY-FULL
-- Statement execution model: per-stmt setjmp, glob-sequence optimization, non-Gimpel DEFINE
-- ALL BYRD BOXES rule: engine.c never in beauty_full_bin — engine_stub.c only
-- Sprint pivot confirmed: compiled-byrd-boxes-full (not beauty-runtime)
+Session 58 corpus changes:
+- beauty.sno: snoXXX → XXX (42 names) — beautifier bootstrap: oracle now self-referential
+- S4_expression.sno → expression.sno: same rename + Windows paths fixed, beautified
 
-**Next action:** Implement `byrd_emit_named_pattern(varname, expr, out)` in `src/sno2c/emit_byrd.c`.
-See SESSION.md for full spec. Key oracle references: `test/sprint9/ref_anbn.c`, `test/sprint10/ref_palindrome.c`.
+**Next action:** Implement Technique 1 struct-passing in `emit_byrd.c`.
+Every `pat_Xxx` gets a `pat_Xxx_t` struct. All `decl_add()` locals → struct fields.
+Child `*Y` calls use `z->Y_z` pointer field. `calloc` on entry==0, reuse on entry==1.
+See SESSION.md ONE NEXT ACTION for full spec.
 
 ---
 

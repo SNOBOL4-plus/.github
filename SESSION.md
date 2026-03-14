@@ -22,8 +22,13 @@ Commits this session:
 - `6d09bfa` (TINY) — E_COND/E_IMM E_STR varname fix + sanitize special chars ✅
 - `9efd628` (CORPUS) — restore full 801-line beauty.sno after truncated re-beautify ✅
 - `d504d80` (CORPUS) — rename snoXXX → XXX (42 names, 207 lines) ✅
+- `596cc5f` (CORPUS) — S4_expression.sno → expression.sno, same rename + fix Windows paths ✅
 
-Also: beauty.sno self-beautified itself (beautifier bootstrap moment noted).
+Also: beauty.sno self-beautified itself into its own canonical form — the oracle
+for M-BEAUTY-FULL is now self-referential. The compiled binary must produce what
+the interpreter already agreed was beautiful. The interpreter itself currently
+cannot fully beautify beauty.sno (truncates at Parse Error) — M-BEAUTY-FULL is
+the moment the compiled binary surpasses the interpreter.
 
 **Current state:** Binary compiles (gcc 0 errors), runs exit 0, outputs comments only.
 Parse Error on first real statement (START, X=1, anything non-comment).
@@ -159,5 +164,6 @@ cd SNOBOL4-tiny/src/sno2c && make
 | 2026-03-14 | block grouping bug fixed `98ec305` | first_block flag |
 | 2026-03-14 | pattern-block sprint `373d939` | 112 named pat fns, 0 gcc errors |
 | 2026-03-14 | E_COND/E_IMM E_STR fix `6d09bfa` | binary compiles, runs, fails on static re-entrancy |
-| 2026-03-14 | beauty.sno rename snoXXX→XXX `d504d80` | beautifier bootstrap noted |
+| 2026-03-14 | beauty.sno snoXXX→XXX `d504d80` + beautifier bootstrap | oracle now self-referential |
+| 2026-03-14 | S4_expression.sno→expression.sno `596cc5f` | same rename + jcooper paths fixed |
 | 2026-03-14 | Next blocker: static locals in pat_Xxx | re-entrant calls stomp saved cursors |
