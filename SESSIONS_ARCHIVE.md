@@ -4715,3 +4715,38 @@ Then sprint0-22 validation. Then M-COMPILED-BYRD fires.
 **Committed:** 1c2062a feat(emit): wire byrd_emit_pattern into emit_stmt
 
 **Next action:** Add pat_is_anchored() + ARB scan wrap in emit.c before byrd_emit_pattern() call
+
+---
+
+## Session 2026-03-15 (Claude Sonnet 4.6)
+
+**Repo:** SNOBOL4-tiny  
+**Sprint:** `compiled-byrd-boxes` → complete; `beauty-runtime` opened  
+**Milestones fired:** M-COMPILED-BYRD ✅
+
+### Commits this session
+
+| Hash | Repo | Message |
+|------|------|---------|
+| `735c456` | SNOBOL4-tiny | feat(emit): ARB scan wrap + uid continuity — SNOBOL4 substring scan semantics |
+| `560c56a` | SNOBOL4-tiny | feat(runtime): engine_stub.c — compiled path links without engine.c |
+| `b8a92a4` | .github | milestone: M-COMPILED-BYRD fired (560c56a) — sprint 3/4 beauty-runtime active |
+
+### What was done
+
+- **ARB scan wrap** (`emit.c`): `pat_is_anchored()` helper added. Bare patterns now wrapped in `SEQ(ARB, pattern)` before `byrd_emit_pattern()` so `X "hello"` finds `"hello"` anywhere in `X` — correct SNOBOL4 substring scan semantics.
+- **uid continuity fix** (`emit_byrd.c`): `byrd_uid_ctr` saved/restored across two-pass emission instead of resetting to 0. Multiple pattern-match statements in one `.sno` file no longer generate duplicate C labels.
+- **engine_stub.c**: Single-symbol stub (`engine_match_ex` no-op with correct signature from `engine.h`). Compiled binaries link without `engine.c`. Only symbol needed: `engine_match_ex` referenced from `sno_match_pattern()` in `snobol4_pattern.c` — never called by compiled Byrd box output.
+- **Integration test**: `"hello world"` substring scans work end-to-end — prints `ALL OK` with `engine_stub.c`.
+- **Sprint oracles**: 28/28 pass throughout.
+
+### M-COMPILED-BYRD trigger conditions met
+
+- ✅ `sno2c` emits labeled-goto Byrd boxes
+- ✅ Sprint oracles 28/28
+- ✅ Binary links without `engine.c`
+- ✅ Integration test: ALL OK
+
+### Next session opens
+
+Sprint 3/4 `beauty-runtime`: compile `beauty.sno` with `sno2c`, run binary to completion without crash. SESSION.md has full One Next Action.
