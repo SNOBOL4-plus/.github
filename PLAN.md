@@ -1424,3 +1424,112 @@ The compiler is: proven grammar + proven tree + new `compile()` function.
 2. **Minimal delta** — `compiler.sno` = `beauty.sno` + replace `pp()` with `compile()`. One new function.
 3. **Architecture A later** — once bootstrap achieved, reform beauty.sno to eliminate pp/qq via sprinkled inline actions. `ini.sno` is the reference. `treebank` in assignment3.py is the proof of concept.
 
+
+---
+
+## Session 85 Rename Audit — Full Accounting (2026-03-14)
+
+Complete word-for-word verification of the Session 84 SIL naming rename.
+Source of truth: `git show eec84e7` diff on `snobol4.h` + all `.c`/`.h` files.
+
+### Rename Table — Verified Clean ✅
+
+| Old name | New name | Status |
+|----------|----------|--------|
+| `SnoVal` (struct) | `DESCR_t` | ✅ Gone everywhere |
+| `SnoType` (enum) | `DTYPE_t` | ✅ Gone everywhere |
+| `.type` field | `.v` field | ✅ Gone everywhere |
+| `SNULL` | `DT_SNUL` | ✅ Gone everywhere |
+| `SSTR` | `DT_S` | ✅ Gone everywhere |
+| `SINT` | `DT_I` | ✅ Gone everywhere |
+| `SREAL` | `DT_R` | ✅ Gone everywhere |
+| `STREE` | (removed — was struct _Tree, now TREEBLK_t) | ✅ Gone everywhere |
+| `SPATTERN` | `DT_P` | ✅ Gone everywhere |
+| `UDEF` | `DT_DATA` | ✅ Gone everywhere |
+| `SFAIL` | `DT_FAIL` | ✅ Gone everywhere |
+| `NULL_VAL` | `NULVCL` | ✅ Gone everywhere |
+| `STR_VAL(s)` | `STRVAL(s)` | ✅ Gone everywhere |
+| `INT_VAL(i)` | `INTVAL(i)` | ✅ Gone everywhere |
+| `FAIL_VAL` | `FAILDESCR` | ✅ Gone everywhere |
+| `is_fail()` | `IS_FAIL_fn()` | ✅ Gone everywhere |
+| `is_null/is_str/is_int/is_real/is_tree/is_udef` | `IS_NULL_fn/IS_STR_fn/IS_INT_fn/IS_REAL_fn/IS_DATA_fn` | ✅ Gone everywhere |
+| `to_str()` | `VARVAL_fn()` | ✅ Gone everywhere |
+| `concat_sv()` | `CONC_fn()` | ✅ Gone everywhere |
+| `runtime_init()` | `SNO_INIT_fn()` | ✅ Gone everywhere |
+| `var_get/var_set` | `NV_GET_fn/NV_SET_fn` | ✅ Gone everywhere |
+| `aply()` | `APLY_fn()` | ✅ Gone everywhere |
+| `define()` | `DEFINE_fn()` | ✅ Gone everywhere |
+| `func_exists()` | `FNCEX_fn()` | ✅ Gone everywhere |
+| `make_tree()` | `MAKE_TREE_fn()` | ✅ Gone everywhere |
+| `npush/npop/ninc/ndec` | `NPUSH_fn/NPOP_fn/NINC_fn/NDEC_fn` | ✅ Gone everywhere |
+| `push/pop/top/stack_depth` | `PUSH_fn/POP_fn/TOP_fn/STACK_DEPTH_fn` | ✅ Gone everywhere |
+| `SnoFunc` typedef | `FNCPTR_t` | ✅ Gone everywhere |
+| `SPAT_LIT` | `XCHR` | ✅ Gone everywhere |
+| `SPAT_ARBNO` | `XARBN` | ✅ Gone everywhere |
+| `SPAT_ASSIGN_COND` | `XNME` | ✅ Gone everywhere |
+| All other `SPAT_*` | `X*` (SIL codes) | ✅ Gone everywhere |
+| `E_MUL` | `E_MPY` | ✅ Gone in sno2c.h |
+| `E_ALT` | `E_OR` | ✅ Gone in sno2c.h |
+| `E_COND` | `E_NAM` | ✅ Gone in sno2c.h |
+| `E_IMM` | `E_DOL` | ✅ Gone in sno2c.h |
+| `E_CALL` | `E_FNC` | ✅ Gone in sno2c.h |
+| union member `.a` (array) | `.arr` | ✅ Gone in code — see bug below |
+
+---
+
+### Bugs Found by Audit
+
+#### BUG 1 — `ARRAY_VAL` macro uses `.a` (must be `.arr`) ⚠️
+
+**File:** `src/runtime/snobol4/snobol4.h` line 399  
+**Current (wrong):**
+```c
+#define ARRAY_VAL(a_)   ((DESCR_t){ .v = DT_A, .a   = (a_)   })
+```
+**Correct:**
+```c
+#define ARRAY_VAL(a_)   ((DESCR_t){ .v = DT_A, .arr = (a_)   })
+```
+The union member was renamed `.a` → `.arr` in the struct definition (line 56), but the macro was not updated.  
+**Severity:** Dormant — `ARRAY_VAL` is currently defined but never called anywhere. Would be a compile error the moment it is used.  
+**Fix:** One character change. Fix now before it bites.
+
+---
+
+### Intentional Partial Renames (not bugs — by design)
+
+These functions take `DESCR_t` arguments (updated) but kept lowercase names — they are internal C helpers or math ops where ALLCAPS would be jarring:
+
+| Function | Pattern | Verdict |
+|----------|---------|---------|
+| `lpad_fn / rpad_fn` | lowercase — inconsistent with ALLCAPS_fn | ⚠️ Minor — should be `LPAD_fn/RPAD_fn` |
+| `real_fn / string_fn` | lowercase — inconsistent | ⚠️ Minor — should be `REAL_fn/STRING_fn` |
+| `eq/ne/lt/le/gt/ge` | no `_fn` suffix | ✅ Intentional — SIL comparison primitives, short names OK |
+| `add/sub/mul/divyde/powr/neg` | no `_fn` suffix | ✅ Intentional — arithmetic primitives |
+| `ident/differ` | no `_fn` suffix | ✅ Intentional — SNOBOL4 keyword names |
+| `to_int/to_real` | no `_fn` suffix | ✅ Intentional — type coercion helpers |
+| `output_val/input_read/comm_var` | mixed | ✅ Acceptable — I/O primitives |
+| `pat_lit/pat_span/pat_arbno` etc. | `pat_` prefix, no `_fn` | ✅ Intentional — pattern constructors keep their domain prefix |
+
+---
+
+### Emitter Consistency (sno2c → generated C)
+
+All names emitted by `emit.c`, `emit_byrd.c`, `emit_cnode.c` verified consistent with new names:
+- Emits `APLY_fn(...)` ✅
+- Emits `CONC_fn(...)` ✅  
+- Emits `NULVCL` ✅
+- Emits `STRVAL/INTVAL` ✅
+- Emits `IS_FAIL_fn(...)` ✅
+- Emits `NV_GET_fn/NV_SET_fn(...)` ✅
+- Emits `DESCR_t` ✅
+- Emits `SNO_INIT_fn()` ✅
+
+No crossover or mismatch in generated code.
+
+---
+
+### Action Required
+
+1. **Fix `ARRAY_VAL` macro** — `.a` → `.arr` in `snobol4.h:399` (one character, fix now)
+2. **Consider renaming `lpad_fn/rpad_fn/real_fn/string_fn`** → `LPAD_fn/RPAD_fn/REAL_fn/STRING_fn` for consistency — low priority, not a bug
