@@ -4975,3 +4975,36 @@ Three fixes in emit.c + emit_byrd.c:
 **Artifact:** `artifacts/trampoline_session63/beauty_tramp_session63.c` — 26514 lines, md5 c565e55dba5be8504d4679a95d58e3c8, 0 gcc errors.
 
 | Session 64 | **emit_byrd: E_DEREF fix + $'lit' + sideeffect + C-static sync. 33→9 match_pattern_at. Parse Error active.** Fixes: (1) `nPush() $'('` infinite recursion — is_sideeffect_call() detects side-effect E_CALL children of E_IMM, emits them inline, matches literal to OUTPUT; (2) E_DEREF varname now checks right child first (grammar: `*X` → `E_DEREF(NULL, E_VAR("X"))`); (3) Unary `$'lit'` → `E_DEREF(NULL, E_STR("("))` now emits literal match + OUTPUT capture; (4) byrd_cs() helper added — do_assign now syncs C static `_name` alongside `var_set(name,...)` so `get(_nl)` etc. work correctly. 0 gcc errors. Symptom: `printf 'X = 1\n' | beauty_tramp_bin` → "Parse Error". Hypothesis: Src is empty when stmt_427 fires because `Src = Line nl` only fires on continuation path. Commits: `09e5a5d`, `5e90712`, `613b333`. |
+
+---
+
+## Session 77 — 2026-03-14
+
+**Repo:** SNOBOL4-tiny | **Sprint:** beauty-first | **Milestone:** M-BEAUTY-FULL
+
+### What was done
+
+**Context:** Starting from `ac54bd2` (M-CNODE complete). Full build env from scratch each turn.
+
+**Bug 1 fixed — `pat_lit(strv(...))` compile errors:**
+- `emit_cnode.c` `build_pat` E_STR case was wrapping with `strv()`: `pat_lit(strv("foo"))`
+- `pat_lit` takes `const char*` not `SnoVal` — 20+ compile errors, no binary
+- Fix: `cn_call1(a, "pat_lit", cn_cstr(a, e->sval))` — remove `strv` wrapper
+- Commit: `0113d90`
+
+**Bug 2 found — `$expr` indirect read generates `deref(NULL_VAL)`:**
+- `$'@S' = link($'@S', r)` — compiled emits `aply("link", {deref(NULL_VAL), ...})`
+- Grammar: `DOLLAR unary_expr → binop(E_DEREF, NULL, $2)` — operand in `e->right`
+- `emit_expr` E_DEREF: `emit_expr(e->left)` — reads NULL, emits `deref(NULL_VAL)`
+- Effect: `$'@S'` reads as empty string, stack Push/Pop chain broken
+- Proven: `$name = tree_val` → `DATATYPE($name)=STRING` (should be `tree`)
+- Fix identified but NOT yet applied: use `e->left ? e->left : e->right`
+
+**Artifact:** `beauty_tramp_session77.c` — 31773 lines, 0 compile errors, CHANGED from session 76
+
+**Progress:** oracle=162 lines, compiled=10 lines. Header + START correct, stops there.
+
+### Next session
+1. Fix E_DEREF read in emit.c (~line 292) and emit_cnode.c build_expr
+2. Rebuild + verify `$name = r` → `DATATYPE=tree`
+3. Full diff run, fix remaining issues toward M-BEAUTY-FULL
