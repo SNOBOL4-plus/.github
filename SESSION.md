@@ -10,9 +10,18 @@
 | Field | Value |
 |-------|-------|
 | **Repo** | SNOBOL4-tiny |
-| **Sprint** | `pattern-block` (sprint 4/9 toward M-BEAUTY-FULL) |
+| **Sprint** | `beauty-first` — fix START, then full self-beautify diff (M-BEAUTY-FULL) |
 | **Milestone** | M-BEAUTY-FULL |
-| **HEAD** | `5837bf1 — fix(emit_byrd+emit): quote-strip fixes` |
+| **HEAD** | `59eb894 — artifact: beauty_tramp_session73.c` |
+
+## ⚡ SESSION 74 FIRST PRIORITY: Fix START → run self-beautify diff
+
+**Do not get distracted by other issues. The one job is:**
+1. Fix `c` field SSTR bug (see below — one grep, one fix)
+2. Test START → should output `START`
+3. Run full self-beautify diff → `diff /tmp/oracle_out.sno /tmp/compiled_out.sno`
+4. Fix every diff line until diff is empty
+5. Commit: M-BEAUTY-FULL fires
 
 ---
 
