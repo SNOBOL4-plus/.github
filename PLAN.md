@@ -65,23 +65,105 @@ DATA section:  [ box0.data | box1.data | box2.data | ... ]
 TEXT section:  [ box0.code | box1.code | box2.code | ... ]
 ```
 
-### *X (Dynamic Reference) Semantics
+### TWO TECHNIQUES for *X — C target vs ASM/native target
+
+These are two distinct implementations of the same semantics. They are NOT
+alternatives — they are used at different levels of the compiler:
+
+---
+
+#### Technique 1 — C target: Pass fresh locals struct at every reachable label
+
+Used NOW, for the C code generator (`emit_byrd.c` → `beauty_full.c`).
+
+Every named pattern becomes a C function. Every labeled block that is
+REACHABLE (i.e. has a label that can be jumped to) receives its locals
+through a struct pointer. The struct is allocated once per call chain
+and threaded through every entry point.
+
+The C rule being solved: you cannot jump over a variable declaration
+(C99 §6.8.6.1). Solution: ALL locals go into a struct declared at the
+top of the function, before any goto. The struct IS the local storage.
+
+```c
+typedef struct pat_snoParse_t {
+    int64_t  saved_cursor_7;    /* every cursor-save local */
+    int      arbno_depth;
+    int64_t  arbno_stack[64];
+    struct pat_snoCommand_t *snoCommand_z;  /* child frame for *snoCommand */
+} pat_snoParse_t;
+
+static SnoVal pat_snoParse(pat_snoParse_t **zz, int entry) {
+    pat_snoParse_t *z = *zz;
+    if (entry == 0) { z = *zz = calloc(1, sizeof(*z)); goto snoParse_alpha; }
+    if (entry == 1) { goto snoParse_beta; }
+    snoParse_alpha: ...byrd box code using z->saved_cursor_7 etc...
+    snoParse_gamma: return matched_val;
+    snoParse_omega: return FAIL_VAL;
+}
+```
+
+`*snoCommand` inside snoParse emits:
+```c
+/* alpha: */
+{ SnoVal _r = pat_snoCommand(&z->snoCommand_z, 0);
+  if (IS_FAIL(_r)) goto omega;
+  cursor = ...; goto gamma; }
+/* beta: */
+{ SnoVal _r = pat_snoCommand(&z->snoCommand_z, 1);
+  if (IS_FAIL(_r)) goto omega; goto gamma; }
+```
+
+Key: `z->snoCommand_z` is a POINTER held in the parent struct. The child
+allocates itself on first call (entry==0, calloc). The parent's struct
+just holds the pointer — not the child inline — so the struct size is
+known at compile time regardless of child recursion depth.
+
+ARBNO depth: `int64_t arbno_stack[64]` inside the struct — stack array
+indexed by ARBNO iteration depth, exactly as in test_sno_1.c `_1_t _1[64]`.
+
+This technique works for the C target. No mmap. No machine code. Pure C.
+
+---
+
+#### Technique 2 — ASM/native target: mmap + memcpy + relocate
+
+Used LATER, when `sno2c` targets native x86-64 machine code directly
+(after M-BEAUTY-FULL, toward M-COMPILED-SELF and M-BOOTSTRAP).
 
 When `*X` fires at match time:
-1. **Copy** the box block for X — both data and code sections
-2. **Relocate** the code — patch internal jump offsets
-3. The copy gets its own independent locals — that IS the new instance
+1. `memcpy(new_text, box_X.text_start, box_X.text_len)` — copy CODE section
+2. `memcpy(new_data, box_X.data_start, box_X.data_len)` — copy DATA section
+3. `relocate(new_text, delta)` — patch relative jumps + absolute DATA refs
+4. Jump to `new_text[PROCEED]` — enter the copy
 
-No heap. No GC. No engine. ~20 lines of `mmap + memcpy + relocate`.
-Code duplication is intentional — each instantiation is independent, cache-hot.
+The copy has its own independent locals (DATA copy). The original box is
+untouched. On backtrack, discard the copy — LIFO matches backtracking exactly.
 
-### What this means for sno2c / emit_byrd.c
+No heap allocation. No GC. ~20 lines of mmap + memcpy + relocate.
+The mmap region IS the allocator. PROTECTED (RX) for TEXT, UNPROTECTED (RW)
+for DATA. mprotect() flips TEXT to RWX during copy+relocate, back to RX after.
 
-- Every pattern assignment (`snoParse = ARBNO(*snoCommand)...`) → emit static Byrd box with named data+code layout
-- Every `*varname` in a pattern → emit box-copy + relocate at match time
-- `emit_pat()` generating `pat_cat()`/`pat_arbno()`/`pat_ref()` → **eliminated entirely**
-- `snobol4_pattern.c` → interpreter only (EVAL). Not in compiled path.
-- `engine.c` → interpreter only (EVAL). Not in compiled path.
+Two relocation cases (same as any linker):
+- Relative refs (near jumps within the box): add delta = new_region - old_region
+- Absolute refs (DATA pointers, external calls): patch to new DATA copy
+
+This technique is the destination for the native path. NOT needed for
+M-BEAUTY-FULL — Technique 1 (C target) gets us there first.
+
+---
+
+### Current implementation target: Technique 1
+
+Implement Technique 1 in emit_byrd.c now:
+1. Named pattern assignment → `byrd_emit_named_pattern(varname, expr, out)`
+2. Emits struct + forward decl + C function with all locals in struct
+3. E_DEREF (*X) → call `pat_X(&z->X_z, entry)` — no engine.c, no match_pattern_at
+4. Build with engine_stub.c. M-BEAUTY-FULL becomes reachable.
+
+Technique 2 recorded here for continuity — implement after M-BEAUTY-FULL.
+
+**Reference:** SESSIONS_ARCHIVE.md §14 "Self-Modifying C", §15 "Allocation Problem Solved", Session 16 "Key insight from Lon"
 
 ### Every session: verify engine.c is NOT in the build command for beauty_full_bin.
 

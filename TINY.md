@@ -240,18 +240,55 @@ DATA section:  locals, cursor saves, captures — one slot per box instance
 TEXT section:  α/β/γ/ω labeled gotos — static, shared across instances
 ```
 
-**`*X` (dynamic reference) at match time:**
-1. Copy X's box block (data + code)
-2. Relocate — patch internal jump offsets in the copy
-3. The copy IS the new instance — its own independent locals
+### TWO TECHNIQUES for *X
 
-No heap alloc beyond the copy. No GC involvement. No engine. ~20 lines of `mmap + memcpy + relocate`.
+#### Technique 1 — C target (use NOW, for M-BEAUTY-FULL)
 
-**Implications for sno2c:**
-- Pattern assignment → emit named static Byrd box (data layout + labeled goto code)
-- `*varname` in pattern → emit box-copy + relocate at match time
+Every named pattern = C function. Every local = field in a struct.
+The struct pointer is threaded through every entry point (α=0, β=1).
+No jump-over-declaration problem — all locals in struct, declared before first goto.
+
+```c
+typedef struct pat_snoParse_t {
+    int64_t  saved_7;           /* cursor saves */
+    int      arbno_depth;
+    int64_t  arbno_stack[64];   /* ARBNO depth stack, as in test_sno_1.c */
+    struct pat_snoCommand_t *snoCommand_z;  /* child frame pointer for *snoCommand */
+} pat_snoParse_t;
+
+static SnoVal pat_snoParse(pat_snoParse_t **zz, int entry) {
+    pat_snoParse_t *z = *zz;
+    if (entry == 0) { z = *zz = calloc(1, sizeof(*z)); goto snoParse_alpha; }
+    if (entry == 1) { goto snoParse_beta; }
+    ...pure labeled goto Byrd box...
+}
+```
+
+`*X` at a call site emits: `pat_X(&z->X_z, 0)` (alpha) / `pat_X(&z->X_z, 1)` (beta).
+Child frame is a POINTER in parent struct — size known at compile time.
+Recursion works because each call gets its own struct instance via calloc.
+
+#### Technique 2 — ASM/native target (use AFTER M-BEAUTY-FULL)
+
+When `*X` fires:
+1. `memcpy(new_text, box_X.text, len)` — copy CODE
+2. `memcpy(new_data, box_X.data, len)` — copy DATA (locals)
+3. `relocate(new_text, delta)` — patch relative jumps + absolute DATA refs
+4. Jump to `new_text[PROCEED]`
+
+TEXT section: PROTECTED (RX), mprotect→RWX during copy, back to RX after.
+DATA section: UNPROTECTED (RW), copied per instance.
+No heap. No GC. ~20 lines of mmap + memcpy + relocate.
+LIFO discipline matches backtracking — discard copy on failure.
+
+**Reference:** SESSIONS_ARCHIVE.md §14 "Self-Modifying C", §15 "Allocation Problem Solved"
+
+### What this means for sno2c / emit_byrd.c (Technique 1, current target)
+
+- Pattern assignment → `byrd_emit_named_pattern(varname, expr, out)` → named C function
+- `E_DEREF (*X)` → `pat_X(&z->X_z, entry)` — no engine.c, no match_pattern_at
 - `emit_pat()` / `pat_cat()` / `pat_arbno()` / `pat_ref()` → **eliminated from compiled path**
-- `engine.c` / `snobol4_pattern.c` → interpreter only (EVAL runtime). Never linked in beauty_full_bin.
+- `engine.c` / `snobol4_pattern.c` → interpreter only (EVAL). Never in beauty_full_bin.
 
 **Reference:** SESSIONS_ARCHIVE.md Session 16 "Key insight from Lon" + "New Model: Locals Inside the Box"
 
