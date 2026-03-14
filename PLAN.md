@@ -40,6 +40,33 @@ https://github.com/settings/tokens**
 
 ---
 
+## ⛔ ARTIFACT RULE — SNAPSHOT beauty_full.c EVERY SESSION (mandatory, no exceptions)
+
+**Claude failed to store artifacts/beauty_full_sessionN.c for multiple sessions (52→53 gap
+spanned the sno_/SNO_ prefix eradication AND M-COMPILED-BYRD). This must never happen again.**
+
+### The rule:
+
+At the END of every session that touches `sno2c` or `emit*.c` or `runtime/`:
+1. Run `sno2c -I $INC $BEAUTY > artifacts/beauty_full_sessionN.c` where N = last session number + 1
+2. Record md5, line count, compile status, active bug in `artifacts/README.md`
+3. Commit artifacts/ with message `artifact: beauty_full_sessionN.c — <one-line status>`
+
+**Do this even if nothing changed** — the artifact confirms the compiler still produces
+the same output. A matching md5 is useful data. A missing snapshot is a gap in the record.
+
+### When to increment N:
+- Look at the last `beauty_full_sessionN.c` filename in `artifacts/` and add 1.
+- If unsure, check `git log --oneline -- artifacts/` for the last session number used.
+
+### What to write in README.md:
+- What changed since last artifact (commits, fixes)
+- Line count + md5
+- Compile status (0 errors / N warnings)
+- Active bug / current symptom
+
+---
+
 ## Git Identity Rule (mandatory, no exceptions)
 
 **Every commit across every SNOBOL4-plus repo must use:**
