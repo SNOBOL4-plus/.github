@@ -108,16 +108,22 @@ Add a new sprint `compiled-byrd-boxes` between M-BEAUTY-FULL and M-COMPILED-SELF
 for dynamic patterns (EVAL, runtime-constructed patterns). The compiled path bypasses
 them; the interpreter path keeps them.
 
-### Agreement (Lon Cherryholmes + Claude Sonnet 4.6, 2026-03-13)
+### Decision (Lon Cherryholmes + Claude Sonnet 4.6, 2026-03-14)
 
-Once M-BEAUTY-FULL is complete there **must** be a milestone for switching the C
-compiler over to proper compiled Byrd box emission AND unifying with the Python
-pipeline. The Python work (`lower.py`, `byrd_ir.py`, `emit_c_byrd.py`, `emit_jvm.py`,
-`emit_msil.py`) is intellectual property that must not be abandoned or orphaned.
-It becomes the shared IR that all backends — C, JVM, MSIL — emit from.
+**M-PYTHON-UNIFIED is retired.** The Python pipeline (`lower.py`, `byrd_ir.py`,
+`emit_c_byrd.py`, `emit_jvm.py`, `emit_msil.py`) was the prototype — the scaffold
+that proved the Byrd box architecture correct at 609/609 worm cases. `emit_byrd.c`
+is the real implementation. The scaffold served its purpose and is now archaeological
+reference, not a build dependency.
 
-That milestone is **M-PYTHON-UNIFIED**. It is locked in the roadmap above.
-No future session may remove it or defer it without Lon's explicit instruction.
+Python has no place in the compiler pipeline. The JVM and MSIL backends will implement
+the four-port Byrd box lowering natively in their own languages (Java, C#), not by
+calling into Python.
+
+The replacement milestone is **M-BYRD-SPEC**: a language-agnostic written specification
+of the four-port lowering rules (α/β/γ/ω wiring per node type) that all three backends
+implement independently but consistently. The spec lives in HQ. It is the shared
+contract, not shared code.
 
 ---
 
@@ -137,7 +143,7 @@ No future session may remove it or defer it without Lon's explicit instruction.
 | **M-BEAUTY-FULL** | `beauty_full_bin` self-beautifies — diff empty | TINY | ⏳ sprint 3/4 `beauty-runtime` next |
 | **M-REBUS** | Rebus round-trip: `.reb` → `.sno` → CSNOBOL4 → diff oracle | TINY | ✅ Done `bf86b4b` |
 | **M-COMPILED-BYRD** | `sno2c` emits labeled goto Byrd boxes — `engine.c` not linked | TINY | ✅ Done `560c56a` |
-| **M-PYTHON-UNIFIED** | Python pipeline (`lower.py`, `emit_c_byrd.py`, `emit_jvm.py`, `emit_msil.py`) unified with C compiler — one IR, all backends | TINY | ❌ |
+| **M-BYRD-SPEC** | Language-agnostic written spec of four-port Byrd box lowering rules — all backends (C, JVM, MSIL) implement independently against it | HQ | ❌ |
 | **M-COMPILED-SELF** | Compiled binary self-beautifies — diff empty | TINY | ❌ |
 | **M-BOOTSTRAP** | `snoc` compiles `snoc` (self-hosting) | TINY | ❌ Future |
 | **M-JVM-EVAL** | JVM inline EVAL! complete (sprint `jvm-inline-eval`) | JVM | ❌ |
@@ -189,7 +195,7 @@ interpreter bugs that don't matter. The Python pipeline (lower.py + emit_c_byrd.
 already proved correctness at 609/609 worm cases. `emit_byrd.c` is a C port of that.
 
 **Steps:**
-1. Read `src/ir/byrd_ir.py`, `src/ir/lower.py`, `src/codegen/emit_c_byrd.py` — ground truth
+1. Read `src/ir/byrd_ir.py`, `src/ir/lower.py`, `src/codegen/emit_c_byrd.py` — prototype reference
 2. Read `test/sprint0/` through `test/sprint5/` — correctness gate
 3. Write `src/sno2c/emit_byrd.c` — LIT, CAT, ALT, EPSILON first; sprint0–5 passing
 4. Add ARBNO, CAPTURE, FENCE, POS, TAB, RPOS, RTAB; sprint6–15 passing
