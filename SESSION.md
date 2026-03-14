@@ -10,97 +10,59 @@
 | Field | Value |
 |-------|-------|
 | **Repo** | SNOBOL4-tiny |
-| **Sprint** | `block-fn` (sprint 3/9 toward M-BEAUTY-FULL) |
+| **Sprint** | `pattern-block` (sprint 4/9 toward M-BEAUTY-FULL) |
 | **Milestone** | M-BEAUTY-FULL |
-| **HEAD** | `4a6db69 — feat(stmt-fn): M-STMT-FN — trampoline emitter wired into sno2c` |
+| **HEAD** | `373d939 — feat(pattern-block): byrd_emit_named_pattern + two-pass pre-registration` |
 
 ---
 
-## State at handoff (session 56)
+## State at handoff (session 57)
 
-Two milestones fired this session:
-- M-TRAMPOLINE `fb4915e` — `trampoline.h` + 3 hand-written POC programs ✅
-- M-STMT-FN `4a6db69` — `-trampoline` flag wired into `sno2c` ✅
+Three commits this session:
+- `98ec305` — fix(block-fn): correct block grouping — first_block flag ✅
+- `373d939` — feat(pattern-block): byrd_emit_named_pattern + two-pass pre-registration ✅
 
-beauty.sno → `sno2c -trampoline` → **0 gcc errors** ✅
-Binary runs but outputs only 10 lines (block grouping bug — see below).
+112 named pattern functions compiled for beauty.sno (26197 lines C, 0 gcc errors).
+Binary runs (exit 0) but outputs only 10 lines — Parse Error on first statement.
 
 ---
 
-## ONE NEXT ACTION — Fix block grouping in `emit_trampoline_program`
+## ONE NEXT ACTION — Fix E_COND in byrd_emit for string RHS
 
-**File:** `src/sno2c/emit.c`
+**File:** `src/sno2c/emit_byrd.c`
 
-**The bug:** Pass 2 of `emit_trampoline_program` (around line 1590) opens
-`block_START` correctly but fails to close and re-open blocks for each
-subsequent labeled statement. All stmts end up in one giant `block_START`.
+**The bug:** The `~` operator (E_COND) compiles `BREAK(...) ~ 'snoLabel'` wrong.
+- `pat->right->kind == E_STR` (the string `'snoLabel'`)
+- E_COND case checks `pat->right->kind == E_VAR` → false → uses `"OUTPUT"` as varname
+- `emit_cond` then goes wrong, OR the `~` is parsing as E_CONCAT inside emit_pat
+  and the E_STR literal becomes a `memcmp` instead of a capture
 
-**The fix — replace the block open/close logic in Pass 2:**
-
-Find this section (roughly lines 1590–1625):
+**Root cause confirmed** by inspecting `pat_snoLabel` output:
 ```c
-const char *cur_block_label = NULL;
-int block_open = 0;
-
-for (int sid = 1; sid <= stmt_count; sid++) {
-    Stmt *s = sid_stmt[sid];
-
-    if (s->label && block_open) {
-        E("    return block_%s; /* fall into next block */\n}\n\n",
-          cs_label(s->label));
-        block_open = 0;
-    }
-
-    if (!block_open) {
-        if (!s->label || sid == 1) {
-            if (!cur_block_label) {
-                E("static void *block_START(void) {\n");
-            } else {
-                E("static void *block_%s(void) {\n", cs_label(cur_block_label));
-            }
-        } else {
-            cur_block_label = s->label;
-            E("static void *block_%s(void) {\n", cs_label(s->label));
-        }
-        block_open = 1;
-    }
-    ...
+if (memcmp(_subj_np + _cur_np, "snoLabel", 8) != 0) goto cat_l_585_beta;
 ```
+It's treating `~ 'snoLabel'` as a literal string match, not a capture.
 
-Replace with this clean version:
+**The fix — in emit_byrd.c E_COND case (around line 1308):**
 ```c
-int block_open = 0;
-
-for (int sid = 1; sid <= stmt_count; sid++) {
-    Stmt *s = sid_stmt[sid];
-
-    /* Labeled stmt → close current block (fall through to this label) */
-    if (s->label && block_open) {
-        E("    return block_%s;\n}\n\n", cs_label(s->label));
-        block_open = 0;
-    }
-
-    /* Open a new block if none is open */
-    if (!block_open) {
-        if (s->label) {
-            E("static void *block_%s(void) {\n", cs_label(s->label));
-        } else {
-            E("static void *block_START(void) {\n");
-        }
-        block_open = 1;
-    }
-
-    E("    { void *_r = stmt_%d();\n", sid);
-    E("      if (_r != _tramp_next_%d) return _r; }\n", sid_uid[sid]);
-}
-
-/* Close final block */
-if (block_open) {
-    E("    return block_END;\n}\n\n");
+case E_COND: {
+    /* ~ varname  OR  ~ 'string-as-varname' */
+    const char *varname = NULL;
+    if (pat->right && pat->right->kind == E_VAR)
+        varname = pat->right->sval;
+    else if (pat->right && pat->right->kind == E_STR)
+        varname = pat->right->sval;   /* 'name' evaluated as varname */
+    if (!varname || !*varname) varname = "OUTPUT";
+    emit_cond(pat->left, varname,
+              alpha, beta, gamma, omega,
+              subj, subj_len, cursor, depth);
+    return;
 }
 ```
 
-**Test sequence after fix:**
+Also check E_IMM ($ operator) — same issue likely exists there.
+
+**Test after fix:**
 ```bash
 cd /home/claude/SNOBOL4-tiny/src/sno2c && make -B
 
@@ -109,24 +71,20 @@ BEAUTY=/home/claude/SNOBOL4-corpus/programs/beauty/beauty.sno
 R=/home/claude/SNOBOL4-tiny/src/runtime
 SNO=/home/claude/snobol4-install/bin/snobol4
 
-# 1. Regenerate
 ./sno2c -trampoline -I$INC $BEAUTY > /tmp/beauty_tramp.c
 
-# 2. Compile
 gcc -O0 -g -I. -I$R -I$R/snobol4 /tmp/beauty_tramp.c \
     $R/snobol4/snobol4.c $R/snobol4/snobol4_inc.c \
     $R/snobol4/snobol4_pattern.c $R/engine_stub.c \
     -lgc -lm -w -o /tmp/beauty_tramp_bin
 echo "gcc exit: $?"
 
-# 3. Run
+# Quick smoke test
+printf 'X = 1\n' | /tmp/beauty_tramp_bin
+
+# Full diff
 /tmp/beauty_tramp_bin < $BEAUTY > /tmp/beauty_tramp_out.sno
-echo "bin exit: $?  lines: $(wc -l < /tmp/beauty_tramp_out.sno)"
-
-# 4. Oracle
 $SNO -f -P256k -I$INC $BEAUTY < $BEAUTY > /tmp/beauty_oracle.sno
-
-# 5. Diff
 diff /tmp/beauty_oracle.sno /tmp/beauty_tramp_out.sno
 # Expect: empty → M-BEAUTY-FULL fires
 ```
@@ -142,12 +100,13 @@ feat: M-BEAUTY-FULL — beauty.sno self-beautifies through trampoline compiled b
 
 ```bash
 # At END of session:
-./sno2c -trampoline -I$INC $BEAUTY > artifacts/beauty_tramp_sessionN.c
-# Record md5, line count, gcc errors, active bug in artifacts/README.md or per-session dir
+INC=/home/claude/SNOBOL4-corpus/programs/inc
+BEAUTY=/home/claude/SNOBOL4-corpus/programs/beauty/beauty.sno
+mkdir -p artifacts/trampoline_sessionN
+./sno2c -trampoline -I$INC $BEAUTY > artifacts/trampoline_sessionN/beauty_tramp_sessionN.c
+# Record md5, line count, gcc errors, active bug in artifacts/trampoline_sessionN/README.md
 # Commit: artifact: beauty_tramp_sessionN.c — <one-line status>
 ```
-
-Also commit interesting test .sno + generated .c pairs in `artifacts/trampoline_sessionN/`.
 
 ---
 
@@ -187,4 +146,6 @@ cd SNOBOL4-tiny/src/sno2c && make
 | 2026-03-14 | PIVOT: block-fn + trampoline model | complete rethink with Lon |
 | 2026-03-14 | M-TRAMPOLINE fired `fb4915e` | trampoline.h + 3 POC files |
 | 2026-03-14 | M-STMT-FN fired `4a6db69` | trampoline emitter in sno2c, beauty 0 gcc errors |
-| 2026-03-14 | block grouping bug found | block_START absorbs all stmts |
+| 2026-03-14 | block grouping bug fixed `98ec305` | first_block flag |
+| 2026-03-14 | pattern-block sprint `373d939` | 112 named pat fns, 0 gcc errors |
+| 2026-03-14 | Parse Error root cause found | E_COND ~ 'str' treated as literal match |
