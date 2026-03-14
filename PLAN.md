@@ -986,9 +986,9 @@ typedef struct {
 | `beauty-full-diff` | beauty.sno self-beautifies through compiled binary | M-BEAUTY-FULL |
 | `code-eval` | `CODE()` + `EVAL()` via TCC in-process compile, `-ltcc` | M-CODE-EVAL |
 | `compiled-self-diff` | Compiled binary self-beautifies | M-COMPILED-SELF |
-| `sno2c-sno-lex` | Write `sno2c.sno` lexer — tokenizes SNOBOL4 source, validate against `lex.c` output on all corpus files | — |
-| `sno2c-sno-parse` | Write `sno2c.sno` parser — builds same Expr/Stmt AST, validate against `parse.c` output | — |
-| `sno2c-sno-emit` | Write `sno2c.sno` emitter — walks AST, produces same C output as `emit.c`+`emit_byrd.c`+`emit_cnode.c` | — |
+| ~~`sno2c-sno-lex`~~ | ~~Write SNOBOL4 lexer~~ | **beauty.sno already has it** |
+| ~~`sno2c-sno-parse`~~ | ~~Write SNOBOL4 parser~~ | **beauty.sno already has it** |
+| `compiler-pattern` | Weave emit actions into beauty.sno grammar → `compiler.sno`. ONE PATTERN compiles SNOBOL4 → C. | M-SNO2C-SNO |
 | `sno2c-sno-compiles` | `sno2c.sno` compiled by C `sno2c` produces working binary — runs on `beauty.sno`, diff empty vs oracle | M-SNO2C-SNO |
 | `bootstrap-stage1` | Compile `sno2c.sno` using C `sno2c` → `sno2c_stage1` binary | — |
 | `bootstrap-stage2` | Compile `sno2c.sno` using `sno2c_stage1` → `sno2c_stage2` binary | — |
@@ -1370,4 +1370,73 @@ it may need direct UDEF field indexing `c[i]` which compiles differently. Check 
 beauty.sno's `c[i]` (subscript notation on a UDEF field) compiles in the generated C.
 
 **Commit when fixed:** `fix(runtime): UDEF array field access — c[i] on tree nodes`
+
+
+---
+
+## Architecture: Two Pattern-Based Compiler Strategies (Session 78, Lon Cherryholmes)
+
+**Reference model:** `SNOBOL4-corpus/programs/inc/ini.sno` — `iniParse` builds a full
+INI table structure as a side effect of the match using `epsilon . *assign(...)` primitives
+woven into alternation branches. Zero post-processing. The match IS the result.
+
+**Reference demo:** `assignment3.py` (ENG 685, Lon Cherryholmes) — `treebank` pattern
+builds a full nested tuple tree inside one pattern via push_list/pop_list lambdas.
+`claws_info` does full corpus tagging inside one pattern. Proves complex data structures
+can be built entirely within a match — no post-processing pass needed.
+
+---
+
+### Architecture A — Reformed beauty.sno (the sprinkle approach)
+
+**Goal:** Eliminate `pp()`/`qq()` as separate post-processing functions. Sprinkle beautifier
+output actions directly into pattern alternations using `epsilon . *action(...)` — exactly
+as `iniParse` assigns table entries inline. Each grammar alternative immediately writes its
+beautified output as it matches. No tree walk.
+
+**This is hard.** Threading output actions through every sub-pattern level — the way
+`treebank` builds a list by wiring push/pop into every nested alternative — requires
+deep intricate changes throughout the full pattern hierarchy.
+
+**Status:** Architectural option. Not the current path. Worth pursuing after M-BOOTSTRAP
+as the "pure" form of beauty.sno. `ini.sno` is the reference model.
+
+---
+
+### Architecture B — compiler.sno with final primitive (the clean path, current target)
+
+**Goal:** `compiler.sno` reuses `Compiland`/`Parse`/`Stmt`/`Expr`/`Command` patterns
+**unchanged**. They already build the Shift/Reduce tree via `nPush`/`nPop`/`~`/`&`.
+
+Replace the `pp()` call with one big **final primitive** — a SNOBOL4 function that reads
+the completed tree and emits C Byrd box code.
+
+```
+*  beauty.sno:   Src POS(0) *Parse *Space RPOS(0)  →  pp(sno)
+*  compiler.sno: Src POS(0) *Parse *Space RPOS(0)  →  compile(sno)
+```
+
+`compile(sno)` walks the same tree that `pp(sno)` walks, emits C instead of pretty-printed
+SNOBOL4. Grammar patterns identical. Tree identical. Final action is the only difference.
+
+**This is clean and achievable.** Tree machinery proven by M-BEAUTY-FULL.
+The compiler is: proven grammar + proven tree + new `compile()` function.
+
+**Status:** This IS the `compiler-pattern` sprint. The bootstrap path.
+
+---
+
+### Sprint map (updated)
+
+| Sprint | What | Gates |
+|--------|------|-------|
+| ~~`sno2c-sno-lex`~~ | beauty.sno already has it | — |
+| ~~`sno2c-sno-parse`~~ | beauty.sno already has it | — |
+| `compiler-pattern` | Write `compile(sno)` — final primitive reads Shift/Reduce tree, emits C Byrd boxes. Wire into beauty.sno grammar → `compiler.sno`. Validate: diff empty vs oracle. | M-SNO2C-SNO |
+
+### Why Architecture B first
+
+1. **Proven foundation** — M-BEAUTY-FULL proves parse+tree machinery works. `compile()` gets a correct tree.
+2. **Minimal delta** — `compiler.sno` = `beauty.sno` + replace `pp()` with `compile()`. One new function.
+3. **Architecture A later** — once bootstrap achieved, reform beauty.sno to eliminate pp/qq via sprinkled inline actions. `ini.sno` is the reference. `treebank` in assignment3.py is the proof of concept.
 
