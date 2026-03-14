@@ -16,29 +16,44 @@
 
 ---
 
-## ⚡ SESSION 83 FIRST PRIORITY
+## ⚡ SESSION 84 FIRST PRIORITY
 
 ### The one job:
-Trace `_c` type in pp_Stmt to find why `c[N]` subscript returns wrong value.
+Fix `aply("c", {x}, 1)` — it is NOT calling `_b_tree_c`. Root cause: `data_define("tree(t,v,n,c)")` in `make_tree()` registers its own field accessors for `t`, `v`, `n`, `c` via `data_define`, which OVERWRITES the `_b_tree_c` registered in `runtime_init`. The `data_define`-generated accessor returns SSTR (type=1) instead of the ARRAY stored in field `c`.
 
-**Exact next action:**
+**Exact next action — read data_define:**
 ```bash
-# After cloning and building, patch beauty_tramp.c line ~10291:
-# Find: set(_c, _v803); var_set("c", _c);
-# Add immediately after: fprintf(stderr, "DBG _c type=%d\n", _v803.type);
-# Then run: echo " OUTPUT = 'hello'" | /tmp/beauty_tramp_bin 2>&1
+sed -n '964,1000p' src/runtime/snobol4/snobol4.c
+# Find: how does data_define register field accessors?
+# Expected: it calls define(fieldname, some_fn) for each field
+# The fn it registers is a generic field accessor that coerces to string — BUG
 ```
 
-Expected: `_c type=6` (ARRAY=6). If different, that's the bug.
+**The fix:**
+Option A — Call `data_define("tree(t,v,n,c)")` in `runtime_init` BEFORE registering
+`_b_tree_c`, so our registration wins (comes after, overwrites).
 
-**If _c is ARRAY (type=6):** the bug is in `_aref_impl` — it checks `arr.type == ARRAY` 
-but `_c` may be getting the UDEF tree node (type=9 UDEF) not the children SnoArray.
-Trace: `aply("c", {x}, 1)` where `x` is the pp dispatch argument — does it return 
-the SARRAY children or the whole tree UDEF?
+Option B — Remove the `if (!func_exists("t"))` guard + `data_define` call from `make_tree()`.
+Register the tree type explicitly in `runtime_init` using the low-level API, then register
+`_b_tree_c` manually. `make_tree` just calls `udef_new` directly.
 
-**If _c is UDEF (type=9):** `aply("c", {x}, 1)` is returning the tree node itself.
-The `c` field accessor (`_b_tree_c`) must be broken — check `field_get` finds field "c" 
-in the "tree" UDEF type (fields: t, v, n, c — index 3).
+**Option B is cleaner.** In `runtime_init`:
+```c
+// Register tree UDEF type
+data_define("tree(t,v,n,c)");
+// Now override field "c" accessor with our version that returns raw SnoVal (ARRAY)
+register_fn("c", _b_tree_c, 1, 1);
+```
+This ensures `_b_tree_c` is always the last registration for `"c"`, wins over whatever
+`data_define` installed.
+
+**Verify fix:**
+```bash
+printf " OUTPUT = 'hello'\n" | /tmp/beauty_tramp_bin 2>&1
+# Expected: " OUTPUT = 'hello'" (full line, not just "OUTPUT")
+```
+
+**Commit when fixed:** `fix(runtime): register tree type + override c accessor after data_define`
 
 ---
 
@@ -63,48 +78,52 @@ gcc -O0 -g /tmp/beauty_tramp.c \
 ```
 
 ⚠️ engine_stub.c — NOT engine.c. engine.c is fully superseded.
+⚠️ Test input MUST have a leading space: `printf " OUTPUT = 'hello'\n"` not `echo "OUTPUT = 'hello'"`
+SNOBOL4 labelless statements start at column 2. Without leading space, `OUTPUT` is parsed as a label.
 
 Oracle: `test/smoke/outputs/session50/beauty_oracle.sno` (790 lines, committed).
 
 ---
 
-## Session 80 what was done
+## Session 83 what was done
 
 | Step | Result |
 |------|--------|
-| Moved build_beauty.sh | Retired to artifacts/retired/ — was linking engine.c |
-| engine_stub.c | Added T_FUNC + T_CAPTURE handlers |
-| snobol4_pattern.c | SPAT_USER_CALL: ANY/SPAN/BREAK/NOTANY/LEN/POS/RPOS/TAB/RTAB resolve to proper T_* nodes |
-| snobol4.c runtime_init | Pre-init UCASE, LCASE, digits as physical constants |
-| Parse Error | Gone — pat_Id now matches identifiers correctly |
-| Output wrong | `OUTPUT = 'hello'` → outputs `OUTPUT` only. ppSubj/ppPatrn/ppRepl wrong |
-| Root cause traced | `_c` set by `aply("c", {x}, 1)` at beauty_tramp.c line ~10291. Type unknown — needs trace |
+| Parse Error investigation | NOT a regression — test input was missing leading space |
+| SNOBOL4 format confirmed | Labelless stmts must start at col 2: `" OUTPUT = 'hello'"` |
+| `_c` type traced | `aply("c",{x},1)` returns type=1 (SSTR), not type=6 (ARRAY) |
+| `_b_tree_c` never called | Added debug trace — it never fired |
+| Root cause found | `data_define("tree(t,v,n,c)")` in `make_tree()` overwrites `_b_tree_c` with a coercing accessor |
+| Fix identified | In `runtime_init`: call `data_define("tree(t,v,n,c)")` first, then `register_fn("c", _b_tree_c, ...)` to override |
+| No commit | Debug code reverted, working tree clean at `93e0fdb` |
 
 ---
 
 ## What works now
 - Comments (`* ...`) — output correctly
-- Control lines (`-INCLUDE`) — output correctly  
-- Label-only lines (`START`) — silently dropped (secondary bug, fix after c[N])
-- Simple assignment `OUTPUT = 'hello'` — gets to pp_Stmt, outputs label only
+- Control lines (`-INCLUDE`) — output correctly
+- Simple assignment with leading space — reaches pp_Stmt, outputs label correctly
+- UCASE/LCASE/digits — pre-initialized correctly
 
-## Active bug: c[N] subscript wrong
+## Active bug: `aply("c",{x},1)` returns SSTR not ARRAY
 
-**Symptom:** `indx(get(_c), {vint(2)}, 1)` in pp_Stmt returns wrong value for ppSubj.
-ppLbl = ss(c[1]) outputs "OUTPUT" correctly — so c[1] returns the Label node.
-But ppSubj = c[2] apparently returns something that prints as "OUTPUT" again (the label).
+**Symptom:** `_c` set in pp_Stmt has type=1 (SSTR). `indx(get(_c), {vint(2)}, 1)` fails.
+ppSubj/ppPatrn/ppRepl never set → pp_Stmt outputs only label.
 
-**Hypothesis:** `_c` holds UDEF tree node (type=9), not SARRAY (type=6=ARRAY).
-If so: `_aref_impl` returns FAIL_VAL for UDEF — `_ok947` is false — ppSubj never set.
-Then pp_Stmt uses stale ppSubj from previous call.
+**Root cause:** `make_tree()` calls `data_define("tree(t,v,n,c)")` lazily on first use.
+`data_define` registers its own accessor for field `"c"` which coerces the raw SnoVal
+to string. This overwrites `_b_tree_c` (registered in `runtime_init`) which returns
+the raw SnoVal — preserving ARRAY type.
 
-**Fix path if hypothesis correct:**
-`aply("c", {x}, 1)` → `_b_tree_c` → `field_get(x, "c")` → returns fields[3] = SARRAY.
-If `_b_tree_c` is not registered or field lookup fails, returns NULL_VAL.
-Then `_c` = NULL_VAL, `indx(NULL_VAL, ...)` = FAIL_VAL, `_ok947` = false, ppSubj stale.
-
-Check: does `_b_tree_c` registration in `runtime_init` happen BEFORE `inc_init`?
-If `inc_init` also tries to register "c" and overwrites it, that could be the issue.
+**Fix:** In `runtime_init`, after all other registrations:
+```c
+data_define("tree(t,v,n,c)");   // register type first
+register_fn("c", _b_tree_c, 1, 1);  // override "c" with our raw accessor
+register_fn("t", _b_tree_t, 1, 1);  // same for t, v, n for consistency
+register_fn("v", _b_tree_v, 1, 1);
+register_fn("n", _b_tree_n, 1, 1);
+```
+Then remove the `if (!func_exists("t")) { data_define(...); }` guard from `make_tree()`.
 
 ---
 
@@ -114,6 +133,7 @@ If `inc_init` also tries to register "c" and overwrites it, that could be the is
 - **NEVER link engine.c** — engine_stub.c only, engine.c fully superseded
 - **ALWAYS run `git config user.name/email` after every clone**
 - **ALWAYS update TINY.md and SESSION.md at HANDOFF**
+- **ALWAYS use leading space in test input:** `printf " stmt\n"` not `echo "stmt"`
 
 ---
 
@@ -128,3 +148,4 @@ If `inc_init` also tries to register "c" and overwrites it, that could be the is
 | 2026-03-14 | `0113d90` pat_lit fix | emit_cnode.c build_pat E_STR strv() removed |
 | 2026-03-14 | Session 78 TINY.md/SESSION.md rewrite | both were severely stale |
 | 2026-03-14 | Session 80 runtime fixes | engine_stub T_FUNC/T_CAPTURE; SPAT_USER_CALL builtins; UCASE/LCASE/digits |
+| 2026-03-14 | Session 83 diagnosis | Parse Error = test format bug; _c = data_define overwrites _b_tree_c |
