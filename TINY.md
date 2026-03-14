@@ -7,38 +7,18 @@
 
 ## Current State
 
-**Active sprint:** `smoke-tests` (2/4 toward M-BEAUTY-FULL)
-**Milestone target:** M-BEAUTY-FULL
-**HEAD:** `a69971e` — fix(emit): field assignment lvalue — sno_field_set for E_CALL nargs==1
+**Active sprint:** `compiled-byrd-boxes` (2/4 toward M-BEAUTY-FULL)
+**Milestone target:** M-COMPILED-BYRD → M-BEAUTY-FULL
+**HEAD:** `cb3f97e` — feat(emit_byrd): compiled Byrd box emitter — LIT/SEQ/ALT/ARBNO/POS/RPOS/LEN/ANY/NOTANY/SPAN/BREAK/ARB/REM/FENCE/IMM/COND
 
-**Smoke tests: 0/21 — one fix remaining.**
+**Status:** `emit_byrd.c` written and committed. NOT YET wired into `emit.c`.
 
-Two bugs fixed this session, one remaining:
+Sprint0-5 oracles: 15/15 pass (oracle .c files, runtime unchanged).
+sno2c builds clean. Smoke test passes.
 
-1. ✅ `parse_expr3` for pattern field (`f359079`) — `|` alternation restored
-2. ✅ Field assignment lvalue (`a69971e`) — `sno_field_set` for `val(n) = expr`
-3. ❌ Capture var-name deferred evaluation — **NEXT ACTION**
-
-**Root cause of 0/21:** `epsilon . *IncCounter()` in `nInc_()` sets capture
-`var_name=NULL` at materialise time. `IncCounter()` needs to be called at
-**match time** to get the var name (and run its side effect). `Capture.var_name`
-is a static `char*` — needs a `var_fn` callback for deferred var expressions.
-
-**Fix location:** `src/runtime/snobol4/snobol4_pattern.c`, `SPAT_CAPTURE` case
-of `materialise()`. Add `var_fn`/`var_data` fields to `Capture` struct.
-In `apply_captures()`, if `var_fn` is set, call it to get name then assign.
-
-**Test to verify:** recreate `/tmp/test_ninc.sno` from SESSION.md. Expected: `matched, top=2`
-
-## Pivot Log
-
-| Date | What changed | Why |
-|------|-------------|-----|
-| 2026-03-13 | `hand-rolled-parser` → 4-sprint `space-token` plan | SPACE token resolves LALR(1) conflicts without parser rewrite |
-| 2026-03-13 | `rebus-emitter` complete → `rebus-roundtrip` active | Sprint finished |
-| 2026-03-13 | `hand-rolled-parser` paused → `rebus-emitter` active | Lon declared Rebus priority |
-| 2026-03-12 | Bison/Flex → `hand-rolled-parser` decision | Session 53: LALR(1) unfixable (139 RR conflicts) |
-| 2026-03-12 | M-BEAUTY-FULL inserted before M-COMPILED-SELF | Lon's priority: beautifier first |
+**Next action:** Wire `byrd_emit_pattern()` into `emit_stmt()` pattern-match case
+in `src/sno2c/emit.c`, replacing `sno_match()` + `emit_pat()` with direct
+Byrd box emission. Then sprint0-22 validation → M-COMPILED-BYRD.
 
 ---
 

@@ -4661,3 +4661,35 @@ Complete fix: make all SPAT_USER_CALL → T_FUNC always; handle SNO_PATTERN retu
 by sub-matching the returned pattern at current cursor position.
 
 **Commits:** 40ea84f
+
+---
+
+## Session — 2026-03-13 (Claude Sonnet 4.6, session N+3)
+
+**Repo:** SNOBOL4-tiny | **Sprint:** compiled-byrd-boxes | **HEAD start:** be4fbb1 | **HEAD end:** cb3f97e
+
+**What happened:**
+- Built CSNOBOL4 2.3.3 from uploaded tarball; cloned SNOBOL4-tiny and SNOBOL4-corpus fresh
+- Read full Python pipeline ground truth: byrd_ir.py, lower.py, emit_c_byrd.py
+- Read all sprint0-5 oracle C files to understand target output format
+- Read ByrdBox reference package (test_sno_2.c, test_sno_3.c) — gold standard labeled-goto style
+- Read emit.c in full — understood current sno_pat_* / sno_match stopgap
+- Wrote `src/sno2c/emit_byrd.c` from scratch: 1264 lines, full C port of lower.py + emit_c_byrd.py
+- All pattern node types implemented: LIT, SEQ, ALT, ARBNO, POS, RPOS, LEN, TAB, RTAB,
+  ANY, NOTANY, SPAN, BREAK, ARB, REM, FENCE (0+1 arg), SUCCEED, FAIL, ABORT, E_IMM, E_COND
+- Two-pass via open_memstream: static decls before goto (C99 compliant)
+- Declared byrd_emit_pattern in snoc.h; added emit_byrd.c to Makefile
+- Fixed: duplicate root_beta label, unicode arrow escapes in comments
+- Smoke test: POS(0) ARBNO("Bird"|"Blue") RPOS(0) on "BlueBird" → compiles + exits 0
+- Sprint0-5 oracles: 15/15 pass (oracle .c files unchanged, runtime unchanged)
+- sno2c builds clean: zero errors
+
+**What is NOT done yet:**
+- emit_byrd.c is not yet called by emit.c — integration step is next session's work
+- sprint0-22 validation against sno2c output not yet run
+
+**Next action:** Wire byrd_emit_pattern into emit_stmt() pattern-match case in emit.c,
+replacing sno_match() + emit_pat() with direct Byrd box emission inline into the C output.
+Then sprint0-22 validation. Then M-COMPILED-BYRD fires.
+
+**Commits:** cb3f97e
