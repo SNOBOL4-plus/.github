@@ -102,9 +102,9 @@ No future session may remove it or defer it without Lon's explicit instruction.
 | ID | Trigger | Repo | Status |
 |----|---------|------|--------|
 | **M-SNOC-COMPILES** | `snoc` compiles `beauty_core.sno`, 0 gcc errors | TINY | ✅ Done |
-| **M-BEAUTY-FULL** | `beauty_full_bin` self-beautifies — diff empty | TINY | ⏳ sprint 2/4 `smoke-tests` active |
+| **M-BEAUTY-FULL** | `beauty_full_bin` self-beautifies — diff empty | TINY | ⏳ sprint 2/4 `compiled-byrd-boxes` active |
 | **M-REBUS** | Rebus round-trip: `.reb` → `.sno` → CSNOBOL4 → diff oracle | TINY | ✅ Done `bf86b4b` |
-| **M-COMPILED-BYRD** | `sno2c` emits labeled goto Byrd boxes — `engine.c` not linked | TINY | ❌ |
+| **M-COMPILED-BYRD** | `sno2c` emits labeled goto Byrd boxes — `engine.c` not linked | TINY | ⏳ Active — IS sprint 2/4 |
 | **M-PYTHON-UNIFIED** | Python pipeline (`lower.py`, `emit_c_byrd.py`, `emit_jvm.py`, `emit_msil.py`) unified with C compiler — one IR, all backends | TINY | ❌ |
 | **M-COMPILED-SELF** | Compiled binary self-beautifies — diff empty | TINY | ❌ |
 | **M-BOOTSTRAP** | `snoc` compiles `snoc` (self-hosting) | TINY | ❌ Future |
@@ -141,25 +141,33 @@ Root cause of 20 SR + 139 RR conflicts: `WS` was silently skipped. Fix: `{WS} { 
 
 ---
 
-### Sprint 2 of 4 — `smoke-tests` ⏳ Active
+### Sprint 2 of 4 — `compiled-byrd-boxes` ⏳ Active (replaces retired `smoke-tests`)
 
-**What:** Drive `test_snoCommand_match.sh` from 0/21 → 21/21.
+**What:** `sno2c` emits labeled-goto Byrd box C. Validated against sprint0–22 oracles.
+`engine.c` and `snobol4_pattern.c` dropped from the compiled binary path.
 
-Each of the 21 statement types in beauty.sno must be matched by `snoCommand`. Pure structural match — no captures, no side effects. Any failure means the parser or emitter is misrouting that construct.
+**Why smoke-tests was retired (2026-03-14):** It validated `sno_pat_*` / `engine.c` —
+the stopgap interpreter — not the compiled Byrd box path. 15–20 hours lost chasing
+interpreter bugs that don't matter. The Python pipeline (lower.py + emit_c_byrd.py)
+already proved correctness at 609/609 worm cases. `emit_byrd.c` is a C port of that.
 
-```bash
-bash test/smoke/test_snoCommand_match.sh /tmp/beauty_full_bin
-```
+**Steps:**
+1. Read `src/ir/byrd_ir.py`, `src/ir/lower.py`, `src/codegen/emit_c_byrd.py` — ground truth
+2. Read `test/sprint0/` through `test/sprint5/` — correctness gate
+3. Write `src/sno2c/emit_byrd.c` — LIT, CAT, ALT, EPSILON first; sprint0–5 passing
+4. Add ARBNO, CAPTURE, FENCE, POS, TAB, RPOS, RTAB; sprint6–15 passing
+5. Add USER_CALL (nInc, nPush, nPop, Reduce); sprint16–22 passing
+6. Wire into emit.c, drop sno_pat_* from compiled path
 
-**Commit when:** All 21 pass. Zero "Parse Error" lines.
+**Commit when:** sprint0–22 all pass. Binary links without engine.c. **M-COMPILED-BYRD fires.**
 
 ---
 
 ### Sprint 3 of 4 — `beauty-runtime` ❌
 
 **What:** `beauty_full_bin < beauty.sno` runs to completion without crashing.
-
-Known runtime fixes already landed: `DATA()` (`e4595a7`), `NRETURN`→success (`66b7eab`), `sno_inc_init()` (`627a030`). Sprint 3 catches whatever surfaces after the parser is correct. Diagnose with `SNO_PAT_DEBUG=1` and `SNOC_DEBUG=1`. Output may still differ from oracle — that's sprint 4.
+Now using compiled Byrd boxes, not the interpreter. Sprint 3 catches runtime issues
+in `snobol4.c` / `snobol4_inc.c` that surface when beauty actually runs.
 
 **Commit when:** Binary exits cleanly on beauty.sno input. No crash, no hang, no abort.
 
