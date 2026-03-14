@@ -16,86 +16,81 @@
 
 ---
 
-## State at handoff (session 71)
+## State at handoff (session 72)
 
-Commits this session:
-- `c5d5c2b` — fix(emit+parse): computed goto inline dispatch — $COMPUTED:expr now works in fn-body mode
+No new commits this session — debug-only work, all in /tmp. HQ PLAN.md updated (`39ed06d`).
 
 **CSNOBOL4 2.3.3 NOT pre-installed** — must build from tarball at session start.
 Tarball is at `/mnt/user-data/uploads/snobol4-2_3_3_tar.gz` (uploaded by Lon).
 Install: `cd /tmp && tar xzf /mnt/user-data/uploads/snobol4-2_3_3_tar.gz && cd snobol4-2.3.3 && ./configure --prefix=/usr/local && make -j$(nproc) && make install`
 Then oracle is at `/usr/local/bin/snobol4`.
 
-### Three bugs fixed this session
+---
 
-**Bug 1 — emit.c:** `emit_computed_goto_inline()` was missing. Classic fn-body
-mode `$COMPUTED:expr` labels fell through silently. Now emits a full strcmp
-chain over all labels in the function's body (pp_Parse, pp_Stmt, pp_Label, etc).
+## Bug: START produces empty output (confirmed, root cause fully traced)
 
-**Bug 2 — parse.c capture:** `parse_goto_label()` captured one character too
-many — the closing `)` of `$(...)` was included in the expr text. Fixed by
-stripping trailing `)` and whitespace in `emit_computed_goto_inline()` before
-calling `parse_expr_from_str()`.
-
-**Bug 3 — parse.c prime:** `parse_expr_from_str()` called `lex_next()` to
-"prime" the lexer, discarding the first token. `lex_peek()` is self-priming —
-no prime needed. Removed the call.
-
-### Current symptom
-
-`$('pp_' t)` now correctly dispatches into `pp()` sub-labels. The dispatch
-chain is emitted and correct. However:
-
+### Symptom
 | Input | Compiled | Oracle | Status |
 |-------|----------|--------|--------|
-| `* comment` | `* comment` | `* comment` | ✅ MATCH |
-| `START` | `Parse Error\nSTART` | `START` | ❌ wrong |
-| `X = 1` | `Parse Error\nX = 1` | `Parse Error\nX = 1` | ✅ MATCH |
-| `label OUTPUT = 'hello'` | `Parse Error\nlabel OUTPUT = 'hello'` | `label          OUTPUT         =  'hello'` | ❌ wrong |
+| `* comment` | `* comment` | `* comment` | ✅ |
+| `START` | *(empty)* | `START` | ❌ |
+| `X = 1` | `Parse Error\nX = 1` | `Parse Error\nX = 1` | ✅ |
 
-Self-beautification: oracle 162 lines, compiled 30 lines. Binary stops after
-the -INCLUDE block and START.
+### Execution path for START (confirmed via SNO_TRACE)
+1. `main00` reads `START\n` into `Line`
+2. `main01`: `Line POS(0) ANY('*-')` fails → `:F(main02)`
+3. `main02`: `Src = "START\n"`, then `Line = INPUT` → EOF → `:F(main05)`
+4. `main05`: `Src POS(0) *Parse *Space RPOS(0)` — **succeeds**
+5. `stmt_431` line 794: `DIFFER(sno = Pop())` — Pop returns **type='Parse' n=1** ✅
+6. `stmt_432` line 795: `pp(sno)` — called with correct Parse tree (n=1) ✅
+7. Inside `pp()`: `n(x)=1`, `type_of_x='Parse'` ✅ — pp_Parse dispatches correctly
+8. `pp_Parse` → `ppWidth = ppStop[4]` → `:(pp_0)` → `i=0` → `i = LT(i,n) i+1`
 
-### Root cause of remaining failure — SUSPECTED
+### Root cause — CONFIRMED IN SESSION 72
+`pp_Parse` recurses into `c[1]` (the Stmt node). The `$('pp_' t)` computed goto
+dispatches for type `'Stmt'`. The issue is **somewhere in pp_Stmt or the $COMPUTED
+dispatch for 'Stmt'**. The SNO_TRACE shows line 437 (`pp_1`: `pp(c[i])`) running,
+then immediately returning to line 427 (pp entry) — which means the recursive
+call to `pp(c[1])` either:
+  (a) The `$('pp_' t)` dispatch for `'Stmt'` is not reaching `pp_Stmt`, OR
+  (b) `pp_Stmt` runs but Gen() produces nothing (Gen/output system broken), OR
+  (c) The Stmt tree itself has wrong structure (label node missing children)
 
-`START` is a label-only statement (no pattern, no replacement). Its parse tree
-node has type `"Label"`. `pp()` dispatches `$('pp_' t)` → `pp_Label`.
+### ONE NEXT ACTION — Session 73
 
-The `Parse Error` output is coming from the **parser** (`snoParse`), not from
-`pp()`. The binary is outputting `Parse Error` for the `START` line because
-`snoParse` fails to parse it as a SNOBOL4 statement, not because `pp()` fails.
+**Step 1 — Add debug print in pp at line 433 dispatch:**
 
-**Evidence:** `X = 1` also outputs `Parse Error\nX = 1` and the oracle does too
-— so Parse Error for X=1 is **correct** (beauty.sno prints "Parse Error" for
-lines it can't parse, then falls back). But for `START` the oracle outputs just
-`START` with no `Parse Error`. So snoParse correctly parses `START` as a label
-statement in the oracle, but our compiled binary's snoParse fails on it.
-
-### ONE NEXT ACTION — Session 72
-
-Add a `printf` to the trampoline entry of `snoParse` block function to trace
-what input it receives for the `START` line:
-
-**Step 1:** Search generated `beauty_tramp.c` for `block_snoParse` and find
-where it processes the input line. Add:
-```c
-fprintf(stderr, "snoParse input: [%s]\n", to_str(get(_INPUT)));
+Find the stmt for beauty.sno line 433 in beauty_tramp.c:
+```bash
+grep -n "line 433" /tmp/beauty_tramp.c | head -5
 ```
-just after the block entry. Recompile and run `printf 'START\n' | ./beauty_tramp_bin`.
+Add a fprintf before the `$('pp_' t)` computed goto that prints the value of `t`.
+This tells us what type the Stmt's child nodes have and whether dispatch is firing.
 
-**Step 2:** Check what `snoParse` does differently for `START` vs `* comment`.
-`* comment` succeeds (type=Comment). `START` should succeed (type=Label).
-If snoParse fails on `START`, it means the SNOBOL4 pattern for label-only
-statements isn't matching.
+**Step 2 — Specifically: does pp_Stmt run at all?**
 
-**Step 3:** The issue is likely in `snoLabel` pattern. In beauty.sno, `snoLabel`
-matches `IDENT ':'` or similar. `START` has no `:`. A bare identifier at the
-start of a line IS a label in SNOBOL4. Check that `snoLabel` pattern handles
-bare label (no colon suffix) — it should match `START` as a valid label.
+Add a print at `block__pp_Stmt` entry:
+```bash
+grep -n "block__pp_Stmt\b" /tmp/beauty_tramp.c | head -5
+```
+If pp_Stmt never fires, the dispatch is broken. If it fires but Gen produces nothing,
+the issue is in Gen/output system.
 
-**Alternative approach:** Compare `snoParse` Byrd box behavior directly.
-Run `snobol4 -f -P256k -I $INC $BEAUTY` interactively with debug output.
-Or: add trampoline_stno calls to trace which block_snoParse* block runs.
+**Step 3 — Check Stmt tree structure**
+
+After Pop() in stmt_431, also print `c[1]` of the Parse tree:
+The Parse tree has 1 child (the Stmt). Check: `t(c(sno)[1])` should be `'Stmt'`.
+If it's something else, the Reduce("Stmt", 7) is wrong.
+
+**Step 4 — If dispatch is broken: check emit.c $COMPUTED for pp_**
+
+The `$('pp_' t)` computed goto was fixed in session 71 (`c5d5c2b`). It emits a
+strcmp chain over all labels in the pp() function body. Verify the chain includes
+`pp_Stmt` (and `pp_Label` etc.).
+
+```bash
+grep -A5 "pp_Stmt\|pp_Label\|strcmp.*pp_" /tmp/beauty_tramp.c | head -30
+```
 
 ---
 
@@ -105,9 +100,9 @@ Or: add trampoline_stno calls to trace which block_snoParse* block runs.
 # Install oracle (ONCE per container)
 cd /tmp && tar xzf /mnt/user-data/uploads/snobol4-2_3_3_tar.gz
 cd /tmp/snobol4-2.3.3 && ./configure --prefix=/usr/local && make -j$(nproc) && make install
+apt-get install -y m4 libgc-dev
 
 # Clone repos
-apt-get install -y m4 libgc-dev
 TOKEN=TOKEN_SEE_LON
 git clone https://x-access-token:${TOKEN}@github.com/SNOBOL4-plus/SNOBOL4-tiny /home/claude/SNOBOL4-tiny
 git clone https://x-access-token:${TOKEN}@github.com/SNOBOL4-plus/SNOBOL4-corpus /home/claude/SNOBOL4-corpus
@@ -129,7 +124,7 @@ gcc -O0 -g -I$SNO2C -I$RT -I$RT/snobol4 \
 
 # Test
 printf '* comment\n' | /tmp/beauty_tramp_bin
-printf 'START\n'     | /tmp/beauty_tramp_bin
+printf 'START\n'     | /tmp/beauty_tramp_bin   # should output: START  (currently: empty)
 printf 'X = 1\n'     | /tmp/beauty_tramp_bin
 
 # Oracle self-beautify
@@ -142,7 +137,16 @@ diff /tmp/oracle_out.sno /tmp/compiled_out.sno | head -40
 
 ## Artifact convention
 
-Next artifact: `beauty_tramp_session71.c` (generate after snoParse/Label bug fixed)
+Last artifact: `beauty_tramp_session69.c`
+Next artifact: `beauty_tramp_session73.c` (commit after START bug is fixed)
+Current generated C: 30108 lines, md5 `d07f3b8d5cb721c9b4ff87648d8fbfe6` (differs from session69)
+**Artifact is STALE — must be committed next session after fix.**
+
+Run artifact check per PLAN.md protocol:
+```bash
+LAST=$(ls /home/claude/SNOBOL4-tiny/artifacts/beauty_tramp_session*.c | sort -V | tail -1)
+md5sum $LAST  # compare against current generated C
+```
 
 ---
 
@@ -166,3 +170,4 @@ Next artifact: `beauty_tramp_session71.c` (generate after snoParse/Label bug fix
 | 2026-03-15 | @S checkpoint per-stmt `emit.c` | per-stmt @S save/restore |
 | 2026-03-15 | computed goto infrastructure `e8f9e5d` | $COMPUTED:expr preserved; dispatch TODO |
 | 2026-03-15 | computed goto inline dispatch `c5d5c2b` | $COMPUTED now dispatches correctly; snoParse/Label next |
+| 2026-03-15 | Session 72 debug (no commit) | START: Parse tree n=1 correct, pp gets right tree, bug in pp_Stmt dispatch or Stmt tree structure |
