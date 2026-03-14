@@ -134,9 +134,9 @@ No future session may remove it or defer it without Lon's explicit instruction.
 | ID | Trigger | Repo | Status |
 |----|---------|------|--------|
 | **M-SNOC-COMPILES** | `snoc` compiles `beauty_core.sno`, 0 gcc errors | TINY | ✅ Done |
-| **M-BEAUTY-FULL** | `beauty_full_bin` self-beautifies — diff empty | TINY | ⏳ sprint 2/4 `compiled-byrd-boxes` active |
+| **M-BEAUTY-FULL** | `beauty_full_bin` self-beautifies — diff empty | TINY | ⏳ sprint 3/4 `beauty-runtime` next |
 | **M-REBUS** | Rebus round-trip: `.reb` → `.sno` → CSNOBOL4 → diff oracle | TINY | ✅ Done `bf86b4b` |
-| **M-COMPILED-BYRD** | `sno2c` emits labeled goto Byrd boxes — `engine.c` not linked | TINY | ⏳ Active — IS sprint 2/4 |
+| **M-COMPILED-BYRD** | `sno2c` emits labeled goto Byrd boxes — `engine.c` not linked | TINY | ✅ Done `560c56a` |
 | **M-PYTHON-UNIFIED** | Python pipeline (`lower.py`, `emit_c_byrd.py`, `emit_jvm.py`, `emit_msil.py`) unified with C compiler — one IR, all backends | TINY | ❌ |
 | **M-COMPILED-SELF** | Compiled binary self-beautifies — diff empty | TINY | ❌ |
 | **M-BOOTSTRAP** | `snoc` compiles `snoc` (self-hosting) | TINY | ❌ Future |
@@ -149,7 +149,7 @@ No future session may remove it or defer it without Lon's explicit instruction.
 
 | Repo | MD File | Active Sprint | Milestone Target |
 |------|---------|--------------|-----------------|
-| [SNOBOL4-tiny](https://github.com/SNOBOL4-plus/SNOBOL4-tiny) | [TINY.md](TINY.md) | `smoke-tests` (2/4 toward M-BEAUTY-FULL) | M-BEAUTY-FULL |
+| [SNOBOL4-tiny](https://github.com/SNOBOL4-plus/SNOBOL4-tiny) | [TINY.md](TINY.md) | `beauty-runtime` (3/4 toward M-BEAUTY-FULL) | M-BEAUTY-FULL |
 | [SNOBOL4-jvm](https://github.com/SNOBOL4-plus/SNOBOL4-jvm) | [JVM.md](JVM.md) | `jvm-inline-eval` | M-JVM-EVAL |
 | [SNOBOL4-dotnet](https://github.com/SNOBOL4-plus/SNOBOL4-dotnet) | [DOTNET.md](DOTNET.md) | `net-delegates` | M-NET-DELEGATES |
 | [SNOBOL4-corpus](https://github.com/SNOBOL4-plus/SNOBOL4-corpus) | [CORPUS.md](CORPUS.md) | Stable — add Rebus oracle .sno files | M-REBUS |
@@ -173,7 +173,12 @@ Root cause of 20 SR + 139 RR conflicts: `WS` was silently skipped. Fix: `{WS} { 
 
 ---
 
-### Sprint 2 of 4 — `compiled-byrd-boxes` ⏳ Active (replaces retired `smoke-tests`)
+### Sprint 2 of 4 — `compiled-byrd-boxes` ✅ Complete `560c56a`
+
+**What:** `sno2c` emits labeled-goto Byrd box C. Validated against sprint0–22 oracles.
+`engine.c` dropped from compiled binary path via `engine_stub.c`.
+
+**M-COMPILED-BYRD fired `560c56a`.**
 
 **What:** `sno2c` emits labeled-goto Byrd box C. Validated against sprint0–22 oracles.
 `engine.c` and `snobol4_pattern.c` dropped from the compiled binary path.
@@ -195,7 +200,7 @@ already proved correctness at 609/609 worm cases. `emit_byrd.c` is a C port of t
 
 ---
 
-### Sprint 3 of 4 — `beauty-runtime` ❌
+### Sprint 3 of 4 — `beauty-runtime` ⏳ Active
 
 **What:** `beauty_full_bin < beauty.sno` runs to completion without crashing.
 Now using compiled Byrd boxes, not the interpreter. Sprint 3 catches runtime issues

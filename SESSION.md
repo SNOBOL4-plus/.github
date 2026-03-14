@@ -10,105 +10,70 @@
 | Field | Value |
 |-------|-------|
 | **Repo** | SNOBOL4-tiny |
-| **Sprint** | `compiled-byrd-boxes` (sprint 2/4 toward M-BEAUTY-FULL) |
-| **Milestone** | M-COMPILED-BYRD |
-| **HEAD** | `1c2062a` — feat(emit): wire byrd_emit_pattern into emit_stmt — compiled Byrd box path active |
+| **Sprint** | `beauty-runtime` (sprint 3/4 toward M-BEAUTY-FULL) |
+| **Milestone** | M-BEAUTY-FULL |
+| **HEAD** | `560c56a` — feat(runtime): engine_stub.c — compiled path links without engine.c |
 
 ---
 
-## The Architectural Decision (Lon + Claude, 2026-03-14)
+## M-COMPILED-BYRD — FIRED ✅ (`560c56a`, 2026-03-15)
 
-**The `smoke-tests` sprint was validating the wrong runtime and has been retired.**
-
-`sno_pat_*` / `engine.c` is a stopgap interpreter. Validating `sno2c` against it
-proves nothing about the compiled Byrd box path that actually matters.
-
-The correct test: does `sno2c` emit correct labeled-goto Byrd box C?
-Validated against the hand-written sprint0-22 oracle files that already exist.
-
-**The Python pipeline (lower.py + emit_c_byrd.py) produced correct output — 609/609
-worm cases, full Chomsky hierarchy. That is the ground truth. emit_byrd.c is a
-C port of that pipeline, wired into sno2c.**
+What was proven:
+- `sno2c` emits correct labeled-goto Byrd box C for all pattern types
+- ARB scan wrap added: bare patterns wrapped in SEQ(ARB, pat) for substring scan semantics
+- uid continuity fix: multiple Byrd blocks in one .sno file no longer collide on labels
+- `engine_stub.c` added: compiled binaries link with stub instead of engine.c
+- Integration test (hello/world/xyz substring scan): ALL OK
+- Sprint oracles: 28/28 pass
 
 ---
 
-## What Was Done This Session (2026-03-15)
+## What Sprint 3 (`beauty-runtime`) Means
 
-emit_byrd.c wired into emit_stmt() in emit.c — committed 1c2062a.
+Run `beauty_full_bin < beauty.sno` to completion without crash, hang, or abort.
+Now using compiled Byrd boxes (not the interpreter). Sprint 3 catches runtime
+issues in `snobol4.c` / `snobol4_inc.c` that surface when beauty actually runs.
 
-What works:
-- byrd_emit_pattern() called from the pattern-match statement case
-- Subject extracted: _subj%d (const char*), _slen%d (int64_t), _cur%d cursor
-- Static decls emitted before goto root_alpha; full Byrd box C inline in function
-- gamma (_byrd_%d_ok) sets _ok%d=1; omega sets _ok%d=0
-- Replacement (= repl) path: cursor-range memcpy with GC_malloc
-- _ok%d declared before Byrd block (no C jump-over-declaration errors)
-- Clean build, zero gcc errors
-- Oracle C files: 28/28 pass (4 intentional-fail tests correctly exit 1)
-- End-to-end .sno compile: emits correct C, links clean, Byrd box fires
-
-Known gap discovered — NEXT ACTION:
-
-Bare LIT("world") pattern is anchored at cursor=0 — but SNOBOL4 pattern
-matching is a substring scan. X "world" on "hello world" must find
-"world" anywhere in X, not just at position 0.
-
-Fix: In emit_stmt(), before calling byrd_emit_pattern(), wrap s->pattern
-in an implicit SEQ(ARB, s->pattern) — unless the pattern already anchors
-with POS(0) as its leftmost node.
-
-The oracle C files do not expose this because they hardcode cursor=0 and
-always wrap with POS(0)/RPOS(0) in the test pattern itself. The gap only
-shows up in real .sno compilation.
+**Commit when:** Binary exits cleanly on beauty.sno input.
 
 ---
 
-## One Next Action — Add ARB Scan Wrap
-
-The fix is in src/sno2c/emit.c, in the if (s->pattern) block.
-
-Add a pat_is_anchored() static helper before emit_stmt():
-
-    static int pat_is_anchored(Expr *e) {
-        if (!e) return 0;
-        if (e->kind == E_CALL && e->sval && strcasecmp(e->sval, "POS") == 0) return 1;
-        if (e->kind == E_CONCAT) return pat_is_anchored(e->left);
-        return 0;
-    }
-
-Then in the if (s->pattern) block, before byrd_emit_pattern():
-
-    Expr *scan_pat = s->pattern;
-    if (!pat_is_anchored(s->pattern)) {
-        Expr *arb = expr_new(E_CALL);
-        arb->sval = strdup("ARB");
-        arb->nargs = 0;
-        Expr *seq = expr_new(E_CONCAT);
-        seq->left = arb;
-        seq->right = s->pattern;
-        scan_pat = seq;
-    }
-    byrd_emit_pattern(scan_pat, out, root_lbl, sv, sl, cv, ok_lbl, fail_lbl);
+## One Next Action — Build beauty_full_bin and Run It
 
 Steps:
-1. cd /home/claude/SNOBOL4-tiny && git log --oneline -3 — confirm HEAD 1c2062a
-2. grep -n "E_CALL\|E_CONCAT\|expr_new\|Expr\b" src/sno2c/snoc.h — check Expr API
-3. grep -n "ARB\b" src/sno2c/emit_byrd.c — confirm ARB is E_CALL with sval="ARB"
-4. Add pat_is_anchored() and scan_pat wrap
-5. make -C src/sno2c — confirm clean build
-6. Run integration test (see Rebuild section below) — expect "ALL OK"
-7. Run sprint oracles — still 28/28
-8. Commit: "feat(emit): ARB scan wrap — SNOBOL4 substring scan semantics"
+1. Clone repos (see Container State below)
+2. Build CSNOBOL4 from tarball (see Container State)
+3. Build sno2c: `make -C src/sno2c`
+4. Compile beauty.sno:
+   ```bash
+   CORPUS=/home/claude/SNOBOL4-corpus
+   INC=$CORPUS/programs/inc
+   BEAUTY=$CORPUS/programs/beauty/beauty.sno
+   ./src/sno2c/sno2c $BEAUTY > /tmp/beauty_full.c
+   gcc -O0 -g -I src/runtime/snobol4 -I src/runtime \
+       /tmp/beauty_full.c src/runtime/snobol4/snobol4.c \
+       src/runtime/snobol4/snobol4_inc.c \
+       src/runtime/snobol4/snobol4_pattern.c \
+       src/runtime/engine_stub.c \
+       -lgc -lm -o /tmp/beauty_full_bin
+   ```
+5. Run it: `/tmp/beauty_full_bin < $BEAUTY > /tmp/beauty_out.sno`
+6. If it crashes or hangs: debug. The compiled C is in /tmp/beauty_full.c — read it.
+7. When it exits cleanly: commit `feat(runtime): beauty-runtime — binary exits clean on beauty.sno`
+8. Then Sprint 4: diff against CSNOBOL4 oracle output.
+
+**Known risk:** beauty.sno uses many SNOBOL4 features. Parser or codegen may reject
+some constructs. sno2c itself may fail to parse beauty.sno — that's a parser issue,
+not a runtime issue. Check `./src/sno2c/sno2c $BEAUTY` output first before linking.
 
 ---
 
 ## CRITICAL: What Next Claude Must NOT Do
 
 - Do NOT fix bugs in sno_pat_* / engine.c — retired from compiled path.
-- Do NOT chase sno_match_pattern / materialise bugs — irrelevant to Byrd boxes.
-- Do NOT run test_snoCommand_match.sh — validates the wrong runtime.
-- Do NOT rewrite emit_byrd.c — it works.
-- Do NOT rewrite the wiring in emit.c — it works. One gap: ARB scan wrap.
+- Do NOT rewrite emit_byrd.c — it works (28/28 oracles pass).
+- Do NOT rewrite the ARB scan wrap in emit.c — it works.
+- Do NOT reset byrd_uid_ctr — the continuity fix is intentional.
 
 ---
 
@@ -131,7 +96,7 @@ These will NOT be present in next Claude's container. Clone fresh:
     cp /mnt/user-data/uploads/snobol4-2_3_3_tar.gz .
     tar xzf snobol4-2_3_3_tar.gz && cd snobol4-2.3.3
     ./configure --prefix=/home/claude/snobol4-install && make -j$(nproc)
-    # Binary at: /home/claude/snobol4-2.3.3/snobol4 (use directly, install unreliable)
+    # Binary at: /home/claude/snobol4-2.3.3/snobol4 (use directly)
     cd ..
 
     cd SNOBOL4-tiny && make -C src/sno2c
@@ -150,7 +115,7 @@ These will NOT be present in next Claude's container. Clone fresh:
         /tmp/t; echo "exit=$? $c"
     done
 
-    # Integration test (after ARB wrap fix, expect "ALL OK"):
+    # Integration test (substring scan — expect ALL OK):
     cat > /tmp/pat_test.sno << 'EOF'
 *  Pattern match integration test
         X = "hello world"
@@ -166,7 +131,7 @@ EOF
         /tmp/pat_test.c src/runtime/snobol4/snobol4.c \
         src/runtime/snobol4/snobol4_inc.c \
         src/runtime/snobol4/snobol4_pattern.c \
-        src/runtime/engine.c -lgc -lm -o /tmp/pat_test
+        src/runtime/engine_stub.c -lgc -lm -o /tmp/pat_test
     /tmp/pat_test   # should print ALL OK
 
 ---
@@ -176,10 +141,11 @@ EOF
 | File | What it is | Status |
 |------|-----------|--------|
 | src/sno2c/emit_byrd.c | Compiled Byrd box emitter | Keeper |
-| src/sno2c/emit.c | Wired — byrd_emit_pattern called from emit_stmt | Keeper |
+| src/sno2c/emit.c | Wired — ARB scan wrap + byrd_emit_pattern | Keeper |
 | src/sno2c/snoc.h | IR + public API | Keeper |
 | src/runtime/snobol4/snobol4.c | Value runtime, builtins, var table, I/O | Keeper |
 | src/runtime/snobol4/snobol4_inc.c | Gen, Qize, Shift/Reduce, stack, counter | Keeper |
+| src/runtime/engine_stub.c | Linker stub — compiled path only | Keeper |
 | src/runtime/engine.c | Byrd box interpreter | EVAL only — do not modify |
 | src/runtime/snobol4/snobol4_pattern.c | SnoPattern tree + materialise | EVAL only |
 | src/codegen/emit_c_byrd.py | Python emitter — ground truth | Do not delete |
@@ -192,7 +158,9 @@ EOF
 
 | Date | What changed | Why |
 |------|-------------|-----|
-| 2026-03-15 | ARB scan wrap gap identified | bare LIT anchored at 0 not substring scan |
+| 2026-03-15 | M-COMPILED-BYRD fired (560c56a) | engine_stub.c + ALL OK |
+| 2026-03-15 | uid continuity fix (735c456) | duplicate labels across multiple patterns |
+| 2026-03-15 | ARB scan wrap (735c456) | substring scan semantics |
 | 2026-03-15 | emit.c wired — byrd_emit_pattern() called (1c2062a) | compiled path active |
 | 2026-03-13 | emit_byrd.c written committed (cb3f97e) | C port of Python pipeline complete |
 | 2026-03-14 | compiled-byrd-boxes sprint opened; smoke-tests retired | validated wrong runtime |
