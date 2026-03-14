@@ -294,6 +294,45 @@ LIFO discipline matches backtracking — discard copy on failure.
 
 ---
 
+## Architecture: Statement Execution Model (Session 27 Eureka)
+
+**The entire SNOBOL4 statement IS a Byrd Box:**
+```
+label:  subject  pattern  =replacement  :S(x)  :F(y)
+          α         →          γ           γ      ω
+```
+
+**Hot path** — pure Byrd Box gotos, zero overhead. No setjmp.
+**Cold path** — `longjmp` for ABORT, FENCE bare, runtime errors ONLY.
+
+### Three statement groupings for setjmp
+
+**1. Individual statement** — own setjmp boundary. Line number implicit in catch.
+
+**2. Glob sequence** — consecutive statements in a DEFINE body with NO internal
+label targets (no statement is jumped to from outside) share ONE setjmp. This is
+the key optimization: one `push_abort_handler` per function body, not per statement.
+Statements that ARE label targets start a new setjmp boundary.
+
+**3. Non-Gimpel DEFINE** — bare `DEFINE(...)` appearing mid-program as an executable
+statement (not a function declaration) gets its OWN standalone setjmp guard, never
+merged into a glob sequence, because its execution is conditional.
+
+### Implementation status
+
+| Feature | Status |
+|---------|--------|
+| Per-function setjmp | ✅ `emit.c` `emit_fn()` |
+| `push/pop_abort_handler` + macros | ✅ `runtime_shim.h` |
+| Per-statement setjmp | ❌ not done |
+| Glob-sequence optimization | ❌ not done — needs reachability pass |
+| Non-Gimpel DEFINE special case | ❌ not done |
+
+**Reference:** SESSIONS_ARCHIVE.md Session 27, Session 26 "Statement IS a Byrd Box"
+Full spec in PLAN.md "Architecture: Statement Execution Model"
+
+---
+
 ## Architecture: Two Worlds
 
 | World | Type | Failure | Entry |

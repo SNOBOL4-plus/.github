@@ -299,6 +299,126 @@ contract, not shared code.
 
 ---
 
+## Architecture: Statement Execution Model (Session 27 Eureka, permanent)
+
+**Source:** SESSIONS_ARCHIVE.md Session 27 + Session 26 "Statement IS a Byrd Box"
+**Implemented partially:** per-function setjmp in emit.c. Per-statement and glob-sequence NOT YET done.
+
+### The entire SNOBOL4 statement IS a Byrd Box
+
+```
+label:  subject  pattern  =replacement  :S(x) :F(y)
+          α         →          γ            γ    ω
+```
+- **α** — evaluate subject → initialize Σ (string), Δ (cursor=0)
+- **pattern** — runs through the Byrd Box proper (labeled gotos)
+- **γ** — success: apply replacement, follow :S() goto
+- **ω** — failure: follow :F() goto
+
+No C try/catch on the hot path. Pure gotos. Zero overhead.
+
+### Two-level exception model
+
+**Hot path — pure Byrd Box gotos (zero overhead):**
+Normal SNOBOL4 control flow — pattern success, pattern failure, backtracking,
+`:S()` / `:F()` routing — uses pure C labeled gotos. No setjmp on hot path.
+
+**Cold path — longjmp for ABORT and genuinely bad things only:**
+ABORT pattern, FENCE bare, runtime errors, divide-by-zero → `longjmp` to nearest handler.
+Stack unwinding IS the cleanup. No omega stack needed for abnormal termination.
+
+### Three statement groupings — how setjmp is applied
+
+**NOT YET IMPLEMENTED in emit.c — must be added:**
+
+#### 1. Individual statement with setjmp guard (default)
+
+Each SNOBOL4 statement gets its own setjmp boundary. Line number is implicit
+in which boundary catches — free diagnostics.
+
+```c
+/* Statement N: subject pattern =replacement :S(x) :F(y) */
+{
+    jmp_buf _stmt_N_jmp;
+    if (setjmp(_stmt_N_jmp) != 0) goto _L_y;   /* ABORT → :F() target */
+    push_abort_handler(&_stmt_N_jmp);
+    /* α: evaluate subject */
+    /* pattern Byrd box: pure gotos */
+    /* γ: apply replacement, pop handler, goto _L_x */
+    /* ω: pop handler, goto _L_y */
+    pop_abort_handler();
+}
+```
+
+#### 2. Glob sequence — multiple statements in a DEFINE/END block
+
+When a sequence of statements inside a DEFINE body has NO internal labels
+(i.e. no statement is the target of a goto from outside the sequence),
+the entire sequence can share ONE setjmp boundary. This is the optimization:
+
+```c
+/* DEFINE body: statements N, N+1, N+2 — no internal label targets */
+{
+    jmp_buf _fn_abort_jmp;
+    if (setjmp(_fn_abort_jmp) != 0) goto _SNO_ABORT_fn;
+    push_abort_handler(&_fn_abort_jmp);
+
+    /* stmt N:   α → Byrd box → γ/ω gotos ... */
+    /* stmt N+1: α → Byrd box → γ/ω gotos ... */
+    /* stmt N+2: α → Byrd box → γ/ω gotos ... */
+
+    pop_abort_handler();
+}
+```
+
+One setjmp for the entire reachable sequence. Statements that ARE label targets
+start a new setjmp boundary (they may be jumped to from outside the sequence,
+so they need their own abort context).
+
+**Current emit.c does per-function setjmp only.** The glob-sequence optimization
+(one setjmp per DEFINE body, not per statement) is not yet implemented.
+
+#### 3. Special DEFINE — non-Gimpel form
+
+Some DEFINE statements in beauty.sno do NOT follow the Gimpel convention
+`DEFINE('fn(args)locals', 'entry_label')`. They are bare `DEFINE(...)` calls
+that appear mid-program as executable statements, not as function declarations.
+
+These must be wrapped in their OWN setjmp guard as a standalone statement —
+not merged into the surrounding glob sequence — because their execution
+is conditional (the DEFINE may or may not run depending on control flow).
+
+```c
+/* Standalone DEFINE statement — not a function declaration */
+{
+    jmp_buf _stmt_define_jmp;
+    if (setjmp(_stmt_define_jmp) != 0) goto _stmt_define_fail;
+    push_abort_handler(&_stmt_define_jmp);
+    aply("DEFINE", ...);   /* register the function */
+    pop_abort_handler();
+    goto _stmt_define_ok;
+    _stmt_define_fail: /* :F() target */
+    _stmt_define_ok:   /* :S() target */
+}
+```
+
+### Implementation status
+
+| Feature | Status | Location |
+|---------|--------|----------|
+| Per-function setjmp | ✅ Done | `emit.c` `emit_fn()` lines 1253-1255 |
+| `push/pop_abort_handler` | ✅ Done | `runtime_shim.h` |
+| `ABRT_GUARD_DECL/SET/POP` macros | ✅ Done | `runtime_shim.h` |
+| Per-statement setjmp | ❌ Not done | `emit.c` `emit_stmt()` |
+| Glob-sequence optimization | ❌ Not done | `emit.c` — needs reachability analysis |
+| Non-Gimpel DEFINE special case | ❌ Not done | `emit.c` `emit_stmt()` |
+
+**Priority:** implement after `compiled-byrd-boxes-full` sprint (M-BEAUTY-FULL path).
+The per-function setjmp is sufficient for correctness now. Per-statement and
+glob-sequence are optimizations and diagnostics improvements.
+
+---
+
 ## Org-Level Milestones
 
 | ID | Trigger | Repo | Status |
