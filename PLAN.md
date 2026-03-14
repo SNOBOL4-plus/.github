@@ -40,10 +40,10 @@ https://github.com/settings/tokens**
 
 ---
 
-## ⛔ ALL BYRD BOXES — engine.c MUST NOT BE LINKED IN beauty_full_bin (mandatory, no exceptions)
+## ⛔ ALL BYRD BOXES — engine_stub.c only, no interpreter (mandatory, no exceptions)
 
-**Lon's explicit requirement: every pattern in beauty_full_bin must be compiled Byrd boxes.
-engine.c must not be linked. engine_stub.c only. No interpreter path in the compiled binary.**
+**Every pattern in beauty_full_bin is a compiled Byrd box.
+engine_stub.c is the only engine file linked. engine.c is fully superseded — see Architecture below.**
 
 ### Canonical Architecture — Box Layout (decided Session 16, recorded SESSIONS_ARCHIVE.md)
 
@@ -165,7 +165,7 @@ Technique 2 recorded here for continuity — implement after M-BEAUTY-FULL.
 
 **Reference:** SESSIONS_ARCHIVE.md §14 "Self-Modifying C", §15 "Allocation Problem Solved", Session 16 "Key insight from Lon"
 
-### Every session: verify engine.c is NOT in the build command for beauty_full_bin.
+### Build command for beauty_full_bin (engine_stub.c only):
 
 ```bash
 gcc -O0 -g -I $R/snobol4 -I $R \
@@ -173,7 +173,6 @@ gcc -O0 -g -I $R/snobol4 -I $R \
     $R/snobol4/snobol4_inc.c \
     $R/engine_stub.c -lgc -lm -o beauty_full_bin
 ```
-If you find yourself typing `engine.c` — STOP. You are in the trap.
 
 ---
 
@@ -258,64 +257,23 @@ git commit --author="LCherryholmes <lcherryh@yahoo.com>" -m "..."
 
 ## Architectural Note — The sno_pat_* Stopgap (recorded 2026-03-13)
 
-**The `sno_pat_*` / `engine.c` interpreter is a stopgap. It is not the destination.**
+**The `sno_pat_*` / `engine.c` bridge is fully superseded. (Recorded 2026-03-13, closed 2026-03-14.)**
 
-### How we got here
+`emit_byrd.c` (M-COMPILED-BYRD `560c56a`) replaced it. Every pattern is now a compiled
+labeled-goto Byrd box. No tree. No dispatch. No interpreter. The CPU runs the box directly.
 
-The original Python pipeline (`emit_c_byrd.py` + `lower.py`) generated proper compiled
-Byrd boxes — labeled goto C with explicit α/β/γ/ω ports wired statically per pattern node.
-This is the correct target architecture, proven by `bench/test_icon.sno` (Proebsting's
-`5 > ((1 to 2) * (3 to 4))` implemented as SNOBOL4 labeled statements) and the 28
-hand-written oracle C files in `test/sprint0–22`.
-
-When the compiler was rewritten from Python to C (`sno2c`), there was no C equivalent
-of `lower.py` yet. Rather than block progress, `sno_pat_*` + `engine.c` was introduced
-as a bridge: `emit.c` emits `sno_pat_cat()` / `sno_pat_user_call()` / etc. calls that
-build a pattern tree at runtime, which `engine.c` then interprets via a `type<<2|signal`
-dispatch switch. The Byrd boxes are implicit in that dispatch table — not generated.
-
-### What the destination looks like
-
-For a pattern like `snoCommand`, the compiled output should be static labeled C:
-
-```c
-snoCommand_alpha:   /* nInc() */  goto nInc_alpha;
-nInc_gamma:                       goto FENCE_alpha;
-FENCE_alpha:        ...
-snoCommand_omega:   return empty;
-```
-
-No tree. No dispatch table. No interpreter. Direct gotos, all wiring resolved at
-compile time by a C port of `lower.py`.
-
-### The path forward (after M-BEAUTY-FULL)
-
-Add a new sprint `compiled-byrd-boxes` between M-BEAUTY-FULL and M-COMPILED-SELF:
-- Write `src/sno2c/emit_byrd.c` — C port of `lower.py` + `emit_c_byrd.py`
-- Replace `emit_pat()` in `emit.c` with calls to `emit_byrd.c`
-- Drop `engine.c` + `snobol4_pattern.c` from the compiled binary path entirely
-- `sno_pat_*` API becomes interpreter-only (EVAL, dynamic patterns)
-
-**Do not lose `engine.c` or `snobol4_pattern.c`.** They remain correct and necessary
-for dynamic patterns (EVAL, runtime-constructed patterns). The compiled path bypasses
-them; the interpreter path keeps them.
-
-### Decision (Lon Cherryholmes + Claude Sonnet 4.6, 2026-03-14)
+`EVAL()` and `CODE()` — the only remaining use case for runtime-constructed patterns —
+are handled by TCC in-process compile → `block_fn_t` (sprint `code-eval`, after M-BEAUTY-FULL).
+See Architecture: The New Plan below.
 
 **M-PYTHON-UNIFIED is retired.** The Python pipeline (`lower.py`, `byrd_ir.py`,
-`emit_c_byrd.py`, `emit_jvm.py`, `emit_msil.py`) was the prototype — the scaffold
-that proved the Byrd box architecture correct at 609/609 worm cases. `emit_byrd.c`
-is the real implementation. The scaffold served its purpose and is now archaeological
-reference, not a build dependency.
-
-Python has no place in the compiler pipeline. The JVM and MSIL backends will implement
-the four-port Byrd box lowering natively in their own languages (Java, C#), not by
-calling into Python.
+`emit_c_byrd.py`, `emit_jvm.py`, `emit_msil.py`) was the prototype — proved Byrd box
+architecture correct at 609/609 worm cases. `emit_byrd.c` is the real implementation.
+Python has no place in the compiler pipeline.
 
 The replacement milestone is **M-BYRD-SPEC**: a language-agnostic written specification
 of the four-port lowering rules (α/β/γ/ω wiring per node type) that all three backends
-implement independently but consistently. The spec lives in HQ. It is the shared
-contract, not shared code.
+implement independently. The spec lives in HQ. It is the shared contract, not shared code.
 
 ---
 
@@ -452,10 +410,14 @@ glob-sequence are optimizations and diagnostics improvements.
 | ID | Trigger | Repo | Status |
 |----|---------|------|--------|
 | **M-SNOC-COMPILES** | `snoc` compiles `beauty_core.sno`, 0 gcc errors | TINY | ✅ Done |
-| **M-BEAUTY-FULL** | `beauty_full_bin` self-beautifies — diff empty | TINY | ⏳ sprint 3/4 `beauty-runtime` next |
 | **M-REBUS** | Rebus round-trip: `.reb` → `.sno` → CSNOBOL4 → diff oracle | TINY | ✅ Done `bf86b4b` |
-| **M-COMPILED-BYRD** | `sno2c` emits labeled goto Byrd boxes — `engine.c` not linked | TINY | ✅ Done `560c56a` |
+| **M-COMPILED-BYRD** | `sno2c` emits labeled-goto Byrd boxes — `engine_stub.c` only, no interpreter | TINY | ✅ Done `560c56a` |
 | **M-CNODE** | `emit_expr`/`emit_pat` route through CNode IR + pp/qq pretty-printer — zero expression lines > 120 chars | TINY | ✅ Done `ac54bd2` |
+| **M-BEAUTY-FULL** | `beauty_full_bin` self-beautifies — diff empty | TINY | ⏳ active |
+| **M-TRAMPOLINE** | Hello world runs through `block_fn_t` trampoline loop — `pc = pc()` | TINY | ❌ |
+| **M-BLOCK-FN** | Every stmt a C fn returning S/F block address; stmts grouped into block fns | TINY | ❌ |
+| **M-PATTERN-BLOCK** | Named patterns compile to block fns; `*X` static calls work; `*X` dynamic calls `block_fn_t` directly | TINY | ❌ |
+| **M-CODE-EVAL** | `CODE()` + `EVAL()` via TCC in-process compile → `block_fn_t`; no interpreter | TINY | ❌ |
 | **M-BYRD-SPEC** | Language-agnostic written spec of four-port Byrd box lowering rules — all backends (C, JVM, MSIL) implement independently against it | HQ | ❌ |
 | **M-SNO2C-SNO** | `sno2c.sno` compiled by C `sno2c` produces working binary — beauty.sno diff empty | TINY | ❌ |
 | **M-COMPILED-SELF** | Compiled binary self-beautifies — diff empty | TINY | ❌ |
@@ -965,10 +927,10 @@ typedef struct {
 | **M-TRAMPOLINE** | Hello world runs through trampoline loop — `pc = pc()` | ❌ |
 | **M-STMT-FN** | Every stmt a C function returning S/F block address | ❌ |
 | **M-BLOCK-FN** | Stmts grouped into block functions, gotos resolve | ❌ |
-| **M-PATTERN-BLOCK** | Named patterns compile to block functions, `*X` calls work | ❌ |
+| **M-PATTERN-BLOCK** | Named patterns compile to block fns; `*X` static → direct call; `*X` dynamic → `block_fn_t` stored in var, called directly — no interpreter | ❌ |
 | **M-LOCALS-STRUCT** | Flat concatenated locals struct per block, all locals correct | ❌ |
 | **M-BEAUTY-FULL** | `beauty_full_bin` self-beautifies — diff empty | ❌ |
-| **M-CODE-EVAL** | `CODE()` works via TCC in-process compile → `block_fn_t`; `EVAL()` same path | ❌ |
+| **M-CODE-EVAL** | `CODE()` + `EVAL()` via TCC in-process compile → `block_fn_t`; same trampoline loop; no interpreter | ❌ |
 | **M-COMPILED-SELF** | Compiled binary self-beautifies — diff empty | ❌ |
 | **M-BOOTSTRAP** | `sno2c` compiles `sno2c` — self-hosting | ❌ |
 
