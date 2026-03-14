@@ -776,17 +776,77 @@ Mutual recursion = mutual recursion between C functions. Forward decls for cycle
 
 ---
 
-### GOTO, *X, CODE, EVAL — all the same
+### GOTO, *X, CODE, EVAL — all the same mechanism, different compilation paths
 
 | SNOBOL4 construct | Mechanism |
-|-------------------|-----------|
+|-------------------|-----------| 
 | `:(L42)` | return `block_L42` from current stmt |
 | `*X` (static) | call `block_X` — compiled block fn address |
 | `*X` (dynamic) | X holds a `block_fn_t` — call it directly |
-| `CODE(str)` | compile str → new block fn, malloc+relocate, return `block_fn_t` |
 | `EVAL(str)` | compile str → degenerate stmt fn (expr only), call it, get value |
+| `CODE(str)` | see below — requires runtime C compilation |
 
 No special cases. No interpreter. The trampoline handles all of them.
+
+---
+
+### CODE() — Runtime C compilation (the kludge, first pass)
+
+`CODE(str)` is different from `*X` and `EVAL`. It does not reference a
+pattern already compiled into the executable — it takes an **arbitrary
+SNOBOL4 string** and produces executable code at runtime. We generate C,
+so CODE must compile C at runtime to get a `block_fn_t`.
+
+**The kludge (first pass — gets us working):**
+
+Use **TCC (Tiny C Compiler)** as an in-process library. TCC can compile
+a C source string in memory and return a function pointer — no fork, no
+temp files, no dlopen/dlclose dance.
+
+```c
+#include <libtcc.h>
+
+block_fn_t sno_code(const char *snobol4_src) {
+    /* 1. Run sno2c on snobol4_src → C source string (in memory) */
+    char *c_src = sno2c_compile_string(snobol4_src);
+
+    /* 2. Feed C source to TCC in-process */
+    TCCState *s = tcc_new();
+    tcc_set_output_type(s, TCC_OUTPUT_MEMORY);
+    tcc_compile_string(s, c_src);
+
+    /* 3. Relocate into memory — TCC does this */
+    tcc_relocate(s, TCC_RELOCATE_AUTO);
+
+    /* 4. Get the entry block function address */
+    block_fn_t entry = tcc_get_symbol(s, "block_CODE_entry");
+
+    /* 5. Return it — trampoline calls it like any other block fn */
+    return entry;
+}
+```
+
+TCC is ~100KB, embeds cleanly, compiles fast. The generated C from sno2c
+is already in the right block_fn_t form — TCC just needs to see it.
+
+**Why "kludge":** It routes through C text → TCC → machine code rather than
+directly emitting machine code. It works correctly. It is not the final form.
+
+**The real form (after M-BOOTSTRAP):** Once sno2c is self-hosting, CODE()
+calls the compiler directly on the Byrd IR — no C text, no TCC, straight
+to block_fn_t via the native code generator. TCC is scaffolding.
+
+**Sprint:** `code-eval` — depends on M-BEAUTY-FULL. TCC must be available
+as a linked library (`libtcc`). Add to build: `-ltcc`.
+
+---
+
+### EVAL() — Simpler than CODE
+
+`EVAL(str)` evaluates a SNOBOL4 expression (not a statement sequence).
+Compile str to a single degenerate stmt_fn — subject is empty, pattern is
+the expression, no replacement. Call it, read the γ return value.
+Same TCC path as CODE but the generated C is a single stmt function.
 
 ---
 
@@ -824,7 +884,7 @@ typedef struct {
 | **M-PATTERN-BLOCK** | Named patterns compile to block functions, `*X` calls work | ❌ |
 | **M-LOCALS-STRUCT** | Flat concatenated locals struct per block, all locals correct | ❌ |
 | **M-BEAUTY-FULL** | `beauty_full_bin` self-beautifies — diff empty | ❌ |
-| **M-CODE-EVAL** | `CODE()` and `EVAL()` work via malloc+relocate block fns | ❌ |
+| **M-CODE-EVAL** | `CODE()` works via TCC in-process compile → `block_fn_t`; `EVAL()` same path | ❌ |
 | **M-COMPILED-SELF** | Compiled binary self-beautifies — diff empty | ❌ |
 | **M-BOOTSTRAP** | `sno2c` compiles `sno2c` — self-hosting | ❌ |
 
@@ -840,7 +900,7 @@ typedef struct {
 | `pattern-block` | Named pattern assignments → block fns, `*X` calls | M-PATTERN-BLOCK |
 | `locals-struct` | Flat concatenated locals struct per block | M-LOCALS-STRUCT |
 | `beauty-full-diff` | beauty.sno self-beautifies through compiled binary | M-BEAUTY-FULL |
-| `code-eval` | `CODE()` + `EVAL()` via malloc+relocate | M-CODE-EVAL |
+| `code-eval` | `CODE()` + `EVAL()` via TCC in-process compile, `-ltcc` | M-CODE-EVAL |
 | `compiled-self-diff` | Compiled binary self-beautifies | M-COMPILED-SELF |
 | `bootstrap` | `sno2c` compiles itself | M-BOOTSTRAP |
 
