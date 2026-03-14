@@ -52,6 +52,17 @@ Add a new sprint `compiled-byrd-boxes` between M-BEAUTY-FULL and M-COMPILED-SELF
 for dynamic patterns (EVAL, runtime-constructed patterns). The compiled path bypasses
 them; the interpreter path keeps them.
 
+### Agreement (Lon Cherryholmes + Claude Sonnet 4.6, 2026-03-13)
+
+Once M-BEAUTY-FULL is complete there **must** be a milestone for switching the C
+compiler over to proper compiled Byrd box emission AND unifying with the Python
+pipeline. The Python work (`lower.py`, `byrd_ir.py`, `emit_c_byrd.py`, `emit_jvm.py`,
+`emit_msil.py`) is intellectual property that must not be abandoned or orphaned.
+It becomes the shared IR that all backends — C, JVM, MSIL — emit from.
+
+That milestone is **M-PYTHON-UNIFIED**. It is locked in the roadmap above.
+No future session may remove it or defer it without Lon's explicit instruction.
+
 ---
 
 ## Two Levels
@@ -70,6 +81,7 @@ them; the interpreter path keeps them.
 | **M-BEAUTY-FULL** | `beauty_full_bin` self-beautifies — diff empty | TINY | ⏳ sprint 2/4 `smoke-tests` active |
 | **M-REBUS** | Rebus round-trip: `.reb` → `.sno` → CSNOBOL4 → diff oracle | TINY | ✅ Done `bf86b4b` |
 | **M-COMPILED-BYRD** | `sno2c` emits labeled goto Byrd boxes — `engine.c` not linked | TINY | ❌ |
+| **M-PYTHON-UNIFIED** | Python pipeline (`lower.py`, `emit_c_byrd.py`, `emit_jvm.py`, `emit_msil.py`) unified with C compiler — one IR, all backends | TINY | ❌ |
 | **M-COMPILED-SELF** | Compiled binary self-beautifies — diff empty | TINY | ❌ |
 | **M-BOOTSTRAP** | `snoc` compiles `snoc` (self-hosting) | TINY | ❌ Future |
 | **M-JVM-EVAL** | JVM inline EVAL! complete (sprint `jvm-inline-eval`) | JVM | ❌ |
