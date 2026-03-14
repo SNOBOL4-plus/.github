@@ -673,3 +673,132 @@ static SnoVal pat_snoParse(pat_snoParse_iota_t *z, int entry) {
 **Status:** Recorded 2026-03-14. Not yet implemented. Current target is Technique 1
 (struct-passing) for M-BEAUTY-FULL. This iota-function approach is an alternative
 path — possibly simpler — worth revisiting after M-BEAUTY-FULL.
+
+---
+
+## Architecture: Four Techniques for Byrd Box Implementation (2026-03-14)
+
+**Unifying insight:** A static Byrd box (machine code at a linker address) and a
+dynamic Byrd box (malloc'd copy of those same bytes) are identical — same instruction
+bytes, same data layout. The only difference is that relative jump offsets and
+absolute DATA references must be patched (relocated) in the dynamic copy. There is
+no interpreter. The box runs itself. The CPU IS the engine.
+
+### Technique 1 — Struct-passing (CURRENT, C target, for M-BEAUTY-FULL)
+
+Each named pattern becomes a C function `pat_X(pat_X_t **zz, int entry)`.
+All locals live in a typed struct `pat_X_t`. Child frame for `*Y` is a pointer
+field `pat_Y_t *Y_z` inside the parent struct. `calloc` on first entry (entry==0),
+`memset` on re-entry. `entry==1` dispatches to beta.
+
+```c
+typedef struct pat_snoParse_t {
+    int64_t  saved_7;
+    int      arbno_depth;
+    int64_t  arbno_stack[64];
+    struct pat_snoCommand_t *snoCommand_z;
+} pat_snoParse_t;
+
+static SnoVal pat_snoParse(pat_snoParse_t **zz, int entry) {
+    pat_snoParse_t *z = *zz;
+    if (entry == 0) { z = *zz = calloc(1, sizeof(*z)); goto snoParse_alpha; }
+    if (entry == 1) { goto snoParse_beta; }
+    ...labeled goto Byrd box using z->field...
+}
+```
+
+**Status:** In progress. `byrd_emit_named_pattern()` being implemented.
+
+---
+
+### Technique 2 — mmap + memcpy + relocate (ASM/native target, AFTER M-BEAUTY-FULL)
+
+When `*X` fires at match time, the static box for X is already in memory (compiled
+into the executable). To create a dynamic instance:
+
+1. `memcpy(new_text, box_X.text_start, box_X.text_len)` — copy CODE section
+2. `memcpy(new_data, box_X.data_start, box_X.data_len)` — copy DATA section
+3. `relocate(new_text, delta)` — patch two relocation cases:
+   - Relative refs (near jumps within box): add `delta = new_addr - orig_addr`
+   - Absolute refs (DATA pointers, external calls): patch to new DATA copy
+4. Jump to `new_text[PROCEED]` — enter the copy
+
+TEXT section: PROTECTED (RX). mprotect → RWX during copy+relocate, back to RX after.
+DATA section: UNPROTECTED (RW), one copy per dynamic instance.
+No heap allocator. No GC. ~20 lines. The mmap region IS the allocator.
+LIFO discipline of backtracking = discard copy on failure.
+
+**Status:** Not yet implemented. Target: after M-BEAUTY-FULL.
+
+---
+
+### Technique 3 — Iota functions (flat-model C, intermediate concept)
+
+Named after the structs in `test_sno_2.c`. Every labeled Byrd box block that starts
+with a label becomes its own tiny C function — not a SNOBOL4 function, purely to
+give that block a **callable address**. Sequential blocks are linked by port wiring
+(α→γ→next_α etc.) as direct calls or gotos between iota functions.
+
+The entire sequence of iota functions for a named pattern is wrapped in one outer
+C function (again, not a SNOBOL4 function — just for a single starting address).
+The outer wrapper takes a **single flat concatenated struct** containing ALL locals
+for ALL iota functions in the sequence. One struct, passed once, holds everything.
+
+```c
+typedef struct {
+    int64_t saved_7;        /* from lit_7 iota */
+    int     arbno_depth;    /* from arbno_15 iota */
+    int64_t arbno_stack[64];
+    /* ... all locals for all iota functions in this pattern ... */
+} pat_snoParse_iota_t;
+
+static SnoVal pat_snoParse(pat_snoParse_iota_t *z, int entry) {
+    if (entry == 0) goto snoParse_alpha;
+    if (entry == 1) goto snoParse_beta;
+    snoParse_alpha: ...  /* formerly a separate iota function */
+    snoParse_beta:  ...
+}
+```
+
+**Key property:** Every iota function has an address → addressable for the dynamic
+box path. Static iota functions in the executable are the template; dynamic boxes
+are relocated copies. Bridges Technique 1 and Technique 2.
+
+**Status:** Concept only. Not implemented. Worth revisiting after M-BEAUTY-FULL.
+
+---
+
+### Technique 4 — Flat single function + GCC label-as-value port table
+
+The entire named pattern stays flat in ONE C function — no struct threading,
+no iota wrappers. GCC's `&&label` extension gives the address of any label as
+a `void*`. A port table is built at startup:
+
+```c
+void *pat_snoParse_ports[2];  /* [0]=alpha, [1]=beta */
+
+static SnoVal pat_snoParse_flat(pat_snoParse_iota_t *z) {
+    /* Initialize port table once */
+    pat_snoParse_ports[0] = &&snoParse_alpha;
+    pat_snoParse_ports[1] = &&snoParse_beta;
+    ...
+    snoParse_alpha:  ...labeled goto Byrd box...
+    snoParse_beta:   ...
+}
+
+/* Caller dispatches via: goto *pat_snoParse_ports[entry]; */
+```
+
+A dynamic copy or any caller jumps in via `goto *pat_snoParse_ports[entry]`.
+The port table IS the interface. `&&label` addresses are interior pointers to
+the function's code — stable for process lifetime since the function never
+truly returns (it runs forever via gotos).
+
+**Weirdness:** `&&label` is a GCC extension (also Clang). Not standard C.
+The addresses are only valid within the function — fine here since the box
+never returns normally. Linking visibility: expose the port table as a global
+`void*` array; the linked object sees it as a normal symbol.
+
+**Status:** Concept only. Not implemented. Hmm — interesting but nonstandard.
+
+---
