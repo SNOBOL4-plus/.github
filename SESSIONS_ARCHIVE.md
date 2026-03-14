@@ -4693,3 +4693,25 @@ replacing sno_match() + emit_pat() with direct Byrd box emission inline into the
 Then sprint0-22 validation. Then M-COMPILED-BYRD fires.
 
 **Commits:** cb3f97e
+
+---
+
+## Session 2026-03-15 — emit.c wiring complete
+
+**Repo:** SNOBOL4-tiny  **Sprint:** compiled-byrd-boxes  **HEAD start:** cb3f97e  **HEAD end:** 1c2062a
+
+**What happened:**
+- Wired byrd_emit_pattern() into emit_stmt() in emit.c — compiled Byrd box path now active
+- Replaced sno_pat_*/engine.c stopgap (sno_match / emit_pat) with direct byrd_emit_pattern() call
+- Fixed _ok%d duplicate declaration (declare before Byrd block, assign at gamma/omega labels)
+- Fixed comment with embedded */ that broke C parser
+- Discovered and confirmed: END must be in label column (column 1) not subject field
+- Discovered key gap: bare LIT pattern is anchored at cursor=0, not substring scan
+  SNOBOL4 requires scanning — fix is SEQ(ARB, pattern) wrap before byrd_emit_pattern()
+- Oracle C files: 28/28 pass (4 intentional-fail exit 1 correctly)
+- End-to-end .sno->C->compile->run works; Byrd box fires correctly confirmed with debug print
+- CSNOBOL4 built from tarball (binary at snobol4-2.3.3/snobol4, not installed)
+
+**Committed:** 1c2062a feat(emit): wire byrd_emit_pattern into emit_stmt
+
+**Next action:** Add pat_is_anchored() + ARB scan wrap in emit.c before byrd_emit_pattern() call
