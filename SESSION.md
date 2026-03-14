@@ -12,90 +12,67 @@
 | **Repo** | SNOBOL4-tiny |
 | **Sprint** | `pattern-block` (sprint 4/9 toward M-BEAUTY-FULL) |
 | **Milestone** | M-BEAUTY-FULL |
-| **HEAD** | `6467ff2 — fix(emit): compile named patterns from fn bodies + expr_contains_pattern E_IMM/E_COND` |
+| **HEAD** | `613b333 — artifact: beauty_tramp_session64.c — 26769 lines, 0 gcc errors, 9 match_pattern_at, Parse Error active` |
 
 ---
 
-## State at handoff (session 63)
+## State at handoff (session 64)
 
 Commits this session:
-- `6467ff2` — Three fixes toward M-BEAUTY-FULL:
-  1. scan DEFINE fn bodies for named-pattern assignments
-  2. expr_contains_pattern recurse into E_IMM/E_COND
-  3. pass 0a pre-registration before emit_fn + NamedPat.emitted dedup flag
+- `09e5a5d` — fix(emit_byrd): E_DEREF right-child varname + unary $'lit' output capture + sideeffect emit_imm (33→9 match_pattern_at)
+- `5e90712` — fix(emit_byrd): sync C static on do_assign + byrd_cs() helper (nl/tab/etc now visible to get())
+- `613b333` — artifact: beauty_tramp_session64.c
 
 **Progress this session:**
-- 112 → 196 compiled named pattern functions
-- Core grammar now compiled: Parse, Command, Stmt, Label, Control, Comment, Compiland
-- Leaf patterns now compiled: Function, BuiltinVar, SpecialNm, ProtKwd, UnprotKwd
-- match_pattern_at calls: 82 → 33, all bch/qqdlm (genuine dynamic locals — correct fallback)
-- Previous segfault (match_pattern_at stack overflow) eliminated
-- New crash: pat_Expr infinite recursion — root cause fully pinned (see below)
+- `nPush() $'('` infinite recursion fixed — is_sideeffect_call() + emit_sideeffect_call_inline()
+- E_DEREF varname extraction fixed — check right child first (grammar: left=NULL, right=E_VAR)
+- Unary `$'lit'` output capture fixed — was falling to var_get("") fallback
+- C static sync fixed — byrd_cs() + do_assign now emits both var_set() AND _name=val
+- match_pattern_at calls: 33 → 9 (all 9 remaining are legitimate fallbacks)
+- Binary compiles: 0 gcc errors throughout
+- Symptom: `printf 'X = 1\n' | beauty_tramp_bin` → "Parse Error" + passthrough (no crash)
 
 ---
 
-## Root cause of new crash — pat_Expr infinite left-recursion
+## Root cause of current failure — pat_Parse failing on "X = 1\n"
 
-**Symptom:** `printf 'X = 1\n' | beauty_tramp_bin` → segfault at pat_Expr (stack overflow).
+**Symptom:** `Src POS(0) *Parse *Space RPOS(0)` fails → mainErr1 → "Parse Error".
 
-**Call chain:** `pat_Command → pat_Stmt → pat_Expr17 → pat_Expr (via cat_r_554_α) → pat_Expr0 → ... → pat_Expr17 → pat_Expr → ...` infinite.
+**Most likely cause — Hypothesis A: Src is empty when stmt_427 fires**
 
-**Why:** beauty.sno `Expr17 = FENCE(nPush() $'(' *Expr ...)`.
-Parser produces: `E_IMM(left=nPush(), right='(')` — because `$` is binary right-associative and `nPush()` is the preceding concat element (left operand of `$`).
-emit_imm treats `nPush()` as the child pattern. `nPush()` succeeds immediately (zero cursor advance), then `*Expr` is called — recursing before ever matching `(`.
-
-**The parse tree structure:**
+The main loop for a non-continuation line:
 ```
-concat(
-  E_IMM(left=nPush(), right=E_STR("(")),  ← $ applied to nPush()
-  concat(*Expr, ...)
-)
+main01:  read Src (gets "" initially)
+         Line POS(0) ANY('.+')  :S(main02)   ← fails for "X = 1" → falls through
+         Line POS(0) ANY('.+')  :S(main02)   ← stmt_426, also fails → falls through
+         Src POS(0) *Parse ...               ← Src is STILL "" here!
 ```
-emit_imm records start, runs `nPush()` as child (zero advance), reaches do_assign, calls *Expr — infinite.
+`main02:` sets `Src = Src Line nl` — but `main02` only fires on a continuation line
+(`:S(main02)` from the ANY('.+') check). For a plain line, Src is never built.
+There should be a statement `Src = Line nl` on the non-continuation path before *Parse.
+Read beauty.sno lines 783–792 carefully — find the missing Src = Line nl assignment.
 
-**What SHOULD happen:**
-`$'('` in Gimpel SNOBOL4 pattern concat means: match literal `(`, capture it.
-The E_IMM child should be E_STR("(") — a literal match — not `nPush()`.
-The parse tree reflects operator precedence: `nPush() $ '('` binds nPush() as left, `'('` as right.
-But emit_imm should treat this as: run nPush() unconditionally (side-effect call, not a pattern child), then match `'('` as the actual child pattern.
-
-**Fix strategy (ONE next action):**
-In `emit_imm`, detect when left child is a user-call side-effect (E_CALL to nPush/nInc/nPop/Reduce):
-- Emit the side-effect call unconditionally at α
-- Then match E_STR right-side (the actual literal guard) as the child
-OR: revisit whether `$'('` should be parsed differently — E_IMM(left=E_STR("("), right=nPush()) — but that would require a parse change. The emit fix is simpler.
-
-Actually simpler fix: in emit_imm, if `child` is an E_CALL that is NOT a pattern builtin (i.e. it's a side-effect call like nPush), emit it inline as a statement (not as a pattern match), then proceed to gamma without pattern gating. This matches how the oracle C files handle nPush/nInc — they just call the function inline, no success/fail branching.
-
-**Files to edit:** `src/sno2c/emit_byrd.c` — `emit_imm()` function around line 1081.
+**Hypothesis B (if A is wrong):** ARBNO/Reduce wiring in pat_Parse — verify zero-match ARBNO path.
 
 ---
 
 ## ONE NEXT ACTION
 
 ```bash
-# 1. Rebuild environment
-apt-get install -y m4 libgc-dev valgrind
-cd /home/claude/SNOBOL4-tiny/src/sno2c && make
+# 1. Read the exact beauty.sno main loop lines:
+sed -n '783,795p' /home/claude/SNOBOL4-corpus/programs/beauty/beauty.sno
 
-# 2. In emit_byrd.c emit_imm(): detect side-effect-only E_CALL children
-#    If child->kind == E_CALL && !is_pat_builtin_call(child):
-#      emit child as inline call (no pattern gating)
-#      then goto gamma directly (treat as epsilon match)
-#    This fixes nPush() $'(' *Expr — nPush() fires, cursor unchanged,
-#    then the rest of the concat matches '(' *Expr normally.
-#
-#    BUT: the real fix may need to be in how E_IMM child is determined.
-#    The right child (E_STR "(") is what should gate. Check the actual
-#    parse tree shape by adding a debug dump.
+# 2. Add debug print to generated C to confirm Src content at stmt_427:
+#    After "SnoVal _s2209 = get(_Src);" in /tmp/beauty_tramp.c add:
+#      fprintf(stderr, "DEBUG: Src='%s'\n", to_str(_s2209) ? to_str(_s2209) : "(null)");
+#    Recompile + run: printf 'X = 1\n' | /tmp/beauty_tramp_bin
 
-# 3. Test:
-INC=/home/claude/SNOBOL4-corpus/programs/inc
-BEAUTY=/home/claude/SNOBOL4-corpus/programs/beauty/beauty.sno
-./sno2c -trampoline -I$INC $BEAUTY > /tmp/beauty_tramp.c
-gcc -O0 -g ... -o /tmp/beauty_tramp_bin
+# 3. If Src is "" → find missing Src = Line nl statement in emit output
+#    If Src is correct → add debug print inside pat_Parse to find failure point
+
+# 4. Fix and test:
 printf 'X = 1\n' | /tmp/beauty_tramp_bin
-# Goal: no crash, output is beautified 'X = 1'
+# Goal: no "Parse Error", output is beautified 'X = 1'
 ```
 
 ---
@@ -103,10 +80,9 @@ printf 'X = 1\n' | /tmp/beauty_tramp_bin
 ## Artifact convention (mandatory every session touching sno2c/emit*.c)
 
 ```bash
-# At END of session:
 INC=/home/claude/SNOBOL4-corpus/programs/inc
 BEAUTY=/home/claude/SNOBOL4-corpus/programs/beauty/beauty.sno
-N=64   # increment from last session
+N=65   # increment from last session
 mkdir -p artifacts/trampoline_session$N
 ./src/sno2c/sno2c -trampoline -I$INC $BEAUTY > artifacts/trampoline_session$N/beauty_tramp_session$N.c
 md5sum artifacts/trampoline_session$N/beauty_tramp_session$N.c
@@ -145,7 +121,7 @@ cd SNOBOL4-tiny/src/sno2c && make
 
 ---
 
-## Build command (session 63 baseline)
+## Build command (session 64 baseline)
 
 ```bash
 RT=/home/claude/SNOBOL4-tiny/src/runtime
@@ -156,8 +132,7 @@ gcc -O0 -g -I$SNO2C -I$RT -I$RT/snobol4 \
     $RT/snobol4/snobol4_pattern.c $RT/engine.c \
     -lgc -lm -w -o /tmp/beauty_tramp_bin
 ```
-Note: engine.c + snobol4_pattern.c still linked for bch/qqdlm dynamic fallbacks.
-Once those are resolved, switch to engine_stub.c only.
+Note: engine.c + snobol4_pattern.c still linked for bch/qqdlm/IDENT/upr dynamic fallbacks.
 
 ---
 
@@ -179,3 +154,4 @@ Once those are resolved, switch to engine_stub.c only.
 | 2026-03-14 | Three-column pretty layout `e00f851` | Lon's watermark layout |
 | 2026-03-14 | Binary ~ fix + wrap fix `06f4715` | START clean, X=1 segfaults (engine stack overflow) |
 | 2026-03-14 | Compile named pats from fn bodies + E_IMM fix `6467ff2` | 196 compiled pats, new crash: pat_Expr infinite recursion |
+| 2026-03-14 | E_DEREF + $'lit' + sideeffect + C-static sync `09e5a5d` `5e90712` | 33→9 match_pattern_at, Parse Error active |
