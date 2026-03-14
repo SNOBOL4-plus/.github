@@ -676,6 +676,142 @@ path — possibly simpler — worth revisiting after M-BEAUTY-FULL.
 
 ---
 
+## Architecture: The New Plan — Block Functions + Byrd-Seq (Lon Cherryholmes, 2026-03-14)
+
+**Decision:** This is what we build. Incrementally. Optimization at the end.
+
+---
+
+### Level 1 — Every statement is a Byrd-seq function
+
+Every SNOBOL4 statement compiles to its own C function containing the complete
+Byrd box sequence for that statement: subject evaluation, pattern match
+(α/β/γ/ω labeled gotos), replacement, and goto dispatch (:S/:F).
+
+Each statement function is wrapped in a setjmp guard (cold path for ABORT/FENCE).
+Hot path is pure gotos — zero overhead.
+
+```c
+static SnoVal stmt_42(void) {
+    jmp_buf _jmp;
+    if (setjmp(_jmp)) goto _omega;
+    push_abort_handler(&_jmp);
+    /* α: evaluate subject */
+    /* pattern Byrd box: labeled gotos */
+    /* γ: replacement + :S() */
+    /* ω: :F() */
+    pop_abort_handler();
+}
+```
+
+---
+
+### Level 2 — Statements grouped into block functions by label reachability
+
+Statements are grouped into **block functions** by one rule:
+
+- A **new block starts** at every labeled statement (any statement that is the
+  target of a goto from anywhere in the program)
+- **Unlabeled statements that follow** belong to the same block — they are only
+  reachable by sequential fall-through, never from outside the block
+- The block function calls its member statement functions in sequence
+
+```c
+static void block_L42(void) {
+    stmt_42();   /* labeled — starts the block */
+    stmt_43();   /* unlabeled — only reachable from stmt_42 */
+    stmt_44();   /* unlabeled — only reachable from stmt_43 */
+}
+```
+
+---
+
+### Level 3 — Block functions are doubly addressable
+
+A block function has a single C address. That address serves two purposes:
+
+**As a GOTO target:**
+`:(L42)` in SNOBOL4 compiles to a call (or jump) to `block_L42`.
+All gotos in the program are resolved to block function addresses at compile time.
+
+**As a pattern `*X`:**
+A named pattern assignment `snoParse = <expr>` compiles to a block function
+exactly like a labeled statement sequence. `*snoParse` in a pattern is a call
+to `block_snoParse`.
+
+The distinction between "goto a label" and "invoke a pattern" collapses —
+both are block function calls. Same mechanism. Same addressability.
+
+For the dynamic case (`*X` where X is a runtime value, or EVAL): the block
+function's code is already in memory. Copy it, relocate it, jump in.
+No interpreter needed.
+
+---
+
+### Level 4 — Named pattern assignments
+
+`snoParse = nPush() ARBNO(*snoCommand) nPop()`
+
+Compiles to a block function `block_snoParse` containing the Byrd-seq for
+that pattern expression. `*snoCommand` inside it is a call to `block_snoCommand`.
+Mutual recursion between block functions = mutual recursion between C functions.
+Forward declarations handle cycles.
+
+---
+
+### Level 5 — DEFINE functions
+
+A SNOBOL4 `DEFINE('fn(args)locals', 'entry')` compiles to a C function that
+contains the block functions for its body. The DEFINE function is the outer
+container; the block functions inside it are its statements grouped by label.
+
+---
+
+### Struct / locals model
+
+Each block function has an associated **flat locals struct** containing all
+locals needed by all statement functions in the block. The struct is allocated
+once per block invocation and threaded through the statement calls.
+
+This is the flat concatenated iota struct from Technique 3 — one struct per
+block, not one struct per statement.
+
+```c
+typedef struct {
+    int64_t  _saved_cursor_42;    /* from stmt_42 lit node */
+    int64_t  _saved_cursor_43;    /* from stmt_43 span node */
+    int      _arbno_depth_44;     /* from stmt_44 arbno node */
+    int64_t  _arbno_stack_44[64];
+} block_L42_locals_t;
+```
+
+---
+
+### Optimization (at the end, not now)
+
+- Inline small statement functions into their block function
+- Merge setjmp guards across unlabeled statement sequences (glob-sequence)
+- `bounded` flag to suppress unused β/ω ports (JCON lesson)
+- Temp liveness / struct field reuse across non-overlapping lifetimes
+
+---
+
+### Implementation order (incremental)
+
+| Step | What | Gate |
+|------|------|------|
+| 1 | Each statement → `stmt_N()` C function, setjmp guard | hello world still works |
+| 2 | Group stmts into `block_L()` functions by label reachability | gotos resolve correctly |
+| 3 | Named pattern assignments → `block_X()` functions | `*X` calls resolve |
+| 4 | `*X` in patterns → call `block_X()` — no engine.c | beauty.sno compiles |
+| 5 | Flat locals struct per block | all locals correct |
+| 6 | M-BEAUTY-FULL: diff empty | done |
+
+**Status:** Decided 2026-03-14. Supersedes current Technique 1 struct-passing
+work in `byrd_emit_named_pattern`. Begin at Step 1.
+
+---
+
 ## Architecture: Four Techniques for Byrd Box Implementation (2026-03-14)
 
 **Unifying insight:** A static Byrd box (machine code at a linker address) and a
