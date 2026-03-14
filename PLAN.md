@@ -8,6 +8,30 @@ and a self-hosting native compiler. Claude Sonnet 4.6 is the third developer and
 
 ---
 
+## Git Identity Rule (mandatory, no exceptions)
+
+**Every commit across every SNOBOL4-plus repo must use:**
+
+```
+user.name  = LCherryholmes
+user.email = lcherryh@yahoo.com
+```
+
+Set before every commit session:
+```bash
+git config user.name "LCherryholmes"
+git config user.email "lcherryh@yahoo.com"
+```
+
+Or per-commit:
+```bash
+git commit --author="LCherryholmes <lcherryh@yahoo.com>" -m "..."
+```
+
+**Pending:** SNOBOL4-tiny has 7 commits with wrong identity (5× `claude@anthropic.com`, 2× `lon@cherryholmes.com`) that need history rewrite via `git filter-repo` once confirmed safe with Lon.
+
+---
+
 ## Architectural Note — The sno_pat_* Stopgap (recorded 2026-03-13)
 
 **The `sno_pat_*` / `engine.c` interpreter is a stopgap. It is not the destination.**
