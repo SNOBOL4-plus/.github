@@ -12,77 +12,63 @@
 | **Repo** | SNOBOL4-tiny |
 | **Sprint** | `pattern-block` (sprint 4/9 toward M-BEAUTY-FULL) |
 | **Milestone** | M-BEAUTY-FULL |
-| **HEAD** | `dc8ad4b — artifact: beauty_tramp_session59.c — 27483 lines, 0 gcc errors, bare-label bug` |
+| **HEAD** | `06f4715 — fix(parse): binary ~ drops tag + emit_break wrap fix` |
 
 ---
 
-## State at handoff (session 59)
+## State at handoff (session 62)
 
 Commits this session:
-- `a3ea9ef` (TINY) — Technique 1 struct-passing: fix static re-entrancy bug ✅
-- `dc8ad4b` (TINY) — artifact: beauty_tramp_session59.c ✅
+- `f74a384` — Greek port labels α/β/γ/ω watermark + UTF-8 decl_field_name fix ✅
+- `e00f851` — Three-column pretty layout PLG/PL/PS/PG ✅
+- `06f4715` — Binary ~ fix + emit_break wrap fix ✅
 
-**Technique 1 fully implemented.** All named pattern functions now allocate a
-heap struct (`pat_X_t`) on entry==0, thread it through re-entry (entry==1).
-All locals live in the struct via `#define field z->field` aliases. Child frame
-pointers (`deref_N_z`) embedded in parent struct for E_DEREF calls. gcc 0 errors.
+**Three sessions of progress:**
 
-**Current state:** Binary runs. Simple statements pass (`X = 1`, `* comment`).
-Bare label lines fail (`START` → Parse Error).
+1. **emit_imm var_set fix** — `START` now passes clean (bare label lines work)
+2. **Greek watermark** — all emitted C labels use α/β/γ/ω
+3. **Three-column pretty layout** — generated C has label/stmt/goto columns
+4. **emit_break wrap bug fixed** — `goto` inside braces, never detaches from guard
+5. **Binary ~ fix** — tilde drops right-side tag (it's tree metadata, not a match target)
 
-**Root cause pinned:** `emit_imm` (the `$ capture` operator) stores the captured
-span into a local `str_t var_nl` inside the named pattern function body, but
-**never calls `var_set("nl", ...)`**. So `var_get("nl")` returns empty in
-`pat_Label`'s `BREAK(' ' tab nl ';')`, causing bare labels to fail.
+**Current state:** `START` passes clean. `X = 1` segfaults.
 
-Verified: `nl` is set by `global.sno` line 6:
+**Root cause of segfault (pinned):**
+`epsilon ~ ''` in beauty.sno grammar means: match epsilon (zero chars), tag as empty-string node. After the tilde fix, the right side (`''`) is dropped, leaving the expression as just `epsilon`. That part is fine. BUT — many `~` expressions in the grammar are like `epsilon ~ '' epsilon ~ ''` chained. The parse tree for these may now have unexpected NULL nodes propagating through `byrd_emit`. The segfault is likely a NULL dereference in `byrd_emit` when `pat->left` or `pat->right` is NULL for a non-epsilon node kind.
+
+**Simplest diagnostic:** Run under valgrind or add NULL guards:
+```bash
+printf 'X = 1\n' | valgrind /tmp/beauty_tramp_bin 2>&1 | head -20
 ```
-&ALPHABET  POS(10) LEN(1) . nl
-```
-This is a `$ capture` (`. nl`) — it hits `emit_imm`. The do_assign block writes
-`var_nl.ptr / var_nl.len` (local str_t) but never `var_set("nl", ...)`.
 
 ---
 
-## ONE NEXT ACTION — Fix emit_imm to call var_set after capture
+## ONE NEXT ACTION — Diagnose segfault
 
-In `src/sno2c/emit_byrd.c`, `emit_imm`, the `do_assign` non-OUTPUT branch
-(around line 970–985 after the struct-passing rewrite):
+```bash
+cd /home/claude && apt-get install -y m4 libgc-dev valgrind
+# rebuild repos (see Container Setup below)
 
-```c
-/* do_assign: write span into variable */
-B("%s:\n", do_assign);
-// ADD THIS — push captured value into SNOBOL4 variable table:
-B("    { int64_t _len = %s - %s;\n", cursor, start_var);
-B("      char *_os = malloc(_len + 1);\n");
-B("      memcpy(_os, %s + %s, _len); _os[_len] = 0;\n", subj, start_var);
-B("      var_set(\"%s\", strv(_os)); free(_os); }\n", varname);
-// KEEP or remove the str_t local (str_t is used if varname != OUTPUT)
+printf 'X = 1\n' | valgrind --error-exitcode=1 /tmp/beauty_tramp_bin 2>&1 | head -30
 ```
 
-**Test after fix:**
-```bash
-cd /home/claude/SNOBOL4-tiny/src/sno2c && make -B
+If valgrind shows the crash site, fix it. Most likely one of:
+1. `pat->left` is NULL in a node that expects a non-NULL child (E_CONCAT with NULL right
+   after tilde drops right side) — byrd_emit(NULL, ...) is handled as epsilon, which is
+   correct, but E_CONCAT left-recurse might not check
+2. The segfault is in runtime code not pattern code — check if it's in `Reduce()` or
+   `nInc()` being called with bad args
 
+If `X = 1` passes after valgrind fix, run the full diff:
+```bash
 INC=/home/claude/SNOBOL4-corpus/programs/inc
 BEAUTY=/home/claude/SNOBOL4-corpus/programs/beauty/beauty.sno
-R=/home/claude/SNOBOL4-tiny/src/runtime
 SNO=/home/claude/snobol4-install/bin/snobol4
 
-./sno2c -trampoline -I$INC $BEAUTY > /tmp/beauty_tramp.c
-gcc -O0 -g -I. -I$R -I$R/snobol4 /tmp/beauty_tramp.c \
-    $R/snobol4/snobol4.c $R/snobol4/snobol4_inc.c \
-    $R/snobol4/snobol4_pattern.c $R/engine_stub.c \
-    -lgc -lm -w -o /tmp/beauty_tramp_bin
-echo "gcc exit: $?"
-
-printf 'START\n' | /tmp/beauty_tramp_bin        # expect: START
-printf 'X = 1\n' | /tmp/beauty_tramp_bin        # expect: X = 1
-
-/tmp/beauty_tramp_bin < $BEAUTY > /tmp/beauty_tramp_out.sno
+/tmp/beauty_tramp_bin < $BEAUTY > /tmp/beauty_compiled.sno
 $SNO -f -P256k -I$INC $BEAUTY < $BEAUTY > /tmp/beauty_oracle.sno
-diff /tmp/beauty_oracle.sno /tmp/beauty_tramp_out.sno
-# Expect: empty → M-BEAUTY-FULL fires
+diff /tmp/beauty_oracle.sno /tmp/beauty_compiled.sno
+# Empty diff → M-BEAUTY-FULL fires
 ```
 
 ---
@@ -93,10 +79,10 @@ diff /tmp/beauty_oracle.sno /tmp/beauty_tramp_out.sno
 # At END of session:
 INC=/home/claude/SNOBOL4-corpus/programs/inc
 BEAUTY=/home/claude/SNOBOL4-corpus/programs/beauty/beauty.sno
-mkdir -p artifacts/trampoline_sessionN
-./sno2c -trampoline -I$INC $BEAUTY > artifacts/trampoline_sessionN/beauty_tramp_sessionN.c
-# Record md5, line count, gcc errors, active bug in artifacts/trampoline_sessionN/README.md
-# Commit: artifact: beauty_tramp_sessionN.c — <one-line status>
+mkdir -p artifacts/trampoline_session63
+./sno2c -trampoline -I$INC $BEAUTY > artifacts/trampoline_session63/beauty_tramp_session63.c
+# Record md5, line count, gcc errors, active bug in artifacts/trampoline_session63/README.md
+# Commit: artifact: beauty_tramp_session63.c — <one-line status>
 ```
 
 ---
@@ -143,4 +129,7 @@ cd SNOBOL4-tiny/src/sno2c && make
 | 2026-03-14 | beauty.sno snoXXX→XXX `d504d80` + beautifier bootstrap | oracle now self-referential |
 | 2026-03-14 | S4_expression.sno→expression.sno `596cc5f` | same rename + jcooper paths fixed |
 | 2026-03-14 | Technique 1 struct-passing `a3ea9ef` | re-entrancy fixed, 0 gcc errors, X=1 passes |
-| 2026-03-14 | Next blocker: emit_imm missing var_set | var_get("nl") returns empty, bare labels fail |
+| 2026-03-14 | emit_imm var_set fix `dc8ad4b` | bare labels pass (START works) |
+| 2026-03-14 | Greek watermark α/β/γ/ω `f74a384` | Lon's branding in all emitted labels |
+| 2026-03-14 | Three-column pretty layout `e00f851` | Lon's watermark layout |
+| 2026-03-14 | Binary ~ fix + wrap fix `06f4715` | START clean, X=1 segfaults |
