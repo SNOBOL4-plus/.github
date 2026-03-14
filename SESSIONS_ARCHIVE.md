@@ -4750,3 +4750,58 @@ Then sprint0-22 validation. Then M-COMPILED-BYRD fires.
 ### Next session opens
 
 Sprint 3/4 `beauty-runtime`: compile `beauty.sno` with `sno2c`, run binary to completion without crash. SESSION.md has full One Next Action.
+
+---
+
+## Session 2026-03-16 (ace2883)
+
+| Commit | Repo | Description |
+|--------|------|-------------|
+| `3ea9815` | SNOBOL4-tiny | refactor: strip sno_/SNO_ prefix — P4-style collision renames throughout |
+| `ace2883` | SNOBOL4-tiny | refactor: dyvide → divyde |
+| `5ca2fa9` | .github | session: P4-style prefix strip complete — resume beauty-runtime debug |
+
+### What was done
+
+**Prefix eradication** — complete removal of `sno_` and `SNO_` from all ~10,000
+occurrences across 40 files. P4/P5 compiler misspelling technique used for all
+stdlib/keyword collisions. `snoc → sno2c` everywhere. File renames:
+`snoc_runtime.h → runtime_shim.h`, `snoc.h → sno2c.h`.
+
+**Collision resolutions (hard — would break build):**
+
+| Old | New | Reason |
+|-----|-----|--------|
+| `sno_int` | `vint` | C keyword |
+| `sno_div` | `divyde` | stdlib `div()` |
+| `sno_pow` | `powr` | math.h `pow()` |
+| `sno_exit` | `xit` | stdlib `exit()` |
+| `sno_abort` | `abrt` | stdlib `abort()` |
+| `sno_dup` | `dupl` | unistd.h `dup()` |
+
+**Defensive renames (soft — future-proofing):**
+
+| Old | New | Reason |
+|-----|-----|--------|
+| `str` | `strv` | str* family owned by string.h |
+| `match` | `mtch` | POSIX regmatch_t / future std |
+| `apply` | `aply` | C++ compat headers |
+| `eval` | `evl` | future math/scripting libs |
+| `concat` | `ccat` | future C string lib |
+| `index` | `indx` | POSIX index() in string.h |
+| `replace` | `replc` | future C string lib |
+| `init` | `ini` | collision risk with any lib init |
+| `enter` | `entr` | curses.h |
+| `register` | `registr` | deprecated C keyword |
+
+Binary output unchanged throughout. Build clean at every stage.
+
+**Parse Error debug** — environment re-established, root cause confirmed from prior
+session: ARBNO in `*snoParse` takes zero-iteration epsilon on `"START\n"`. T_BREAK
+trace never fires. Next action: add ARBNO debug trace to confirm, then chase
+snoCommand failure path.
+
+### Next session opens
+
+Sprint 3/4 `beauty-runtime`: ARBNO epsilon trace → snoCommand failure path.
+SESSION.md has full One Next Action.

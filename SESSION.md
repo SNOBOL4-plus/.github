@@ -12,7 +12,7 @@
 | **Repo** | SNOBOL4-tiny |
 | **Sprint** | `beauty-runtime` (sprint 3/4 toward M-BEAUTY-FULL) |
 | **Milestone** | M-BEAUTY-FULL |
-| **HEAD** | `3ea9815` — refactor: strip sno_/SNO_ prefix — P4-style collision renames throughout |
+| **HEAD** | `ace2883 — refactor: dyvide → divyde
 
 ---
 
