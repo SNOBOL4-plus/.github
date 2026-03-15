@@ -5174,3 +5174,43 @@ keepers into corpus. Grows the test suite systematically from first principles.
 
 beauty_tramp_session79.c — 15452 lines, md5=e0ebfbf38e866f92e28a999db182a6a2  
 CHANGED from session78 (md5=5046a4b6f8a751ea92a67d271c1c05a2)
+
+---
+
+## Session 93 — 2026-03-15
+
+**Context at handoff:** ~73%
+**HEAD:** `e2ca252`
+**Ladder:** 71/73 (rungs 1-7 clean, rung 8 15/17)
+
+### What was accomplished
+
+| Item | Result |
+|------|--------|
+| Rung 7 capture | 7/7 ✅ (was 4/7 at session start) |
+| Rung 8 strings | 15/17 ⏳ |
+| Ladder total | 71/73 |
+| Commits | 3 on TINY |
+| Artifact | beauty_tramp_session93.c — CHANGED, 15638 lines |
+
+### Fixes landed
+
+1. **SNO_MSTART** — _mstart now set AFTER ARB prefix scan (session 92 carry)
+2. **Null replacement** — X pat = deletes matched region (has_eq + NULL replacement)
+3. **pat_is_anchored** — only POS(0) literal suppresses ARB wrap; dynamic POS(N) gets ARB
+4. **? operator** — statement-position S ? P and S  ?  P both parse; = replacement after ? allowed
+5. **E_NAM conditional capture** — deferred via pending-cond list (byrd_cond_reset/emit_assigns); flushed at _byrd_ok in emit.c and at _PAT_gamma in byrd_emit_named_pattern. Fixes ARB . OUTPUT firing on every backtrack.
+6. **coerce_numeric** — add/sub/mul coerce integer-string operands to DT_I; null → 0. Fixes N = LT(N, limit) N loop producing reals.
+7. **E_ATP stub** — @VAR emits NV_SET of cursor as integer. Bug: captures to `_` not varname — fix session 94.
+8. **run_rung.sh** — pipes .input file to binary when present
+
+### Two bugs remaining for session 94
+
+1. **E_ATP varname** — `@NH` generates `NV_SET_fn("_", ...)` instead of `NV_SET_fn("NH", ...)`. Debug: `grep -n "E_ATP\|T_AT" src/sno2c/parse.c | head -20`
+2. **BREAKX** — not implemented. BREAKX(cs) = BREAK(cs) that fails on null match.
+
+### Oracle note (added this session)
+**Do NOT build SPITBOL or CSNOBOL4.** The `.ref` files ARE the oracle.
+Two executables compared:
+1. `sno2c -trampoline foo.sno` → gcc → binary run with optional `.input`
+2. `cat foo.ref` — static ground truth pre-generated from CSNOBOL4

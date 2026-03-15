@@ -9,63 +9,39 @@
 
 **Active sprint:** `crosscheck-ladder` — Sprint 3 of 6 — climb corpus ladder rung by rung
 **Milestone target:** M-BEAUTY-CORE (mock includes first), then M-BEAUTY-FULL (real inc)
-**HEAD:** `4e0831d` — fix(emit_byrd): bare builtin patterns + dynamic POS/RPOS/TAB/RTAB args
+**HEAD:** `e2ca252` — artifact: beauty_tramp_session93.c — CHANGED, 15638 lines
 
 **Ladder status:**
-- Rungs 1–5 (output, assign, concat, arith_new, control_new): ✅ 37/37
-- Rung 6 (patterns/): ✅ 20/20
-- Rung 7 (capture/): ⏳ 4/7 — 3 failures remaining
-- Rungs 8–12: ❌ not yet attempted
-- **Total: 61/64**
+- Rungs 1–7 (output→capture): ✅ 64/64 clean
+- Rung 8 (strings/): ⏳ 15/17 — 2 failures
+- Rungs 9–12: ❌ not yet attempted
+- **Total: 71/73**
 
-**Session 91 fixes:**
-- Bare zero-arg builtin patterns (REM, ARB, FAIL, SUCCEED, FENCE, ABORT) used as bare
-  names (E_VART) in pattern position now route to correct emitters instead of variable
-  dereference path. Fixes 048_pat_rem, 057_pat_fail_builtin.
-- POS/RPOS/TAB/RTAB with non-literal args: emit `to_int(NV_GET_fn("var"))` dynamically.
-  Added emit_pos_expr/rpos_expr/tab_expr/rtab_expr variants + forward decls.
+**Rung 8 remaining failures:**
+1. `cross` — E_ATP `@NH` captures to `_` instead of `NH`. Bug in E_ATP handler.
+   Check: `grep -n "E_ATP\|T_AT" src/sno2c/parse.c | head -20`
+2. `word4` — BREAKX not implemented in emit_byrd.c E_FNC handlers
 
-**Rung 7 remaining failures — next action:**
+**Session 93 fixes landed:**
+- ? operator in statement position: S ? P and S  ?  P (space-sep) both parse
+- E_NAM conditional capture: deferred via pending-cond list; flushed at _byrd_ok and _PAT_gamma
+- Null replacement X pat =: splice with empty string deletes matched region
+- E_ATP stub: @VAR emits NV_SET of cursor as integer (bug: → _ not varname, fix next session)
+- coerce_numeric: integer-string args coerced to DT_I in add/sub/mul; null → 0
+- run_rung.sh: pipes .input file when present
 
-1. **061_capture_in_arbno** — `X POS(N) 'a' . V` with N incrementing.
-   Dynamic POS(N) is now correct. Still outputs only 2 of 3 'a'. Likely off-by-one:
-   POS(N) checks `cursor != N` but after match cursor has advanced; loop increments N
-   but N may lag. Debug: print N and cursor each iteration.
+**Next action session 94:**
+1. Fix E_ATP varname bug → cross passes
+2. Implement BREAKX → word4 passes
+3. Rung 8 complete 17/17 → commit
+4. Start rung 9 keywords (11 tests)
 
-2. **062_capture_replacement** — `X 'world' = 'there'` produces `there` not `hello there`.
-   **Root cause diagnosed:** `_mstart` is set to 0 *before* the ARB prefix scan runs.
-   When ARB advances cursor to find `world`, `_mstart` stays 0, so replacement splices
-   from start-of-subject. Fix: `_mstart` must be captured *after* ARB succeeds, at the
-   ARB→user-pattern seam. Implementation plan in SESSIONS_ARCHIVE entry below.
-
-3. **063_capture_null_replace** — `X ' world' =` produces `hello world` not `hello`.
-   Same `_mstart` bug as 062.
-
-**Fix plan for _mstart (062/063):**
-In `emit.c`, the `!pat_is_anchored` branch builds `scan_pat = ARB ++ user_pat`.
-Insert a synthetic `E_FNC "SNO_MSTART"` node between them:
-`scan_pat = ARB ++ SNO_MSTART ++ user_pat`
-In `emit_byrd.c`, handle `"SNO_MSTART"` as zero-width: alpha→emit `_mstartN = _curN` then goto gamma; beta→goto omega.
-Remove the upfront `E("_mstart%d = _cur%d;\n")` from emit.c.
-The `_mstartN` variable name must be threaded through or stored as a global per-statement.
-
-**Build command (mock_engine.c — NOT engine.c):**
+**Build:**
 ```bash
-cd /home/claude/repos/SNOBOL4-tiny
-RT=src/runtime
-BEAUTY=/home/claude/repos/SNOBOL4-corpus/programs/beauty/beauty.sno
-src/sno2c/sno2c -trampoline $BEAUTY > /tmp/beauty_core.c
-gcc -O0 -g /tmp/beauty_core.c \
-    $RT/snobol4/snobol4.c $RT/snobol4/mock_includes.c \
-    $RT/snobol4/snobol4_pattern.c $RT/mock_engine.c \
-    -I$RT/snobol4 -I$RT -Isrc/sno2c -lgc -lm -w \
-    -o /tmp/beauty_core_bin
+cd /home/claude/SNOBOL4-tiny
+git config user.name "LCherryholmes" && git config user.email "lcherryh@yahoo.com"
+apt-get install -y libgc-dev && make -C src/sno2c
 ```
-
-**Oracle:** `test/smoke/outputs/session50/beauty_oracle.sno` (790 lines, committed).
-csnobol4 2.3.3 source at `/mnt/user-data/uploads/snobol4-2_3_3_tar.gz` if needed.
-
----
 
 ## Session Start Checklist
 
