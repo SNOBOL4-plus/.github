@@ -1605,3 +1605,465 @@ No crossover or mismatch in generated code.
 
 1. **Fix `ARRAY_VAL` macro** — `.a` → `.arr` in `snobol4.h:399` (one character, fix now)
 2. **Consider renaming `lpad_fn/rpad_fn/real_fn/string_fn`** → `LPAD_fn/RPAD_fn/REAL_fn/STRING_fn` for consistency — low priority, not a bug
+
+---
+
+## Session 98 — Four-Paradigm TDD Plan: Hello World → Beauty Self-Beautifies
+
+**Decided 2026-03-15. This is the new sprint architecture replacing ad-hoc compiler work.**
+
+### The Goal
+
+`beauty_full_bin` — compiled from `beauty.sno` by `sno2c` — reads `beauty.sno` as
+input and produces output that diffs empty against the CSNOBOL4 oracle. **M-BEAUTY-FULL.**
+
+We get there test by test, rung by rung, paradigm by paradigm. The compiler only
+gets touched when a test fails. Tests drive everything.
+
+### Starting Point
+
+- **106/106** crosscheck tests (rungs 1–11) passing — Sprint 3 complete ✅
+- `sno2c` produces `beauty_full.c` (15,639 lines, trampoline mode) ✅  
+- CSNOBOL4 2.3.3 installed at `/usr/local/bin/snobol4` ✅
+- `beauty_full_bin` compiles and runs (unknown correctness) ⏳
+
+---
+
+### The Four Paradigms
+
+The harness provides four complementary testing techniques. Each catches
+different classes of bugs. Use all four, in separate sprints, on the same
+corpus of programs — escalating from tiny inputs to the full beautifier.
+
+#### Paradigm 1 — Crosscheck (corpus diff)
+
+**What:** Compile `.sno` → binary via `sno2c`, run, diff output against `.ref` oracle.
+
+**Tooling:** `test/crosscheck/run_crosscheck.sh` + `SNOBOL4-corpus/crosscheck/`
+
+**Catches:** Wrong output — incorrect arithmetic, wrong string ops, broken
+control flow, pattern matching failures. Any "what did it produce" bug.
+
+**Limitation:** Only tells you WHAT is wrong. Not WHERE or WHY.
+
+**Coverage:** Every rung from `output/001` through `beauty/201+`.
+
+#### Paradigm 2 — Probe (&STLIMIT frame-by-frame)
+
+**What:** Run the same program N times at `&STLIMIT = 1, 2, ... N`. On each run,
+inject `&DUMP = 2` to capture variable state. Show only what changed. Frame-by-frame
+replay of execution — variable state after every single statement.
+
+**Tooling:** `SNOBOL4-harness/probe/probe.py` — runs both oracle AND compiled binary.
+
+**Catches:** Exactly WHERE a divergence first appears. The oracle has X=5 at step 7;
+the compiled binary has X=3 at step 7. That IS the bug — not a symptom.
+
+**Invocation:**
+```bash
+python3 /home/claude/SNOBOL4-harness/probe/probe.py \
+    --oracle csnobol4 --max 50 failing_test.sno
+```
+For compiled binary comparison, run probe.py against oracle, then run the same
+`&STLIMIT=N` injection manually against `beauty_full_bin` and diff the dumps.
+
+**Usage pattern:** When Paradigm 1 finds a failing test → run Paradigm 2 to locate
+the exact statement. Fix compiler. Rerun Paradigm 1. Repeat.
+
+#### Paradigm 3 — Monitor (TRACE double-trace diff)
+
+**What:** Insert `TRACE('VAR','VALUE')` and `TRACE('LABEL','LABEL')` calls into the
+SNOBOL4 source. Both oracle and compiled binary emit the same event stream as they
+run. Diff event by event. First divergence = root cause.
+
+**Tooling:** Custom trace harness — wrap the compiled binary to capture TRACE output,
+run CSNOBOL4 with the same instrumented source, pipe both to `diff`.
+
+**Catches:** Non-deterministic or deep recursion bugs where `&STLIMIT` binary search
+is impractical. Function call/return divergence. Pattern match-order bugs.
+
+**Invocation pattern:**
+```bash
+# Instrumented source: add to top of beauty.sno:
+#     TRACE('pp','CALL')
+#     TRACE('qq','CALL')
+# Run oracle:
+snobol4 -f -P256k -I$INC beauty_trace.sno < input.sno 2>oracle_trace.txt
+# Run compiled:
+./beauty_full_bin < input.sno 2>compiled_trace.txt
+# Diff:
+diff oracle_trace.txt compiled_trace.txt | head -20
+```
+
+**Usage pattern:** When Paradigm 2 finds a divergence inside a recursive function
+(pp, qq, pp_Parse, snoCommand) → add TRACE to that function, run Paradigm 3 to
+see every call/return. Fix. Rerun.
+
+#### Paradigm 4 — Cross-engine triangulation (oracle vs oracle vs compiled)
+
+**What:** Run the same program through CSNOBOL4 + SPITBOL + compiled binary. When
+two oracles agree and the compiled binary differs, the compiled binary is wrong.
+When the two oracles disagree, flag for manual review (semantic edge case).
+
+**Tooling:** `SNOBOL4-harness/adapters/tiny/` pattern + extend `probe.py` `--oracle both`.
+
+**Catches:** Bugs where CSNOBOL4 has quirky behavior that SPITBOL doesn't share —
+so the compiled binary matches one oracle but not the other. Edge cases in keyword
+semantics (`&ALPHABET`, `&FULLSCAN`), backtracking order, `FENCE`/`ABORT` behavior.
+
+**Invocation:**
+```bash
+# Run three engines, compare:
+snobol4 -f -P256k prog.sno > oracle_csn.txt
+spitbol -b prog.sno > oracle_spit.txt
+./beauty_full_bin < prog.sno > compiled.txt
+diff oracle_csn.txt oracle_spit.txt   # are the two oracles in agreement?
+diff oracle_csn.txt compiled.txt      # does compiled match primary oracle?
+```
+
+**Usage pattern:** For any test that passes Paradigm 1 but behaves suspiciously →
+cross-triangulate. Also use for any new corpus test before committing `.ref` to
+verify the oracle itself is correct (CSNOBOL4 bugs exist).
+
+---
+
+### Sprint Architecture — Four Sprints to M-BEAUTY-FULL
+
+Each sprint uses ONE primary paradigm, with others as diagnostic tools.
+Sprints are sequential — each gates the next. The compiler improves throughout.
+
+---
+
+#### Sprint A — `beauty-crosscheck` (Paradigm 1 primary)
+
+**Paradigm:** Crosscheck — corpus diff  
+**Status:** ⏳ Active (Session 98 start)
+
+**What:** Add rung 12 beauty.sno tests to `SNOBOL4-corpus/crosscheck/beauty/`.
+Start with the smallest possible inputs. Each test = one beauty.sno run on a
+tiny SNOBOL4 snippet, diffed against CSNOBOL4 oracle.
+
+**Test progression:**
+
+| Test ID | Input | What it tests |
+|---------|-------|---------------|
+| `beauty/101_comment` | `* a comment` | comment passthrough |
+| `beauty/102_output` | `        OUTPUT = 'hello'` | simple assignment stmt |
+| `beauty/103_assign` | `        X = 'foo'` | variable assignment |
+| `beauty/104_label` | `LOOP    X = X 1` | label + concat |
+| `beauty/105_goto` | `        :(END)` | unconditional goto |
+| `beauty/106_pattern` | `        X Y = 'ab'` | pattern replacement |
+| `beauty/107_define` | `        DEFINE('fn(a)','fn_label')` | DEFINE stmt |
+| `beauty/108_sf_goto` | `        X = Y   :S(A)F(B)` | S/F gotos |
+| `beauty/109_multi` | 5-line program | multiple stmts |
+| `beauty/110_expression` | `        X = (1 + 2) * 3` | expression |
+| `beauty/120_real_prog` | 20-line SNOBOL4 program | realistic input |
+| `beauty/130_inc_file` | program using INCLUDE | real inc handling |
+| `beauty/140_self` | full `beauty.sno` | self-beautification — M-BEAUTY-CORE |
+
+**Rule:** Add tests one at a time. Each failure → fix compiler → retest.
+Never add the next test until the current one passes.
+
+**Commit cadence:** `test(beauty-crosscheck): NNN_name pass — N/N` per test.
+
+**Milestone trigger:** `beauty/140_self` passes → **M-BEAUTY-CORE fires.**
+
+---
+
+#### Sprint B — `beauty-probe` (Paradigm 2 primary)
+
+**Paradigm:** Probe — &STLIMIT frame-by-frame  
+**Status:** ❌ Gates on Sprint A
+
+**What:** For every Sprint A failure that wasn't immediately obvious, run probe.py
+to pinpoint the exact statement. Build a library of probe scripts for beauty.sno's
+main functions: `pp`, `qq`, `pp_Parse`, `snoCommand`, `snoLabel`.
+
+**Infrastructure to build:**
+
+```bash
+# probe_beauty.sh — wrapper for probing beauty_full_bin
+#!/usr/bin/env bash
+# Usage: bash probe_beauty.sh <input.sno> [--max N]
+BEAUTY=/home/claude/SNOBOL4-corpus/programs/beauty/beauty.sno
+INC=/home/claude/SNOBOL4-corpus/programs/inc
+
+# Generate oracle frames
+python3 /home/claude/SNOBOL4-harness/probe/probe.py \
+    --oracle csnobol4 --max ${2:-200} <(cat <(echo "&STLIMIT=$MAX") $BEAUTY) \
+    -- -I$INC < $1 > oracle_frames.txt
+
+# Generate compiled frames (manual injection)
+for N in $(seq 1 ${2:-200}); do
+    echo "=== STEP $N ==="
+    echo "&STLIMIT = $N
+&DUMP = 2" > /tmp/probe_prefix.sno
+    cat /tmp/probe_prefix.sno $BEAUTY | ./beauty_full_bin < $1 2>&1 | grep -v "^Normal"
+done > compiled_frames.txt
+
+diff oracle_frames.txt compiled_frames.txt | head -40
+```
+
+**Probe targets (in priority order):**
+
+1. `pp` — top-level beautifier (called once per statement)
+2. `snoCommand` — inner pattern (called per token)
+3. `snoLabel` — label detection
+4. `qq` — width measuring (called by pp for line-break decisions)
+5. `pp_Parse` — parse tree walker
+
+**What probe reveals that crosscheck cannot:**
+
+- Which variable has the wrong value at exactly which statement number
+- Whether failure is in pattern match or in replacement action
+- Whether recursion depth is correct (arbno_depth tracking)
+- Exact cursor position when a pattern match fails unexpectedly
+
+**Commit cadence:** `probe: add probe_beauty.sh + oracle frame snapshots for failing tests`
+
+**Milestone trigger:** All Sprint A failures diagnosed via probe and fixed →
+Sprint B closes. The probe infrastructure stays for Sprint C/D diagnostics.
+
+---
+
+#### Sprint C — `beauty-monitor` (Paradigm 3 primary)
+
+**Paradigm:** Monitor — TRACE double-trace diff  
+**Status:** ❌ Gates on Sprint B
+
+**What:** Instrument `beauty.sno` with TRACE calls on all user-defined functions
+and key variables. Run both oracle and compiled binary. Diff the trace streams.
+This catches bugs that only appear in deep recursion or complex control flow —
+the cases that probe's linear scan misses.
+
+**Instrumented source — `beauty_trace.sno`:**
+
+```snobol4
+*  beauty_trace.sno — beauty.sno with TRACE hooks
+*  INCLUDE this at the top of beauty.sno (or patch inline):
+
+        TRACE('pp','CALL')
+        TRACE('pp','RETURN')
+        TRACE('qq','CALL')
+        TRACE('qq','RETURN')
+        TRACE('pp_Parse','CALL')
+        TRACE('pp_Parse','RETURN')
+        TRACE('snoCommand','CALL')
+        TRACE('snoStmt','CALL')
+        TRACE('snoLabel','CALL')
+        TRACE('snoLine','VALUE')
+        TRACE('snoSrc','VALUE')
+```
+
+**Monitor runner — `monitor_beauty.sh`:**
+
+```bash
+#!/usr/bin/env bash
+INC=/home/claude/SNOBOL4-corpus/programs/inc
+BEAUTY_TRACE=/home/claude/SNOBOL4-corpus/programs/beauty/beauty_trace.sno
+
+# Oracle trace stream
+snobol4 -f -P256k -I$INC $BEAUTY_TRACE < $1 2>oracle_trace.txt
+
+# Compiled trace stream
+./beauty_full_bin_trace < $1 2>compiled_trace.txt
+
+# First divergence
+diff oracle_trace.txt compiled_trace.txt | head -20
+awk 'NR==FNR{a[NR]=$0;next} $0!=a[FNR]{print "DIV at line " FNR ": oracle=" a[FNR] " compiled=" $0; exit}' \
+    oracle_trace.txt compiled_trace.txt
+```
+
+**What monitor reveals that probe cannot:**
+
+- Whether `pp` is called the correct number of times with the correct arguments
+- Whether RETURN from `qq` carries the correct value back to `pp`
+- Whether ARBNO inside `snoCommand` fires the correct number of iterations
+- Whether backtracking inside `pp_Parse` follows the same path as the oracle
+
+**Commit cadence:** `monitor: add beauty_trace.sno + monitor_beauty.sh + trace diffs`
+
+**Milestone trigger:** Trace streams match for all Sprint A test inputs →
+Sprint C closes. **M-BEAUTY-FULL becomes reachable.**
+
+---
+
+#### Sprint D — `beauty-triangulate` (Paradigm 4 primary)
+
+**Paradigm:** Cross-engine triangulation  
+**Status:** ❌ Gates on Sprint C
+
+**What:** Full self-beautification run. Pipe `beauty.sno` through `beauty_full_bin`.
+Pipe `beauty.sno` through CSNOBOL4. Pipe `beauty.sno` through SPITBOL.
+Compare all three outputs. Resolve any three-way disagreements by reading
+Gimpel §7 (canonical SNOBOL4 semantics). Fix the compiled binary to match
+the canonical definition (usually CSNOBOL4 = SPITBOL = compiled → trivially correct;
+CSNOBOL4 ≠ SPITBOL → edge case; compiled ≠ both → our bug).
+
+**Triangulation runner — `triangulate_beauty.sh`:**
+
+```bash
+#!/usr/bin/env bash
+INC=/home/claude/SNOBOL4-corpus/programs/inc
+BEAUTY=/home/claude/SNOBOL4-corpus/programs/beauty/beauty.sno
+
+echo "=== CSNOBOL4 oracle ==="
+snobol4 -f -P256k -I$INC $BEAUTY < $BEAUTY > oracle_csn.txt
+echo "exit: $?"
+
+echo "=== compiled binary ==="
+./beauty_full_bin < $BEAUTY > compiled_out.txt
+echo "exit: $?"
+
+echo "=== diff oracle vs compiled ==="
+diff oracle_csn.txt compiled_out.txt
+
+if diff -q oracle_csn.txt compiled_out.txt > /dev/null; then
+    echo "✅ DIFF EMPTY — M-BEAUTY-FULL FIRES"
+fi
+```
+
+**SPITBOL note:** SPITBOL is disqualified for beauty.sno (error 021 at END — indirect
+function call semantic difference). Use CSNOBOL4 as primary. SPITBOL used only for
+cross-checking individual sub-programs, not full beauty.sno.
+
+**Tests to triangulate:**
+
+1. `beauty.sno` on single-line inputs — triangle all three (CSNOBOL4/SPITBOL/compiled)
+2. `beauty.sno` on `beauty_core.sno` (mock stubs) — triangle
+3. `beauty.sno` on `beauty.sno` itself — CSNOBOL4 vs compiled only (SPITBOL excluded)
+
+**Commit cadence:** `triangulate: full self-beautify run — diff N lines remain`
+
+**Milestone trigger:** `diff oracle_csn.txt compiled_out.txt` is empty →
+**M-BEAUTY-FULL fires.** Claude Sonnet 4.6 writes the commit message.
+
+---
+
+### Corpus Protocol — rung 12 directory
+
+**Location:** `SNOBOL4-corpus/crosscheck/beauty/`
+
+**File naming:**
+
+```
+NNN_beauty_<description>.sno      — SNOBOL4 program (pipes input through beauty.sno)
+NNN_beauty_<description>.ref      — expected output (from CSNOBOL4 oracle)
+NNN_beauty_<description>.input    — input piped to beauty_full_bin stdin
+```
+
+**How each test works:**
+
+The `.sno` file IS a crosscheck runner wrapper — it does NOT contain the beauty program.
+The crosscheck runner compiles it via `sno2c` → binary, then pipes `.input` via stdin.
+But for beauty tests, the binary IS `beauty_full_bin` (pre-compiled from beauty.sno).
+
+**Alternative (simpler) test format for rung 12:**
+
+Since `beauty_full_bin` is pre-compiled, rung 12 tests bypass `sno2c` entirely:
+- `.input` = the SNOBOL4 snippet to beautify
+- `.ref` = oracle output from `snobol4 -f -P256k -I$INC beauty.sno < .input`
+- Crosscheck script calls `beauty_full_bin < .input`, diffs against `.ref`
+
+This requires a separate runner (`test/crosscheck/run_beauty.sh`) that uses the
+pre-compiled binary instead of compiling via sno2c.
+
+**run_beauty.sh skeleton:**
+
+```bash
+#!/usr/bin/env bash
+# run_beauty.sh — rung 12: run pre-compiled beauty_full_bin against corpus
+CORPUS=/home/claude/SNOBOL4-corpus/crosscheck/beauty
+TINY=/home/claude/SNOBOL4-tiny
+BIN=$TINY/beauty_full_bin
+INC=/home/claude/SNOBOL4-corpus/programs/inc
+BEAUTY=/home/claude/SNOBOL4-corpus/programs/beauty/beauty.sno
+
+[[ ! -x "$BIN" ]] && echo "ERROR: beauty_full_bin not built" && exit 1
+
+PASS=0; FAIL=0
+for input in $CORPUS/*.input; do
+    name=$(basename $input .input)
+    ref=$CORPUS/$name.ref
+    [[ ! -f "$ref" ]] && continue
+    got=$(timeout 10 $BIN < $input 2>/dev/null || true)
+    exp=$(cat $ref)
+    if [[ "$got" == "$exp" ]]; then
+        echo "PASS $name"; PASS=$((PASS+1))
+    else
+        echo "FAIL $name"
+        diff <(echo "$exp") <(echo "$got") | head -8 | sed 's/^/    /'
+        FAIL=$((FAIL+1))
+    fi
+done
+echo "Results: $PASS passed, $FAIL failed"
+[[ $FAIL -eq 0 ]] && exit 0; exit 1
+```
+
+**Oracle generation (one-time per .input file):**
+
+```bash
+snobol4 -f -P256k -I$INC $BEAUTY < NNN_beauty_<desc>.input > NNN_beauty_<desc>.ref
+```
+
+---
+
+### The Invariant
+
+**At all times, 106/106 rungs 1–11 must pass.**
+
+If any Sprint A–D fix breaks a rung 1–11 test, that fix is wrong. Roll back.
+The crosscheck ladder is a regression guard as much as a test suite.
+
+After every compiler commit:
+```bash
+STOP_ON_FAIL=0 bash /home/claude/SNOBOL4-tiny/test/crosscheck/run_crosscheck.sh
+# Must be 106/106
+```
+
+---
+
+### Session Start Sequence (Session 98 onward)
+
+```bash
+cd /home/claude/SNOBOL4-tiny
+git config user.name "LCherryholmes" && git config user.email "lcherryh@yahoo.com"
+git log --oneline -3
+
+# Verify SESSION.md HEAD matches git HEAD
+# If not: read SESSIONS_ARCHIVE.md, orient, do not touch code
+
+apt-get install -y libgc-dev
+make -C src/sno2c
+
+# Crosscheck invariant
+STOP_ON_FAIL=0 bash test/crosscheck/run_crosscheck.sh
+# Must be 106/106 — if not, fix before anything else
+
+# Symlink for corpus runner
+mkdir -p /home/SNOBOL4-corpus
+ln -sf /home/claude/SNOBOL4-corpus/crosscheck /home/SNOBOL4-corpus/crosscheck
+
+# Build beauty_full_bin
+RT=src/runtime
+INC=/home/claude/SNOBOL4-corpus/programs/inc
+BEAUTY=/home/claude/SNOBOL4-corpus/programs/beauty/beauty.sno
+src/sno2c/sno2c -trampoline -I$INC $BEAUTY > beauty_full.c
+gcc -O0 -g beauty_full.c $RT/snobol4/snobol4.c $RT/snobol4/mock_includes.c \
+    $RT/snobol4/snobol4_pattern.c $RT/mock_engine.c \
+    -I$RT/snobol4 -I$RT -Isrc/sno2c -lgc -lm -w -o beauty_full_bin
+echo "beauty_full_bin built: $(./beauty_full_bin <<< '        OUTPUT = '"'"'hello'"'"'' )"
+```
+
+---
+
+### Milestone Summary (updated)
+
+| ID | Sprint | Trigger | Status |
+|----|--------|---------|--------|
+| **M-BEAUTY-CORE** | Sprint A | `beauty/140_self` crosscheck pass — beauty.sno beautifies itself via compiled binary (mock stubs) | ❌ |
+| **M-BEAUTY-FULL** | Sprint D | `diff oracle_csn.txt compiled_out.txt` empty — full self-beautify with real inc files | ❌ |
+
+---
+
+*Session 98, 2026-03-15. Plan by Lon Cherryholmes + Claude Sonnet 4.6.*
