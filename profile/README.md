@@ -53,18 +53,19 @@ As of Session 33 (2026-03-12), `snoc` successfully compiles `beauty.sno` — a 8
 
 The org is a **compiler matrix**. Two dimensions. Every cell is a working implementation.
 
-|                | **SNOBOL4** | **SPITBOL** | **SNOCONE** | **REBUS** | *(more)* |
-|----------------|:-----------:|:-----------:|:-----------:|:---------:|:--------:|
-| **C / native** | SNOBOL4-tiny ← *here* | — | — | — | |
-| **JVM**        | SNOBOL4-jvm | — | snocone.clj | — | |
-| **.NET**       | SNOBOL4-dotnet | — | snocone.cs | — | |
-| **Python**     | SNOBOL4-python | — | — | — | |
-| **ASM**        | — | — | — | — | |
-| *(more)*       | | | | | |
+SNOBOL4 and SPITBOL are one frontend — one executable, SPITBOL extensions enabled by switch.
+CSNOBOL4 and SPITBOL are our *oracles* — reference implementations we test against, not our products.
 
-**Rows = targets / backends.** C/native, JVM, .NET, Python, ASM, WASM — wherever programs run, SNOBOL4 can run there too.
+|                | **SNOBOL4/SPITBOL** | **SNOCONE** | **REBUS** | **Tiny-ICON** | **Tiny-Prolog** |
+|----------------|:-------------------:|:-----------:|:---------:|:-------------:|:---------------:|
+| **C / native** | SNOBOL4-tiny ← *here* | — | SNOBOL4-tiny | — | — |
+| **JVM**        | SNOBOL4-jvm | ⏳ | — | — | — |
+| **.NET**       | SNOBOL4-dotnet | ⏳ | — | — | — |
+| **x64 ASM**    | — | — | — | — | — |
 
-**Columns = source languages / front-ends.** SNOBOL4 is the core. SPITBOL is its compiled superset. SNOCONE is a modern structured front-end. REBUS is the natural language horizon. More to come.
+**Rows = targets / backends.** C/native, JVM, .NET, x64 ASM — wherever programs run, SNOBOL4 runs there too.
+
+**Columns = source languages / frontends.** SNOBOL4/SPITBOL is the core — one language, one frontend, switch-selectable extensions. SNOCONE is a modern structured frontend. REBUS is a structured transpiler to SNOBOL4. Tiny-ICON and Tiny-Prolog extend the Byrd Box IR to Icon generators and Prolog unification.
 
 The mission: fill the matrix. Every cell represents a community of programmers who can now use SNOBOL4's pattern model natively on their platform — without porting, without FFI, without compromise.
 
