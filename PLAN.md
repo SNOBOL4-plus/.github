@@ -6,19 +6,17 @@ three backends (C native, JVM, .NET). Self-hosting goal: sno2c compiles sno2c.
 
 ---
 
-## ⚡ NOW — read this, know what to do
+## ⚡ NOW
 
 | | |
 |-|-|
 | **Active repo** | SNOBOL4-tiny |
 | **Sprint** | `beauty-crosscheck` — Sprint A — rung 12 crosscheck tests |
 | **HEAD** | `08eabba` |
-| **Next action** | Build beauty_full_bin → write 101_comment test → run run_beauty.sh → Sprint A |
+| **Next action** | Build beauty_full_bin → write 101_comment test → run run_beauty.sh |
 | **Invariant** | 106/106 rungs 1–11 must pass before any work |
 
-**If working on TINY → read [TINY.md](TINY.md)**
-**If working on JVM  → read [JVM.md](JVM.md)**
-**If working on .NET → read [DOTNET.md](DOTNET.md)**
+**Working on TINY → [TINY.md](TINY.md) · JVM → [JVM.md](JVM.md) · .NET → [DOTNET.md](DOTNET.md)**
 
 ---
 
@@ -41,32 +39,35 @@ three backends (C native, JVM, .NET). Self-hosting goal: sno2c compiles sno2c.
 
 ---
 
-## Platform Map (frontend × backend)
+## Platform Map
 
-| Platform | Repo | L2 doc | Sprint | Next milestone |
-|----------|------|--------|--------|---------------|
-| C native | [SNOBOL4-tiny](https://github.com/SNOBOL4-plus/SNOBOL4-tiny) | [TINY.md](TINY.md) | `beauty-crosscheck` | M-BEAUTY-CORE |
-| JVM/Clojure | [SNOBOL4-jvm](https://github.com/SNOBOL4-plus/SNOBOL4-jvm) | [JVM.md](JVM.md) | `jvm-inline-eval` | M-JVM-EVAL |
-| .NET/C# | [SNOBOL4-dotnet](https://github.com/SNOBOL4-plus/SNOBOL4-dotnet) | [DOTNET.md](DOTNET.md) | `net-delegates` | M-NET-DELEGATES |
-| Corpus | [SNOBOL4-corpus](https://github.com/SNOBOL4-plus/SNOBOL4-corpus) | [CORPUS.md](CORPUS.md) | Stable | — |
-| Harness | [SNOBOL4-harness](https://github.com/SNOBOL4-plus/SNOBOL4-harness) | [HARNESS.md](HARNESS.md) | Stable | — |
-
----
-
-## L2 → L3 Reference Map
-
-*Read L2 (platform doc) first. Go deeper only when needed.*
-
-| L2 doc | When you need more detail → read L3 |
-|--------|--------------------------------------|
-| TINY.md | Architecture deep dive → [ARCH.md](ARCH.md) |
-| Any platform | Testing protocol, four paradigms → [TESTING.md](TESTING.md) |
-| Any platform | Mandatory rules (token, identity, artifacts) → [RULES.md](RULES.md) |
-| Any platform | Session history → [SESSIONS_ARCHIVE.md](SESSIONS_ARCHIVE.md) |
-| Any platform | Runtime patches → [PATCHES.md](PATCHES.md) |
-| Background | Origin, JCON, keyword tables → [MISC.md](MISC.md) |
+| Platform | L2 doc | Sprint | Milestone |
+|----------|--------|--------|-----------|
+| C native | [TINY.md](TINY.md) | `beauty-crosscheck` | M-BEAUTY-CORE |
+| JVM/Clojure | [JVM.md](JVM.md) | `jvm-inline-eval` | M-JVM-EVAL |
+| .NET/C# | [DOTNET.md](DOTNET.md) | `net-delegates` | M-NET-DELEGATES |
+| Corpus | [CORPUS.md](CORPUS.md) | Stable | — |
+| Harness | [HARNESS.md](HARNESS.md) | Stable | — |
 
 ---
 
-*PLAN.md = L1 index only. Max 4096 bytes. Edit downstream files, not this one.*
-*When Lon says "update HQ": update the L2 or L3 file, not PLAN.md.*
+## L3 Reference — read only what you need
+
+| Concern | File |
+|---------|------|
+| beauty.sno: TDD protocol, rung 12, probe/monitor/triangulate scripts | [FRONTEND-BEAUTY.md](FRONTEND-BEAUTY.md) |
+| sno2c: lex/parse/emit, SIL naming, CNode, artifacts, bootstrap | [FRONTEND-SNO2C.md](FRONTEND-SNO2C.md) |
+| Rebus: language rules, translation table, round-trip | [FRONTEND-REBUS.md](FRONTEND-REBUS.md) |
+| C backend: Byrd box techniques, block functions, setjmp, arch decisions | [BACKEND-C.md](BACKEND-C.md) |
+| JVM backend: design decisions, file map, open issues | [BACKEND-JVM.md](BACKEND-JVM.md) |
+| .NET backend: solution layout, open issues, performance | [BACKEND-NET.md](BACKEND-NET.md) |
+| Shared arch: Byrd box concept, oracle hierarchy, corpus ladder | [ARCH.md](ARCH.md) |
+| Testing: four paradigms, corpus ladder protocol | [TESTING.md](TESTING.md) |
+| Mandatory rules: token, identity, artifacts, hierarchy | [RULES.md](RULES.md) |
+| Session history | [SESSIONS_ARCHIVE.md](SESSIONS_ARCHIVE.md) |
+| Runtime patches | [PATCHES.md](PATCHES.md) |
+| Background, JCON, keyword tables | [MISC.md](MISC.md) |
+
+---
+
+*PLAN.md = L1 index only. ~3KB max. Edit L2/L3 files, not this one.*
