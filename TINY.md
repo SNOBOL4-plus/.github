@@ -12,7 +12,7 @@ SNOBOL4-tiny: multiple frontends, multiple backends.
 ## NOW
 
 **Sprint:** `beauty-crosscheck` — Sprint A — rung 12 crosscheck tests
-**HEAD:** `08eabba` — clean baseline, 106/106 rungs 1–11
+**HEAD:** `41b03d4` — artifact session100, HQ frontend×backend split
 **Milestone:** M-BEAUTY-CORE → M-BEAUTY-FULL
 
 **Next action:**
@@ -136,4 +136,4 @@ git add -A && git commit && git push
 | 97 | Pivot: test-driven only | No compiler work without failing test |
 | 98–99 | HQ restructure (L1/L2/L3 pyramid) | Plan before code |
 | 100 | HQ: frontend×backend split | One file per concern |
-| 101 | Sprint A begins | Rung 12, beauty_full_bin, first crosscheck test |
+| 101 | Sprint A begins | Rung 12, beauty_full_bin, first crosscheck test (Session 101) |
