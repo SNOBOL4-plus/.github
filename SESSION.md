@@ -10,13 +10,13 @@
 | Field | Value |
 |-------|-------|
 | **Repo** | SNOBOL4-tiny |
-| **Sprint** | `beauty-first` — fix Parse Error → M-BEAUTY-CORE |
+| **Sprint** | `crosscheck-ladder` — corpus ladder rung by rung toward M-BEAUTY-CORE |
 | **Milestone** | M-BEAUTY-CORE (mock includes first) → M-BEAUTY-FULL (real inc, second) |
 | **HEAD** | `29c0a4b` — fix(emit_byrd): nInc beta emits NDEC_fn() — compensate on backtrack |
 
 ---
 
-## ⚡ SESSION 89 FIRST ACTION
+## ⚡ SESSION 90 FIRST ACTION — PIVOT: Corpus Ladder
 
 ### Active bug: ARBNO loop — partial token output, ~64 iterations, then Parse Error
 
@@ -202,3 +202,27 @@ times, then fails. Root cause not yet identified — session 89 work.
 | 2026-03-14 | Session 87 bug found | ntop leak in ARBNO(*Command) nInc not reversed on fail |
 | 2026-03-14 | Session 88 bug fix | nInc beta now emits NDEC_fn() — ntop leak resolved |
 | 2026-03-14 | Session 88 smoke test | 2/21 pass — ARBNO fragment-loop bug now active symptom |
+| 2026-03-15 | Session 89 PIVOT | crosscheck-ladder replaces smoke test — corpus rung by rung |
+| 2026-03-15 | Session 89 crosscheck | output 7/8, assign 7/8 — two bugs found: null assign + &ALPHABET |
+
+---
+
+## What was done this session (Session 89)
+
+### PIVOT: crosscheck-ladder methodology adopted
+Stop attacking beauty.sno with the smoke test. Use the corpus crosscheck ladder instead.
+Start at the simplest possible program and climb rung by rung. See HARNESS.md.
+
+### Crosscheck runner written
+`test/crosscheck/run_crosscheck.sh` — compiles each corpus .sno via sno2c -trampoline,
+runs binary, diffs vs .ref oracle. One program at a time.
+
+### Session 89 results
+- output: 7/8 pass — FAIL: output/006 SIZE(&ALPHABET) returns 0 instead of 256
+- assign: 7/8 pass — FAIL: assign/012 null assign (X =) does not clear variable
+- concat/arith/control/patterns: not yet run
+
+### SNOBOL4-corpus and SNOBOL4-harness cloned
+Both repos now available locally. Harness probe.py and JVM trace infrastructure read.
+CSNOBOL4 2.3.3 built from tarball (keytrace self-test fails but binary usable).
+

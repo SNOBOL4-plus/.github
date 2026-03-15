@@ -440,6 +440,35 @@ glob-sequence are optimizations and diagnostics improvements.
 
 ---
 
+## Testing Methodology — Corpus Ladder (Session 89 Pivot, mandatory)
+
+**Decided 2026-03-15. Applies to TINY, JVM, DOTNET — all repos.**
+
+Stop attacking the target program directly. Use the corpus crosscheck ladder.
+Start at rung 1 (1 token). Fix each failure. Climb to the target.
+
+```
+Rung 1:  output        — OUTPUT = 'hello'
+Rung 2:  assign        — X = 'foo', null assign (X =)
+Rung 3:  concat        — OUTPUT = 'a' 'b'
+Rung 4:  arith         — OUTPUT = 1 + 2
+Rung 5:  control       — goto, :S(), :F()
+Rung 6:  patterns      — LIT, ANY, SPAN, ARB, ARBNO, POS, RPOS
+Rung 7:  capture       — . and $ operators
+Rung 8:  strings       — SIZE, SUBSTR, REPLACE, DUPL
+Rung 9:  keywords      — IDENT, DIFFER, GT/LT/EQ, DATATYPE
+Rung 10: functions     — DEFINE, RETURN, FRETURN, recursion
+Rung 11: data          — ARRAY, TABLE, DATA types
+Rung 12: beauty.sno   — small inputs (1 tok → 20 tok → full source)
+```
+
+**Rule:** Stop at first failing rung. Fix it. Retest. Move up. Never skip ahead.
+**Tools:** `crosscheck/run_crosscheck.sh` → `probe.py` → `TRACE()+DUMP()` on divergence.
+**Corpus:** SNOBOL4-corpus/crosscheck/ — shared across all repos, never duplicated.
+**Harness:** SNOBOL4-harness/ — probe.py, trace infrastructure, crosscheck runners.
+
+---
+
 ## Sprint Detail — toward M-BEAUTY-CORE then M-BEAUTY-FULL (TINY)
 
 Four sprints to M-BEAUTY-CORE. M-BEAUTY-FULL follows after. Each gates the next. Each ends with a commit.

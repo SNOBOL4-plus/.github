@@ -12,7 +12,7 @@ Test baselines, conformance, known gaps, and performance benchmarks across all i
 | SNOBOL4-jvm | 1,896 (4,120 assertions) | 0 | 2026-03-10 `9cf0af3` |
 | SNOBOL4-csharp | 263 | 0 | 2026-03-07 |
 | SNOBOL4-cpython | 70+ | 0 | 2026-03-10 `330fd1f` |
-| SNOBOL4-tiny | 22 oracles (Sprint 22 Python driver) | 0 | 2026-03-12 `2929656` — NOTE: Python driver tests old pipeline; C snoc pipeline at 0 gcc errors |
+| SNOBOL4-tiny | crosscheck ladder: output 7/8, assign 7/8 | 2 | 2026-03-15 `29c0a4b` — corpus ladder methodology adopted Session 89; null-assign + &ALPHABET bugs active |
 
 **How to update**: run the test suite, paste the new count with date and commit hash.
 
