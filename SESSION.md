@@ -1,50 +1,17 @@
-# SESSION.md — Live Handoff
-
-> This file is fully self-contained. A new Claude reads this and nothing else to start working.
-> Updated at every HANDOFF. History lives in SESSIONS_ARCHIVE.md.
-
----
-
 ## Active Session
 
 | Field | Value |
 |-------|-------|
 | **Repo** | SNOBOL4-tiny |
-| **Sprint** | `crosscheck-ladder` — Sprint 3 of 6 toward M-BEAUTY-CORE; corpus ladder rung by rung |
+| **Sprint** | `crosscheck-ladder` — Sprint 3 of 6 toward M-BEAUTY-CORE |
 | **Milestone** | M-BEAUTY-CORE (mock includes first) → M-BEAUTY-FULL (real inc, second) |
-| **HEAD** | `29c0a4b` — fix(emit_byrd): nInc beta emits NDEC_fn() — compensate on backtrack |
+| **HEAD** | `7d72722` — fix(crosscheck): rungs 1-5 all pass — 37/37 |
 
 ---
 
-## ⚡ SESSION 90 FIRST ACTION — PIVOT: Corpus Ladder
+## ⚡ SESSION 91 FIRST ACTION — Run rung 6 (patterns)
 
-### Active bug: ARBNO loop — partial token output, ~64 iterations, then Parse Error
-
-**Smoke test result (session 88):** 2/21 pass — only `comment line` and `control line` pass.
-All Stmt-type inputs fail: the subject token (e.g. `X`) is output ~64 times, then Parse Error.
-
-**What this means:**
-Each ARBNO iteration is matching a tiny fragment (just the label/subject) instead of a full
-statement. The loop runs ~64 times (ARBNO stack depth limit?) then fails.
-
-**Session 89 first action:**
-1. Build binary + run smoke test to confirm baseline:
-   ```bash
-   bash test/smoke/test_snoCommand_match.sh /tmp/beauty_core_bin
-   ```
-2. Feed minimal failing case and observe:
-   ```bash
-   printf '    X = 1\nEND\n' | /tmp/beauty_core_bin 2>&1
-   ```
-3. Check `pat_Commands` struct — `arbno_stack[64]` field? That would cap iterations at 64.
-4. Check whether `pp` is being called per-token vs per-statement. The fragment output
-   (`X`, `1`, then loop) suggests `pp(c[i])` is walking tokens not tree nodes.
-5. Check `pat_Parse` ARBNO wiring in generated C — is ARBNO correctly wrapping
-   `*Commands` (plural) or just `*Command` (single)?
-
-**nInc fix (session 88, commit 29c0a4b):** CORRECT and committed.
-`NDEC_fn()` now emitted at nInc beta port. The ntop leak is fixed.
-The ARBNO loop bug is a separate pre-existing issue now unmasked.
+Rungs 1–5 are 37/37 clean. Next: rung 6 patterns.
 
 **Build commands:**
 ```bash
@@ -54,82 +21,67 @@ apt-get install -y libgc-dev
 make -C src/sno2c
 
 RT=src/runtime
-BEAUTY=/home/claude/repos/SNOBOL4-corpus/programs/beauty/beauty.sno
+CORPUS=/home/claude/repos/SNOBOL4-corpus/crosscheck
 
-src/sno2c/sno2c -trampoline $BEAUTY > /tmp/beauty_core.c
-gcc -O0 -g /tmp/beauty_core.c \
-    $RT/snobol4/snobol4.c $RT/snobol4/mock_includes.c \
-    $RT/snobol4/snobol4_pattern.c $RT/mock_engine.c \
-    -I$RT/snobol4 -I$RT -Isrc/sno2c \
-    -lgc -lm -w -o /tmp/beauty_core_bin
+# Run a rung:
+for sno in $CORPUS/patterns/*.sno; do
+    name=$(basename $sno .sno); ref="${sno%.sno}.ref"
+    [[ -f "$ref" ]] || continue
+    src/sno2c/sno2c -trampoline "$sno" > /tmp/t.c 2>/dev/null
+    gcc -O0 -g /tmp/t.c $RT/snobol4/snobol4.c $RT/snobol4/mock_includes.c \
+        $RT/snobol4/snobol4_pattern.c $RT/mock_engine.c \
+        -I$RT/snobol4 -I$RT -Isrc/sno2c -lgc -lm -w -o /tmp/tbin 2>/dev/null
+    got=$(timeout 5 /tmp/tbin </dev/null 2>/dev/null || true)
+    exp=$(cat "$ref")
+    if [[ "$got" == "$exp" ]]; then echo "PASS $name"
+    else echo "FAIL $name"; diff <(echo "$exp") <(echo "$got") | head -4 | sed 's/^/  /'; fi
+done
 ```
 
-⚠️ mock_engine.c — NOT engine.c
-⚠️ beauty_core (mock includes) FIRST — beauty_full (real inc) only after M-BEAUTY-CORE
+⚠️ -INCLUDE is a noop in lexer — no -I flag needed for sno2c
+⚠️ engine_stub.c is now mock_engine.c
 ⚠️ NEVER write the token into any file
+⚠️ NEVER link engine.c — mock_engine.c only
+⚠️ beauty_core (mock includes) FIRST — beauty_full (real inc) SECOND
 
 Oracle: `test/smoke/outputs/session50/beauty_oracle.sno`
 
 ---
 
-## What was done this session (Session 88)
+## Crosscheck ladder status (Session 90)
 
-### Bug 2 fixed: nInc beta now emits NDEC_fn() (commit 29c0a4b)
-- Root cause confirmed: `cat_l_534_α: NINC_fn()` fired on every Command attempt,
-  including the failing termination attempt by ARBNO. No compensation on beta.
-- Fix: one line in `emit_byrd.c` — `PL(beta, omega, "NDEC_fn();")` replaces `PLG(beta, omega)`
-- Generated code confirmed: `cat_l_534_β: NDEC_fn(); goto _Command_ω;`
+| Rung | Dir | Tests | Status |
+|------|-----|-------|--------|
+| 1 output | output/ | 8 | ✅ 8/8 |
+| 2 assign | assign/ | 8 | ✅ 8/8 |
+| 3 concat | concat/ | 6 | ✅ 6/6 |
+| 4 arith | arith_new/ | 8 | ✅ 8/8 |
+| 5 control | control_new/ | 7 | ✅ 7/7 |
+| 6 patterns | patterns/ | 20 | ⏳ next |
+| 7 capture | capture/ | 7 | ❌ |
+| 8 strings | strings/ | 17 | ❌ |
+| 9 keywords | keywords/ | 11 | ❌ |
+| 10 functions | functions/ | 8 | ❌ |
+| 11 data | data/ | 6 | ❌ |
+| 12 beauty.sno | TBD | TBD | ❌ |
 
-### Smoke test run: 2/21 pass
-- PASS: comment line, control line
-- FAIL: all Stmt-type inputs — subject token output ~64 times, then Parse Error
-- This is a **pre-existing structural bug** now clearly visible via smoke test
-- ARBNO loop iterates ~64 times per statement, each matching only a token fragment
-
-### -INCLUDE diagnostic (ruled out)
-- Removing all -INCLUDE lines from beauty.sno input made no difference
-- Parse Error still hits on `START` (first non-comment line)
-- -INCLUDE lines (Control pattern) parse correctly — confirmed by smoke test
-
----
-
-## What was done this session (Session 87)
-
-### Renames
-- `src/runtime/snobol4/snobol4_inc.c/.h` → `mock_includes.c/.h`
-- All references updated in both repos
-
-### SESSION.md corrected
-Removed false "Parse Error on -INCLUDE lines" bug description. -INCLUDE is
-compile-time, not runtime. Previous session had this completely wrong.
-
-### csnobol4 2.3.3 built
-Available at `/tmp/snobol4-inst/bin/snobol4` for oracle comparison.
-
-### Bug 1 fixed: static locals in statement bodies (emit_byrd.c)
-`decl_flush()` was emitting `static` for deref frame pointers in statement
-bodies. `static` locals persist across trampoline calls — second statement
-saw stale pattern frames from first statement. Fixed to plain locals.
-Commit: `ba93890`
-
-### Bug 2 identified: ntop=1 after pp (not yet fixed)
-After pp runs for first statement, `_ntop=1` when stmt_217 runs its *Parse.
-Root cause: `nInc()` fires at start of every `*Command` attempt (even failed
-ones). ARBNO termination attempt calls `nInc` then FENCE fails → `nInc`
-not reversed. Accumulates across pp's recursive `pp(c[i])` calls.
+**Total so far: 37/37 pass**
 
 ---
 
-## Active bug: ntop leak in ARBNO(*Command)
+## Fixes made this session (Session 90)
 
-**Root cause (hypothesis):** `Command = nInc() FENCE(...)`. When ARBNO
-terminates (tries *Command, Command calls nInc, FENCE fails, Command fails),
-the nInc from the terminating attempt is not reversed. Each *Parse call
-leaks one nInc. pp recurses → multiple *Parse calls → ntop accumulates.
-
-**Fix location:** `emit_byrd.c` — how `nInc()` (E_FUNC side-effect) is
-emitted relative to FENCE backtracking. The nInc must be conditional on
-Command succeeding, not unconditional at Command entry.
+| Fix | File | What |
+|-----|------|------|
+| &ALPHABET SIZE=256 | snobol4.c | Registered in NV; SIZE checks pointer identity |
+| POWER_fn integer | snobol4.c | int**int returns int, not real |
+| REMDR builtin | snobol4.c | Integer remainder, registered |
+| E_MNS e->left | emit.c + emit_cnode.c | Unary minus used e->right (NULL) — fixed to e->left |
+| null assign | emit.c + parse.c + sno2c.h | STMT_t.has_eq flag; X= emits NV_SET_fn(var,NULVCL) |
+| -INCLUDE noop | lex.c | Silently dropped — no file open, no error |
+| inc_mock/ deleted | — | 19 comment-only stubs removed |
+| engine_stub→mock_engine | runtime/ | Rename for clarity |
+| crosscheck-ladder Sprint 3 | PLAN.md | Formally added as Sprint 3 of 6 with rung table |
 
 ---
 
@@ -140,6 +92,7 @@ Command succeeding, not unconditional at Command entry.
 - **ALWAYS run `git config user.name/email` after every clone**
 - **beauty_core (mock includes) FIRST — beauty_full (real inc) SECOND**
 - **beauty.sno is NEVER modified — it is syntactically perfect**
+- **-INCLUDE is a noop in sno2c lexer — no -I flag needed**
 
 ---
 
@@ -148,73 +101,9 @@ Command succeeding, not unconditional at Command entry.
 | Date | What changed | Why |
 |------|-------------|-----|
 | 2026-03-14 | PIVOT: block-fn + trampoline model | complete rethink with Lon |
-| 2026-03-14 | Session 80 runtime fixes | mock_engine T_FUNC/T_CAPTURE etc |
-| 2026-03-14 | Session 83 diagnosis | _c = data_define overwrites _b_tree_c (later disproved) |
 | 2026-03-14 | Session 84 SIL rename | DESCR_t/DTYPE_t/XKIND_t/_fn/_t throughout |
-| 2026-03-14 | Session 84 HALT | broke beauty_core/beauty_full agreement — reverted to stubs |
-| 2026-03-14 | Session 85 cleanup | agreement breach resolved, rename audit, P4 undo, M-BEAUTY-CORE split |
-| 2026-03-14 | Session 87 bug fix | decl_flush static→local (stale frame corruption) |
-| 2026-03-14 | Session 87 bug found | ntop leak in ARBNO(*Command) nInc not reversed on fail |
-
----
-
-## What was done this session (Session 88)
-
-### nInc NDEC fix (commit 29c0a4b)
-`emit_byrd.c`: nInc beta port now emits `NDEC_fn()` to compensate when
-Command fails after nInc already fired. This was the ntop=1 leak.
-
-### Diagnostic: -INCLUDE is not the issue
-Confirmed: removing all -INCLUDE lines from beauty.sno input makes no
-difference. Parse Error still occurs on the first Stmt-type line.
-
-### Smoke test run
-`test/smoke/test_snoCommand_match.sh` run for first time this session.
-Result: 2/21 pass. Comment and control lines pass; all Stmt types fail
-with ~64-repeat partial token loop then Parse Error.
-
-### Active bug identified
-ARBNO iteration is matching fragments rather than full statements.
-Each iteration outputs one token (e.g. `X`) and succeeds, loops ~64
-times, then fails. Root cause not yet identified — session 89 work.
-
----
-
-## Pivot Log
-
-| Date | What changed | Why |
-|------|-------------|-----|
-| 2026-03-14 | PIVOT: block-fn + trampoline model | complete rethink with Lon |
-| 2026-03-14 | Session 80 runtime fixes | mock_engine T_FUNC/T_CAPTURE etc |
-| 2026-03-14 | Session 83 diagnosis | _c = data_define overwrites _b_tree_c (later disproved) |
-| 2026-03-14 | Session 84 SIL rename | DESCR_t/DTYPE_t/XKIND_t/_fn/_t throughout |
-| 2026-03-14 | Session 84 HALT | broke beauty_core/beauty_full agreement — reverted to stubs |
-| 2026-03-14 | Session 85 cleanup | agreement breach resolved, rename audit, P4 undo, M-BEAUTY-CORE split |
-| 2026-03-14 | Session 87 bug fix | decl_flush static→local (stale frame corruption) |
-| 2026-03-14 | Session 87 bug found | ntop leak in ARBNO(*Command) nInc not reversed on fail |
+| 2026-03-14 | Session 85 cleanup | agreement breach resolved, rename audit |
+| 2026-03-14 | Session 87 renames | inc_stubs→inc_mock, snobol4_inc→mock_includes |
 | 2026-03-14 | Session 88 bug fix | nInc beta now emits NDEC_fn() — ntop leak resolved |
-| 2026-03-14 | Session 88 smoke test | 2/21 pass — ARBNO fragment-loop bug now active symptom |
-| 2026-03-15 | Session 89 PIVOT | crosscheck-ladder replaces smoke test — corpus rung by rung |
-| 2026-03-15 | Session 89 crosscheck | output 7/8, assign 7/8 — two bugs found: null assign + &ALPHABET |
-
----
-
-## What was done this session (Session 89)
-
-### PIVOT: crosscheck-ladder methodology adopted
-Stop attacking beauty.sno with the smoke test. Use the corpus crosscheck ladder instead.
-Start at the simplest possible program and climb rung by rung. See HARNESS.md.
-
-### Crosscheck runner written
-`test/crosscheck/run_crosscheck.sh` — compiles each corpus .sno via sno2c -trampoline,
-runs binary, diffs vs .ref oracle. One program at a time.
-
-### Session 89 results
-- output: 7/8 pass — FAIL: output/006 SIZE(&ALPHABET) returns 0 instead of 256
-- assign: 7/8 pass — FAIL: assign/012 null assign (X =) does not clear variable
-- concat/arith/control/patterns: not yet run
-
-### SNOBOL4-corpus and SNOBOL4-harness cloned
-Both repos now available locally. Harness probe.py and JVM trace infrastructure read.
-CSNOBOL4 2.3.3 built from tarball (keytrace self-test fails but binary usable).
-
+| 2026-03-15 | Session 89 PIVOT | crosscheck-ladder replaces smoke test |
+| 2026-03-15 | Session 90 | Rungs 1-5 37/37; -INCLUDE noop; inc_mock deleted; engine_stub→mock_engine; 5 bugs fixed |

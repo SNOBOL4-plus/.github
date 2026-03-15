@@ -7,27 +7,26 @@
 
 ## Current State
 
-**Active sprint:** `beauty-first` — fix ntop leak → M-BEAUTY-CORE → M-BEAUTY-FULL
+**Active sprint:** `crosscheck-ladder` — Sprint 3 of 6 — climb corpus ladder rung by rung
 **Milestone target:** M-BEAUTY-CORE (mock includes first), then M-BEAUTY-FULL (real inc)
-**HEAD:** `ba93890` — WIP: fix decl_flush static→local; ntop=1 after pp bug active
+**HEAD:** `7d72722` — fix(crosscheck): rungs 1-5 all pass — 37/37
 
-**Completed since session 58 (do NOT re-implement):**
-- Session 59 `a3ea9ef`: Technique 1 struct-passing in emit_byrd.c — all pat_Xxx use pat_Xxx_t structs, calloc on entry==0
-- Session 63 `6467ff2`: DEFINE fn bodies scanned for named patterns — Parse/Command/Stmt/Label etc. now compiled Byrd boxes. 82→33 match_pattern_at calls.
-- Session 64 `09e5a5d`+`613b333`: E_DEREF varname checks right child first. $'lit' fix. byrd_cs() C-static sync. 33→9 match_pattern_at.
-- Sessions 65–76: quote-strip, computed goto, 3-column format (`d5b9c3c`), CNode IR M-CNODE (`ac54bd2`), pat_lit strv() fix (`0113d90`)
-- Session 77: pat_lit strv() bug fixed. Binary compiles 0 errors. 122 match_pattern_at remain (all dynamic refs — correct/expected).
-- Session 78 `b20329f`: emit_cnode.c build_expr E_DEREF fixed. TINY.md/SESSION.md rewritten. Bootstrap plan written.
+**Ladder status:**
+- Rungs 1–5 (output, assign, concat, arith_new, control_new): ✅ 37/37
+- Rung 6 (patterns/): ⏳ next — 20 tests
 
-**Current symptom:** Two statements in sequence → infinite loop then Parse Error.
-Root cause: `nInc()` fires at start of every `*Command` attempt (including failed
-terminating attempt). Not reversed on failure. Accumulates across pp recursion.
-`ntop=1` at second `*Parse` call → corrupt nstack.
+**Session 90 fixes:**
+- &ALPHABET registered in NV; SIZE returns 256 via pointer identity check
+- POWER_fn: int**int returns integer result
+- REMDR builtin implemented and registered
+- E_MNS (unary minus): emit_cnode.c + emit.c used e->right (NULL) — fixed to e->left
+- null assign (X =): STMT_t.has_eq flag added; emits NV_SET_fn(var, NULVCL)
+- -INCLUDE is now a noop in lexer — no file opened, no error
+- inc_mock/ directory deleted (19 comment-only stubs — no longer needed)
+- engine_stub.c renamed to mock_engine.c
 
-**Active bug — nInc not reversed on Command failure:**
-`Command = nInc() FENCE(...)` — if FENCE fails, Command fails, but nInc already fired.
-ARBNO's terminating attempt (the one that stops the loop) always leaks one nInc.
-Fix: emit nInc only after a FENCE branch succeeds, OR save/restore _ntop on Command entry/exit.
+**Next action:** Run rung 6 patterns — `$CORPUS/patterns/*.sno` (20 tests).
+Stop at first failure. Fix compiler. Retest. Move up.
 
 **Build command (mock_engine.c — NOT engine.c):**
 ```bash
