@@ -509,7 +509,7 @@ cd /home/claude/SNOBOL4-tiny/src/snoc && make clean && make
 
 $SNOC $BEAUTY -I $INC 2>/dev/null > /tmp/beauty_full.c
 gcc -O0 -g /tmp/beauty_full.c \
-    $RUNTIME/snobol4/snobol4.c $RUNTIME/snobol4/snobol4_inc.c \
+    $RUNTIME/snobol4/snobol4.c $RUNTIME/snobol4/mock_includes.c \
     $RUNTIME/snobol4/snobol4_pattern.c $RUNTIME/engine.c \
     -I$RUNTIME/snobol4 -I$RUNTIME -lgc -lm -w -o /tmp/beauty_full_bin
 
@@ -587,7 +587,7 @@ static SnoVal _sno_fn_Shift(SnoVal *_args, int _nargs) {
 
 No `sno_var_get` to save old hash values on entry.
 No `sno_var_set` to restore old values on exit.
-`emit.c` has zero save/restore logic. `snobol4_inc.c` has zero save/restore logic.
+`emit.c` has zero save/restore logic. `mock_includes.c` has zero save/restore logic.
 
 **The correct pattern (CSNOBOL4 DEFF8/DEFF10 in / DEFF6 out):**
 ```c
@@ -2993,7 +2993,7 @@ scoped — no more duplicates. `:(RETURN)` → `goto _SNO_RETURN_pp;`, `:(FRETUR
 5. Run beauty self-compilation. Diff. **Write the commit message.**
 
 **Key context:**
-- Build cmd: `gcc -O0 -g $C_FILE $RUNTIME/snobol4/snobol4.c $RUNTIME/snobol4/snobol4_inc.c $RUNTIME/snobol4/snobol4_pattern.c $RUNTIME/engine.c -I$RUNTIME/snobol4 -I$RUNTIME -lgc -lm -w -o $BIN`
+- Build cmd: `gcc -O0 -g $C_FILE $RUNTIME/snobol4/snobol4.c $RUNTIME/snobol4/mock_includes.c $RUNTIME/snobol4/snobol4_pattern.c $RUNTIME/engine.c -I$RUNTIME/snobol4 -I$RUNTIME -lgc -lm -w -o $BIN`
 - `engine.c` is REQUIRED in link line (engine_match_ex lives there)
 - `snoc_runtime.h` is at `src/runtime/snobol4/snoc_runtime.h`
 - `emit.c` is at `src/snoc/emit.c`
@@ -3148,17 +3148,17 @@ Claude Sonnet 4.6 is the author of SNOBOL4-tiny. Three commits, three milestones
 **Focus**: No code written. Tracking failure diagnosed. Protocol fix committed.
 
 **Finding**: `snoc_helpers.c` (Session 30, commit `2929656`) is a dead duplicate of
-`snobol4_inc.c` (Sprint 20, commit `16eea3b`). `snobol4_inc.c` already implements all
+`mock_includes.c` (Sprint 20, commit `16eea3b`). `mock_includes.c` already implements all
 19 -INCLUDE helper libraries in C, 773 lines, fully registered, linked in every build.
 Session 30's "Eureka" was correct in principle but blind to existing work because no
 Claude ever runs a repo file survey before writing new code.
 
-**Root cause**: Session 30 HANDOFF omitted what `snobol4_inc.c` *does* — only its filename
+**Root cause**: Session 30 HANDOFF omitted what `mock_includes.c` *does* — only its filename
 appeared in build commands. A concept search found nothing. A filename search found it
 but nobody searched. The INVENTORY RULE closes this gap permanently.
 
 **Additional finding (Session 31)**: beauty.sno WITH -INCLUDEs already compiles to
-**0 gcc errors** using `snobol4_inc.c`. Milestone 2 condition is effectively met.
+**0 gcc errors** using `mock_includes.c`. Milestone 2 condition is effectively met.
 
 **Protocol added**: THE INVENTORY RULE — mandatory repo file survey before any new file
 or function is created. Full spec in §9. Plain-English descriptions of what files *do*
@@ -3185,7 +3185,7 @@ updated. snoc_helpers.c flagged dead. Next session runs oracle, diffs, writes co
 
 **Next session — first actions:**
 1. Provide token at session start
-2. Run REPO SURVEY (§9 INVENTORY RULE) — confirm snobol4_inc.c is the inc library
+2. Run REPO SURVEY (§9 INVENTORY RULE) — confirm mock_includes.c is the inc library
 3. Delete snoc_helpers.c from SNOBOL4-tiny (git rm, commit, push)
 4. Build CSNOBOL4 oracle, run beauty oracle
 5. Run beauty_full_bin < beauty.sno → diff vs oracle → **if empty: Claude writes Milestone 3 commit**
@@ -3317,7 +3317,7 @@ But now it runs everywhere.
 **What was accomplished this session:**
 
 1. **snoc_helpers.c deleted** — `git rm`, committed `cc0c88b`, pushed. Dead duplicate gone.
-2. **Milestones 1 and 2 confirmed done** — beauty_core (no -INCLUDEs) → 0 gcc errors ✅ and beauty_full (WITH all -INCLUDEs via snobol4_inc.c) → 0 gcc errors ✅. Both verified this session.
+2. **Milestones 1 and 2 confirmed done** — beauty_core (no -INCLUDEs) → 0 gcc errors ✅ and beauty_full (WITH all -INCLUDEs via mock_includes.c) → 0 gcc errors ✅. Both verified this session.
 3. **`flatten_str_expr()` fix** — `stmt_define_proto()` in `emit.c` now handles E_CONCAT chains of string literals (multi-line DEFINE calls). Before: ~80 functions detected, `Read`/`Write`/most multi-line DEFINEs invisible to fn_table, their bodies emitting as flat code in main(). After: **162 functions detected**. `_sno_fn_Read` now a proper C function. `:F(FRETURN)` correctly used inside bodies. Committed `8c7949a`.
 4. **⚡ COMMAND NAME EUREKA** — `sno4now` / `sno4jvm` / `sno4net`. The Unix succession from `sno3` (1974). Recorded in PLAN.md and README. `sno4.net` considered and rejected (it's a URL). Committed to .github.
 5. **HQ README rewritten** — Command names prominent near top. Sprint 32 status. Succession table. `sno4.net` note. Committed `4dab08a`, pushed.
@@ -3352,7 +3352,7 @@ cd /home/claude/SNOBOL4-tiny/src/snoc && make clean && make
 
 # Rebuild beauty_full_bin
 $SNOC $BEAUTY -I $INC > /tmp/beauty_full.c 2>/dev/null
-gcc -O0 -g /tmp/beauty_full.c $RUNTIME/snobol4/snobol4.c $RUNTIME/snobol4/snobol4_inc.c \
+gcc -O0 -g /tmp/beauty_full.c $RUNTIME/snobol4/snobol4.c $RUNTIME/snobol4/mock_includes.c \
     $RUNTIME/snobol4/snobol4_pattern.c $RUNTIME/engine.c \
     -I$RUNTIME/snobol4 -I$RUNTIME -lgc -lm -w -o /tmp/beauty_full_bin
 
@@ -3424,7 +3424,7 @@ Historical record. Do not delete. See `artifacts/README.md`.
 
 **Second bug found — phantom functions (body still silent after entry_label fix):**
 
-`Shift`/`Reduce` from ShiftReduce.sno are registered by `snobol4_inc.c` at runtime, so
+`Shift`/`Reduce` from ShiftReduce.sno are registered by `mock_includes.c` at runtime, so
 `collect_functions()` never sees their DEFINE calls. But their source bodies ARE in the
 expanded stream — and `is_body_boundary()` can't stop body-absorption at `_L_Shift` /
 `_L_Reduce` because those labels are unknown to `fn_table`. Result: `Shift`/`Reduce`
@@ -3463,7 +3463,7 @@ survey actual git log and file state, verify understanding before writing any co
 - `SNOBOL4-tiny` HEAD = `9596466` — entry_label fix + artifacts. `emit.c` is 936 lines.
 - `.github` HEAD = `b68f9a6` — Session 33 handoff with phantom fix direction.
 - **Repo survey completed** (`find /home/claude/SNOBOL4-tiny/src -type f | sort`).
-- `snobol4_inc.c` registers: `Shift`, `Reduce`, `Push`, `Pop`, `bVisit`, `Visit`,
+- `mock_includes.c` registers: `Shift`, `Reduce`, `Push`, `Pop`, `bVisit`, `Visit`,
   `TopCounter`, `InitCounter`, `PushCounter`, `IncCounter`, `DecCounter`, `PopCounter`,
   `TopBegTag`, `TopEndTag`, and many more — all runtime-owned, all with source bodies
   in the -INCLUDE stream.
@@ -3501,7 +3501,7 @@ beauty.sno uses `ss`, not `qq`. pp.sno uses `qq`.
 ### The critical finding
 
 **`pp.sno` is NOT in beauty.sno's -INCLUDE list.** beauty.sno defines `pp` and `ss`
-inline, in its own source. They are NOT implemented in `snobol4_inc.c`. They are NOT
+inline, in its own source. They are NOT implemented in `mock_includes.c`. They are NOT
 runtime-owned. They ARE compiled by snoc as ordinary DEFINE'd functions.
 
 **Therefore: pp and ss are NOT the bootstrap blocker.** They should compile and emit
@@ -3537,7 +3537,7 @@ but binary still produces 0 output lines (oracle = 790).
 
 **Lon confirmed this.** SNOBOL4 is case-sensitive. These are distinct:
 
-- `Shift` (capital S) — from `ShiftReduce.sno`, runtime-registered in `snobol4_inc.c`.  
+- `Shift` (capital S) — from `ShiftReduce.sno`, runtime-registered in `mock_includes.c`.  
   DEFINE has goto :(ShiftEnd). `collect_functions` finds it → fn[N] name=`Shift` end=`ShiftEnd`.
 - `shift` (lowercase s) — beauty.sno's OWN function, a completely different parser action.  
   DEFINE has no goto → end_label=NULL.
@@ -3582,7 +3582,7 @@ BEAUTY=/home/claude/SNOBOL4-corpus/programs/beauty/beauty.sno
 
 $SNOC $BEAUTY -I $INC 2>/dev/null > /tmp/beauty_full.c
 gcc -O0 -g /tmp/beauty_full.c \
-    $RUNTIME/snobol4/snobol4.c $RUNTIME/snobol4/snobol4_inc.c \
+    $RUNTIME/snobol4/snobol4.c $RUNTIME/snobol4/mock_includes.c \
     $RUNTIME/snobol4/snobol4_pattern.c $RUNTIME/engine.c \
     -I$RUNTIME/snobol4 -I$RUNTIME -lgc -lm -w -o /tmp/beauty_full_bin
 
@@ -3609,7 +3609,7 @@ but binary still produces 0 output lines (oracle = 790).
 
 **Lon confirmed this.** SNOBOL4 is case-sensitive. These are distinct:
 
-- `Shift` (capital S) — from `ShiftReduce.sno`, runtime-registered in `snobol4_inc.c`.  
+- `Shift` (capital S) — from `ShiftReduce.sno`, runtime-registered in `mock_includes.c`.  
   DEFINE has goto :(ShiftEnd). `collect_functions` finds it → fn[N] name=`Shift` end=`ShiftEnd`.
 - `shift` (lowercase s) — beauty.sno's OWN function, a completely different parser action.  
   DEFINE has no goto → end_label=NULL.
@@ -3715,7 +3715,7 @@ cd /home/claude/SNOBOL4-tiny/src/snoc && make clean && make
 
 $SNOC $BEAUTY -I $INC 2>/dev/null > /tmp/beauty_full.c
 gcc -O0 -g /tmp/beauty_full.c \
-    $RUNTIME/snobol4/snobol4.c $RUNTIME/snobol4/snobol4_inc.c \
+    $RUNTIME/snobol4/snobol4.c $RUNTIME/snobol4/mock_includes.c \
     $RUNTIME/snobol4/snobol4_pattern.c $RUNTIME/engine.c \
     -I$RUNTIME/snobol4 -I$RUNTIME -lgc -lm -w -o /tmp/beauty_full_bin
 
@@ -3805,7 +3805,7 @@ BEAUTY=/home/claude/SNOBOL4-corpus/programs/beauty/beauty.sno
 
 $SNOC $BEAUTY -I $INC 2>/dev/null > /tmp/beauty_full.c
 gcc -O0 -g /tmp/beauty_full.c \
-    $RUNTIME/snobol4/snobol4.c $RUNTIME/snobol4/snobol4_inc.c \
+    $RUNTIME/snobol4/snobol4.c $RUNTIME/snobol4/mock_includes.c \
     $RUNTIME/snobol4/snobol4_pattern.c $RUNTIME/engine.c \
     -I$RUNTIME/snobol4 -I$RUNTIME -lgc -lm -w -o /tmp/beauty_full_bin
 
@@ -3975,7 +3975,7 @@ shift-reduce stack was never populated. Either:
 2. `Shift` is being called but not pushing to the correct stack, OR
 3. The `snoParse` pattern itself is not being applied (the match fails immediately)
 
-**Next diagnostic**: Trace `_w_Shift` in `snobol4_inc.c` — add `fprintf(stderr,...)` 
+**Next diagnostic**: Trace `_w_Shift` in `mock_includes.c` — add `fprintf(stderr,...)` 
 to `_w_Shift` to confirm whether Shift is ever called at all during the input match.
 Also verify `sno_apply("Shift",...)` routes to `_w_Shift` (registered via `sno_register_fn`).
 
@@ -3987,7 +3987,7 @@ Also verify `sno_apply("Shift",...)` routes to `_w_Shift` (registered via `sno_r
 **snobol4_pattern.c**: `*(expr)` fix for `_ev_term` — **NOT WRITTEN YET**
 **beauty_full_bin**: 9 output lines (header comments + "Internal Error" + "START")
 **Oracle target**: 790 lines
-**Next action**: Trace whether `Shift` (capital S, `snobol4_inc.c`) is called
+**Next action**: Trace whether `Shift` (capital S, `mock_includes.c`) is called
 during the input match phase. If not, the pattern built by reduce() for snoParse
 is not invoking the deferred `*Shift(...)` calls.
 
@@ -4047,7 +4047,7 @@ has two parsing gaps:
 2. **After fix**: run binary, check stderr has no `EVAL partial` messages.
 
 3. **If clean**: check if output lines increase beyond 9. If still 9/timeout: add Shift
-   trace (fprintf in `_w_Shift` in `snobol4_inc.c`) to confirm whether Shift is called.
+   trace (fprintf in `_w_Shift` in `mock_includes.c`) to confirm whether Shift is called.
 
 4. **STLIMIT probe if needed**: patch generated C main() with
    `sno_kw_set("STLIMIT", SNO_INT_VAL(500))` to cap execution and examine state.
@@ -4129,7 +4129,7 @@ needing to add dozens of `fprintf` calls or reverse-engineer the pattern structu
 3. `&DUMP` equivalent: `sno_kw_dump = 1` in the runtime, checked at program exit.
 4. For pattern inspection: `sno_pat_dump(val)` if we implement it — prints pattern tree.
 
-**Immediate action**: implement `DUMP` builtin in `snobol4_inc.c` that iterates
+**Immediate action**: implement `DUMP` builtin in `mock_includes.c` that iterates
 `_var_buckets[]` and prints name=value pairs. Use it to verify `snoParse` is a valid
 pattern after init, before the main loop starts.
 

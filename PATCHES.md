@@ -2,7 +2,7 @@
 ## SNOBOL4-tiny Sprint 20+
 
 > **What this file is**: Every time we patch the runtime (`snobol4.c`,
-> `snobol4.h`, `emit_c_stmt.py`, `snobol4_inc.c`, `snobol4_pattern.c`)
+> `snobol4.h`, `emit_c_stmt.py`, `mock_includes.c`, `snobol4_pattern.c`)
 > to fix a bug found by the double-trace monitor or other diagnosis,
 > it is recorded here. Patch number, symptom, root cause, fix, commit.
 >

@@ -170,7 +170,7 @@ Technique 2 recorded here for continuity — implement after M-BEAUTY-FULL.
 ```bash
 gcc -O0 -g -I $R/snobol4 -I $R \
     beauty_full.c $R/snobol4/snobol4.c \
-    $R/snobol4/snobol4_inc.c \
+    $R/snobol4/mock_includes.c \
     $R/engine_stub.c -lgc -lm -o beauty_full_bin
 ```
 
@@ -993,7 +993,7 @@ C runtime stays in C permanently — correct and expected (GCC's runtime is also
 
 **Verification:** Compare C output of `sno2c_stage1` vs `sno2c_stage2` on `beauty.sno`. If identical → **M-BOOTSTRAP fires.**
 
-**What stays in C forever:** `snobol4.c`, `snobol4_inc.c`, `snobol4_pattern.c`, `engine_stub.c`, `trampoline.h`
+**What stays in C forever:** `snobol4.c`, `mock_includes.c`, `snobol4_pattern.c`, `engine_stub.c`, `trampoline.h`
 
 **What moves to SNOBOL4 (`sno2c.sno`):** Lexer (`lex.c`), Parser (`parse.c`), Emitter (`emit.c` + `emit_byrd.c` + `emit_cnode.c`)
 

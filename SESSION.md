@@ -72,7 +72,7 @@ BEAUTY=/home/claude/SNOBOL4-corpus/programs/beauty/beauty.sno
 # beauty_core (stubs — USE THIS, DO NOT switch to beauty_full)
 src/sno2c/sno2c -trampoline -I$STUBS $BEAUTY > /tmp/beauty_core.c
 gcc -O0 -g /tmp/beauty_core.c \
-    $RT/snobol4/snobol4.c $RT/snobol4/snobol4_inc.c \
+    $RT/snobol4/snobol4.c $RT/snobol4/mock_includes.c \
     $RT/snobol4/snobol4_pattern.c $RT/engine_stub.c \
     -I$RT/snobol4 -I$RT -Isrc/sno2c \
     -lgc -lm -w -o /tmp/beauty_core_bin
