@@ -30,7 +30,7 @@ terminating attempt). Not reversed on failure. Accumulates across pp recursion.
 ARBNO's terminating attempt (the one that stops the loop) always leaks one nInc.
 Fix: emit nInc only after a FENCE branch succeeds, OR save/restore _ntop on Command entry/exit.
 
-**Build command (engine_stub.c — NOT engine.c):**
+**Build command (mock_engine.c — NOT engine.c):**
 ```bash
 cd /home/claude/repos/SNOBOL4-tiny
 RT=src/runtime
@@ -39,7 +39,7 @@ BEAUTY=/home/claude/repos/SNOBOL4-corpus/programs/beauty/beauty.sno
 src/sno2c/sno2c -trampoline -I$STUBS $BEAUTY > /tmp/beauty_core.c
 gcc -O0 -g /tmp/beauty_core.c \
     $RT/snobol4/snobol4.c $RT/snobol4/mock_includes.c \
-    $RT/snobol4/snobol4_pattern.c $RT/engine_stub.c \
+    $RT/snobol4/snobol4_pattern.c $RT/mock_engine.c \
     -I$RT/snobol4 -I$RT -Isrc/sno2c -lgc -lm -w \
     -o /tmp/beauty_core_bin
 ```

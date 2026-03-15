@@ -40,10 +40,10 @@ https://github.com/settings/tokens**
 
 ---
 
-## ⛔ ALL BYRD BOXES — engine_stub.c only, no interpreter (mandatory, no exceptions)
+## ⛔ ALL BYRD BOXES — mock_engine.c only, no interpreter (mandatory, no exceptions)
 
 **Every pattern in beauty_full_bin is a compiled Byrd box.
-engine_stub.c is the only engine file linked. engine.c is fully superseded — see Architecture below.**
+mock_engine.c is the only engine file linked. engine.c is fully superseded — see Architecture below.**
 
 ### Canonical Architecture — Box Layout (decided Session 16, recorded SESSIONS_ARCHIVE.md)
 
@@ -159,19 +159,19 @@ Implement Technique 1 in emit_byrd.c now:
 1. Named pattern assignment → `byrd_emit_named_pattern(varname, expr, out)`
 2. Emits struct + forward decl + C function with all locals in struct
 3. E_DEREF (*X) → call `pat_X(&z->X_z, entry)` — no engine.c, no match_pattern_at
-4. Build with engine_stub.c. M-BEAUTY-FULL becomes reachable.
+4. Build with mock_engine.c. M-BEAUTY-FULL becomes reachable.
 
 Technique 2 recorded here for continuity — implement after M-BEAUTY-FULL.
 
 **Reference:** SESSIONS_ARCHIVE.md §14 "Self-Modifying C", §15 "Allocation Problem Solved", Session 16 "Key insight from Lon"
 
-### Build command for beauty_full_bin (engine_stub.c only):
+### Build command for beauty_full_bin (mock_engine.c only):
 
 ```bash
 gcc -O0 -g -I $R/snobol4 -I $R \
     beauty_full.c $R/snobol4/snobol4.c \
     $R/snobol4/mock_includes.c \
-    $R/engine_stub.c -lgc -lm -o beauty_full_bin
+    $R/mock_engine.c -lgc -lm -o beauty_full_bin
 ```
 
 ---
@@ -411,7 +411,7 @@ glob-sequence are optimizations and diagnostics improvements.
 |----|---------|------|--------|
 | **M-SNOC-COMPILES** | `snoc` compiles `beauty_core.sno`, 0 gcc errors | TINY | ✅ Done |
 | **M-REBUS** | Rebus round-trip: `.reb` → `.sno` → CSNOBOL4 → diff oracle | TINY | ✅ Done `bf86b4b` |
-| **M-COMPILED-BYRD** | `sno2c` emits labeled-goto Byrd boxes — `engine_stub.c` only, no interpreter | TINY | ✅ Done `560c56a` |
+| **M-COMPILED-BYRD** | `sno2c` emits labeled-goto Byrd boxes — `mock_engine.c` only, no interpreter | TINY | ✅ Done `560c56a` |
 | **M-CNODE** | `emit_expr`/`emit_pat` route through CNode IR + pp/qq pretty-printer — zero expression lines > 120 chars | TINY | ✅ Done `ac54bd2` |
 | **M-BEAUTY-CORE** | `beauty_core_bin` self-beautifies — diff empty (`-I inc_mock`, no INCLUDE code compiled in) | TINY | ⏳ active |
 | **M-BEAUTY-FULL** | `beauty_full_bin` self-beautifies — diff empty (`-I inc/`, real INCLUDE files) — only after M-BEAUTY-CORE | TINY | ❌ |
@@ -492,7 +492,7 @@ Root cause of 20 SR + 139 RR conflicts: `WS` was silently skipped. Fix: `{WS} { 
 ### Sprint 2 of 6 — `compiled-byrd-boxes` ✅ Complete `560c56a`
 
 **What:** `sno2c` emits labeled-goto Byrd box C. Validated against sprint0–22 oracles.
-`engine.c` dropped from compiled binary path via `engine_stub.c`.
+`engine.c` dropped from compiled binary path via `mock_engine.c`.
 
 **M-COMPILED-BYRD fired `560c56a`.**
 
@@ -566,7 +566,7 @@ Fix corpus path with: `CORPUS=/path/to/SNOBOL4-corpus/crosscheck bash test/cross
 ### Sprint 4 of 6 — `compiled-byrd-boxes-full` ❌ (gates on Sprint 3 rung 11)
 
 **What:** Inline ALL pattern variables as static Byrd boxes. engine.c dropped entirely.
-engine_stub.c only. No `pat_cat()`/`pat_arbno()`/`pat_ref()` in the init section of
+mock_engine.c only. No `pat_cat()`/`pat_arbno()`/`pat_ref()` in the init section of
 beauty_full.c. No `match_pattern_at()` calls. No E_DEREF runtime dispatch.
 
 `snoParse`, `snoCommand`, `snoLabel`, `snoStmt`, `snoComment`, `snoControl` — all
@@ -576,7 +576,7 @@ emitted as labeled-goto C by emit_byrd.c. ARBNO wiring static.
 trap. engine.c is broken for *snoParse. Fixing it is the wrong path.
 
 **Commit when:** beauty_full.c has zero pat_cat/pat_arbno/pat_ref in init section.
-Binary links with engine_stub.c only. Runs on beauty.sno input without crash.
+Binary links with mock_engine.c only. Runs on beauty.sno input without crash.
 
 ---
 
@@ -1069,7 +1069,7 @@ C runtime stays in C permanently — correct and expected (GCC's runtime is also
 
 **Verification:** Compare C output of `sno2c_stage1` vs `sno2c_stage2` on `beauty.sno`. If identical → **M-BOOTSTRAP fires.**
 
-**What stays in C forever:** `snobol4.c`, `mock_includes.c`, `snobol4_pattern.c`, `engine_stub.c`, `trampoline.h`
+**What stays in C forever:** `snobol4.c`, `mock_includes.c`, `snobol4_pattern.c`, `mock_engine.c`, `trampoline.h`
 
 **What moves to SNOBOL4 (`sno2c.sno`):** Lexer (`lex.c`), Parser (`parse.c`), Emitter (`emit.c` + `emit_byrd.c` + `emit_cnode.c`)
 

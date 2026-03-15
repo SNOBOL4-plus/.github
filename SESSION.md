@@ -60,12 +60,12 @@ BEAUTY=/home/claude/repos/SNOBOL4-corpus/programs/beauty/beauty.sno
 src/sno2c/sno2c -trampoline -I$STUBS $BEAUTY > /tmp/beauty_core.c
 gcc -O0 -g /tmp/beauty_core.c \
     $RT/snobol4/snobol4.c $RT/snobol4/mock_includes.c \
-    $RT/snobol4/snobol4_pattern.c $RT/engine_stub.c \
+    $RT/snobol4/snobol4_pattern.c $RT/mock_engine.c \
     -I$RT/snobol4 -I$RT -Isrc/sno2c \
     -lgc -lm -w -o /tmp/beauty_core_bin
 ```
 
-⚠️ engine_stub.c — NOT engine.c
+⚠️ mock_engine.c — NOT engine.c
 ⚠️ beauty_core (mock includes) FIRST — beauty_full (real inc) only after M-BEAUTY-CORE
 ⚠️ NEVER write the token into any file
 ⚠️ inc_mock/ contains comment-only .sno stubs — sno2c reads them at compile time, binary never sees INCLUDE at runtime
@@ -139,7 +139,7 @@ Command succeeding, not unconditional at Command entry.
 ## CRITICAL Rules
 
 - **NEVER write the token into any file**
-- **NEVER link engine.c** — engine_stub.c only
+- **NEVER link engine.c** — mock_engine.c only
 - **ALWAYS run `git config user.name/email` after every clone**
 - **beauty_core (mock includes) FIRST — beauty_full (real inc) SECOND**
 - **beauty.sno is NEVER modified — it is syntactically perfect**
@@ -152,7 +152,7 @@ Command succeeding, not unconditional at Command entry.
 | Date | What changed | Why |
 |------|-------------|-----|
 | 2026-03-14 | PIVOT: block-fn + trampoline model | complete rethink with Lon |
-| 2026-03-14 | Session 80 runtime fixes | engine_stub T_FUNC/T_CAPTURE etc |
+| 2026-03-14 | Session 80 runtime fixes | mock_engine T_FUNC/T_CAPTURE etc |
 | 2026-03-14 | Session 83 diagnosis | _c = data_define overwrites _b_tree_c (later disproved) |
 | 2026-03-14 | Session 84 SIL rename | DESCR_t/DTYPE_t/XKIND_t/_fn/_t throughout |
 | 2026-03-14 | Session 84 build fixes | cs_alloc, computed goto, label table, inc_mock |
@@ -191,7 +191,7 @@ times, then fails. Root cause not yet identified — session 89 work.
 | Date | What changed | Why |
 |------|-------------|-----|
 | 2026-03-14 | PIVOT: block-fn + trampoline model | complete rethink with Lon |
-| 2026-03-14 | Session 80 runtime fixes | engine_stub T_FUNC/T_CAPTURE etc |
+| 2026-03-14 | Session 80 runtime fixes | mock_engine T_FUNC/T_CAPTURE etc |
 | 2026-03-14 | Session 83 diagnosis | _c = data_define overwrites _b_tree_c (later disproved) |
 | 2026-03-14 | Session 84 SIL rename | DESCR_t/DTYPE_t/XKIND_t/_fn/_t throughout |
 | 2026-03-14 | Session 84 build fixes | cs_alloc, computed goto, label table, inc_mock |
