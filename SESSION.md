@@ -10,50 +10,34 @@
 | Field | Value |
 |-------|-------|
 | **Repo** | SNOBOL4-tiny |
-| **Sprint** | `beauty-first` — fix Parse Error on `-INCLUDE` → M-BEAUTY-CORE |
+| **Sprint** | `beauty-first` — fix Parse Error → M-BEAUTY-CORE |
 | **Milestone** | M-BEAUTY-CORE (stubs first) → M-BEAUTY-FULL (real inc, second) |
 | **HEAD** | `8676bd9` — refactor: restore proper English names — undo P4 misspelling technique |
 
 ---
 
-## ⚡ SESSION 86 FIRST ACTION
+## ⚡ SESSION 87 FIRST ACTION
 
-### Active bug: Parse Error on `-INCLUDE` lines
+### Active bug: Parse Error during beautification
 
-beauty_core_bin outputs comment header lines correctly, then hits `Parse Error`
-at the first `-INCLUDE 'global.sno'` line.
+**IMPORTANT:** `-INCLUDE` lines are handled by `sno2c` at **compile time** via
+`-I inc_mock`. They never appear in the runtime input stream. The lexer ignores
+them. Do NOT chase `-INCLUDE` as a runtime issue — it is not one.
 
-`Command` pattern tries: `*Comment` → `*Control` → `*Stmt`  
-`Control = '-' BREAK(nl ';')` — should match `-INCLUDE 'global.sno'`  
-`pat_Control` is compiled correctly in generated C.
+beauty_core_bin is built with `sno2c -trampoline -I inc_mock beauty.sno`.
+The mock `.sno` files in `inc_mock/` are comment-only — sno2c sees them and
+moves on. The compiled binary has no knowledge of INCLUDE directives.
 
-**Root cause suspected:** `pat_Control` calls `BREAK` with charset built dynamically:
-```c
-CONCAT_fn(STRVAL(VARVAL_fn(NV_GET_fn("nl"))), STRVAL(";"))
-```
-`nl` is pre-initialized in `SNO_INIT_fn` — but `VARVAL_fn(NV_GET_fn("nl"))` returns
-the string value of `nl`, which is `\n` (char 10). The BREAK charset is `"\n;"`.
+**The actual bug:** beauty_core_bin hits `Parse Error` (mainErr1 — line 796 in
+beauty.sno) when fed beauty.sno as input to beautify. Simple input like
+` OUTPUT = 'hello'` works. The failure is somewhere in the pattern matching
+of actual beauty.sno statement forms.
 
-**The real question:** is `pat_Control` even being reached and tried, or is the
-FENCE in `Command` failing before it gets there? The `-INCLUDE` line starts at
-column 0 (no leading space). `pat_Comment` tries `*` — fails. `pat_Control` tries
-`-` — should succeed. But does `pat_Stmt` upstream require a leading space?
-
-**Session 86 first action:**
-1. Add a single `fprintf(stderr, "trying Control on: %.20s\n", _subj_np + _cur_np)`
-   at `_Control_α:` in snobol4_pattern.c — NO, wrong place. Add it in the
-   generated code by patching `pat_Control` directly in `/tmp/beauty_core.c`
-   (don't touch source — just test the hypothesis fast).
-2. Run: `printf " -INCLUDE 'x'\n" | /tmp/beauty_core_bin`
-   Note the LEADING SPACE — test input always needs leading space.
-3. If Control matches with leading space but not without → the issue is that
-   `-INCLUDE` lines have no leading space in beauty.sno input, but the subject
-   line fed to the pattern has the newline stripped and cursor starts at 0.
-4. Check `mainErr1` in beauty.sno — what triggers it? Line 796 in beauty.sno.
-
-**Oracle:** `test/smoke/outputs/session50/beauty_oracle.sno`
-Oracle shows `-INCLUDE` lines ARE output — so csnobol4 handles them fine.
-The first line after comments in oracle is `START` then `-INCLUDE` lines.
+**Session 87 first action:**
+1. Build the binary (see Build commands below)
+2. Run on simple input to confirm it works: `printf " OUTPUT = 'hello'\n" | /tmp/beauty_core_bin`
+3. Run on beauty.sno itself and capture output: `/tmp/beauty_core_bin < $BEAUTY 2>&1 | head -20`
+4. Narrow down which statement form triggers Parse Error
 
 ---
 
@@ -138,14 +122,12 @@ Parse Error fires before the tree walk. Fix Parse Error first.
 
 ---
 
-## Active bug: Parse Error on `-INCLUDE` lines (see SESSION 86 FIRST ACTION above)
+## Active bug: Parse Error during beautification
 
 **What is known:**
-- `pat_Control` is compiled correctly: matches `-` then `BREAK(nl ';')`
-- `pat_Control` IS in the generated code at line ~8960
 - Simple ` OUTPUT = 'hello'` input works fine (output: `OUTPUT`)
-- `-INCLUDE 'global.sno'` triggers Parse Error
-- Oracle shows `-INCLUDE` lines should pass through as-is
+- beauty_core_bin hits Parse Error on actual beauty.sno input
+- `-INCLUDE` is a compile-time directive handled by sno2c — NOT a runtime issue
 - The FIELD_GET_fn / _c field bug is SECONDARY — unreachable until parsing works
 
 ---
