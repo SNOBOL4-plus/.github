@@ -170,8 +170,13 @@ unzip -q /mnt/user-data/uploads/x64-main.zip -d /home/claude/spitbol-src/
 # apply systm.c patch from oracles/spitbol/BUILD.md
 cd /home/claude/spitbol-src/x64-main && make && cp sbl /usr/local/bin/spitbol
 
-# SNOBOL5 — check availability
-apt-cache search snobol5 || wget https://snobol5.sourceforge.net/...   # TBD
+# SNOBOL5 — prebuilt binary, no build required
+wget -O /usr/local/bin/snobol5 https://snobol5.org/snobol5
+chmod +x /usr/local/bin/snobol5
+# verify: echo "OUTPUT = 'hello'" | snobol5
+
+# SPITBOL x32 — our fork (not yet built; 32-bit not runnable in this container)
+# https://github.com/SNOBOL4-plus/x32  (forked from hardbol/spitbol)
 ```
 
 ---
