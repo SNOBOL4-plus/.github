@@ -93,6 +93,28 @@ Tests live in `SNOBOL4-corpus/crosscheck/beauty/`:
 Test progression: 101_comment → 102_output → 103_assign → 104_label → 105_goto →
 109_multi → 120_real_prog → 130_inc_file → 140_self (M-BEAUTY-CORE).
 
+## Oracle Index
+
+| System | Version | Author | Role | Invocation |
+|--------|---------|--------|------|------------|
+| CSNOBOL4 | 2.3.3 | Philip L. Budne | **Primary oracle** | `snobol4 -f -P256k file.sno` |
+| SPITBOL x64 | 4.0f | Dewar / Shields | Secondary oracle | `spitbol -b file.sno` |
+| SPITBOL x32 | — | Dewar | Tertiary (32-bit — not runnable in container) | `spitbol file.sno` |
+| SNOBOL5 | beta 2024-08-29 | Viktors Berstis | 64-bit native SIL port | `snobol5 file.sno` |
+
+| System | Source / Download | GitHub |
+|--------|-------------------|--------|
+| CSNOBOL4 | https://www.regressive.org/snobol4/csnobol4/curr/ | No GitHub — regressive.org only |
+| SPITBOL x64 | https://github.com/spitbol/x64 | [`spitbol/x64`](https://github.com/spitbol/x64) |
+| SPITBOL x32 | https://github.com/SNOBOL4-plus/x32 | [`SNOBOL4-plus/x32`](https://github.com/SNOBOL4-plus/x32) — **our fork** of [`hardbol/spitbol`](https://github.com/hardbol/spitbol) |
+| SNOBOL5 | Linux binary: https://snobol5.org/snobol5 · Docs: https://snobol5.org/snobol5.htm | No GitHub — binary only, no public source |
+
+Step-by-step build: `SNOBOL4-harness/oracles/csnobol4/BUILD.md` · `SNOBOL4-harness/oracles/spitbol/BUILD.md`
+
+**SNOBOL5 notes:** 64-bit ints/strings. `&CASE` → Error 7. `CODE()` broken. OPSYN single-char only. Not a drop-in oracle.
+
+---
+
 ## Sprint: `oracle-verify` — Verify the Keyword Grid (Session 124)
 
 **Goal:** Every `?` and every unverified cell in the keyword grid below becomes ✅ or ❌, confirmed by live test. Every oracle must have ≥1 working probe statement counter.

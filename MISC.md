@@ -106,29 +106,9 @@ No action needed — our model is correct and preferable.
 
 ## SNOBOL4 Implementation Landscape
 
-| System | Version | Author | Role | Invocation |
-|--------|---------|--------|------|------------|
-| CSNOBOL4 | 2.3.3 | Philip L. Budne | **Primary oracle** | `snobol4 -f -P256k file.sno` |
-| SPITBOL x64 | 4.0f | Robert B. K. Dewar / Dave Shields | Secondary oracle | `spitbol -b file.sno` |
-| SPITBOL x32 | — | Robert B. K. Dewar | Tertiary (not runnable — 32-bit) | `spitbol file.sno` |
-| SNOBOL5 | beta 2024-08-29 | Viktors Berstis | 64-bit native SIL port | `snobol5 file.sno` |
+→ **See [TESTING.md — Oracle Index](TESTING.md)** for the full table: versions, authors, GitHub URLs, download links, invocation, and build instructions.
 
-### Source locations & GitHub
 
-| System | Source / Download | GitHub |
-|--------|-------------------|--------|
-| CSNOBOL4 | https://www.regressive.org/snobol4/csnobol4/curr/ | No GitHub — regressive.org only. Author: [`philbudne`](https://github.com/philbudne) |
-| SPITBOL x64 | https://github.com/spitbol/x64 | [`spitbol/x64`](https://github.com/spitbol/x64) ✅ |
-| SPITBOL x32 | https://github.com/SNOBOL4-plus/x32 | [`SNOBOL4-plus/x32`](https://github.com/SNOBOL4-plus/x32) ✅ — **our fork** of [`hardbol/spitbol`](https://github.com/hardbol/spitbol) |
-| SNOBOL5 | Linux binary: https://snobol5.org/snobol5 · Docs: https://snobol5.org/snobol5.htm | No GitHub — snobol5.org / berstis.com only. Author: [`berstisk`](https://github.com/berstisk) |
-
-### Build instructions
-
-See `SNOBOL4-harness/oracles/csnobol4/BUILD.md` and `SNOBOL4-harness/oracles/spitbol/BUILD.md` for step-by-step build with patches. SNOBOL5 is a prebuilt binary — no build required.
-
-**SNOBOL5 notes:** 64-bit ints/strings. `&CASE` → Error 7 (unknown). `CODE()` broken. OPSYN single-char only. Not a drop-in oracle. Binary only — no source available publicly.
-
----
 
 ## String Escape Reference
 
