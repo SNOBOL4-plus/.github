@@ -11,11 +11,12 @@ Shared frontends. Multiple backends. Self-hosting goal: sno2c compiles sno2c.
 | | |
 |-|-|
 | **Active repo** | SNOBOL4-corpus + SNOBOL4-tiny |
-| **Sprint** | `diag1-corpus` committed → resume `bug7-micro` next |
+| **Sprint** | `diag1-corpus` ✅ done session122 → resume `bug7-micro` next |
 | **HEAD TINY** | `8761bc1` session121: 5-primitive SEQ counter instrumented |
 | **HEAD HARNESS** | `198249c` session121: micro0 + micro1 skeleton committed |
-| **HEAD HQ** | this commit |
-| **Next action** | 1. Commit diag1 suite to SNOBOL4-corpus. 2. Resume session122 bug7-micro: run micro1_concat oracle vs compiled, get diff, fix emit_byrd.c |
+| **HEAD CORPUS** | pending commit — diag1 suite 35/35, ready to push with token |
+| **HEAD HQ** | `0ad8403` session122: flat() Gray/White rules |
+| **Next action** | Session 123 step 1: push corpus diag1 suite (need token). Step 2: resume bug7-micro — run micro1_concat oracle vs compiled, diff, fix emit_byrd.c |
 | **Invariant** | 106/106 rungs 1–11 must pass before any work |
 
 **Read the active L2 doc: [TINY.md](TINY.md) · [JVM.md](JVM.md) · [DOTNET.md](DOTNET.md)**
