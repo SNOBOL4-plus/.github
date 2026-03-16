@@ -12,8 +12,8 @@ Shared frontends. Multiple backends. Self-hosting goal: sno2c compiles sno2c.
 |-|-|
 | **Active repo** | SNOBOL4-tiny |
 | **Sprint** | `beauty-crosscheck` — Sprint A — rung 12 crosscheck tests |
-| **HEAD** | `session111` |
-| **Next action** | Fix E_OPSYN & NPUSH on backtrack path in emit_byrd.c (~line 2108) |
+| **HEAD** | `session112` |
+| **Next action** | Diagnose + fix 104_label FAIL (labeled stmt parse/print) |
 | **Invariant** | 106/106 rungs 1–11 must pass before any work |
 
 **Read the active L2 doc: [TINY.md](TINY.md) · [JVM.md](JVM.md) · [DOTNET.md](DOTNET.md)**

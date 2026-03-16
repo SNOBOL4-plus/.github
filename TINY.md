@@ -12,57 +12,26 @@ SNOBOL4-tiny: multiple frontends, multiple backends.
 ## NOW
 
 **Sprint:** `beauty-crosscheck` — Sprint A — rung 12 crosscheck tests
-**HEAD:** `session111` — Bug3: traced to NPUSH skipped on backtrack path in E_OPSYN emitter
+**HEAD:** `session112` — `4c2ad68` — Bug3+Bug4 fixed; 101/102/103 PASS, 104_label next
 **Milestone:** M-BEAUTY-CORE → M-BEAUTY-FULL
 
 **Next action:**
-1. **Active bug:** 102_output FAIL — `Reduce("Stmt",7)` pops wrong 7 children
+1. **Active bug:** 104_label FAIL — input `LOOP    X = X 1` → got `X`, expected `LOOP           X              =  X 1`
 
-   **Confirmed by session111 full trace:**
-   ```
-   [Reduce] t=Parse  depth=1        ← Parse sentinel (correct)
-   [Shift]  t=Label  v=             depth=2
-   [Shift]  t=Function v=OUTPUT     depth=3
-   [Shift]  t=  v=                  depth=4  (empty pattern)
-   [Shift]  t==  v==                depth=5
-   [Shift]  t=String v='hello'      depth=6
-   [Reduce] t=..  ntop=0  depth=6   ← WRONG: ntop should be 1, pops 0 pushes 1
-   [Reduce] t=|   ntop=0  depth=7   ← WRONG: same, pops 0 pushes 1
-   [Shift]  t=  v=  depth=9         ← goto1 epsilon
-   [Shift]  t=  v=  depth=10        ← goto2 epsilon
-   [Reduce] t=Stmt  n=7  depth=10   ← pops c[7..1] = goto2,goto1,|,..,String,=,empty-pat
-                                       Label and Function/OUTPUT LEFT on stack → ppSubj=""
-   ```
+   Label `LOOP` is present but output shows only `X`. Diagnosis needed: `pat_Label` consuming `LOOP` correctly but `Reduce("Stmt",7)` slots may be off for labeled stmts, OR `pp_Stmt c[1]` retrieval wrong.
 
-   **Root cause (session111 — CONFIRMED):**
-   `emit_byrd.c` E_OPSYN `&` emitter structure for `nPush() *X4 ("tag" & n) nPop()`:
-   ```c
-   cat_l_161_α:  NPUSH_fn();          // forward path only
-   cat_r_161_α:  pat_X4(entry=0)
-   cat_r_161_β:  pat_X4(entry=1)      // backtrack: NPUSH NEVER FIRES
-   cat_r_160_α:  Reduce(tag, ntop())  // ntop()=0 → pops 0, pushes extra node
-   cat_r_159_α:  NPOP_fn()
-   ```
-   NPUSH only on `_entry_np==0` path. Backtrack enters via `cat_r_161_β`, skips NPUSH.
-   `ntop()=0` → `Reduce(".."/"|", 0)` inflates stack instead of collapsing it.
+   **Prior bugs resolved session112:**
 
-   **Fix location: `src/sno2c/emit_byrd.c` E_OPSYN case (~line 2108)**
-   NPUSH must fire on both forward AND backtrack entry. Two options:
-   - **Option A (preferred):** Emit NPUSH before the cat_l dispatch so both paths hit it:
-     ```c
-     // alpha entry:
-     B("%s: NPUSH_fn(); goto %s_inner_α;\n", alpha, uid);
-     // beta entry — add NPUSH here too:
-     B("%s: NPUSH_fn(); goto %s_inner_β;\n", beta, uid);
-     ```
-   - **Option B:** Emit `if (!NHAS_FRAME_fn()) NPUSH_fn();` at Reduce site.
+   **Bug3 — FIXED `4c2ad68`:** `emit_seq` beta→right_β wiring omitted `NPUSH_fn()` when left=`nPush()` → `ntop()==0` at Reduce → stack inflation → wrong Stmt children.
+   Fix: `if (left is nPush) PL(beta, right_β, "NPUSH_fn();") else PLG(beta, right_β)`.
 
-   Also done session111:
-   - `emit_simple_val` E_QLIT: any value containing `nTop()` → `INTVAL(ntop())` ✅
-   - beauty_full.c: 3x `STRVAL("*(GT(nTop(),1) nTop())")` → `INTVAL(ntop())` ✅
-   - Deleted 31 stale artifact snapshots (sessions 50–105) ✅ commit `d72606a`
+   **Bug4 — FIXED `4c2ad68`:** `emit_imm` treated `$'('` varname `(` as a capture variable not a literal token guard → `*Function ~ 'Function' $'('` arm matched `OUTPUT` without requiring `(` → subject became `Call(OUTPUT,[])` → printed `OUTPUT()`.
+   Fix: detect `is_literal_tok` (all-punctuation varname), snapshot `STACK_DEPTH_fn()` before child, emit char check, on failure restore cursor + `while(STACK_DEPTH_fn()>saved) pop_val()`.
 
-2. After 102_output PASS: run `bash test/crosscheck/run_beauty.sh`, continue ladder.
+   **Key invariant discovered:** `NV_GET_fn("@S")` / `NV_SET_fn("@S",...)` does NOT roll back `_vstack[]` in the mock runtime. Stack rollback requires `STACK_DEPTH_fn()` + `pop_val()` loop.
+
+2. After 104_label PASS: run `bash test/crosscheck/run_beauty.sh`, continue ladder.
+
 ## Frontend × Backend Frontier
 
 | Frontend | C backend | x64 ASM | .NET MSIL | JVM bytecodes |
@@ -185,3 +154,4 @@ git add -A && git commit && git push
 | 110 | bug2 FIXED: bare-Function/Id go to fence_after_358 (keep Shift, succeed); parse tree verified correct by trace | 102_output still FAIL — Bug3: pp_Stmt drops subject; INDEX_fn(c,2) suspect |
 | 107 | Shift(t,v) value fix; FIELD_GET debug removed; root cause diagnosed | 106/106 pass; 102 still FAIL — E_DEREF(E_FNC) in emit_byrd.c drops args |
 | 111 | NPUSH not firing on backtrack in pat_Expr3/4; ntop()=0 at Reduce | Full stack probe confirmed; emit_simple_val E_QLIT fix applied; structural NPUSH hoist pending in emit_byrd.c |
+| 112 | Bug3 FIXED (emit_seq NPUSH on backtrack); Bug4 FIXED (emit_imm literal-tok $'(' guard + stack rollback via STACK_DEPTH_fn) | 101/102/103 PASS; 104_label FAIL — next |
