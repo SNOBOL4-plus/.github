@@ -12,40 +12,81 @@ SNOBOL4-tiny: multiple frontends, multiple backends.
 ## NOW
 
 **Sprint:** `beauty-crosscheck` — Sprint A — rung 12 crosscheck tests
-**HEAD:** M-STACK-TRACE fired (session119)
+**HEAD:** `07d4b14` EMERGENCY WIP session116
 **Milestone:** M-BEAUTY-CORE
 
 **Next action:**
 1. Verify 106/106 rungs 1–11 still pass.
-2. Run beauty-crosscheck ladder from current passing point:
+2. Fix nPush/nPop imbalance in `emit_byrd.c` — see Bug7 below.
+3. Run beauty-crosscheck ladder from current passing point:
    104_label → 105_goto → 109_multi → 120_real_prog → 130_inc_file → 140_self.
-3. 140_self PASS → **M-BEAUTY-CORE fires**.
+4. 140_self PASS → **M-BEAUTY-CORE fires**.
 
-**Confirmed symptom (session117 dual-stack trace):**
-For `X 1` (two concat atoms), counter stack trace shows:
+---
+
+## Active Bug — Bug7: Ghost Frame in Expr17 FENCE arm
+
+**Root cause (now confirmed from beauty.sno source, session120):**
+
+`Expr17` (beauty.sno line 347–364):
+```snobol4
+Expr17  = FENCE(
+             nPush()          ← fires on grouped-expr attempt
+             $'('
+             *Expr
+             (  $',' *XList ("','" & 'nTop() + 1')
+             |  epsilon       ("'()'" & 1)
+             )
+             $')'
+             nPop()           ← only fires on SUCCESS of entire arm
+          |  *Function ~ 'Function' $'(' *ExprList $')' ("'Call'" & 2)
+          |  *Id       ~ 'Id'       $'(' *ExprList $')' ("'Call'" & 2)
+          |  *BuiltinVar ~ 'BuiltinVar'
+          |  *SpecialNm  ~ 'SpecialNm'
+          |  *Id         ~ 'Id'
+          |  *String     ~ 'String'
+          |  *Real       ~ 'Real'
+          |  *Integer    ~ 'Integer'
+          )
 ```
-NPUSH idx=6   ExprList frame
-NINC  idx=6 count=1   atom X
-NPUSH idx=7   ← spurious — from inside pat_Expr parsing X
-NPUSH idx=8   ← another spurious
-NPOP  idx=8
-NPOP  idx=7
-              ← second NINC fires at wrong level — idx=6 stays at 1
-              ← ntop()=1, guard (>1) skips Reduce(..,2)
+
+When matching a bare `Id` (e.g. `X`):
+- FENCE tries arm 1: `nPush()` fires, then `$'('` fails (no `(` present).
+- FENCE backtracks to arm 5 (`*Id ~ 'Id'`) — **nPop() was never called**.
+- Ghost frame left on counter stack.
+- Subsequent `nInc()` for the second atom increments the ghost frame, not ExprList's frame.
+
+**Also check:** `Expr15` (line 343):
+```snobol4
+Expr15  = *Expr17
+             FENCE(nPush() *Expr16 ("'[]'" & 'nTop() + 1') nPop() | epsilon)
 ```
+Same pattern: `nPush()` fires in the FENCE arm, `*Expr16` fails (no `[`),
+`nPop()` skipped, `epsilon` taken. Second ghost source.
 
-**Root cause:** a sub-pattern of `pat_Expr` (likely `pat_Expr4` or `pat_X4`) calls
-`nPush()` and does NOT call `nPop()` before returning γ (success). This leaves an
-extra frame on the counter stack, displacing subsequent NINC calls.
+**Fix in emit_byrd.c:** For every `FENCE(nPush() ... nPop() | ...)` pattern:
+the emitted C for the backtrack/failure exit of the nPush arm must call
+`NPOP_fn()` before jumping to the next FENCE alternative or returning ω.
 
-**Reduce comes before nPop.** The correct sequence:
-```
-nPush → ... nInc ... nInc ... Reduce(type, ntop()) → nPop
-```
-ntop() must be read INSIDE Reduce. nPop discards the frame AFTER.
+**Reduce fires directly before nPop** — never swap the order.
 
-**Do NOT touch `_saved_frame` or `pending_npush_uid`** until imbalance is fixed.
+---
 
+## Confirmed Passing (session116 WIP)
+
+- 101_comment ✅
+- 102_output  ✅
+- 103_assign  ✅
+- 104_label   ✅ (WIP binary)
+- 105_goto    ✅ (WIP binary)
+- 106/106 rungs 1–11 ✅
+
+---
+
+## Bug History
+
+**Bug7 — ACTIVE:** Ghost frame from Expr17 FENCE arm 1 (nPush without nPop on ω).
+**Also check Expr15:** FENCE(nPush() *Expr16 ... nPop() | epsilon) same issue.
 **Bug6a — FIXED in WIP (session115):** `:` lookahead guard in pat_X4 cat_r_168.
 **Bug6b — FIXED in WIP (session115):** NV_SET_fn for Brackets/SorF; CONCAT_fn Reduce type.
 **Bug5 — FIXED in WIP (session114); emit_byrd.c port IN PROGRESS (session116).**
@@ -184,3 +225,5 @@ git add -A && git commit && git push
 | 116 | emit_byrd.c port attempt: snobol4.h NTOP_INDEX/NSTACK_AT decls; pending_npush_uid + _pending_parent_frame globals; Bug5 saved-frame in emit_seq+E_FNC nPush; Bug6a colon guard in *X4 deref; Bug6b CONCAT_fn in E_OPSYN; output_str suppression gated on suppress_output_in_named_pat(); _parent_frame field in all named pat structs. 101-103 PASS from regen; 104-105 FAIL — pending_npush_uid not surviving nested CAT levels | EMERGENCY WIP — pending_npush_uid fix next session |
 | 117 | Diagnosis: 104/105 fail because Reduce(..,2) never fires — ntop()=1 at ExprList level instead of 2. Dual-stack trace confirmed: spurious NPUSH idx=7/8 inside pat_Expr displaces counter stack so second NINC fires at wrong level. Root cause: nPush/nPop imbalance in pat_Expr4/X4 sub-pattern. Option A (parameter threading) attempted and backed out — correct diagnosis but wrong fix target. All files restored to session116 state. | Diagnosis only — no commit |
 | 118 | Pivot: stack-trace sprint. Understand two-stack engine model fully. Instrument both oracle and compiled binary. Use diff to find exact imbalance location, not inference. New milestone M-STACK-TRACE gates on beauty-crosscheck. HQ updated. | Plan only — no commit |
+| 119 | M-STACK-TRACE fires. oracle_stack.txt == compiled_stack.txt for all rung-12 inputs. | Stack trace matched — sprint beauty-crosscheck begins |
+| 120 | beauty.sno PATTERN read in full (lines 293–419). Bug7 confirmed: Expr17 FENCE arm 1 calls nPush() then $'(' fails — nPop() never called on ω path. Expr15 FENCE arm same issue. Fix target: emit_byrd.c FENCE backtrack path. HQ updated with full pattern structure. ~55% context at session start. | Plan only — awaiting instruction |
