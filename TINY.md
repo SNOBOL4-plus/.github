@@ -11,64 +11,75 @@ SNOBOL4-tiny: multiple frontends, multiple backends.
 
 ## NOW
 
-**Sprint:** `beauty-crosscheck` — Sprint A — rung 12 crosscheck tests
+**Sprint:** `bug7-bomb` — find and fix Bug7 ghost frame via counter-bomb protocol
 **HEAD:** `07d4b14` EMERGENCY WIP session116
 **Milestone:** M-BEAUTY-CORE
 
 **Next action:**
-1. Verify 106/106 rungs 1–11 still pass.
-2. Fix nPush/nPop imbalance in `emit_byrd.c` — see Bug7 below.
-3. Run beauty-crosscheck ladder from current passing point:
-   104_label → 105_goto → 109_multi → 120_real_prog → 130_inc_file → 140_self.
-4. 140_self PASS → **M-BEAUTY-CORE fires**.
+1. Session start checklist (see bottom) — verify 106/106.
+2. Execute Bug7 Bomb Protocol (see below) — Pass 1 then Pass 2.
+3. Fix emit_byrd.c at the identified location.
+4. Run beauty crosscheck ladder: 104 → 105 → 109 → 120 → 130 → 140.
+5. 140_self PASS → **M-BEAUTY-CORE fires**.
 
 ---
 
-## Active Bug — Bug7: Ghost Frame in Expr17 FENCE arm
+## Bug7 Bomb Protocol
 
-**Root cause (now confirmed from beauty.sno source, session120):**
+**Background:** Dual-stack trace diff on `109_multi.input` found first divergence at trace line 2:
+- Oracle line 1: `NPUSH depth=1 top=0` ← last matching event (start point)
+- Oracle line 2: `NINC  depth=1 top=1` ← expected next event
+- Compiled line 2: `NPUSH depth=2 top=0` ← spurious second NPUSH (end point = bug)
 
-`Expr17` (beauty.sno line 347–364):
-```snobol4
-Expr17  = FENCE(
-             nPush()          ← fires on grouped-expr attempt
-             $'('
-             *Expr
-             (  $',' *XList ("','" & 'nTop() + 1')
-             |  epsilon       ("'()'" & 1)
-             )
-             $')'
-             nPop()           ← only fires on SUCCESS of entire arm
-          |  *Function ~ 'Function' $'(' *ExprList $')' ("'Call'" & 2)
-          |  *Id       ~ 'Id'       $'(' *ExprList $')' ("'Call'" & 2)
-          |  *BuiltinVar ~ 'BuiltinVar'
-          |  *SpecialNm  ~ 'SpecialNm'
-          |  *Id         ~ 'Id'
-          |  *String     ~ 'String'
-          |  *Real       ~ 'Real'
-          |  *Integer    ~ 'Integer'
-          )
+The spurious NPUSH fires between trace line 1 and line 2. The bomb protocol finds exactly which emitted C label fires it.
+
+**Pass 1 — Count bomb**
+
+In `snobol4.c`, add a global counter to `NPUSH_fn()`:
+```c
+static int _npush_count = 0;
+void NPUSH_fn(void) {
+    _npush_count++;
+    fprintf(stderr, "NPUSH #%d depth=%d top=0
+", _npush_count, _ntop+1);
+    /* ... existing code ... */
+}
 ```
-
-When matching a bare `Id` (e.g. `X`):
-- FENCE tries arm 1: `nPush()` fires, then `$'('` fails (no `(` present).
-- FENCE backtracks to arm 5 (`*Id ~ 'Id'`) — **nPop() was never called**.
-- Ghost frame left on counter stack.
-- Subsequent `nInc()` for the second atom increments the ghost frame, not ExprList's frame.
-
-**Also check:** `Expr15` (line 343):
-```snobol4
-Expr15  = *Expr17
-             FENCE(nPush() *Expr16 ("'[]'" & 'nTop() + 1') nPop() | epsilon)
+Also add at program exit (or at first OUTPUT):
+```c
+fprintf(stderr, "TOTAL NPUSH calls: %d
+", _npush_count);
 ```
-Same pattern: `nPush()` fires in the FENCE arm, `*Expr16` fails (no `[`),
-`nPop()` skipped, `epsilon` taken. Second ghost source.
+Run: `./beauty_full_bin < 109_multi.input 2>pass1.txt`
+Read pass1.txt — identify which call number is the spurious one (call #2 from trace diff).
 
-**Fix in emit_byrd.c:** For every `FENCE(nPush() ... nPop() | ...)` pattern:
-the emitted C for the backtrack/failure exit of the nPush arm must call
-`NPOP_fn()` before jumping to the next FENCE alternative or returning ω.
+**Pass 2 — Limit bomb**
 
-**Reduce fires directly before nPop** — never swap the order.
+Set `bomb_limit = 2` (the spurious call number from Pass 1).
+When `_npush_count == bomb_limit`, dump everything:
+```c
+if (_npush_count == bomb_limit) {
+    fprintf(stderr, "=== BOMB at NPUSH #%d ===
+", bomb_limit);
+    fprintf(stderr, "  _ntop=%d
+", _ntop);
+    for (int i = 0; i <= _ntop; i++)
+        fprintf(stderr, "  _nstack[%d]=%d
+", i, _nstack[i]);
+    /* print C call stack */
+    void *bt[32]; int n = backtrace(bt, 32);
+    backtrace_symbols_fd(bt, n, 2);
+    fprintf(stderr, "=== END BOMB ===
+");
+}
+```
+Run: `./beauty_full_bin < 109_multi.input 2>pass2.txt`
+The backtrace in pass2.txt shows exactly which C label in `beauty_full.c` fired the spurious NPUSH.
+Map that label back to the emit_byrd.c node that generated it.
+That node is missing an `NPOP_fn()` emit on its failure/ω path.
+
+**Fix:** Add `NPOP_fn()` emit at the identified ω path in `emit_byrd.c`. Rebuild. Rerun trace diff — line 2 must now match. Run crosscheck.
+
 
 ---
 
@@ -171,7 +182,7 @@ git add -A && git commit && git push
 | Sprint | Paradigm | Trigger | Status |
 |--------|----------|---------|--------|
 | `stack-trace` | Dual-stack instrumentation | oracle == compiled stack trace → **M-STACK-TRACE** | ✅ session119 |
-| `beauty-crosscheck` | Crosscheck — diff vs oracle | beauty/140_self → **M-BEAUTY-CORE** | ⏳ NOW |
+| `bug7-bomb` | Bomb protocol → fix emit_byrd.c | trace diff clean + 109_multi PASS → ladder → **M-BEAUTY-CORE** | ⏳ NOW |
 | `beauty-probe` | Probe | All failures diagnosed | ❌ B |
 | `beauty-monitor` | Monitor | Trace streams match | ❌ C |
 | `beauty-triangulate` | Triangulate | Empty diff → **M-BEAUTY-FULL** | ❌ D |
@@ -226,4 +237,5 @@ git add -A && git commit && git push
 | 117 | Diagnosis: 104/105 fail because Reduce(..,2) never fires — ntop()=1 at ExprList level instead of 2. Dual-stack trace confirmed: spurious NPUSH idx=7/8 inside pat_Expr displaces counter stack so second NINC fires at wrong level. Root cause: nPush/nPop imbalance in pat_Expr4/X4 sub-pattern. Option A (parameter threading) attempted and backed out — correct diagnosis but wrong fix target. All files restored to session116 state. | Diagnosis only — no commit |
 | 118 | Pivot: stack-trace sprint. Understand two-stack engine model fully. Instrument both oracle and compiled binary. Use diff to find exact imbalance location, not inference. New milestone M-STACK-TRACE gates on beauty-crosscheck. HQ updated. | Plan only — no commit |
 | 119 | M-STACK-TRACE fires. oracle_stack.txt == compiled_stack.txt for all rung-12 inputs. | Stack trace matched — sprint beauty-crosscheck begins |
+| 121 | Dual-stack trace infra built: oracle (patched counter.sno→TERMINAL) + compiled (fprintf in NPUSH/NINC/NPOP). 109_multi.input trace diff: first divergence line 2 — oracle NINC, compiled spurious NPUSH. Bug7 Bomb Protocol designed (Pass1 count, Pass2 limit+backtrace). emit_imm NPOP-on-fail drafted but emit_seq Expr15 fix caused double-pop regression on 105_goto. All WIP reverted. Bomb protocol is next. | Bomb protocol ready — awaiting next session |
 | 120 | beauty.sno PATTERN read in full (lines 293–419). Bug7 confirmed: Expr17 FENCE arm 1 calls nPush() then $'(' fails — nPop() never called on ω path. Expr15 FENCE arm same issue. Fix target: emit_byrd.c FENCE backtrack path. HQ updated with full pattern structure. ~55% context at session start. | Plan only — awaiting instruction |
