@@ -135,46 +135,7 @@ newline       \n (1 char)   \n   (C newline escape)
 
 ## SNOBOL4 Keyword & TRACE Reference
 
-Every cell proven by live test on 2026-03-10. SPITBOL-x32 not runnable in container (32-bit execution disabled) — values inferred from source.
-
-### Keywords
-
-| Keyword | CSNOBOL4 | SPITBOL-x64 | SPITBOL-x32 | SNOBOL5 | Use for portability |
-|---------|:--------:|:-----------:|:-----------:|:-------:|---------------------|
-| `&STLIMIT` | ✅ -1 (unlimited) | ✅ MAX_INT | ✅ (inferred) | ✅ | ✅ primary probe/abort tool |
-| `&STCOUNT` | ❌ **always 0** | ✅ increments | ✅ (inferred) | ✅ | ⚠️ use `&STEXEC` or avoid on CSNOBOL4 |
-| `&STNO` | ✅ | ❌ | ❌ | ? | ❌ CSNOBOL4-only; use `&LASTNO` elsewhere |
-| `&LASTNO` | ❌ | ✅ | ✅ (inferred) | ? | ❌ not portable either; avoid |
-| `&DUMP=2` fires at `&STLIMIT` | ✅ | ✅ | ? | ✅ | ✅ safe to use |
-| `&ANCHOR` default | 0 | **1** | **1** | ? | ⚠️ set explicitly — defaults differ |
-| `&TRIM` default | 0 | **1** | **1** | ? | ⚠️ set explicitly — defaults differ |
-| `&FULLSCAN` default | 0 | 1 | 1 | ? | ⚠️ set explicitly |
-| `&CASE` | 0 even with `-f` | 0 | 0 | ? | `-f` ≠ `&CASE=1` in CSNOBOL4 |
-| `&MAXLNGTH` | 4G | 16M | 16M | 64-bit | ⚠️ all differ |
-| TRACE output stream | stderr | **stdout** | stdout | stderr | ⚠️ redirect per oracle |
-
-### TRACE types
-
-| TRACE call | CSNOBOL4 | SPITBOL-x64 | SPITBOL-x32 | SNOBOL5 | Use for portability |
-|-----------|:--------:|:-----------:|:-----------:|:-------:|---------------------|
-| `TRACE(var,'VALUE')` | ✅ | ✅ | ✅ (inferred) | ✅ | ✅ primary monitor tool |
-| `TRACE(fn,'CALL')` | ✅ | ✅ | ✅ (inferred) | ✅ | ✅ |
-| `TRACE(fn,'RETURN')` | ✅ | ✅ | ✅ (inferred) | ✅ | ✅ |
-| `TRACE(fn,'FUNCTION')` | ✅ | ✅ | ✅ (inferred) | ✅ | ✅ |
-| `TRACE(label,'LABEL')` | ✅ | ✅ | ✅ (inferred) | ✅ | ✅ |
-| `TRACE('STCOUNT','KEYWORD')` | ✅ | ✅ | ? | ✅ | ✅ portable per-statement trace |
-| `TRACE('STNO','KEYWORD')` | ✅ at `BREAKPOINT(n,1)` stmts only | ❌ error 198 | ❌ | ❌ silent | ❌ CSNOBOL4-only, avoid |
-| `TRACE(...,'KEYWORD')` (general) | non-functional | error 198 | error 198 | ? | ❌ never use |
-
-### TRACE output format
-
-| Oracle | Format |
-|--------|--------|
-| CSNOBOL4 | `file:LINE stmt N: EVENT, time = T.` |
-| SPITBOL-x64 | `****N*******  event` |
-| SNOBOL5 | `    STATEMENT N: EVENT,TIME = T` |
-
-Monitor pipe reader must normalize per oracle — all carry statement number and event description.
+→ **Consolidated into [TESTING.md — Oracle Keyword & TRACE Reference](TESTING.md)**. All keyword, TRACE type, output format tables live there — alongside the four paradigms that use them.
 
 ---
 
