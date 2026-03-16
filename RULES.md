@@ -4,12 +4,14 @@ Every rule here exists because a violation caused real damage.
 
 ---
 
-## ⛔ TOKEN — Never write the token into any file
+## ⛔ TOKEN — Never write or display the token anywhere
 
 The GitHub PAT was committed to a file on 2026-03-13. GitHub push protection
 blocked the push. History had to be rewritten. **Never again.**
+On 2026-03-16 the token was reconstructed and displayed in plain text in chat. Same exposure risk. **Never again.**
 
 - Token lives in Lon's memory only. Provided at session start. Used in shell only, never on disk.
+- **Never reconstruct, quote, echo, or display the token in chat** — not even to confirm format. Acknowledge receipt silently and move on.
 - Write `TOKEN=TOKEN_SEE_LON` as placeholder in any file that references it.
 - If token appears in a commit: rotate immediately at https://github.com/settings/tokens
 
@@ -65,9 +67,10 @@ active repo/sprint changes, or the platform map needs a new entry.
 
 **Start:**
 1. Read PLAN.md — know what repo/sprint/HEAD/next-action without reading anything else.
-2. Read the active platform MD (TINY.md etc.) — get build commands and invariant.
-3. `git log --oneline -3` — verify HEAD matches platform MD. If stale: read SESSIONS_ARCHIVE.md.
-4. Run invariant check. If failing: fix before any other work.
+2. **Read RULES.md** — mandatory every session. Token, identity, artifact, invariant, and chat rules apply immediately.
+3. Read the active platform MD (TINY.md etc.) — get build commands and invariant.
+4. `git log --oneline -3` — verify HEAD matches platform MD. If stale: read SESSIONS_ARCHIVE.md.
+5. Run invariant check. If failing: fix before any other work.
 
 **End:**
 1. Run artifact check (see ARTIFACTS rule above).

@@ -232,7 +232,7 @@ depth is correct before `$'('` runs.
 | sno2c compiler internals | [IMPL-SNO2C.md](IMPL-SNO2C.md) |
 | C backend: Byrd boxes, block functions | [BACKEND-C.md](BACKEND-C.md) |
 | Testing paradigms, corpus ladder | [TESTING.md](TESTING.md) |
-| Rules: token, identity, artifacts | [RULES.md](RULES.md) |
+| Rules: token (no file, no chat display), identity, artifacts | [RULES.md](RULES.md) ← **read every session start** |
 | Session history | [SESSIONS_ARCHIVE.md](SESSIONS_ARCHIVE.md) |
 
 ---
