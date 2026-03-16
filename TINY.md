@@ -11,23 +11,15 @@ SNOBOL4-tiny: multiple frontends, multiple backends.
 
 ## NOW
 
-**Sprint:** `stack-trace` — dual-stack instrumentation and oracle comparison
-**HEAD:** `session116` (session117 = diagnosis only, no commit; session118 = this plan)
-**Milestone:** M-STACK-TRACE → M-BEAUTY-CORE
+**Sprint:** `beauty-crosscheck` — Sprint A — rung 12 crosscheck tests
+**HEAD:** M-STACK-TRACE fired (session119)
+**Milestone:** M-BEAUTY-CORE
 
 **Next action:**
-1. **Instrument beauty.sno** — replace nPush/nInc/nPop/Shift/Reduce with tracing
-   wrappers. Run under CSNOBOL4 → `oracle_stack.txt`. This is ground truth.
-2. **Instrument the compiled runtime** — add fprintf traces to NPUSH_fn/NPOP_fn/
-   NINC_fn/Shift_fn/Reduce_fn in snobol4.c / mock_engine.c. Rebuild beauty_full_bin.
-3. **Diff the two traces** for input `104_label.input` (LOOP X = X 1).
-   First diverging line = exact location of the nPush/nPop imbalance.
-4. **Binary search emit_byrd.c** between last-matching event and first-diverging
-   event. Find the γ exit path of pat_Expr4/X4 that calls nPush without nPop.
-5. **Fix emit_byrd.c.** Ensure nPop fires on ALL exit paths (γ and ω).
-6. **Regenerate beauty_full.c**, rebuild, verify 104+105 PASS.
-7. **Port complete** → M-STACK-TRACE fires.
-8. Continue ladder: 109_multi → 120_real_prog → 130_inc_file → 140_self → M-BEAUTY-CORE.
+1. Verify 106/106 rungs 1–11 still pass.
+2. Run beauty-crosscheck ladder from current passing point:
+   104_label → 105_goto → 109_multi → 120_real_prog → 130_inc_file → 140_self.
+3. 140_self PASS → **M-BEAUTY-CORE fires**.
 
 **Confirmed symptom (session117 dual-stack trace):**
 For `X 1` (two concat atoms), counter stack trace shows:
@@ -121,7 +113,7 @@ git add -A && git commit && git push
 | M-REBUS | Rebus round-trip diff empty | ✅ `bf86b4b` |
 | M-COMPILED-BYRD | sno2c emits Byrd boxes, mock_engine only | ✅ `560c56a` |
 | M-CNODE | CNode IR, zero lines >120 chars | ✅ `ac54bd2` |
-| **M-STACK-TRACE** | oracle_stack.txt == compiled_stack.txt for all rung-12 inputs | ❌ |
+| **M-STACK-TRACE** | oracle_stack.txt == compiled_stack.txt for all rung-12 inputs | ✅ session119 |
 | **M-BEAUTY-CORE** | beauty_full_bin self-beautifies (mock stubs) | ❌ |
 | **M-BEAUTY-FULL** | beauty_full_bin self-beautifies (real -I inc/) | ❌ |
 | M-CODE-EVAL | CODE()+EVAL() via TCC → block_fn_t | ❌ |
@@ -137,8 +129,8 @@ git add -A && git commit && git push
 
 | Sprint | Paradigm | Trigger | Status |
 |--------|----------|---------|--------|
-| `stack-trace` | Dual-stack instrumentation | oracle == compiled stack trace → **M-STACK-TRACE** | ⏳ NOW |
-| `beauty-crosscheck` | Crosscheck — diff vs oracle | beauty/140_self → **M-BEAUTY-CORE** | ❌ gates on M-STACK-TRACE |
+| `stack-trace` | Dual-stack instrumentation | oracle == compiled stack trace → **M-STACK-TRACE** | ✅ session119 |
+| `beauty-crosscheck` | Crosscheck — diff vs oracle | beauty/140_self → **M-BEAUTY-CORE** | ⏳ NOW |
 | `beauty-probe` | Probe | All failures diagnosed | ❌ B |
 | `beauty-monitor` | Monitor | Trace streams match | ❌ C |
 | `beauty-triangulate` | Triangulate | Empty diff → **M-BEAUTY-FULL** | ❌ D |

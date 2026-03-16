@@ -5557,3 +5557,23 @@ gcc -O0 -g beauty_full.c $RT/snobol4/snobol4.c $RT/snobol4/mock_includes.c \
 #    - Run: ./beauty_full_bin < crosscheck/beauty/104_label.input > compiled_stack.txt
 #    - diff oracle_stack.txt compiled_stack.txt
 ```
+
+## Session 119 — 2026-03-16
+
+### M-STACK-TRACE FIRED ✅
+
+oracle_stack.txt == compiled_stack.txt for all rung-12 inputs.
+nPush/nPop imbalance in pat_Expr4/X4 found and fixed in emit_byrd.c.
+104_label and 105_goto passing from regenerated C.
+
+### Repos at session end
+| Repo | Commit | State |
+|------|--------|-------|
+| SNOBOL4-tiny | M-STACK-TRACE commit | 101–105 PASS; traces match; ready for beauty-crosscheck |
+| .github | this commit | M-STACK-TRACE marked ✅; sprint → beauty-crosscheck |
+
+### Next action
+```bash
+STOP_ON_FAIL=0 bash test/crosscheck/run_crosscheck.sh   # 106/106
+bash test/crosscheck/run_beauty.sh                       # 104 → 105 → 109 → 120 → 130 → 140
+```
