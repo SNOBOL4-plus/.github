@@ -12,13 +12,23 @@ SNOBOL4-tiny: multiple frontends, multiple backends.
 ## NOW
 
 **Sprint:** `beauty-crosscheck` — Sprint A — rung 12 crosscheck tests
-**HEAD:** `session112` — `4c2ad68` — Bug3+Bug4 fixed; 101/102/103 PASS, 104_label next
+**HEAD:** `session113` — `7c17ffa` — Bug5 partial fix (NINC_AT/saved-frame); 101/102/103 PASS, 104_label FAIL empty output
 **Milestone:** M-BEAUTY-CORE → M-BEAUTY-FULL
 
 **Next action:**
-1. **Active bug:** 104_label FAIL — input `LOOP    X = X 1` → got `X`, expected `LOOP           X              =  X 1`
+1. **Active bug: Bug5 — 104_label FAIL** — `LOOP    X = X 1` → **empty output**
 
-   Label `LOOP` is present but output shows only `X`. Diagnosis needed: `pat_Label` consuming `LOOP` correctly but `Reduce("Stmt",7)` slots may be off for labeled stmts, OR `pp_Stmt c[1]` retrieval wrong.
+   **Root cause (session113):** NOT a label bug. Any multi-atom concat expression fails. `ntop()` reads wrong nstack frame because nested `NPUSH` in `pat_Expr5..Expr17` displaces `_ntop` above Expr4's frame by the time the `if (ntop()>1)` check fires.
+
+   **Fix applied (beauty_full.c only — emit_byrd.c NOT yet updated):**
+   - `pat_Expr4`: `z->_saved_frame = _ntop` at NPUSH; check uses `NSTACK_AT_fn(saved_frame)`
+   - `pat_X4`: `NINC_AT_fn(_x4_parent_frame)` via `_x4_pending_parent_frame` global
+   - `pat_Expr16`: isolated NPUSH/NPOP (no bleed into Expr4 counter)
+   - `pat_Expr3`: same saved-frame pattern
+   - Runtime: `NINC_AT_fn`, `NSTACK_AT_fn`, `NTOP_INDEX_fn` in `snobol4.c/h`
+
+   **Confirmed:** `nstack[Expr4_frame]=2` for `X 1`. `Reduce("..",2)` fires correctly.
+   **Next:** diagnose why `pp_..` / `ss_..` produces empty despite correct tree. Then apply to `emit_byrd.c`.
 
    **Prior bugs resolved session112:**
 
@@ -155,3 +165,4 @@ git add -A && git commit && git push
 | 107 | Shift(t,v) value fix; FIELD_GET debug removed; root cause diagnosed | 106/106 pass; 102 still FAIL — E_DEREF(E_FNC) in emit_byrd.c drops args |
 | 111 | NPUSH not firing on backtrack in pat_Expr3/4; ntop()=0 at Reduce | Full stack probe confirmed; emit_simple_val E_QLIT fix applied; structural NPUSH hoist pending in emit_byrd.c |
 | 112 | Bug3 FIXED (emit_seq NPUSH on backtrack); Bug4 FIXED (emit_imm literal-tok $'(' guard + stack rollback via STACK_DEPTH_fn) | 101/102/103 PASS; 104_label FAIL — next |
+| 113 | Bug5 diagnosed: ntop() frame displacement by nested NPUSH; NINC_AT_fn + saved-frame fix in beauty_full.c; Reduce("..",2) fires; pp_.. crash unresolved | EMERGENCY WIP 7c17ffa |
