@@ -5601,3 +5601,48 @@ Reduce(type, ntop()) (build tree, reads count) → nPop (discard frame, AFTER Re
 
 **The invariant:** every nPush has exactly one nPop on EVERY exit path (γ and ω).
 Missing nPop on γ = ghost frame = displaced nInc = wrong child count = wrong Reduce.
+
+## Session 120 — 2026-03-16 (FINAL HANDOFF ~75% context)
+
+### What happened
+- Cloned SNOBOL4-corpus, SNOBOL4-tiny, SNOBOL4-harness with correct repo names
+- Read beauty.sno in full (801 lines) — now have the complete PATTERN (lines 219–419)
+- Confirmed Bug7 root cause from source: Expr17 FENCE arm 1 fires nPush() then
+  $'(' fails → nPop() never called on ω path. Expr15 same issue.
+- Reconciled session118/119 pending task: BEAUTY-ENGINE.md not needed —
+  full pattern map and two-stack model now live in FRONTEND-SNOBOL4.md
+- Added two new insights to FRONTEND-SNOBOL4.md:
+  1. Source-level encoding: `val ~ 'Type'` fires Shift; `("'Type'" & n)` fires Reduce
+  2. Stmt's 7 children structurally guaranteed by epsilon~'' placeholders — load-bearing
+- Updated PLAN.md with M-BEAUTY-CORE sprint plan including diagnostic tools
+- Updated TINY.md with Bug7 diagnosis and session120 pivot log entry
+- All three docs committed and pushed: 2c7ba4e, 65d66a2
+
+### Repos at session end
+| Repo | Commit | State |
+|------|--------|-------|
+| SNOBOL4-tiny | `07d4b14` EMERGENCY WIP session116 | 101–105 PASS (WIP binary); Bug7 diagnosed |
+| .github | `65d66a2` | Bug7 in TINY.md; full PATTERN map in FRONTEND-SNOBOL4.md |
+
+### Bug7 — what the next Claude must fix
+
+`Expr17` (beauty.sno line 347): `FENCE(nPush() $'(' *Expr ... nPop() | *Id ~ 'Id' | ...)`
+When matching bare `Id`: arm 1 fires `nPush()`, `$'('` fails, FENCE backtracks to `*Id` arm.
+`nPop()` never called. Ghost frame on counter stack.
+
+`Expr15` (line 343): `FENCE(nPush() *Expr16 ("'[]'" & 'nTop() + 1') nPop() | epsilon)`
+Same: `nPush()` fires, `*Expr16` fails (no `[`), `epsilon` taken, `nPop()` skipped.
+
+**Fix in `emit_byrd.c`:** on the failure/backtrack exit of any FENCE arm containing
+`nPush()`, emit `NPOP_fn()` before jumping to next alternative or returning ω.
+
+**Reduce fires directly before nPop — never swap.**
+
+### Next action for session 121
+```bash
+cd /home/claude/SNOBOL4-tiny
+git log --oneline -3                          # verify 07d4b14
+STOP_ON_FAIL=0 bash test/crosscheck/run_crosscheck.sh   # must be 106/106
+# Then fix Bug7 in emit_byrd.c — see TINY.md §Bug7
+# Then: 104_label → 105_goto → 109_multi → 120_real_prog → 130_inc_file → 140_self
+```
