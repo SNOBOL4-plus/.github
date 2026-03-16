@@ -11,13 +11,13 @@ Shared frontends. Multiple backends. Self-hosting goal: sno2c compiles sno2c.
 | | |
 |-|-|
 | **Active repo** | SNOBOL4-dotnet |
-| **Sprint** | `net-delegates` — replace Instruction[] with Func<Executive,int>[] dispatch |
+| **Sprint** | `net-gap-prototype` — implement PROTOTYPE() builtin, first of four corpus-gap sprints |
 | **HEAD TINY** | `8761bc1` session121: 5-primitive SEQ counter instrumented |
 | **HEAD HARNESS** | `0bf728b` session124: oracle-verify complete — keyword grid live-verified |
 | **HEAD CORPUS** | `82907ff` session122: M-DIAG1 suite committed 35/35 CSNOBOL4 oracle |
-| **HEAD DOTNET** | `b5aad44` corpus runner targets wired |
+| **HEAD DOTNET** | `7aacf01` corpus test injection — 12 files, ~116 methods, 12 [Ignore] gaps |
 | **HEAD HQ** | `ab12de7` session126: fix stale &STCOUNT claims across all MD files |
-| **Next action** | `net-delegates` — implement Func<Executive,int>[] in ThreadedCodeCompiler.cs, dotnet test confirm 1607/0 |
+| **Next action** | `net-gap-prototype` — implement PROTOTYPE() in DOTNET; remove [Ignore] on 1110/1112/1113; confirm 1735+/1744 |
 | **Invariant** | 106/106 rungs 1–11 must pass before any work on SNOBOL4-tiny |
 
 **Read the active L2 doc: [JVM.md](JVM.md)**
@@ -93,6 +93,7 @@ Sprint detail lives in the active platform L2 doc (TINY.md / JVM.md / DOTNET.md)
 
 | ID | Trigger | Status |
 |----|---------|--------|
+| **M-NET-CORPUS-GAPS** | 12 corpus [Ignore] tests pass — PROTOTYPE/FRETURN/VALUE/EVAL | ❌ Sprint `net-gap-prototype` |
 | M-NET-DELEGATES | Instruction[] → pure Func<Executive,int>[] dispatch | ❌ Sprint `net-delegates` |
 | M-NET-SNOCONE | Snocone self-test: compile snocone.sc, diff oracle | ❌ |
 | **M-NET-POLISH** | 106/106 corpus rungs pass, diag1 35/35, benchmark grid published | ❌ see DOTNET.md |

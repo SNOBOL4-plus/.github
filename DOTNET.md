@@ -9,12 +9,12 @@
 
 ## NOW
 
-**Sprint:** `net-delegates`
-**HEAD:** `b5aad44`
-**Milestone:** M-NET-DELEGATES → M-NET-POLISH
+**Sprint:** `net-gap-prototype` ← active (first of four corpus-gap fix sprints)
+**HEAD:** `7aacf01`
+**Milestone:** M-NET-CORPUS-GAPS → then resume M-NET-DELEGATES
 
-**Next action:** Implement `net-delegates` in `ThreadedCodeCompiler.cs` — replace
-`Instruction[]` storage with direct `Func<Executive, int>[]`. No intermediate objects.
+**Next action:** `net-gap-prototype` — implement `PROTOTYPE()` in DOTNET so rung11 array/table tests pass.
+Fix [Ignore] tags one sprint at a time: prototype → freturn/nreturn → value/indirect → eval/opsyn/apply.
 
 **Downstream (M-NET-POLISH sprints, in order after M-NET-DELEGATES):**
 `net-corpus-rungs` → `net-diag1` → `net-feature-audit` → `net-save-dll` → `net-load-unload` → `net-feature-fill` → `net-benchmark-scaffold` → `net-benchmark-publish`
@@ -23,6 +23,11 @@
 - `-w` WriteDll is a no-op on active threaded path — only wired in dead Roslyn path. Fix in `net-save-dll`.
 - DLL load path (`snobol4 file.dll`) already works in `MainConsole.cs` ✅
 - Macro SPITBOL Manual (Appendix D, LOAD/UNLOAD spec): `github.com/spitbol/x32` → `./docs/spitbol-manual.pdf`
+
+**Key findings this session (corpus injection):**
+- 12 corpus test files, ~116 test methods injected; baseline 1732/1744 passed, 12 [Ignore]
+- DOTNET vs CSNOBOL4 differences: &ALPHABET=255, DATATYPE lowercase for builtins/uppercase for user types
+- 4 real feature gaps discovered by corpus tests → 4 fix sprints under M-NET-CORPUS-GAPS
 
 ---
 
@@ -34,7 +39,7 @@ git config user.name "LCherryholmes" && git config user.email "lcherryh@yahoo.co
 export PATH=$PATH:/usr/local/dotnet
 git log --oneline -3   # verify HEAD
 dotnet build Snobol4.sln -c Release -p:EnableWindowsTargeting=true
-dotnet test TestSnobol4/TestSnobol4.csproj -c Release   # confirm 1607/0
+dotnet test TestSnobol4/TestSnobol4.csproj -c Release   # confirm 1732/1744 (12 [Ignore])
 ```
 
 **CRITICAL:** Always pass `-p:EnableWindowsTargeting=true` on Linux builds.
@@ -45,6 +50,7 @@ dotnet test TestSnobol4/TestSnobol4.csproj -c Release   # confirm 1607/0
 
 | ID | Trigger | Status |
 |----|---------|--------|
+| **M-NET-CORPUS-GAPS** | All 12 corpus [Ignore] tests pass — PROTOTYPE, FRETURN/NRETURN, VALUE, EVAL/OPSYN | ❌ Sprint `net-gap-prototype` active |
 | **M-NET-DELEGATES** | Instruction[] eliminated — pure Func<Executive,int>[] dispatch | ❌ |
 | M-NET-SNOCONE | Snocone self-test: compile snocone.sc, diff oracle | ❌ |
 | **M-NET-POLISH** | 106/106 corpus rungs pass · diag1 35/35 · benchmark grid published | ❌ |
@@ -54,7 +60,21 @@ dotnet test TestSnobol4/TestSnobol4.csproj -c Release   # confirm 1607/0
 
 ## Sprint Map
 
-### Active → M-NET-DELEGATES
+### Active → M-NET-CORPUS-GAPS (fix corpus [Ignore] tests, one gap per sprint)
+
+Four gaps discovered by corpus test injection session. Fix in order — each sprint removes
+its [Ignore] tags and confirms `dotnet test` passes the newly enabled tests.
+
+| Sprint | What | Files affected | Trigger |
+|--------|------|----------------|---------|
+| **`net-gap-prototype`** | Implement `PROTOTYPE()` builtin — returns dimension string for ARRAY, `'2,2'` for TABLE→ARRAY convert | `Corpus/Rung11_DataStructures.cs` — 1110, 1112, 1113 | 3 [Ignore] removed, tests pass |
+| `net-gap-freturn` | Fix `FRETURN` / `NRETURN` in threaded path — unnamed fn freturn (1014), nreturn lvalue return (1013) | `Corpus/Rung10_Functions.cs` — 1013, 1014 | 2 [Ignore] removed, tests pass |
+| `net-gap-value-indirect` | Implement `VALUE()` by variable name; fix `$.var` indirect syntax (rung2 210, 211) | `Corpus/Rung11_DataStructures.cs` — 1115, 1116; `Corpus/Rung2_Indirect.cs` — 210 | 3 [Ignore] removed, tests pass |
+| `net-gap-eval-opsyn` | Fix EVAL unevaluated expr (`*expr`), OPSYN alias, alternate DEFINE entry, ARG/LOCAL/APPLY | `Corpus/Rung10_Functions.cs` — 1010, 1011, 1012, 1015, 1016, 1017, 1018 | 7 [Ignore] removed, tests pass |
+
+**M-NET-CORPUS-GAPS fires when:** all 12 [Ignore] tags removed, `dotnet test` 1744/1744 passed.
+
+### → M-NET-DELEGATES
 
 | Sprint | Status |
 |--------|--------|
@@ -127,4 +147,5 @@ Three tracks run in sequence: corpus coverage first, feature gaps second, benchm
 | 2026-03-16 | M-NET-POLISH added: 6 sprints (corpus → diag1 → feature-audit → feature-fill → benchmark-scaffold → benchmark-publish) | Explicit milestone to get DOTNET fully tested, full-featured, and benchmarked before bootstrap |
 | 2026-03-16 | `net-load-unload` sprint added to M-NET-POLISH; Macro SPITBOL Manual located at github.com/spitbol/x32 docs/spitbol-manual.pdf (Appendix D) | LOAD/UNLOAD per spec is a required feature for full SPITBOL compliance |
 | 2026-03-16 | Pivot from JVM `jvm-inline-eval` to DOTNET `net-delegates` | Lon redirected active session to DOTNET |
+| 2026-03-16 | Corpus test injection: 12 files, ~116 test methods from SNOBOL4-corpus crosscheck; 12 [Ignore] gaps mapped to 4 fix sprints under M-NET-CORPUS-GAPS; HEAD `7aacf01` | Lon: inject corpus tests following Jeff's style |
 | 2026-03-16 | `net-save-dll` sprint added to M-NET-POLISH; `-w` WriteDll diagnosed as no-op on active threaded path — only wired in dead Roslyn path (CSharpCompile.cs/CreateAssembly); DLL load path (file.dll on cmdline) already works in MainConsole.cs | Fix needed: persist threaded assembly to disk after tc.Compile() when WriteDll=true |
