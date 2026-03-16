@@ -69,6 +69,11 @@ Shift(type, val)       push one leaf node
 Reduce(type, n)        pop n nodes, push one internal node with n children
 ```
 
+**Source-level encoding:** `val ~ 'Type'` fires `Shift('Type', val)`.
+`("'Type'" & n)` fires `Reduce('Type', n)`. The pattern is simultaneously
+the recognizer and the tree builder — every `~` is a Shift, every
+`("type" & count)` is a Reduce.
+
 `pp(x)` and `ss(x,len)` walk the resulting tree after the full match.
 
 ### Seven Stmt Children
@@ -84,6 +89,12 @@ The `Stmt` pattern builds a node with exactly 7 children (some may be null/empty
 | 5 | Replacement | Expr — right side of `=`, or empty |
 | 6 | goto1 | success goto, or empty |
 | 7 | goto2 | failure goto, or empty |
+
+**The count 7 is structurally guaranteed, not checked.** Every branch of every
+`|` inside `Stmt` pushes the same number of items via `epsilon ~ ''` placeholders
+for absent fields. If `emit_byrd.c` ever drops one of those `epsilon ~ ''` Shifts
+on any branch, the count silently goes wrong — no runtime error, just a misbuilt
+tree. The placeholders are load-bearing.
 
 `nInc()` is called once per `Command` (one statement or directive).
 `nPush()`/`nPop()` bracket `Parse` and `Compiland`.
