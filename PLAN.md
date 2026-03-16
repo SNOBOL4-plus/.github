@@ -11,9 +11,9 @@ Shared frontends. Multiple backends. Self-hosting goal: sno2c compiles sno2c.
 | | |
 |-|-|
 | **Active repo** | SNOBOL4-tiny |
-| **Sprint** | `beauty-crosscheck` — Sprint A — rung 12 crosscheck tests |
+| **Sprint** | `bug7-bomb` — counter-bomb → fix emit_byrd.c → crosscheck ladder |
 | **HEAD** | `07d4b14` EMERGENCY WIP session116 |
-| **Next action** | Fix Bug7 (Expr17/Expr15 ghost frame) in emit_byrd.c → run 104_label → 140_self |
+| **Next action** | Execute Bug7 Bomb Protocol (Pass1 count, Pass2 backtrace) → fix → 104→105→109→140 |
 | **Invariant** | 106/106 rungs 1–11 must pass before any work |
 
 **Read the active L2 doc: [TINY.md](TINY.md) · [JVM.md](JVM.md) · [DOTNET.md](DOTNET.md)**
