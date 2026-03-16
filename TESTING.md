@@ -209,18 +209,19 @@ Every cell proven by live test on 2026-03-10. SPITBOL-x32 not runnable in contai
 
 ### Keywords
 
+All cells marked ✅/❌ verified by live test 2026-03-16 on CSNOBOL4 2.3.3, SPITBOL x64 4.0f, SNOBOL5 beta 2024-08-29. SPITBOL-x32 inferred.
+
 | Keyword | CSNOBOL4 | SPITBOL-x64 | SPITBOL-x32 | SNOBOL5 | Use for portability |
 |---------|:--------:|:-----------:|:-----------:|:-------:|---------------------|
-| `&STLIMIT` | ✅ -1 (unlimited) | ✅ MAX_INT | ✅ (inferred) | ✅ | ✅ primary probe/abort tool |
-| `&STCOUNT` | ❌ **always 0** | ✅ increments | ✅ (inferred) | ✅ | ⚠️ use `&STEXEC` or avoid on CSNOBOL4 |
-| `&STEXEC` | ❓ unverified | ❌ (CSNOBOL4-only) | ❌ | ❌ | ⚠️ CSNOBOL4-only if it works — needs live test |
-| `&STNO` | ✅ | ❌ | ❌ | ? | ❌ CSNOBOL4-only; use `&LASTNO` elsewhere |
-| `&LASTNO` | ❌ | ✅ | ✅ (inferred) | ? | ❌ not portable either; avoid |
+| `&STLIMIT` | ✅ -1 (unlimited) | ✅ MAX_INT | ✅ (inferred) | ✅ | ✅ primary probe/abort tool — works everywhere |
+| `&STCOUNT` | ✅ **increments** | ✅ increments | ✅ (inferred) | ✅ increments | ✅ portable counter — **prior "always 0" was wrong** |
+| `&STEXEC` | ✅ increments | ❌ error 251 | ❌ | ❌ | ❌ CSNOBOL4-only |
+| `&STNO` | ✅ current stmt# | ✅ current stmt# | ✅ (inferred) | ✅ current stmt# | ✅ works on all three live oracles |
+| `&LASTNO` | ✅ same as &STNO | ✅ same as &STNO | ✅ (inferred) | ✅ same as &STNO | ✅ works everywhere |
 | `&DUMP=2` fires at `&STLIMIT` | ✅ | ✅ | ? | ✅ | ✅ safe to use |
-| `&ANCHOR` default | 0 | **1** | **1** | ? | ⚠️ set explicitly — defaults differ |
-| `&TRIM` default | 0 | **1** | **1** | ? | ⚠️ set explicitly — defaults differ |
-| `&FULLSCAN` default | 0 | 1 | 1 | ? | ⚠️ set explicitly |
-| `&CASE` | 0 even with `-f` | 0 | 0 | ? | `-f` ≠ `&CASE=1` in CSNOBOL4 |
+| `&ANCHOR` default | 0 | 0 | ? | 0 | ✅ consistent — 0 on all live oracles |
+| `&TRIM` default | 0 | **1** | ? | 0 | ⚠️ SPITBOL differs — set explicitly |
+| `&FULLSCAN` default | 0 | **1** | ? | 0 | ⚠️ SPITBOL differs — set explicitly |
 | `&MAXLNGTH` | 4G | 16M | 16M | 64-bit | ⚠️ all differ |
 | TRACE output stream | stderr | **stdout** | stdout | stderr | ⚠️ redirect per oracle |
 
