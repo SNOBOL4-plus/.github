@@ -39,6 +39,7 @@ dotnet test TestSnobol4/TestSnobol4.csproj -c Release   # confirm 1607/0
 |----|---------|--------|
 | **M-NET-DELEGATES** | Instruction[] eliminated — pure Func<Executive,int>[] dispatch | ❌ |
 | M-NET-SNOCONE | Snocone self-test: compile snocone.sc, diff oracle | ❌ |
+| M-NET-BOOTSTRAP | snobol4-dotnet compiles itself | ❌ |
 
 ---
 

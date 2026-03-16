@@ -12,20 +12,32 @@ SNOBOL4-tiny: multiple frontends, multiple backends.
 ## NOW
 
 **Sprint:** `monitor-scaffold` — Sprint M1, build monitor runner + inject_traces.py
-**HEAD:** `07d4b14` EMERGENCY WIP session116
-**Milestone:** M-MONITOR (8 sprints) → then M-BEAUTY-CORE
+**HEAD:** `8761bc1` session121: 5-primitive SEQ counter instrumented
+**Milestone:** M-MONITOR → M-BEAUTY-CORE → M-BOOTSTRAP
 
-**Next action:**
-1. Session start checklist — verify 106/106.
+**Next steps (Sprint M1):**
+1. Verify 106/106 invariant.
 2. Write `SNOBOL4-harness/monitor/run_monitor.sh` — single-test TRACE diff runner.
 3. Write `SNOBOL4-harness/monitor/inject_traces.py` — auto-inject TRACE registrations.
-4. Run on `crosscheck/output/001_output_string_literal.sno` — oracle vs compiled, confirm empty diff.
+4. Run on `crosscheck/output/001_output_string_literal.sno` — confirm empty diff.
 5. Write `SNOBOL4-harness/monitor/run_monitor_suite.sh` — loop runner.
-6. Commit harness. Sprint M1 done → begin Sprint M2 (assign/ + concat/).
+6. Commit harness → Sprint M1 done → begin Sprint M2.
 
 ---
 
-## Bug7 Bomb Protocol
+## Milestone Map
+
+| Milestone | Trigger | Status | Sprint |
+|-----------|---------|--------|--------|
+| **M-MONITOR** | 152 corpus tests: oracle_trace == compiled_trace | ⏳ | M1–M8 in [MONITOR.md](MONITOR.md) |
+| **M-DIAG1** | 35/35 diag1 suite TINY vs CSNOBOL4 oracle | ⏳ | via M-MONITOR |
+| M-BEAUTY-CORE | beauty_full_bin self-beautifies (mock stubs) | ❌ | see below |
+| M-BEAUTY-FULL | beauty_full_bin self-beautifies (real -I inc/) | ❌ | after M-BEAUTY-CORE |
+| M-FLAT | flat() emitter wired, Style B verified | ❌ | after M-BEAUTY-FULL |
+| M-CODE-EVAL | CODE()+EVAL() via TCC | ❌ | — |
+| M-BOOTSTRAP | sno2c_stage1 output = sno2c_stage2 | ❌ | final goal |
+
+
 
 **Background:** Dual-stack trace diff on `109_multi.input` found first divergence at trace line 2:
 - Oracle line 1: `NPUSH depth=1 top=0` ← last matching event (start point)
@@ -117,6 +129,65 @@ That node is missing an `NPOP_fn()` emit on its failure/ω path.
 | Tiny-Prolog | — | — | — | — |
 
 ✅ milestone fired · ⏳ active · — planned
+
+---
+
+## M-BEAUTY-CORE Sprint Plan
+
+### What beauty.sno does (essential model)
+
+One big PATTERN matches the entire source. Immediate assignments (`$`) orchestrate
+two stacks simultaneously during the match:
+
+**Counter stack** — tracks children per syntactic level:
+```
+nPush()                  push 0       entering a level
+nInc()                   top++        one more child recognized
+Reduce(type, ntop())     read count   build tree node — fires BEFORE nPop
+nPop()                   pop          exit the level — fires AFTER Reduce
+```
+
+**Value stack:**
+```
+shift(p,t)   pattern constructor — builds p . thx . *Shift('t', thx)
+reduce(t,n)  pattern constructor — builds '' . *Reduce(t,n)
+Shift(t,v)   match-time worker — push leaf node
+Reduce(t,n)  match-time worker — pop n nodes, push internal node
+~ is opsyn for shift · & is opsyn for reduce
+```
+
+**Invariant:** every `nPush()` must have exactly one `nPop()` on EVERY exit path —
+success (γ) AND failure (ω). Missing `nPop` on FENCE backtrack = ghost frame.
+
+### Bug7 — Active
+
+`Expr17` arm1: `FENCE(nPush() $'(' *Expr ... nPop() | *Id ~ 'Id' | ...)`
+→ nPush fires, `$'('` fails, FENCE backtracks to arm2 — **nPop SKIPPED**
+
+`Expr15`: `FENCE(nPush() *Expr16 (...) nPop() | '')`
+→ same issue when no `[` follows
+
+**Fix location:** `emit_byrd.c` — emit `NPOP_fn()` on ω path of nPush arm.
+
+### Skeleton ladder (Sprint steps)
+
+Build minimal SNOBOL4 test programs, each a strict superset of previous.
+Diff oracle vs compiled stderr traces. First diverging SEQ#### line = bug.
+
+| Step | Input | Status |
+|------|-------|--------|
+| `micro0_skeleton.sno` | `N` | ✅ Bug7 does NOT fire — baseline |
+| `micro1_concat.sno` | `N + 1` | Bug7 FIRES — next |
+| `micro2_call.sno` | `GT(N,3)` | Expr17 arm2/3 — TODO |
+| `micro3_grouped.sno` | `(N+1)` | Expr17 arm1 full path — TODO |
+| `micro4_full.sno` | `109_multi.input` | Full 5-line program — TODO |
+
+### Crosscheck ladder (one at a time, never skip)
+
+```
+104_label → 105_goto → 109_multi → 120_real_prog → 130_inc_file → 140_self
+```
+`140_self` PASS → **M-BEAUTY-CORE fires**.
 
 ---
 

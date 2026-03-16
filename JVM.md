@@ -35,6 +35,7 @@ lein test               # confirm 1896/4120/0
 |----|---------|--------|
 | **M-JVM-EVAL** | Inline EVAL! — arithmetic no longer calls interpreter | ❌ |
 | M-JVM-SNOCONE | Snocone self-test: compile snocone.sc, diff oracle | ❌ |
+| M-JVM-BOOTSTRAP | snobol4-jvm compiles itself | ❌ |
 
 ---
 

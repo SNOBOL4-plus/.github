@@ -54,14 +54,24 @@ If not 106/106: fix the regression before touching anything else. Regressions ar
 
 ## ⛔ HQ HIERARCHY — edit downstream files, not PLAN.md
 
+**Structural model:**
 ```
-L1: PLAN.md        ← index only, ~3KB max. Never add content here.
-L2: TINY/JVM/DOTNET/CORPUS/HARNESS.md  ← platform state, sprints, build commands
-L3: ARCH/TESTING/RULES/SESSIONS_ARCHIVE/PATCHES/MISC.md  ← deep reference
+Goal → Milestone → Sprint → Step
 ```
-When Lon says "update HQ" or "update the plan": identify which L2 or L3 file owns
-that content, and update that file. PLAN.md changes only when: milestone status changes,
-active repo/sprint changes, or the platform map needs a new entry.
+- **Goals** live in PLAN.md (3 goals, stable)
+- **Milestones** live in PLAN.md dashboard + platform L2 doc milestone map
+- **Sprints** live in platform L2 docs (TINY.md / JVM.md / DOTNET.md) or MONITOR.md
+- **Steps** live inside sprint definitions in those same L2/L3 docs
+
+```
+L1: PLAN.md        ← Goals · Milestone Dashboard · 4D Matrix · L2/L3 index
+                     ~3KB max. NO sprint content. NO step content. Ever.
+L2: TINY/JVM/DOTNET/CORPUS/HARNESS.md  ← HEAD, build commands, active sprint + steps, milestone map, pivot log
+L3: ARCH/TESTING/MONITOR/RULES/SESSIONS_ARCHIVE/PATCHES/MISC.md  ← deep reference
+```
+
+When Lon says "update HQ": identify which level owns that content and update there.
+PLAN.md changes only when: milestone status changes, NOW block changes, or 4D matrix cell flips.
 
 ## Session Lifecycle
 
