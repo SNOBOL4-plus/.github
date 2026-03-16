@@ -5473,3 +5473,87 @@ backup, snobol4.c restored to clean state.
 
 ### 106/106 invariant
 Rungs 1–11 not re-run (no changes to those paths). Session116 state preserved.
+
+## Session 118 — 2026-03-16
+
+### State at session start
+| Repo | Commit | State |
+|------|--------|-------|
+| SNOBOL4-tiny | `session116` | 101–103 PASS; 104–105 FAIL; nPush/nPop imbalance confirmed in session117 |
+| .github | `57a4d00` | session118 plan committed (push pending — needs token) |
+
+### What happened
+
+**New understanding: two-stack engine model clarified.**
+
+After reviewing all HQ docs and CSNOBOL4 source, the correct sequencing of
+the counter stack operations was established:
+
+```
+nPush()                    push 0     — enter level
+nInc()                     top++      — one child recognized
+Reduce(type, ntop())                  — build tree (reads count FIRST)
+nPop()                     pop        — discard frame (AFTER Reduce)
+```
+
+Key invariant: **Reduce comes before nPop.** `ntop()` is read inside Reduce;
+nPop discards the frame after. A sub-pattern that calls nPush without a matching
+nPop on its γ (success) exit path leaves a ghost frame that displaces all
+subsequent nInc calls to the wrong level.
+
+**New sprint: `stack-trace`.**
+
+Rather than continuing to patch emit_byrd.c by inference, the correct approach is:
+
+1. Instrument beauty.sno's nPush/nInc/nPop/Shift/Reduce with tracing wrappers.
+   Run under CSNOBOL4 → `oracle_stack.txt`. Ground truth.
+2. Instrument the compiled runtime (NPUSH_fn/NPOP_fn/NINC_fn/Shift_fn/Reduce_fn).
+   Run beauty_full_bin → `compiled_stack.txt`.
+3. Diff. First diverging line = exact location of imbalance.
+4. Fix emit_byrd.c at that location. Verify 104+105 PASS.
+
+**New milestone: M-STACK-TRACE.**
+
+`oracle_stack.txt == compiled_stack.txt` for all rung-12 inputs.
+Gates on beauty-crosscheck — crosscheck resumes only after traces match.
+
+**HQ files updated:** PLAN.md, TINY.md, FRONTEND-SNOBOL4.md.
+Committed `57a4d00`. Push pending (needs token at next session start).
+
+### Repos at session end
+| Repo | Commit | State |
+|------|--------|-------|
+| SNOBOL4-tiny | `session116` | unchanged — no code touched |
+| .github | `57a4d00` | committed, push pending |
+
+### Next action (session 119 start)
+```bash
+# 1. Push .github
+cd /home/claude/.github
+git push https://TOKEN@github.com/SNOBOL4-plus/.github main
+
+# 2. Clone and set up SNOBOL4-tiny
+git clone https://TOKEN@github.com/SNOBOL4-plus/SNOBOL4-tiny /home/claude/SNOBOL4-tiny
+git clone https://TOKEN@github.com/SNOBOL4-plus/corpus /home/claude/SNOBOL4-corpus
+cd /home/claude/SNOBOL4-tiny
+git config user.name "LCherryholmes" && git config user.email "lcherryh@yahoo.com"
+
+# 3. Run invariant
+STOP_ON_FAIL=0 bash test/crosscheck/run_crosscheck.sh   # must be 106/106
+
+# 4. Build beauty_full_bin (session116 state)
+RT=src/runtime
+INC=/home/claude/SNOBOL4-corpus/programs/inc
+BEAUTY=/home/claude/SNOBOL4-corpus/programs/beauty/beauty.sno
+src/sno2c/sno2c -trampoline -I$INC $BEAUTY > beauty_full.c
+gcc -O0 -g beauty_full.c $RT/snobol4/snobol4.c $RT/snobol4/mock_includes.c \
+    $RT/snobol4/snobol4_pattern.c $RT/mock_engine.c \
+    -I$RT/snobol4 -I$RT -Isrc/sno2c -lgc -lm -w -o beauty_full_bin
+
+# 5. Begin stack-trace sprint:
+#    - Create beauty_trace.sno (nPush/nInc/nPop/Shift/Reduce instrumented)
+#    - Run: snobol4 -f -P256k -I$INC beauty_trace.sno < crosscheck/beauty/104_label.input > oracle_stack.txt
+#    - Add fprintf traces to NPUSH_fn/NPOP_fn/NINC_fn in snobol4.c, rebuild
+#    - Run: ./beauty_full_bin < crosscheck/beauty/104_label.input > compiled_stack.txt
+#    - diff oracle_stack.txt compiled_stack.txt
+```
