@@ -11,16 +11,17 @@ SNOBOL4-tiny: multiple frontends, multiple backends.
 
 ## NOW
 
-**Sprint:** `bug7-bomb` — find and fix Bug7 ghost frame via counter-bomb protocol
+**Sprint:** `monitor-scaffold` — Sprint M1, build monitor runner + inject_traces.py
 **HEAD:** `07d4b14` EMERGENCY WIP session116
-**Milestone:** M-BEAUTY-CORE
+**Milestone:** M-MONITOR (8 sprints) → then M-BEAUTY-CORE
 
 **Next action:**
-1. Session start checklist (see bottom) — verify 106/106.
-2. Execute Bug7 Bomb Protocol (see below) — Pass 1 then Pass 2.
-3. Fix emit_byrd.c at the identified location.
-4. Run beauty crosscheck ladder: 104 → 105 → 109 → 120 → 130 → 140.
-5. 140_self PASS → **M-BEAUTY-CORE fires**.
+1. Session start checklist — verify 106/106.
+2. Write `SNOBOL4-harness/monitor/run_monitor.sh` — single-test TRACE diff runner.
+3. Write `SNOBOL4-harness/monitor/inject_traces.py` — auto-inject TRACE registrations.
+4. Run on `crosscheck/output/001_output_string_literal.sno` — oracle vs compiled, confirm empty diff.
+5. Write `SNOBOL4-harness/monitor/run_monitor_suite.sh` — loop runner.
+6. Commit harness. Sprint M1 done → begin Sprint M2 (assign/ + concat/).
 
 ---
 

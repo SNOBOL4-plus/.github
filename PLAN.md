@@ -11,21 +11,23 @@ Shared frontends. Multiple backends. Self-hosting goal: sno2c compiles sno2c.
 | | |
 |-|-|
 | **Active repo** | SNOBOL4-tiny |
-| **Sprint** | `diag1-tiny` — run 35-test diag1 suite through SNOBOL4-tiny compiled binary, diff vs CSNOBOL4 .ref files, fix failures, fire M-DIAG1 |
+| **Sprint** | `monitor-scaffold` — build monitor runner, wire TRACE double-diff harness, Sprint M1 |
 | **HEAD TINY** | `8761bc1` session121: 5-primitive SEQ counter instrumented |
 | **HEAD HARNESS** | `198249c` session121: micro0 + micro1 skeleton committed |
 | **HEAD CORPUS** | `82907ff` session122: M-DIAG1 suite committed 35/35 CSNOBOL4 oracle |
 | **HEAD HQ** | this commit |
-| **Next action** | Session 123: build beauty_full_bin. Run crosscheck/rung{2,3,4,8,9,10,11}/ through SNOBOL4-tiny, diff vs .ref. Fix failures. All 35/35 → M-DIAG1 fires. Then bug7-micro. |
+| **Next action** | Session 124: Sprint M1 — write run_monitor.sh + inject_traces.py, one passing test end-to-end, commit to harness |
 | **Invariant** | 106/106 rungs 1–11 must pass before any work |
 
-**Priority order (pivot session122):**
-1. **M-DIAG1** — diag1 suite 35/35 SNOBOL4-tiny vs CSNOBOL4 .ref oracle
-2. **M-BEAUTY-CORE** — bug7-micro, fix emit_byrd.c, 140_self
-3. **M-FLAT** — flat() emitter, Gray/White bypass
-4. **M-BEAUTY-FULL** → **M-BOOTSTRAP**
+**Priority order (pivot session123):**
+1. **M-MONITOR** — 152 corpus diag tests: oracle_trace == compiled_trace, zero diffs. 8 sprints M1–M8.
+2. **M-DIAG1** — diag1 suite 35/35 SNOBOL4-tiny vs CSNOBOL4 .ref oracle (subsumes into M-MONITOR)
+3. **M-BEAUTY-CORE** — bug7-micro, fix emit_byrd.c, 140_self
+4. **M-FLAT** — flat() emitter, Gray/White bypass
+5. **M-BEAUTY-FULL** → **M-BOOTSTRAP**
 
 **Read the active L2 doc: [TINY.md](TINY.md) · [JVM.md](JVM.md) · [DOTNET.md](DOTNET.md)**
+**Monitor design: [MONITOR.md](MONITOR.md)**
 
 ---
 
@@ -215,7 +217,8 @@ depth is correct before `$'('` runs.
 | M-COMPILED-BYRD | sno2c emits Byrd boxes, mock_engine only | TINY | ✅ `560c56a` |
 | M-CNODE | CNode IR, zero lines >120 chars | TINY | ✅ `ac54bd2` |
 | **M-STACK-TRACE** | oracle == compiled stack trace, rung-12 inputs | TINY | ✅ session119 |
-| **M-DIAG1** | 35-test diag1 suite 35/35 PASS SNOBOL4-tiny vs CSNOBOL4 .ref oracle | TINY | ⏳ session123 |
+| **M-MONITOR** | 152 corpus diag tests: oracle_trace == compiled_trace, zero diffs (8 sprints M1–M8) | TINY | ⏳ session124 |
+| **M-DIAG1** | 35-test diag1 suite 35/35 PASS SNOBOL4-tiny vs CSNOBOL4 .ref oracle | TINY | ⏳ (via M-MONITOR) |
 | **M-BEAUTY-CORE** | beauty_full_bin self-beautifies (mock stubs) | TINY | ❌ |
 | **M-BEAUTY-FULL** | beauty_full_bin self-beautifies (real -I inc/) | TINY | ❌ |
 | **M-FLAT** | flat() emitter wired; style switch bypasses pp/ss; Style B verified | TINY | ❌ |
@@ -228,6 +231,7 @@ depth is correct before `$'('` runs.
 
 | Read when you need… | File |
 |--------------------|------|
+| Monitor milestone: TRACE double-diff, 8 sprints M1–M8, runner design | [MONITOR.md](MONITOR.md) |
 | SNOBOL4/SPITBOL: two-stack engine, PATTERN map, TDD, diagnostics | [FRONTEND-SNOBOL4.md](FRONTEND-SNOBOL4.md) |
 | sno2c compiler internals | [IMPL-SNO2C.md](IMPL-SNO2C.md) |
 | C backend: Byrd boxes, block functions | [BACKEND-C.md](BACKEND-C.md) |

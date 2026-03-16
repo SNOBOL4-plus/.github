@@ -73,10 +73,15 @@ Note: SPITBOL excluded from full beauty.sno (error 021 at END). CSNOBOL4 is prim
 
 | Sprint | Paradigm | Milestone trigger |
 |--------|----------|------------------|
-| `diag1-corpus` | Crosscheck | 35/35 PASS all backends → **M-DIAG1** |
+| `monitor-scaffold` | Monitor | runner + inject_traces.py, 1 test passing |
+| `monitor-value` | Monitor | assign/ + concat/ 14/14 → |
+| `monitor-control` | Monitor | control_new/ 7/7 → |
+| `monitor-patterns` | Monitor | patterns/ + capture/ 27/27 → |
+| `monitor-functions` | Monitor | functions/ 8/8 → |
+| `monitor-data` | Monitor | data/ + strings/ 17/17 → |
+| `monitor-keywords` | Monitor | keywords/ 10/10 → |
+| `monitor-full` | Monitor | all 152 corpus tests zero diffs → **M-MONITOR** |
 | `beauty-crosscheck` | Crosscheck | beauty/140_self passes → **M-BEAUTY-CORE** |
-| `beauty-probe` | Probe | All crosscheck failures diagnosed + fixed |
-| `beauty-monitor` | Monitor | Trace streams match all test inputs |
 | `beauty-triangulate` | Triangulate | Empty diff → **M-BEAUTY-FULL** |
 
 ## Rung 12 Test Format
