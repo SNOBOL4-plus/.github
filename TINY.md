@@ -12,35 +12,44 @@ SNOBOL4-tiny: multiple frontends, multiple backends.
 ## NOW
 
 **Sprint:** `beauty-crosscheck` — Sprint A — rung 12 crosscheck tests
-**HEAD:** `session113` — `7c17ffa` — Bug5 partial fix (NINC_AT/saved-frame); 101/102/103 PASS, 104_label FAIL empty output
+**HEAD:** `session114` — `3f5bfda` — Bug5 fully fixed (saved-frame for Parse/Compiland/Command); 101/102/103/104 PASS, 105_goto FAIL
 **Milestone:** M-BEAUTY-CORE → M-BEAUTY-FULL
 
 **Next action:**
-1. **Active bug: Bug5 — 104_label FAIL** — `LOOP    X = X 1` → **empty output**
+1. **Active bug: Bug6 — 105_goto FAIL** — `X = 1       :(END)` → wrong output
 
-   **Root cause (session113):** NOT a label bug. Any multi-atom concat expression fails. `ntop()` reads wrong nstack frame because nested `NPUSH` in `pat_Expr5..Expr17` displaces `_ntop` above Expr4's frame by the time the `if (ntop()>1)` check fires.
+   **Bug6a — spurious `Reduce(.., 2)` for `1 :(END)`:** `pat_X4`/`FENCE(*White *X4)` is consuming the
+   space before `:(END)` and treating it as a second concat atom. The goto token `:(END)` should be left
+   for `pat_Goto` in `pat_Stmt`. Probe shows `Reduce(..,2)` fires for `[1, END]` where `END` should be
+   the goto target, not a subject expression atom. Diagnose whether `pat_Expr5..Expr14` rejects `:(END)`
+   at the `:` character or whether `pat_Stmt`'s subject/goto split has a precedence bug.
 
-   **Fix applied (beauty_full.c only — emit_byrd.c NOT yet updated):**
-   - `pat_Expr4`: `z->_saved_frame = _ntop` at NPUSH; check uses `NSTACK_AT_fn(saved_frame)`
-   - `pat_X4`: `NINC_AT_fn(_x4_parent_frame)` via `_x4_pending_parent_frame` global
-   - `pat_Expr16`: isolated NPUSH/NPOP (no bleed into Expr4 counter)
-   - `pat_Expr3`: same saved-frame pattern
-   - Runtime: `NINC_AT_fn`, `NSTACK_AT_fn`, `NTOP_INDEX_fn` in `snobol4.c/h`
+   **Bug6b — `Reduce(*(':' Brackets), 1)` instead of `Reduce(:(), 1)`:** The goto Reduce type uses the
+   literal string `*(':' Brackets)` instead of evaluating it. In beauty.sno: `("*(':' Brackets)" & 1)` —
+   the string is an unevaluated SNOBOL4 expression that should be EVALed. Fix in `emit_byrd.c`: when
+   `E_OPSYN &` has an `E_QLIT` type whose value starts with `*`, emit EVAL call not STRVAL.
 
-   **Confirmed:** `nstack[Expr4_frame]=2` for `X 1`. `Reduce("..",2)` fires correctly.
-   **Next:** diagnose why `pp_..` / `ss_..` produces empty despite correct tree. Then apply to `emit_byrd.c`.
+   **Probe trace (oracle vs ours):**
+   ```
+   Oracle:  Shift(Integer,1) Shift(SpecialNm,END) Reduce(:(),1) Shift(,) Reduce(Stmt,7)
+   Ours:    Shift(..) Reduce(..,2) Shift(..) Reduce(*(':' Brackets),1) Reduce(Stmt,7)
+   ```
 
-   **Prior bugs resolved session112:**
+   **Prior bugs resolved:**
 
-   **Bug3 — FIXED `4c2ad68`:** `emit_seq` beta→right_β wiring omitted `NPUSH_fn()` when left=`nPush()` → `ntop()==0` at Reduce → stack inflation → wrong Stmt children.
-   Fix: `if (left is nPush) PL(beta, right_β, "NPUSH_fn();") else PLG(beta, right_β)`.
+   **Bug5 — FIXED `3f5bfda` (session114):** `ntop()` frame displacement in `pat_Parse`/`pat_Compiland`/
+   `pat_Command`. Nested `NPUSH` calls from `pat_Expr4/X4/Expr16` displaced `_ntop` above Parse-level
+   frame. Fix: save `NTOP_INDEX_fn()` at both NPUSH sites in Parse/Compiland into `z->_saved_frame` +
+   `_command_pending_parent_frame`; Command reads frame at init; `NINC_fn()→NINC_AT_fn(_cmd_parent_frame)`;
+   `Reduce(Parse,ntop())→Reduce(Parse,NSTACK_AT_fn(_parse_frame))`.
+   New runtime symbols: `_command_pending_parent_frame` (snobol4.c/h).
+   Fix in `beauty_full_wip.c` only — `emit_byrd.c` NOT yet updated.
 
-   **Bug4 — FIXED `4c2ad68`:** `emit_imm` treated `$'('` varname `(` as a capture variable not a literal token guard → `*Function ~ 'Function' $'('` arm matched `OUTPUT` without requiring `(` → subject became `Call(OUTPUT,[])` → printed `OUTPUT()`.
-   Fix: detect `is_literal_tok` (all-punctuation varname), snapshot `STACK_DEPTH_fn()` before child, emit char check, on failure restore cursor + `while(STACK_DEPTH_fn()>saved) pop_val()`.
+   **Bug3 — FIXED `4c2ad68`:** emit_seq NPUSH backtrack omission.
+   **Bug4 — FIXED `4c2ad68`:** emit_imm literal-tok `$'('` guard + stack rollback.
 
-   **Key invariant discovered:** `NV_GET_fn("@S")` / `NV_SET_fn("@S",...)` does NOT roll back `_vstack[]` in the mock runtime. Stack rollback requires `STACK_DEPTH_fn()` + `pop_val()` loop.
-
-2. After 104_label PASS: run `bash test/crosscheck/run_beauty.sh`, continue ladder.
+2. After 105_goto PASS: continue ladder (109_multi → 120_real_prog → 130_inc_file → 140_self).
+3. After WIP passes all rung-12 tests: port all saved-frame fixes to `emit_byrd.c`, recompile, verify.
 
 ## Frontend × Backend Frontier
 
@@ -166,3 +175,4 @@ git add -A && git commit && git push
 | 111 | NPUSH not firing on backtrack in pat_Expr3/4; ntop()=0 at Reduce | Full stack probe confirmed; emit_simple_val E_QLIT fix applied; structural NPUSH hoist pending in emit_byrd.c |
 | 112 | Bug3 FIXED (emit_seq NPUSH on backtrack); Bug4 FIXED (emit_imm literal-tok $'(' guard + stack rollback via STACK_DEPTH_fn) | 101/102/103 PASS; 104_label FAIL — next |
 | 113 | Bug5 diagnosed: ntop() frame displacement by nested NPUSH; NINC_AT_fn + saved-frame fix in beauty_full.c; Reduce("..",2) fires; pp_.. crash unresolved | EMERGENCY WIP 7c17ffa |
+| 114 | Bug5 FIXED: saved-frame pattern extended to pat_Parse/pat_Compiland/pat_Command; _command_pending_parent_frame global; Reduce(Parse,1) correct; 104_label PASS. Bug6 diagnosed: Bug6a spurious Reduce(..,2) for goto token; Bug6b unevaluated goto type string | EMERGENCY WIP 3f5bfda |
