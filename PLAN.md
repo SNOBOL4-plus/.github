@@ -10,14 +10,14 @@ Shared frontends. Multiple backends. Self-hosting goal: sno2c compiles sno2c.
 
 | | |
 |-|-|
-| **Active repo** | SNOBOL4-jvm |
-| **Sprint** | `jvm-inline-eval` — polish M-JVM-EVAL, emit arith/assign/cmp into JVM bytecode |
+| **Active repo** | SNOBOL4-dotnet |
+| **Sprint** | `net-delegates` — replace Instruction[] with Func<Executive,int>[] dispatch |
 | **HEAD TINY** | `8761bc1` session121: 5-primitive SEQ counter instrumented |
 | **HEAD HARNESS** | `0bf728b` session124: oracle-verify complete — keyword grid live-verified |
 | **HEAD CORPUS** | `82907ff` session122: M-DIAG1 suite committed 35/35 CSNOBOL4 oracle |
-| **HEAD JVM** | `9cf0af3` jvm-snocone-expr complete |
+| **HEAD DOTNET** | `b5aad44` corpus runner targets wired |
 | **HEAD HQ** | `ab12de7` session126: fix stale &STCOUNT claims across all MD files |
-| **Next action** | `jvm-inline-eval` — implement inline EVAL! in jvm_codegen.clj, lein test confirm 1896/4120/0 |
+| **Next action** | `net-delegates` — implement Func<Executive,int>[] in ThreadedCodeCompiler.cs, dotnet test confirm 1607/0 |
 | **Invariant** | 106/106 rungs 1–11 must pass before any work on SNOBOL4-tiny |
 
 **Read the active L2 doc: [JVM.md](JVM.md)**
