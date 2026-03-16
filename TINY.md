@@ -12,62 +12,44 @@ SNOBOL4-tiny: multiple frontends, multiple backends.
 ## NOW
 
 **Sprint:** `beauty-crosscheck` — Sprint A — rung 12 crosscheck tests
-**HEAD:** `session109` — bug2 '(' guards in beauty_full.c (both Function+Id arms); doc fixes in .github
+**HEAD:** `session110` — Bug2 fix: bare-Function/Id now go to fence_after_358; parse tree CORRECT (verified by trace); Bug3: pp_Stmt drops subject via INDEX_fn(c,2)
 **Milestone:** M-BEAUTY-CORE → M-BEAUTY-FULL
 
 **Next action:**
-1. **Active bug:** 102_output FAIL — `OUTPUT = 'hello'` still produces `'hello'` only
+1. **Active bug:** 102_output FAIL — parse tree correct; `pp_Stmt` drops subject
 
-   **Bug 1 — E_INDR(E_FNC) — FIXED in emit_byrd.c (session108, commit 7988492)**
+   **Confirmed by session110 Shift/Reduce trace:**
+   ```
+   [Shift] t=Label    v=
+   [Shift] t=Function v=OUTPUT    ← fix working, OUTPUT in child slot 2
+   [Shift] t=          v=          ← empty pattern (child 3)
+   [Shift] t==         v==         ← assignment = (child 4)
+   [Shift] t=String   v='hello'   ← replacement (child 5)
+   [Reduce] type=.. n=0            ← empty goto1 (child 6)
+   [Reduce] type=|  n=0            ← empty goto2 (child 7)
+   [Reduce] type=Stmt n=7          ← correct 7-child Stmt
+   ```
+   Parse tree is correct. Bug3 is now in `pp_Stmt`.
 
-   **Bug 2 — pat_ExprList epsilon — GUARDS IN PLACE, 102 still FAIL (session109)**
-   - Two `'('` guards added to `beauty_full.c`: `cat_r_382_α` (Function arm) and
-     `cat_r_389_α` (Id arm). Each does `pop_val()` + cursor restore + skips arm.
-   - 102_output still fails: OUTPUT still not appearing as subject.
-   - Root cause not yet resolved: after both arms skip, `alt_r_364` tries
-     `pat_BuiltinVar` — but OUTPUT is in `Functions` list, not `BuiltinVars`.
-     Falls through all arms; only string literal `'hello'` parsed.
-   - **Fix location:** find the bare-Function Shift arm in `pat_Expr17` below
-     `alt_r_364`. It must exist (beauty.sno `Expr14`/`Expr17` has a bare-identifier
-     alternative). Verify it is reachable after the guards, and that it produces
-     `Shift("Function","OUTPUT")` → correct Stmt subject slot.
-   - **Key insight:** `Expr14` (subject position) in `Stmt` is NOT `Expr17` directly —
-     check what `pat_Expr14` calls and whether it has its own bare-token arm
-     independent of the function-call arms in `pat_Expr17`.
-   - Cross-ref: `beauty.sno` lines ~360-400 (`Stmt` pattern); `beauty_full.c`
-     `pat_Expr14` entry point.
+   **Bug 3 — pp_Stmt drops subject — ACTIVE (session110)**
+   - `pp_Stmt` line ~1010 in beauty_full.c: `ppSubj = INDEX_fn(get(_c), [2])`.
+   - Tests `DIFFER(t(ppSubj))` line ~1088. If this fails → jumps to `_L_pp_Stmt7`,
+     skips subject print entirely.
+   - **Fix hypothesis:** `get(_c)` may be returning the Stmt tree node itself rather
+     than its children array. The Stmt node has fields t,v,n,c. `c` field = children
+     array. `pp_Stmt` must do `c(_x)` first to get the array, then `INDEX_fn(array, 2)`.
+     Check what `_c` is initialized to at the start of `_L_pp_Stmt` (line ~988).
+   - **Diagnosis:** add `fprintf(stderr, "ppSubj type=%d\n", ppSubj.v)` after
+     `INDEX_fn(get(_c),(DESCR_t[]){INTVAL_fn(2)},1)` at line ~1025 in beauty_full.c.
+     If prints `v=0` (NULVCL) → INDEX_fn is getting wrong base.
+     If prints `v=8` (DT_DATA) → t() is failing. Check FIELD_GET_fn("t") on the node.
+   - **Fix location:** beauty_full.c `_L_pp_Stmt` section, `_c` initialization ~line 988.
+   - **Cross-ref:** IMPL-SNO2C.md §SIL Naming: `NPUSH_fn`/`NPOP_fn` counter stack
+     wraps `Expr15→Expr16` (the `[]`/`<>` bracket arms). `nTop()` used in
+     `Reduce("[]", nTop()+1)`. Not related to current bug.
 
-   **Bug 1 — E_INDR(E_FNC) — FIXED in emit_byrd.c (session108, commit 7988492)**
-   - `*match(List, TxInList)` was compiled as `NV_GET_fn("match")` — args dropped.
-   - Fix: new branch in `E_INDR` case before `named_pat_lookup`: when `pat->left->kind == E_FNC
-     && pat->left->nargs > 0`, emit `APPLY_fn(fname, args, nargs)` and pass result to
-     `match_pattern_at`. Correct SNOBOL4 semantics for `*f(a,b)`.
-   - `beauty_full.c` manually patched (5 occurrences, all `NV_GET_fn("match")` →
-     `APPLY_fn("match", [List,TxInList], 2)` with `IS_FAIL_fn` guard).
-   - **Corpus needed to regenerate beauty_full.c from source.**
-
-   **Bug 2 — pat_ExprList matches epsilon without '(' — NOT YET FIXED**
-   - Debug trace (Shift/Reduce prints added temporarily to mock_includes.c):
-     ```
-     [Shift] t=Function v=OUTPUT
-     [Reduce] type=ExprList n=0     ← spurious: no '(' in input
-     [Reduce] type=Call n=2         ← spurious: consumes Function+ExprList slots
-     ```
-   - `OUTPUT` is still classified as `Function` and `pat_ExprList` matches epsilon.
-   - Root cause: in `pat_Expr17`, the function-call rule is
-     `Function '(' ExprList ')'`. After `pat_Function` succeeds, `pat_ExprList`
-     is tried — it has an epsilon alternative (ARBNO of zero Exprs) that matches
-     immediately without consuming `(`. The `'('` literal should be tested BEFORE
-     `pat_ExprList`, but in the generated code `pat_ExprList` is reached first.
-   - **Fix location:** `beauty_full.c` lines ~8195–8220 (cat_r_382_α block):
-     the `'('` literal match must precede `pat_ExprList`, OR `pat_ExprList` must
-     not match epsilon in this context. Inspect `pat_ExprList` at line 5051 to
-     confirm it accepts zero-length, then find where the `'('`/`')'` literals are
-     matched in the function-call rule — they may be in an outer `FENCE(...)` that
-     the compiled code doesn't enforce correctly.
-   - Cross-ref: beauty.sno `snoExpr17` function-call arm; `pat_ExprList` at line 5051.
-
-2. After 102_output PASS: write 103_assign.input/.ref, continue rung 12 ladder
+2. After 102_output PASS: run `bash test/crosscheck/run_beauty.sh` (101–105 .ref exist),
+   continue ladder to 103_assign, 104_label, 105_goto
 
 ---
 
@@ -190,4 +172,5 @@ git add -A && git commit && git push
 | 106 | E_DOL label-dup fixed (emit_seq pattern); 4x crosscheck speedup | 101 PASS; 102_output FAIL — assignment node blank in pp() |
 | 108 | E_INDR(E_FNC) fix in emit_byrd.c; beauty_full.c patched; bug2 diagnosed: pat_ExprList epsilon | 102_output still FAIL — bug2 is pat_ExprList matching epsilon without '(' |
 | 109 | bug2 '(' guards added (both Function+Id arms); pop_val()+skip; doc sno* names fixed in .github | 102_output still FAIL — OUTPUT not reaching subject slot; bare-Function arm not yet found |
+| 110 | bug2 FIXED: bare-Function/Id go to fence_after_358 (keep Shift, succeed); parse tree verified correct by trace | 102_output still FAIL — Bug3: pp_Stmt drops subject; INDEX_fn(c,2) suspect |
 | 107 | Shift(t,v) value fix; FIELD_GET debug removed; root cause diagnosed | 106/106 pass; 102 still FAIL — E_DEREF(E_FNC) in emit_byrd.c drops args |

@@ -12,8 +12,8 @@ Shared frontends. Multiple backends. Self-hosting goal: sno2c compiles sno2c.
 |-|-|
 | **Active repo** | SNOBOL4-tiny |
 | **Sprint** | `beauty-crosscheck` — Sprint A — rung 12 crosscheck tests |
-| **HEAD** | `session108` |
-| **Next action** | Fix pat_ExprList epsilon-match in beauty_full.c — `'('` must precede ExprList in function-call rule (lines ~8195–8220); cross-ref `pat_ExprList` line 5051 |
+| **HEAD** | `session110` |
+| **Next action** | Diagnose pp_Stmt subject drop: INDEX_fn(c,2) returns NULVCL; fix _c initialization in _L_pp_Stmt (beauty_full.c ~line 988) |
 | **Invariant** | 106/106 rungs 1–11 must pass before any work |
 
 **Read the active L2 doc: [TINY.md](TINY.md) · [JVM.md](JVM.md) · [DOTNET.md](DOTNET.md)**
