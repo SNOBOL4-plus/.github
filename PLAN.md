@@ -41,7 +41,7 @@ The Byrd Box model — one universal pattern engine — runs SNOBOL4, Icon, Prol
 ```
 Products:   TINY (native C/x64) · JVM (Clojure→bytecode) · DOTNET (C#→MSIL)
 Frontends:  SNOBOL4 · Snocone · Rebus · Icon · Prolog · C#/Clojure
-Backends:   C/x64 · JVM bytecode · .NET MSIL
+Backends:   C (portable) · x64 ASM (native) · JVM bytecode · .NET MSIL
 Matrix:     Feature matrix (correctness) · Benchmark matrix (performance)
 ```
 

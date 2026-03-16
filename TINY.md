@@ -174,6 +174,15 @@ success (γ) AND failure (ω). Missing `nPop` on FENCE backtrack = ghost frame.
 Build minimal SNOBOL4 test programs, each a strict superset of previous.
 Diff oracle vs compiled stderr traces. First diverging SEQ#### line = bug.
 
+**All 5 instrumented primitives share `int _nseq` counter:**
+```
+SEQ0001 NPUSH depth=N top=N    <- snobol4.c NPUSH_fn
+SEQ0002 NINC  depth=N top=N    <- snobol4.c NINC_fn
+SEQ0003 NPOP  depth=N top=N    <- snobol4.c NPOP_fn
+SEQ0004 SHIFT type=T val='V'   <- mock_includes.c Shift()
+SEQ0005 REDUCE type=T n=N      <- mock_includes.c Reduce()
+```
+
 | Step | Input | Status |
 |------|-------|--------|
 | `micro0_skeleton.sno` | `N` | ✅ Bug7 does NOT fire — baseline |
@@ -182,12 +191,55 @@ Diff oracle vs compiled stderr traces. First diverging SEQ#### line = bug.
 | `micro3_grouped.sno` | `(N+1)` | Expr17 arm1 full path — TODO |
 | `micro4_full.sno` | `109_multi.input` | Full 5-line program — TODO |
 
+### In-PATTERN Bomb Technique
+
+Place diagnostic calls **directly inside a PATTERN** at any edge using `'' . *fn()`.
+The function fires exactly when the match engine reaches that point, including on backtrack.
+
+```snobol4
+* Sequence stamp at any pattern edge
+        DEFINE('seq_(label)', 'seq_B')          :(seq_End)
+seq_B   seqN = seqN + 1
+        OUTPUT = 'SEQ' LPAD(seqN,4,'0') ' ' label
+        seq_ = .dummy                           :(NRETURN)
+seq_End
+
+* Embed at FENCE edges to see exactly which path fires:
+        Expr17 = FENCE(
++                   '' . *seq_('E17_arm1_enter')
++                   nPush()
++                   $'('
++                   '' . *seq_('E17_arm1_after_paren')   <- never fires if ( fails
++                   nPop()
++                |  '' . *seq_('E17_arm2_enter')         <- fires on backtrack
++                   *Id ~ 'Id'
++                )
+```
+
+**Bomb variant** — abort on wrong state:
+```snobol4
+        DEFINE('assertDepth(expected)', 'assertB') :(assertEnd)
+assertB EQ(_ntop, expected)                        :S(RETURN)
+        OUTPUT = '*** BOMB depth=' _ntop ' expected=' expected
+        &STLIMIT = 0                               * force abort
+assertEnd
+```
+Place `'' . *assertDepth(1)` immediately after `nPush()` in arm1 to confirm
+depth is correct before `$'('` runs.
+
 ### Crosscheck ladder (one at a time, never skip)
 
 ```
 104_label → 105_goto → 109_multi → 120_real_prog → 130_inc_file → 140_self
 ```
 `140_self` PASS → **M-BEAUTY-CORE fires**.
+
+### Diagnostic tools
+
+- **&STLIMIT binary search** — set limit, halve on hang
+- **&STCOUNT** — increments correctly on CSNOBOL4 (verified 2026-03-16)
+- **TRACE:** `TRACE('var','VALUE')` works; `TRACE(...,'KEYWORD')` non-functional
+- **DUMP():** full variable dump at any point
 
 ---
 
