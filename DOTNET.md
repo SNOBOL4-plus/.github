@@ -10,11 +10,19 @@
 ## NOW
 
 **Sprint:** `net-delegates`
-**HEAD:** `63bd297`
-**Milestone:** M-NET-DELEGATES
+**HEAD:** `b5aad44`
+**Milestone:** M-NET-DELEGATES → M-NET-POLISH
 
 **Next action:** Implement `net-delegates` in `ThreadedCodeCompiler.cs` — replace
 `Instruction[]` storage with direct `Func<Executive, int>[]`. No intermediate objects.
+
+**Downstream (M-NET-POLISH sprints, in order after M-NET-DELEGATES):**
+`net-corpus-rungs` → `net-diag1` → `net-feature-audit` → `net-save-dll` → `net-load-unload` → `net-feature-fill` → `net-benchmark-scaffold` → `net-benchmark-publish`
+
+**Key findings session125:**
+- `-w` WriteDll is a no-op on active threaded path — only wired in dead Roslyn path. Fix in `net-save-dll`.
+- DLL load path (`snobol4 file.dll`) already works in `MainConsole.cs` ✅
+- Macro SPITBOL Manual (Appendix D, LOAD/UNLOAD spec): `github.com/spitbol/x32` → `./docs/spitbol-manual.pdf`
 
 ---
 
