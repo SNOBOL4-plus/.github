@@ -6688,3 +6688,30 @@ Confirmed 106/106 ✅ after DATATYPE fix.
 3. Wire `E_INDR` in `emit_asm_node`: `*PAT` → `E_INDR(E_VART("PAT"))` → call `pat_PAT_alpha/beta` via named-pattern ref.
 4. Verify 057 (FAIL match/no-match) and 058 (single capture) pass.
 5. Run 20/20 → **M-ASM-CROSSCHECK fires**.
+
+---
+
+## Session 151 — DOTNET chat — 2026-03-17
+
+**Repo:** snobol4dotnet  
+**Sprint:** net-corpus-rungs  
+**HEAD start:** d0ffaa2  
+**HEAD end:** f2ac8ea  
+**Invariant:** 1870/1876 0 failed (confirmed start and end)
+
+### Work done
+- Read RULES.md, PLAN.md, DOTNET.md — fully oriented
+- Cloned: .github, snobol4dotnet, snobol4corpus (ignored), snobol4harness (ignored)
+- Installed .NET 10.0.201, built Snobol4.sln clean (0 errors)
+- Applied `AbstractSyntaxTree.BuildFromPattern` null-guard fix: `if (rootPattern.StartNode == null)` guards write-back — prevents Pattern.StartNode cache poisoning when NEXTH loop calls PatternMatch twice on same pattern object
+- Verified: cross test now produces 3 SNOBOL output blocks (previously blank) — StartNode poisoning fixed
+- Remaining: `@N` cursor value is 0 on all captures; `DUPL(' ', NH)` → 0 spaces; O character missing from first block
+
+### Root cause remaining
+`AtSign.Scan` assigns `scan.CursorPosition` which is the outer for-loop cursor (0 at iteration 0). SPITBOL `p_una` bumps cursor *before* `@` fires in each retry — in DOTNET, cursor is set to `cursorPosition` (the for-loop var) *before* `Match()` — so `@` at position 0 correctly assigns 0. The *first successful* `@NH ANY(V)` match should be at position ≥1, but cursor shows 0. Investigate: does Scanner reset CursorPosition *inside* Match() between nodes, or is it advanced only by node Scan methods?
+
+### Next action
+1. Trace `scan.CursorPosition` inside `AtSign.Scan` for the `cross` test — confirm whether it's 0 or the true match position
+2. Compare with `POS`/`TAB` scan methods to see how cursor advances before terminal nodes fire
+3. Fix cursor value → `cross` PASS → 106/106 crosscheck → M-NET-CORPUS-RUNGS fires
+
