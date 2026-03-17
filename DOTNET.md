@@ -9,11 +9,11 @@
 
 ## NOW
 
-**Sprint:** **`net-vb-fixture`** ← active (EMERGENCY WIP)
-**HEAD:** `6528e77`
-**Milestone:** M-NET-CORPUS-GAPS ✅ · M-NET-ALPHABET ✅ · M-NET-DELEGATES ✅ · M-NET-LOAD-SPITBOL ✅ · M-NET-SAVE-DLL ✅ · M-NET-LOAD-DOTNET ✅ → **M-NET-VB** ← active
+**Sprint:** **`net-load-xn`** ← active
+**HEAD:** `234f24a`
+**Milestone:** M-NET-CORPUS-GAPS ✅ · M-NET-ALPHABET ✅ · M-NET-DELEGATES ✅ · M-NET-LOAD-SPITBOL ✅ · M-NET-SAVE-DLL ✅ · M-NET-LOAD-DOTNET ✅ · M-NET-VB ✅ → **M-NET-XN** ← active
 
-**Next action:** Run `dotnet test --filter VbLibrary` — confirm 10/10 green, then full suite. Commit passing result. Fire M-NET-VB. Update PLAN.md dashboard. Pivot to `net-load-xn`.
+**Next action:** Begin `net-load-xn` — Step 1: `xn1st` thread-local in Executive; Step 2: `libsnobol4_rt` shim (`snobol4_xn1st`, `snobol4_register_callback`); Step 3: `xncbp` shutdown callback; Step 4: `xnsave` double-fire guard; Step 5: tests in `LoadXnTests.cs`.
 **After net-vb-fixture:** `net-load-xn` → `net-corpus-rungs` → M-NET-POLISH track.
 
 **net-save-dll split (3 sprints — session138) ✅:**
@@ -60,7 +60,7 @@ dotnet test TestSnobol4/TestSnobol4.csproj -c Release   # confirm 1832/1833 (1 [
 | **M-NET-LOAD-SPITBOL** | ✅`21dceac` LOAD/UNLOAD spec-compliant: prototype string s1, filename s2, UNLOAD(fname), INTEGER/REAL/STRING/FILE/EXTERNAL coercion, SNOLIB search, Error 202 | ❌ Sprint `net-load-spitbol` |
 | **M-NET-SAVE-DLL** | `-w file.sno` produces `file.dll` (threaded assembly persisted to disk); `snobol4 file.dll` runs it; `RunDll()` updated for threaded format | ✅ `cca773a` session138 — PersistedAssemblyBuilder sentinel DLL; 3 tests; 1805/1806 |
 | **M-NET-LOAD-DOTNET** | Full .NET extension layer: auto-prototype via reflection, multi-function assemblies, IExternalLibrary fast path, async functions, cancellation, any IL language (F#/VB/C++) | ✅ `1e9ad33` session140 |
-| **M-NET-VB** | VB.NET fixture library + tests prove reflect path works from VB.NET: string/long/double returns, null→fail, static methods, multi-load, UNLOAD | ❌ Sprint `net-vb-fixture` |
+| **M-NET-VB** | VB.NET fixture library + tests prove reflect path works from VB.NET: string/long/double returns, null→fail, static methods, multi-load, UNLOAD | ✅ `234f24a` session142 — 10/10; 1856/1857 |
 | **M-NET-XN** | SPITBOL x32 C-ABI parity: xn1st first-call flag, xncbp shutdown callback, xnsave double-fire guard; libsnobol4_rt.so helper shim | ❌ Sprint `net-load-xn` |
 | **M-NET-POLISH** | 106/106 corpus rungs pass · diag1 35/35 · benchmark grid published | ❌ |
 | M-NET-BOOTSTRAP | snobol4-dotnet compiles itself | ❌ |
@@ -333,6 +333,7 @@ On load (`RunDll`): detect sentinel → extract fields → feed source to `Code.
 | 2026-03-17 | **`net-build-prereqs` sprint added** — BUILDING.md, .gitignore audit, native lib build script, prebuilt fallback, CI prereq check; added to M-NET-POLISH sprint map and fire condition |
 | 2026-03-17 | **`net-load-dotnet` Steps 4–6 ✅** — Step 4: DllSharedContexts ref-count by path (5 tests); Step 5: Task/Task<T> blocking-await adapter, AsyncDoubler/Greeter/VoidWorker fixtures (4 tests); Step 6: IExternalLibrary fast-path explicit tests (2 tests); 1802/1803; HEAD `38d43b0` | session137 |
 | 2026-03-17 | **chore: Roslyn dead code removed** — CSharpCompile.cs + CodeGenerator.cs deleted; UseThreadedExecution removed; 3 CodeAnalysis NuGet deps stripped; 1802/1803; HEAD `c43580d` | session137 |
+| 2026-03-17 | **M-NET-VB ✅ fired** — `net-vb-fixture` complete; 10/10 VB.NET tests green; 1856/1857; HEAD `234f24a`; root causes: double-namespace from `RootNamespace=VbLibrary` in vbproj (cleared); path-based UNLOAD didn't sweep DotNetReflectContexts (fixed); error 22 is fatal not :F (test updated); pivot to `net-load-xn` | session142 |
 | 2026-03-17 | **EMERGENCY WIP: `net-vb-fixture`** — VbLibrary.vb (Reverser/Arithmetic/Geometry/Predicate/Formatter); VbLibraryTests.cs (10 tests); sln wired; build clean; tests NOT yet run; HEAD `6528e77` | session141 — context limit |
 | 2026-03-17 | **`net-vb-fixture` sprint + M-NET-VB milestone created** — VB.NET is 3rd IL language; reflect path handles it without special coercion; pivot from `net-load-xn` | session141 |
 | 2026-03-17 | **M-NET-LOAD-DOTNET ✅** fired — all 8 steps complete; pivot to `net-load-xn` | session140 |

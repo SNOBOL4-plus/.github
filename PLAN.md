@@ -11,14 +11,14 @@ Shared frontends. Multiple backends. Self-hosting goal: sno2c compiles sno2c.
 | | |
 |-|-|
 | **Active repo** | snobol4dotnet |
-| **Sprint** | `net-vb-fixture` — VB.NET library + 10 tests; EMERGENCY WIP — build clean, tests not yet run |
+| **Sprint** | `net-load-xn` — SPITBOL x32 C-ABI parity: xn1st, xncbp, xnsave |
 | **HEAD TINY** | `cf27329` session136: AGPL-3.0 LICENSE + badge added |
 | **HEAD HARNESS** | `9fed541` session136: MIT badge added to README |
 | **HEAD CORPUS** | `9c00acd` session136: CC0 badge + NOTICE added |
-| **HEAD DOTNET** | `6528e77` session141: EMERGENCY WIP net-vb-fixture |
-| **HEAD HQ** | (this commit) session141 |
-| **Next action** | Run `dotnet test --filter VbLibrary` → fix any failures → full suite → commit clean → fire M-NET-VB → pivot to `net-load-xn` |
-| **Invariant** | `dotnet test` → 1846/1847 before any dotnet work |
+| **HEAD DOTNET** | `234f24a` session142: M-NET-VB fired — 10/10 VB tests; 1856/1857 |
+| **HEAD HQ** | (this commit) session142 |
+| **Next action** | Begin `net-load-xn` Step 1: `xn1st` thread-local in Executive |
+| **Invariant** | `dotnet test` → 1856/1857 before any dotnet work |
 
 **Read the active L2 doc: [DOTNET.md](DOTNET.md)**
 
@@ -98,7 +98,7 @@ Sprint detail lives in the active platform L2 doc (TINY.md / JVM.md / DOTNET.md)
 | **M-NET-LOAD-SPITBOL** | LOAD/UNLOAD spec-compliant: prototype string, UNLOAD(fname), type coercion, SNOLIB, Error 202 | ✅ `21dceac` |
 | **M-NET-SAVE-DLL** | `-w file.sno` → `file.dll` (threaded assembly); `snobol4 file.dll` runs it; RunDll() updated | ❌ Sprint `net-save-dll` |
 | **M-NET-LOAD-DOTNET** | Full .NET extension layer: auto-prototype via reflection, multi-function assemblies, async/cancellation, IExternalLibrary fast path, any IL language (F#/VB/C++) | ✅ `1e9ad33` session140 |
-| **M-NET-VB** | VB.NET fixture + tests: string/long/double returns, null→fail, static, multi-load, UNLOAD | ❌ Sprint `net-vb-fixture` |
+| **M-NET-VB** | VB.NET fixture + tests: string/long/double returns, null→fail, static, multi-load, UNLOAD | ✅ `234f24a` session142 |
 | **M-NET-XN** | SPITBOL x32 C-ABI parity: xn1st first-call flag, xncbp shutdown callback, xnsave double-fire guard; libsnobol4_rt.so helper shim | ❌ Sprint `net-load-xn` |
 | M-NET-SNOCONE | Snocone self-test: compile snocone.sc, diff oracle | ❌ |
 | **M-NET-POLISH** | 106/106 corpus rungs pass, diag1 35/35, benchmark grid published | ❌ see DOTNET.md |
