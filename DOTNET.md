@@ -9,11 +9,11 @@
 
 ## NOW
 
-**Sprint:** **`net-ext-create`** ← active
-**HEAD:** `b821d4d` (xnblk — invariant verified session145: 1865/1868, 0 failed)
-**Milestone:** M-NET-CORPUS-GAPS ✅ · M-NET-ALPHABET ✅ · M-NET-DELEGATES ✅ · M-NET-LOAD-SPITBOL ✅ · M-NET-SAVE-DLL ✅ · M-NET-LOAD-DOTNET ✅ · M-NET-VB ✅ · M-NET-EXT-NOCONV ✅ · **M-NET-EXT-XNBLK ✅** → **M-NET-EXT-CREATE** ← active
+**Sprint:** **`net-corpus-rungs`** ← active
+**HEAD:** `26e2144` (net-load-xn — invariant verified session148: 1873/1876, 0 failed)
+**Milestone:** M-NET-CORPUS-GAPS ✅ · M-NET-ALPHABET ✅ · M-NET-DELEGATES ✅ · M-NET-LOAD-SPITBOL ✅ · M-NET-SAVE-DLL ✅ · M-NET-LOAD-DOTNET ✅ · M-NET-VB ✅ · M-NET-EXT-NOCONV ✅ · M-NET-EXT-XNBLK ✅ · M-NET-EXT-CREATE ✅ · **M-NET-XN ✅** → **`net-corpus-rungs`** ← active
 
-**Next action:** Begin `net-ext-create` Step 1 — C-ABI return of opaque block: if return type is `EXTERNAL`, wrap raw pointer in `ExternalVar`; passable back as `noconv` arg.
+**Next action:** Begin `net-corpus-rungs` — run 106/106 crosscheck rungs 1–11 against DOTNET; fix all failures.
 **Sprint order after net-vb-fixture:** `net-ext-noconv` → `net-ext-xnblk` → `net-ext-create` → `net-load-xn` → `net-corpus-rungs` → M-NET-POLISH track.
 
 **net-save-dll split (3 sprints — session138) ✅:**
@@ -400,6 +400,7 @@ On load (`RunDll`): detect sentinel → extract fields → feed source to `Code.
 ---
 
 ## Pivot Log
+| 2026-03-17 | **M-NET-XN ✅ fires** — session148: two-pointer snobol4_rt_register(get_ctx, set_cb); RtSetCallback stores CallbackPtr in NativeEntry; FireNativeCallback/FireAllNativeCallbacks; ProcessExit hook; UNLOAD fires callback before NativeLibrary.Free; snobol4_register_callback() in libsnobol4_rt.so; xn_register_callback/xn_callback_count/xn_reset_callback_count in libspitbol_xn.so; 4 tests (xn1st, unload, process-exit, double-fire-guard); invariant 1873/1876 0 failed; pivot to net-corpus-rungs |
 | 2026-03-17 | **M-NET-EXT-CREATE ✅ fires** — session145: ExternalVar; EXTERNAL=>X retSig; spitbol_create.c; 4 tests; invariant 1869/1872 0 failed; pivot to net-load-xn |
 
 | 2026-03-17 | **M-NET-EXT-XNBLK ✅ fires** — session145: cloned + built + ran full suite; 3/3 xnblk tests pass (Xnblk_Counter_Increments, Xnblk_FirstCall_FlagWorks, Xnblk_DotNet_StatefulLibrary); invariant 1865/1868 0 failed; EMERGENCY WIP `b821d4d` verified clean; pivot to `net-ext-create` |

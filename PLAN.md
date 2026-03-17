@@ -14,9 +14,9 @@ Shared frontends. Multiple backends. Self-hosting goal: sno2c compiles sno2c.
 | **TINY sprint** | `asm-backend` — Sprint A7: ASM harness → emitter crosscheck |
 | **TINY HEAD** | `a114bcf` session147: M-ASM-ALT + M-ASM-ARBNO + M-ASM-CHARSET ✅; emit_byrd_asm.c real emitter |
 | **TINY next** | Sprint A7: snobol4_asm_harness.c + body-only emitter + first crosscheck pass |
-| **DOTNET sprint** | `net-load-xn` — M-NET-XN: SPITBOL x32 C-ABI parity (xn1st, xncbp, xnsave) |
-| **DOTNET HEAD** | `b821d4d` session145: M-NET-EXT-XNBLK ✅ |
-| **DOTNET next** | net-ext-create Step 1: C-ABI EXTERNAL return type → ExternalVar wrapper |
+| **DOTNET sprint** | `net-corpus-rungs` — 106/106 crosscheck rungs 1–11 against DOTNET |
+| **DOTNET HEAD** | `26e2144` session148: M-NET-XN ✅ |
+| **DOTNET next** | net-corpus-rungs: run crosscheck, fix all failures |
 | **HEAD HARNESS** | `9fed541` session136 |
 | **HEAD CORPUS** | `9c00acd` session136 |
 | **HEAD HQ** | (this commit) session146 |
@@ -110,7 +110,7 @@ Sprint detail lives in the active platform L2 doc (TINY.md / JVM.md / DOTNET.md)
 | **M-NET-EXT-XNBLK** | XNBLK opaque persistent state: C function allocates/returns state block; xndta[] private storage; .NET per-entry Dictionary equivalent | ✅ `b821d4d` session145 |
 | **M-NET-EXT-CREATE** | Foreign creates SNO objects: libsnobol4_rt alloc helpers for C-ABI; .NET IExternalLibrary already capable — C-side tests | ✅ `6dfae0e` session145 |
 | **M-NET-VB** | VB.NET fixture + tests: string/long/double returns, null→fail, static, multi-load, UNLOAD | ✅ `234f24a` session142 |
-| **M-NET-XN** | SPITBOL x32 C-ABI parity: xn1st first-call flag, xncbp shutdown callback, xnsave double-fire guard; libsnobol4_rt.so helper shim | ❌ Sprint `net-load-xn` |
+| **M-NET-XN** | SPITBOL x32 C-ABI parity: xn1st first-call flag, xncbp shutdown callback, xnsave double-fire guard; libsnobol4_rt.so helper shim | ✅ `26e2144` session148 |
 | M-NET-SNOCONE | Snocone self-test: compile snocone.sc, diff oracle | ❌ |
 | **M-NET-POLISH** | 106/106 corpus rungs pass, diag1 35/35, benchmark grid published | ❌ see DOTNET.md |
 | M-NET-BOOTSTRAP | snobol4-dotnet compiles itself | ❌ |
