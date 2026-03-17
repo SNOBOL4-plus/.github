@@ -6095,3 +6095,61 @@ User functions registered with wrong arg count. Fixed.
 4. Sprint: `net-delegates` Step 16
 5. Step 16 goal: audit which corpus/benchmark programs still have `ThreadIsMsilOnly=false`; identify which opcodes remain in thread (angle-bracket gotos most likely); decide whether to cover them in MSIL emitter or declare M-NET-DELEGATES met with current coverage
 6. M-NET-DELEGATES trigger: "Instruction[] eliminated — pure Func<Executive,int>[] dispatch" — assess if this means 100% programs or the hot-path programs only
+
+---
+
+## Session 133 — 2026-03-16
+
+**Repo:** SNOBOL4-dotnet · SNOBOL4-corpus · SNOBOL4-harness (cloned, standby) · .github
+**Sprint:** `net-delegates` Step 16 → M-NET-DELEGATES ✅ → planning
+**HEAD at end:** `baeaa52` DOTNET · `1268c7a` HQ
+
+### What happened
+
+**Session start**
+- Cloned `.github`, read RULES.md and PLAN.md. Token received silently.
+- Cloned `SNOBOL4-corpus` and `SNOBOL4-harness` (standby, not yet used).
+- Git identity set on all repos: `LCherryholmes` / `lcherryh@yahoo.com`.
+- Installed .NET 10.0.201 via dotnet-install.sh (`/usr/local/dotnet`).
+- Confirmed HEAD `118e41b` · 1746/1747 baseline.
+
+**net-delegates Step 16 — angle-bracket goto absorption**
+- Audit found: angle-bracket gotos (`:<VAR>`, `:S<VAR>`, `:F<VAR>`) were intentionally left as `GotoIndirectCode` opcodes in the thread (comment in `BuilderEmitMsil.cs` line 163: "remain in thread"). Infrastructure for absorption (`indirectGotoExpr`/`indirectGotoCode` params in `TryCache`/`EmitAndCache`) was already fully implemented — just not wired.
+- Fixed `EmitMsilForAllStatements`: angle-bracket cases now route to `indirectGotoExpr` path.
+- Discovered mixed case: `:S<VAR>F(LABEL)` — one side indirect, one side direct. Added `EmitMixedConditionalGotoIL` to handle it.
+- Fixed pre-existing bug: `savedFailure` local in `EmitIndirectGotoIL` was declared after the skip branch, so skip path restored an uninitialized local, corrupting `Failure` flag for the second side. Moved `DeclareLocal` + `Stloc` before the skip branch.
+- **Step 16 ✅ `baeaa52`** — 1750/1751 (TEST_Corpus_1012 still [Ignore], pre-existing).
+- **M-NET-DELEGATES ✅** declared.
+
+**LOAD/UNLOAD audit**
+- Checked whether `net-load-unload` had been attempted: yes, implemented in a prior session. 27/27 tests pass.
+- Discovered current implementation does NOT conform to SPITBOL spec (Macro SPITBOL Manual v3.7, Appendix F + Chapter 19):
+  - Args inverted: current `LOAD(path, className)` vs. spec `LOAD('FNAME(T1..Tn)Tr', filename)`
+  - `UNLOAD(path)` vs. spec `UNLOAD(fname)` by function name
+  - No argument type coercion (INTEGER/REAL/STRING/FILE/EXTERNAL)
+  - No SNOLIB search path
+  - No Error 202 on bad UNLOAD arg
+- Read actual spec from `/tmp/spitbol-x32/docs/spitbol-manual-v3.7.pdf`.
+- Created **two new milestones**:
+  - **M-NET-LOAD-SPITBOL** — spec compliance: prototype string, coercion, UNLOAD(fname), SNOLIB, Error 202. Sprint: `net-load-spitbol`.
+  - **M-NET-LOAD-DOTNET** — full .NET extension layer: auto-prototype via reflection, `::MethodName` explicit binding, multi-function ref-counted assemblies, `IExternalLibrary` fast path, async/`Task<T>`, cancellation via UNLOAD, any IL language (F#/VB/C++), native DOTNET return types, F# option/DU coercion. Sprint: `net-load-dotnet`.
+- Both fully specced with sprint steps and fire conditions in DOTNET.md.
+
+**HQ updates**
+- DOTNET.md: NOW block updated, M-NET-DELEGATES ✅, sprint map updated, two new milestone entries, two sprint specs, pivot log entries.
+- PLAN.md: NOW block updated, M-NET-DELEGATES ✅, two new milestone rows.
+- All pushed: DOTNET `baeaa52`, HQ `1268c7a`.
+
+### Files changed (DOTNET)
+- `Snobol4.Common/Builder/BuilderEmitMsil.cs` — `EmitMsilForAllStatements`: wire angle-bracket gotos to `indirectGotoExpr`; add `EmitMixedConditionalGotoIL`; fix `savedFailure` init before skip branch in `EmitIndirectGotoIL`; three-way dispatch in `EmitAndCache`
+- `TestSnobol4/MsilEmitterTests.cs` — 4 Step16 audit tests added
+
+### Next session start
+1. Read RULES.md, PLAN.md, DOTNET.md
+2. Confirm HEAD: `baeaa52` · Invariant: `dotnet test` → 1750/1751
+3. Install .NET 10: `bash /tmp/dotnet-install.sh --channel 10.0 --install-dir /usr/local/dotnet && export PATH=/usr/local/dotnet:$PATH`
+4. Active sprint: `net-corpus-rungs`
+5. Goal: build DOTNET crosscheck adapter script that feeds corpus `.sno` files to the DOTNET engine and diffs vs `.ref` oracle; run all 106 rungs 1–11; fix failures in ladder order
+6. DOTNET crosscheck runner does not yet exist — needs to be created in `test/crosscheck/run_crosscheck.sh` using `dotnet run` or the compiled binary
+7. Corpus crosscheck runner is at `SNOBOL4-corpus/crosscheck/run_all.sh` (TINY-specific); use it as reference for DOTNET adapter
+8. Existing corpus C# test suite: 136/137 pass (1 skip) — these cover rungs 2–11 via injected methods; the crosscheck adapter is a separate shell-level test for portability and CSNOBOL4 oracle diff
