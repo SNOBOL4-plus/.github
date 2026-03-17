@@ -15,9 +15,9 @@ Shared frontends. Multiple backends. Self-hosting goal: sno2c compiles sno2c.
 | **HEAD TINY** | `8761bc1` session121: 5-primitive SEQ counter instrumented |
 | **HEAD HARNESS** | `0bf728b` session124: oracle-verify complete — keyword grid live-verified |
 | **HEAD CORPUS** | `82907ff` session122: M-DIAG1 suite committed 35/35 CSNOBOL4 oracle |
-| **HEAD DOTNET** | `2fd79cd` net-gap-freturn: FRETURN/NRETURN fixed, 1735/1744 |
+| **HEAD DOTNET** | `a99f1d3` net-gap-value-indirect: VALUE()+$.var, 1738/1744 |
 | **HEAD HQ** | `e622c62` DOTNET.md: net-gap-freturn complete; net-gap-value-indirect active |
-| **Next action** | `net-gap-value-indirect`: implement VALUE() by variable name; fix `$.var` indirect (1115, 1116, 210) |
+| **Next action** | `net-gap-eval-opsyn`: EVAL unevaluated expr, OPSYN alias, alternate DEFINE entry, ARG/LOCAL/APPLY (1010–1012, 1015–1018) |
 | **Invariant** | 106/106 rungs 1–11 must pass before any work on SNOBOL4-tiny |
 
 **Read the active L2 doc: [JVM.md](JVM.md)**

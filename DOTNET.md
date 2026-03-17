@@ -9,11 +9,11 @@
 
 ## NOW
 
-**Sprint:** `net-gap-value-indirect` ← active (third of four corpus-gap fix sprints)
-**HEAD:** `2fd79cd`
+**Sprint:** `net-gap-eval-opsyn` ← active (fourth of four corpus-gap fix sprints)
+**HEAD:** `a99f1d3`
 **Milestone:** M-NET-CORPUS-GAPS → then resume M-NET-DELEGATES
 
-**Next action:** `net-gap-value-indirect` — implement VALUE() by variable name; fix `$.var` indirect syntax (1115, 1116, 210).
+**Next action:** `net-gap-eval-opsyn` — fix EVAL unevaluated expr, OPSYN alias, alternate DEFINE entry, ARG/LOCAL/APPLY (1010–1012, 1015–1018).
 **After corpus-gaps:** `net-alphabet` — fix `&ALPHABET` SIZE from 255 → 256 to match both oracles.
 
 **Downstream (M-NET-POLISH sprints, in order after M-NET-DELEGATES):**
@@ -69,7 +69,7 @@ its [Ignore] tags and confirms `dotnet test` passes the newly enabled tests.
 |--------|------|----------------|---------|
 | **`net-gap-prototype`** | Implement `PROTOTYPE()` builtin — returns dimension string for ARRAY, `'2,2'` for TABLE→ARRAY convert | `Corpus/Rung11_DataStructures.cs` — 1110, 1112, 1113 | ✅ `5f35dad` — fix: emit size when lower==1; old unit tests corrected |
 | `net-gap-freturn` | Fix `FRETURN` / `NRETURN` in threaded path — unnamed fn freturn (1014), nreturn lvalue return (1013) | `Corpus/Rung10_Functions.cs` — 1013, 1014 | ✅ `2fd79cd` — RegexGen [^)]+→[^)]*; Assign() dereferences NameVar.Pointer |
-| `net-gap-value-indirect` | Implement `VALUE()` by variable name; fix `$.var` indirect syntax (rung2 210, 211) | `Corpus/Rung11_DataStructures.cs` — 1115, 1116; `Corpus/Rung2_Indirect.cs` — 210 | 3 [Ignore] removed, tests pass |
+| `net-gap-value-indirect` | Implement `VALUE()` by variable name; fix `$.var` indirect syntax (rung2 210, 211) | `Corpus/Rung11_DataStructures.cs` — 1115, 1116; `Corpus/Rung2_Indirect.cs` — 210 | ✅ `a99f1d3` — VALUE() builtin; DATA field shadowing; $.var via SPITBOL-safe test var |
 | `net-gap-eval-opsyn` | Fix EVAL unevaluated expr (`*expr`), OPSYN alias, alternate DEFINE entry, ARG/LOCAL/APPLY | `Corpus/Rung10_Functions.cs` — 1010, 1011, 1012, 1015, 1016, 1017, 1018 | 7 [Ignore] removed, tests pass |
 
 **M-NET-CORPUS-GAPS fires when:** all 12 [Ignore] tags removed, `dotnet test` 1744/1744 passed.
@@ -158,6 +158,7 @@ Three tracks run in sequence: corpus coverage first, feature gaps second, benchm
 | 2026-03-16 | `net-alphabet` sprint created — `&ALPHABET` is 255 chars in DOTNET, both oracles return 256; corpus tests loosened to `255\|\|256`; fix next session | both CSNOBOL4 and SPITBOL agree: SIZE(&ALPHABET)==256 |
 | 2026-03-16 | `net-gap-prototype` ✅ — PROTOTYPE() emits CSNOBOL4 format; 1110/1112/1113 pass; 1733/1744; HEAD `5f35dad` | fix: emit size when lower==1, else lower:upper; old unit tests corrected |
 | 2026-03-16 | `net-gap-freturn` ✅ — 1013+1014 pass; 1735/1744; HEAD `2fd79cd` | Bug 1: FunctionPrototypePattern [^)]+→[^)]* (empty param list); Bug 2: Assign() NameVar.Pointer dereference for lvalue |
+| 2026-03-16 | `net-gap-value-indirect` ✅ — 1115+1116+210 pass; 1738/1744; HEAD `a99f1d3` | VALUE() builtin; DATA fields shadow builtins polymorphically; $.var SPITBOL-safe; BAL protected per is.sno discriminator |
 | 2026-03-16 | `net-gap-value-indirect` now active | next corpus-gap sprint |
 | 2026-03-16 | `net-gap-freturn` now active | next corpus-gap sprint |
 | 2026-03-16 | Corpus test injection: 12 files, ~116 test methods from SNOBOL4-corpus crosscheck; 12 [Ignore] gaps mapped to 4 fix sprints under M-NET-CORPUS-GAPS; HEAD `7aacf01` | Lon: inject corpus tests following Jeff's style |
