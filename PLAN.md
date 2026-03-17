@@ -87,6 +87,7 @@ Sprint detail lives in the active platform L2 doc (TINY.md / JVM.md / DOTNET.md)
 | **M-ASM-NAMED** | Named patterns flat labels PASS | ✅ session148 |
 | **M-ASM-CROSSCHECK** | 106/106 via ASM backend | ✅ session151 |
 | **M-ASM-BEAUTY** | beauty.sno self-beautifies via ASM | ❌ Sprint A10 |
+| **M-ASM-READABLE** | Label scheme: alnum-base + named-expansion for special chars (pp_>= → pp_GT_EQ_N); replaces current alnum-collapse | ❌ post M-ASM-BEAUTY |
 | **M-BOOTSTRAP** | sno2c_stage1 output = sno2c_stage2 | ❌ |
 
 ### JVM (snobol4jvm)

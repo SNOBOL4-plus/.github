@@ -110,6 +110,7 @@ Prolog reader
 | **M-ASM-NAMED** | Named patterns: ref_astar_bstar/anbn PASS | ✅ session148 | A8 |
 | **M-ASM-CROSSCHECK** | 26/26 ASM crosscheck PASS | ✅ session151 | A9 |
 | **M-ASM-BEAUTY** | beauty.sno self-beautifies via ASM backend | ❌ | A10 |
+| **M-ASM-READABLE** | Label names: keep alnum, expand special chars to names (pp_>= → _L_pp_GT_EQ_N). Injective because named tokens are unique and _ delimits. Lon's idea session152. | ❌ | A11 |
 | M-BOOTSTRAP | sno2c_stage1 output = sno2c_stage2 | ❌ | final goal |
 
 
