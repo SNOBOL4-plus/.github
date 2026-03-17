@@ -65,6 +65,7 @@ dotnet test TestSnobol4/TestSnobol4.csproj -c Release   # confirm 1832/1833 (1 [
 | **M-NET-EXT-CREATE** | Foreign function creates and returns SNOBOL4 objects: ExternalVar; EXTERNAL retSig X; spitbol_create.c; 4 tests | ✅ `6dfae0e` session145 — 1869/1872 |
 | **M-NET-VB** | VB.NET fixture library + tests prove reflect path works from VB.NET: string/long/double returns, null→fail, static methods, multi-load, UNLOAD | ✅ `234f24a` session142 — 10/10; 1856/1857 |
 | **M-NET-XN** | SPITBOL x32 C-ABI parity: xn1st first-call flag, xncbp shutdown callback, xnsave double-fire guard; libsnobol4_rt.so helper shim | ❌ Sprint `net-load-xn` |
+| **M-NET-PERF** | Performance profiling complete: hot-path report, ≥1 measurable win landed, regression baseline published | ❌ Sprint `net-perf-analysis` |
 | **M-NET-POLISH** | 106/106 corpus rungs pass · diag1 35/35 · benchmark grid published | ❌ |
 | M-NET-BOOTSTRAP | snobol4-dotnet compiles itself | ❌ |
 
@@ -134,10 +135,11 @@ Three tracks run in sequence: corpus coverage first, feature gaps second, benchm
 | `net-load-spitbol` | LOAD/UNLOAD spec-compliant: prototype string, UNLOAD(fname), type coercion, SNOLIB (see spec below) | M-NET-LOAD-SPITBOL fires |
 | `net-feature-fill` | Implement any remaining missing features identified by audit (one sub-sprint per gap) | audit clean |
 | `net-benchmark-scaffold` | Wire DOTNET into harness benchmark pipeline; collect DOTNET timing column | pipeline green |
+| `net-perf-analysis` | Profile hot paths; land ≥1 measurable win; publish regression baseline | M-NET-PERF fires |
 | `net-benchmark-publish` | Run full benchmark grid (DOTNET vs CSNOBOL4 vs SPITBOL vs TINY); publish results in HARNESS.md | grid published |
 | **`net-build-prereqs`** | Document and validate all build prerequisites: BUILDING.md (SDK version, C toolchain for native libs, platform matrix); `.gitignore` audit for build outputs; CI prereq check on clean clone | BUILDING.md present; CI green on clean clone |
 
-**M-NET-POLISH fires when:** `net-load-dotnet` ✅ + `net-ext-noconv` ✅ + `net-ext-xnblk` ✅ + `net-ext-create` ✅ + `net-load-xn` ✅ + `net-corpus-rungs` ✅ + `net-diag1` ✅ + `net-save-dll-3` ✅ + `net-feature-fill` ✅ + `net-benchmark-publish` ✅ + `net-build-prereqs` ✅
+**M-NET-POLISH fires when:** `net-load-dotnet` ✅ + `net-ext-noconv` ✅ + `net-ext-xnblk` ✅ + `net-ext-create` ✅ + `net-load-xn` ✅ + `net-corpus-rungs` ✅ + `net-diag1` ✅ + `net-save-dll-3` ✅ + `net-feature-fill` ✅ + `net-perf-analysis` ✅ + `net-benchmark-publish` ✅ + `net-build-prereqs` ✅
 
 ### net-save-dll Track — M-NET-SAVE-DLL (3 sprints)
 
@@ -381,6 +383,45 @@ On load (`RunDll`): detect sentinel → extract fields → feed source to `Code.
 ---
 
 
+### net-perf-analysis Sprint — M-NET-PERF
+
+**Goal:** Identify where DOTNET spends its time on real SNOBOL4 programs, land at least one measurable speed improvement, and publish a regression baseline so future changes can be compared.
+
+**Why now (before M-NET-POLISH benchmark-publish):** Profiling after the benchmark grid would mean publishing numbers before the obvious wins are taken. Better to profile → fix → then publish the grid with the improved baseline.
+
+**Candidate hot paths (known from code review):**
+
+| Area | Suspected cost | Mechanism |
+|------|---------------|-----------|
+| `Var.Convert` type coercion | Called on every operation; lots of string↔integer↔real boxing | Virtual dispatch + allocation per call |
+| `SystemStack` list operations | `List<Var>` push/pop on every expression | Heap alloc pressure |
+| `FunctionTable` dictionary lookup | Folded-key lookup on every function call | `string.ToLower()` + dict hash per call |
+| Pattern matching inner loop | `PatternMatch` re-enters per node | Virtual dispatch per Byrd box node |
+| String concatenation in tight loops | Each `CreateConcatenatePattern` or `__+` allocs new `string` | GC pressure |
+| `MsilDelegates` JIT warm-up | First-run cost vs steady-state | One-time but measurable |
+
+**Sprint steps:**
+
+1. **Baseline benchmark** — pick 3 representative programs from `snobol4corpus/programs/` that stress different areas (string-heavy, arithmetic-heavy, pattern-heavy). Record wall-clock time with `dotnet run -c Release` + `time`. Commit results to `perf/baseline.md`.
+
+2. **BenchmarkDotNet scaffold** — add `Snobol4.Benchmarks` project (BenchmarkDotNet). One benchmark class per program. `[Benchmark]` method runs the full compile+execute pipeline. `dotnet run -c Release -- --job short` produces the initial numbers table.
+
+3. **Profile run** — `dotnet-trace collect` + `dotnet-trace convert --format Speedscope` on the heaviest corpus program. Identify top 5 hot methods by inclusive time. Record in `perf/profile_session148.md`.
+
+4. **Hotfix sprint A — `Convert` fast path** — if `Var.Convert` appears in top 5: add type-check short-circuits for already-correct type (e.g. `IntegerVar` asked to convert to INTEGER returns `this` immediately without allocation). Measure delta.
+
+5. **Hotfix sprint B — FunctionTable lookup** — if fold+lookup appears in top 5: cache the folded key on `FunctionTableEntry` construction; replace per-call `FoldCase(name)` with stored key. Measure delta.
+
+6. **Hotfix sprint C — SystemStack pressure** — if stack alloc appears in top 5: convert `List<Var> SystemStack` to `ArraySegment`-backed stack with pre-allocated capacity (e.g. 256 slots). Measure delta.
+
+7. **Regression gate** — after each hotfix: `dotnet test` must stay 1873/1876 (0 failed). Any regression blocks the hotfix — revert and investigate.
+
+8. **Publish** — update `perf/baseline.md` with post-fix numbers. Add a `## Performance` section to DOTNET.md summarising: programs benchmarked, hotfixes landed, % improvement, BenchmarkDotNet table snippet.
+
+**M-NET-PERF fires when:** profiling complete (step 3 done) + ≥1 hotfix landed and verified (steps 4–6, at least one) + regression gate green + `perf/baseline.md` committed to snobol4dotnet.
+
+---
+
 ### net-build-prereqs Sprint
 
 **Goal:** Any developer who clones the repo and has the .NET SDK installed can build and run tests without hunting for undocumented dependencies. Native libs (SpitbolCLib, future libsnobol4_rt) are documented and either pre-built for common platforms or have a one-command build step.
@@ -400,6 +441,7 @@ On load (`RunDll`): detect sentinel → extract fields → feed source to `Code.
 ---
 
 ## Pivot Log
+| 2026-03-17 | **M-NET-PERF milestone created** — `net-perf-analysis` sprint: BenchmarkDotNet scaffold, dotnet-trace profile, hot-path candidates (Convert, FunctionTable lookup, SystemStack pressure, pattern inner loop), ≥1 hotfix required, regression gate 1873/1876; inserted before net-benchmark-publish in M-NET-POLISH track | session148 |
 | 2026-03-17 | **M-NET-XN ✅ fires** — session148: two-pointer snobol4_rt_register(get_ctx, set_cb); RtSetCallback stores CallbackPtr in NativeEntry; FireNativeCallback/FireAllNativeCallbacks; ProcessExit hook; UNLOAD fires callback before NativeLibrary.Free; snobol4_register_callback() in libsnobol4_rt.so; xn_register_callback/xn_callback_count/xn_reset_callback_count in libspitbol_xn.so; 4 tests (xn1st, unload, process-exit, double-fire-guard); invariant 1873/1876 0 failed; pivot to net-corpus-rungs |
 | 2026-03-17 | **M-NET-EXT-CREATE ✅ fires** — session145: ExternalVar; EXTERNAL=>X retSig; spitbol_create.c; 4 tests; invariant 1869/1872 0 failed; pivot to net-load-xn |
 
