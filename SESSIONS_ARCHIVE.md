@@ -5827,17 +5827,27 @@ dotnet test TestSnobol4/TestSnobol4.csproj -c Release   # confirm 1732/1744, 12 
 
 ### What happened
 
-**PROTOTYPE() fix** (`net-gap-prototype` sprint ✅): `BuildPrototypeString()` in `ArrayVar.cs` was emitting `1:N` format for all dimensions. CSNOBOL4 and SPITBOL both agree the correct format is just `N` when lower bound is 1, `lower:upper` only for custom lower bounds. Fixed. Old unit tests `TEST_Prototype_001` and `TEST_Prototype_002` had wrong expected values (`"1:20"`, `"-5:10,3:5,1:20"`) — corrected to match both oracles. Tests 1110, 1112, 1113 now pass. Score: **1733/1744**. HEAD `5f35dad`.
+**No new tests were added this session.** The 116 corpus test methods across 12 files were added in session 127. This session fixed 3 of those tests (1110, 1112, 1113) from failing to passing.
 
-**`net-alphabet` sprint created**: Both CSNOBOL4 and SPITBOL return `SIZE(&ALPHABET) = 256`. DOTNET returns 255. Corpus tests currently soft-accept `255 || 256`. Sprint `net-alphabet` created to fix this properly next session.
+**PROTOTYPE() fixed** — `net-gap-prototype` sprint ✅. `BuildPrototypeString()` was emitting `1:3` where both oracles expect `3` (emit just the size when lower bound is 1; only use `lower:upper` for custom bounds like `-1:1`). Two old unit tests had wrong expected values and were corrected. Score moved from **1730 → 1733/1744**. HEAD `5f35dad`.
 
-**DATATYPE case confirmed**: Verified via git log — `integer`, `real`, `string`, `array`, `table`, `pattern`, `name`, `code` have been lowercase since the very first commit, never changed. SPITBOL returns lowercase for built-in types; CSNOBOL4 returns uppercase. DOTNET follows SPITBOL — intentional, correct, no action needed.
+**Both oracles built from source** for the first time this session. CSNOBOL4 2.3.3 from uploaded tarball (STNO trace patch applied). SPITBOL x64 from uploaded `x64-main.zip` (systm.c ns→ms patch). Both at `/usr/local/bin/`.
 
-**Both oracles built from source**: CSNOBOL4 2.3.3 built from uploaded tarball (STNO trace patch applied). SPITBOL x64 built from uploaded `x64-main.zip` (systm.c nanoseconds→milliseconds patch applied). Both installed at `/usr/local/bin/`.
+**DATATYPE case settled.** Lon confirmed DOTNET follows SPITBOL: lowercase for built-in types (`integer`, `array`, etc.), uppercase for user-defined DATA types (`NODE`). Git log confirmed this has been true since the first commit — never changed, no action needed.
 
-**Oracle verification of Jeff's test suite**: 999 `[TestMethod]` entries extracted from C# source by regex, each SNOBOL4 verbatim string written to a temp file and run against both oracles. Results: 649 tests (65%) assert only on internal DOTNET state (`IdentifierTable`, `ErrorCodeHistory`) and cannot be oracle-compared without a shim layer. Of the remaining 350 runnable tests: **41 agree** (both oracles identical — Jeff's expected values verified correct), **11 genuine output differences** (oracles disagree: `DATE()` year 4-digit vs 2-digit, `TIME()` trailing dot, `DUMP()` format, `DATATYPE` of `.name` returning `STRING` vs `name`, `PROTOTYPE` already fixed this session), **204 where CSNOBOL4 collapses to generic error codes** (error 1 "Illegal data type", error 10 "Illegal argument") while SPITBOL emits granular per-function error codes — Jeff wrote to SPITBOL semantics, CSNOBOL4 is the less useful oracle here, **46 where CSNOBOL4 is silent and SPITBOL produces output** (double-quoted string syntax, CODE() tests). No oracle disagreements found on the Gimpel programs (BASEB, ROMAN, ROMAN2, UPLO) — all expected values verified correct by both oracles. The 1828 total `[TestMethod]` count vs 1744 in `dotnet test` is explained by files with spaces in names being missed by the initial count; the true number of distinct runnable methods is 1744.
+**`net-alphabet` sprint created.** Both oracles return `SIZE(&ALPHABET) = 256`. DOTNET returns 255. Corpus tests currently soft-accept either. Fix next session.
 
-**Lost work**: Output filesystem I/O error (`/mnt/user-data/outputs/`) prevented delivering the HTML oracle report to Lon. Report was built at `/home/claude/oracle_jeff_report.html` but not persisted. The oracle data and findings are fully documented in this session entry.
+**Oracle verification of Jeff's 1744-test suite.** A Python script extracted SNOBOL4 source strings from all C# `[TestMethod]` entries, wrote each to a temp file, and ran against both oracles. 999 methods were extractable (745 have no embedded source string). Results:
+
+| Category | Count | Meaning |
+|----------|-------|---------|
+| Internal state only | 649 | Assert on `IdentifierTable`/`ErrorCodeHistory` — no stdout to compare |
+| Both oracles agree | 41 | Jeff's expected values verified correct |
+| Genuine output differences | 11 | Oracles disagree: `DATE()` year (4-digit vs 2-digit), `TIME()` trailing dot, `DUMP()` format, `datatype(.name)` returning `STRING` vs `name` |
+| CSNOBOL4 generic / SPITBOL granular | 204 | CSNOBOL4 collapses to error 1/10; SPITBOL gives per-function codes — Jeff wrote to SPITBOL semantics |
+| CSNOBOL4 silent / SPITBOL output | 46 | Double-quoted string syntax, `CODE()` tests |
+
+**Lost work.** Output filesystem I/O error prevented delivering the HTML oracle report. Data and findings fully preserved in this entry.
 
 ### Commits this session
 - `5f35dad` SNOBOL4-dotnet — net-gap-prototype: PROTOTYPE() CSNOBOL4 format, 1733/1744
