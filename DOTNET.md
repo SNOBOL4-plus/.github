@@ -120,8 +120,9 @@ Three tracks run in sequence: corpus coverage first, feature gaps second, benchm
 | `net-feature-fill` | Implement any remaining missing features identified by audit (one sub-sprint per gap) | audit clean |
 | `net-benchmark-scaffold` | Wire DOTNET into harness benchmark pipeline; collect DOTNET timing column | pipeline green |
 | `net-benchmark-publish` | Run full benchmark grid (DOTNET vs CSNOBOL4 vs SPITBOL vs TINY); publish results in HARNESS.md | grid published |
+| **`net-build-prereqs`** | Document and validate all build prerequisites: BUILDING.md (SDK version, C toolchain for native libs, platform matrix); `.gitignore` audit for build outputs; CI prereq check on clean clone | BUILDING.md present; CI green on clean clone |
 
-**M-NET-POLISH fires when:** `net-load-dotnet` ✅ + `net-load-xn` ✅ + `net-corpus-rungs` ✅ + `net-diag1` ✅ + `net-save-dll` ✅ + `net-feature-fill` ✅ + `net-benchmark-publish` ✅
+**M-NET-POLISH fires when:** `net-load-dotnet` ✅ + `net-load-xn` ✅ + `net-corpus-rungs` ✅ + `net-diag1` ✅ + `net-save-dll` ✅ + `net-feature-fill` ✅ + `net-benchmark-publish` ✅ + `net-build-prereqs` ✅
 
 ### -w / WriteDll Notes (sprint `net-save-dll`)
 
@@ -259,6 +260,25 @@ Three tracks run in sequence: corpus coverage first, feature gaps second, benchm
 
 ---
 
+
+### net-build-prereqs Sprint
+
+**Goal:** Any developer who clones the repo and has the .NET SDK installed can build and run tests without hunting for undocumented dependencies. Native libs (SpitbolCLib, future libsnobol4_rt) are documented and either pre-built for common platforms or have a one-command build step.
+
+**Background:** F# is bundled with the .NET SDK — no separate install. The real gaps are: (1) no BUILDING.md, (2) no `.gitignore` enforcement keeping build outputs out of the tree, (3) native `.so` libs require a C toolchain not everyone has.
+
+#### Sprint steps
+
+1. **BUILDING.md** — required tools (dotnet SDK ≥10, gcc/clang for native libs, optional: F# already included); platform matrix (Linux/Windows/macOS); `dotnet build` + `dotnet test` quickstart; note on `net10.0` preview status
+2. **`.gitignore` audit** — confirm all `bin/`, `obj/`, `*.dll`, `*.so`, `*.dylib` outputs are excluded; no committed build artifacts
+3. **Native lib build script** — `CustomFunction/SpitbolCLib/build.sh` (already exists?); verify it works on Linux and document it in BUILDING.md; add a `Makefile` target or MSBuild `Exec` task so `dotnet build` can optionally invoke it
+4. **Prebuilt native fallback** — for `libspitbolc.so`: commit a `native/prebuilt/linux-x64/libspitbolc.so` that `dotnet test` can fall back to if gcc is absent; document in BUILDING.md
+5. **CI prereq check** — GitHub Actions workflow step that validates the clean-clone build: `dotnet restore && dotnet build && dotnet test`; confirm 1791+ pass
+
+**Trigger:** BUILDING.md present and accurate; `.gitignore` clean; CI step green; `dotnet test` passes on a simulated clean clone (no pre-existing bin/obj).
+
+---
+
 ## Pivot Log
 
 | Date | What | Why |
@@ -272,6 +292,7 @@ Three tracks run in sequence: corpus coverage first, feature gaps second, benchm
 | 2026-03-16 | `net-gap-freturn` ✅ — 1013+1014 pass; 1735/1744; HEAD `2fd79cd` | Bug 1: FunctionPrototypePattern [^)]+→[^)]* (empty param list); Bug 2: Assign() NameVar.Pointer dereference for lvalue |
 | 2026-03-16 | `net-gap-value-indirect` ✅ — 1115+1116+210 pass; 1738/1744; HEAD `a99f1d3` | VALUE() builtin; DATA fields shadow builtins polymorphically; $.var SPITBOL-safe; BAL protected per is.sno discriminator |
 | 2026-03-17 | `net-gap-eval-opsyn` ✅ — 1743/1744; 5 [Ignore] removed (1010/1011/1016/1017/1018); Define.cs: argumentCount bug (locals→parameters), redefinition guard (user funcs allowed), string entry label arg, returnVarName from definition.FunctionName; Opsyn.cs: UserFunctionTable copy preserving original FunctionName for alias return var resolution; 1012 semicolons genuine parser gap left [Ignore] | session131 |
+| 2026-03-17 | **`net-build-prereqs` sprint added** — BUILDING.md, .gitignore audit, native lib build script, prebuilt fallback, CI prereq check; added to M-NET-POLISH sprint map and fire condition |
 | 2026-03-17 | **`net-load-dotnet` Steps 2+3 ✅** — auto-prototype via reflection (`LoadDotNetPath` reflection branch: single-method discovery + `::MethodName` explicit binding); `ReflectLibrary` test fixture (no IExternalLibrary); `DotNetReflectContexts` dict keyed by FNAME for UNLOAD; 14 new tests; 1791/1792; HEAD `8bbd573`; 0 warnings 0 errors (chore commit `1196692`) |
 | 2026-03-17 | **SNOLIB env-var race fixed** — `[DoNotParallelize]` on LoadSpecTests; `GC.Collect()` after ALC unload in Unload.cs; HEAD `a47fb84`; 1777/1778 stable | parallel test runner set SNOLIB="" racing SnolibSearch_FindsLib |
 | 2026-03-17 | **`net-load-xn` sprint created** — SPITBOL x32 parity gaps: `xn1st` first-call flag (thread-local + libsnobol4_rt shim), `xncbp` shutdown callback (ProcessExit hook), `xnsave` double-fire guard; M-NET-XN milestone added; inserted before `net-corpus-rungs` in M-NET-POLISH track | analysis of spitbol/x32 osint/syslinux.c |
