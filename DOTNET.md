@@ -9,11 +9,11 @@
 
 ## NOW
 
-**Sprint:** **`net-corpus-rungs`** ← active
-**HEAD:** `f2ac8ea` (net-corpus-rungs: guard BuildFromPattern StartNode null-check; cross produces output, cursor=0 remaining)
+**Sprint:** **`net-diag1`** ← active
+**HEAD:** `b86954d` (net-diag1: fix comment semicolon-split bug; 1870/1876)
 **Milestone:** M-NET-CORPUS-GAPS ✅ · M-NET-ALPHABET ✅ · M-NET-DELEGATES ✅ · M-NET-LOAD-SPITBOL ✅ · M-NET-SAVE-DLL ✅ · M-NET-LOAD-DOTNET ✅ · M-NET-VB ✅ · M-NET-EXT-NOCONV ✅ · M-NET-EXT-XNBLK ✅ · M-NET-EXT-CREATE ✅ · **M-NET-XN ✅** → **`net-corpus-rungs`** ← active
 
-**Next action:** Fix `@N` cursor value — null-guard fix applied session151 (`f2ac8ea`): `BuildFromPattern` now guards `StartNode` write-back with null-check; `cross` test now produces 3 SNOBOL output blocks (was blank). Remaining: `scan.CursorPosition` is 0 when `AtSign.Scan` fires — `DUPL(' ', NH)` produces 0 spaces. Investigate: `Scanner.PatternMatch` sets `_state.CursorPosition = cursorPosition` (the for-loop var, starts 0) before `Match()`; `AtSign.Scan` reads this directly. SPITBOL `p_una` bumps cursor *before* `@` fires on each retry — need to confirm DOTNET does same. Check `POS`/`TAB` scan methods for cursor advance pattern; trace `scan.CursorPosition` in `AtSign.Scan` for the `cross` test. Once cursor value correct → `cross` PASS → 106/106 crosscheck → **M-NET-CORPUS-RUNGS fires** → M-NET-POLISH track.
+**Next action:** net-diag1: diag1 baseline 31/35 → 35/35. Remaining bugs: (1) `210_indirect_ref` — `bal = 'the real bal'` triggers error 209; BAL is a pattern primitive but must be assignable as user variable per SPITBOL — find keyword protection list and fix. (2) `1113_table` — should be fixed by session152 comment-semicolon fix (`b86954d`); verify on next run. `net-corpus-rungs` cross/@N deferred (pivot: going in circles).
 **Sprint order after net-vb-fixture:** `net-ext-noconv` → `net-ext-xnblk` → `net-ext-create` → `net-load-xn` → `net-corpus-rungs` → M-NET-POLISH track.
 
 **SPITBOL oracle rule (established session149):** When CSNOBOL4 and SPITBOL MINIMAL diverge, SPITBOL MINIMAL wins. Reference: sbl.min in snobol4ever/spitbol-x64 (uploaded this session).
@@ -458,6 +458,7 @@ On load (`RunDll`): detect sentinel → extract fields → feed source to `Code.
 ---
 
 ## Pivot Log
+| 2026-03-17 | **net-diag1 session152** — PIVOT from net-corpus-rungs (cross/@N going in circles); diag1 baseline 31/35; fixed: comment semicolon-split bug (column-1 * skipped before ; split, SourceCode.cs `b86954d`); corpus 911/1115 DATATYPE lowercase per SPITBOL sbl.min; remaining: 210 BAL keyword protection, 1113 verify fix; invariant 1870/1876 0 failed | session152 |
 | 2026-03-17 | **net-corpus-rungs session151** — BuildFromPattern null-guard fix applied (`f2ac8ea`): `if (rootPattern.StartNode == null)` prevents cache poisoning; `cross` now produces 3 SNOBOL output blocks (was blank); cursor=0 in AtSign.Scan still wrong — DUPL/indentation broken; next: trace CursorPosition flow through Scanner.Match() to find where advance should occur | session151 |
 | 2026-03-17 | **net-corpus-rungs session150** — @N root cause isolated: Pattern.StartNode cache poisoned; BuildFromPattern writes StartNode back to Pattern object; 2nd PatternMatch call on same pattern (NEXTH loop) rebuilds AST, StartNode overwritten with wrong node; AtSign.Scan skipped on cursor≥1 retries; fix: null-guard write-back; SPITBOL oracle confirmed 0-based via sbl binary (x64-main.zip); invariant 1870/1876 0 failed | session150 |
 | 2026-03-17 | **net-corpus-rungs session149** — SPITBOL oracle established: DATATYPE builtins lowercase (scint/scstr/screa all dtc lowercase in sbl.min); user DATA types ToLowerInvariant (flstg at sdat1); &UCASE/&LCASE = exactly 26 ASCII letters (dac 26 in sbl.min); @N rewired to write directly to IdentifierTable (Assign() corrupts SystemStack inside scanner); 5 test assertions updated; corpus 081.ref updated; crosscheck harness feeds .input via stdin; 105/106 rungs pass; cross (@N first-position) open; invariant 1873/1876 0 failed | session149 |
