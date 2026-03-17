@@ -5873,3 +5873,62 @@ dotnet test TestSnobol4/TestSnobol4.csproj -c Release   # confirm 1733/1744, 3 f
 - `DUMP()` format: CSNOBOL4 emits full variable dump with PATTERN entries; SPITBOL emits `dump of natural variables` header style — cosmetic but affects any test asserting on DUMP output
 - `datatype(.name)`: CSNOBOL4=`STRING`, SPITBOL=`name` — DOTNET currently returns `name` (SPITBOL wins per Lon)
 - Oracle extractor script at `/tmp/extract_and_run2.py` — not persisted, easy to rebuild
+
+---
+
+## Session 129 — EMERGENCY HANDOFF
+
+**Date:** 2026-03-16
+**Repo:** SNOBOL4-dotnet
+**Sprint completed:** `net-gap-freturn` ✅
+**Sprint active:** `net-gap-value-indirect`
+
+### What happened
+
+Session started with a fresh clone of all repos. Baseline confirmed as stale:
+tests 1115, 1116, 210 were active (no `[Ignore]`) but failing — their `[Ignore]`
+tags had been removed prematurely before VALUE()/`$.var` was implemented.
+Restored `[Ignore]` on all three → clean baseline 1733/1744, 11 skipped.
+
+**Diagnosed and fixed `net-gap-freturn` (2 bugs):**
+
+**Bug 1 — `RegexGen.cs` `FunctionPrototypePattern`:**
+Regex `[^)]+` required ≥1 char between parens. `define('f()')` with empty
+param list failed with error 83 "missing left paren" before any function body
+executed. Changed to `[^)]*`. This was the root cause blocking both 1013 and 1014.
+
+**Bug 2 — `AssignReplace (=).cs` `Assign()` NameVar lvalue:**
+NRETURN pushes a `NameVar` (e.g. `.a`) as the function return value.
+When caller does `ref_a() = 26`, `leftVar` is that NameVar. Code used
+`leftVar.Symbol` (= function name `ref_a`) as write target instead of
+`nameVar.Pointer` (= `"A"`, the actual variable). Fixed with:
+`var targetSymbol = leftVar is NameVar nameVar ? nameVar.Pointer : leftVar.Symbol;`
+
+**Result:** 1735/1744, 9 skipped, 0 failed. `[Ignore]` removed from 1013 and 1014.
+
+### Commits this session
+- `2fd79cd` SNOBOL4-dotnet — net-gap-freturn: FRETURN/NRETURN fixed, 1735/1744
+- `e622c62` HQ — DOTNET.md: net-gap-freturn complete; net-gap-value-indirect active
+- `(this entry)` HQ — session 129 archive + PLAN.md NOW block updated
+
+### Next session start
+```bash
+cd SNOBOL4-dotnet
+git config user.name "LCherryholmes" && git config user.email "lcherryh@yahoo.com"
+export PATH=$PATH:/home/claude/.dotnet   # .NET 10 installed here — NOT /usr/local/dotnet
+git log --oneline -3   # expect 2fd79cd
+dotnet build Snobol4.sln -c Release -p:EnableWindowsTargeting=true
+dotnet test TestSnobol4/TestSnobol4.csproj -c Release   # confirm 1735/1744, 9 skipped, 0 failed
+# Sprint: net-gap-value-indirect — VALUE() by variable name; $.var indirect syntax
+# Tests to fix: 1115 (data_basic), 1116 (data_overlap), 210 (indirect_ref)
+# All three have [Ignore("net-gap-value-indirect: ...")] — remove when fixed
+```
+
+### Key findings for next session
+- .NET SDK is **10.0.201** installed at `/home/claude/.dotnet` — project targets net10.0
+- `net-gap-value-indirect` tests:
+  - 1115: `VALUE('b')` returns value of variable named `'b'` — VALUE() not implemented
+  - 1116: same VALUE() gap plus DATA type overlap
+  - 210: `$.var` indirect reference syntax — `bal = 'the real bal'` then `$.'bal'` or similar
+- After `net-gap-value-indirect`: `net-gap-eval-opsyn` (7 tests), then `net-alphabet`
+- `net-alphabet`: DOTNET `&ALPHABET` = 255 chars (0x01–0xFF); both oracles = 256 (include 0x00)

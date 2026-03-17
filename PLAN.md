@@ -11,13 +11,13 @@ Shared frontends. Multiple backends. Self-hosting goal: sno2c compiles sno2c.
 | | |
 |-|-|
 | **Active repo** | SNOBOL4-dotnet |
-| **Sprint** | `net-alphabet` — fix &ALPHABET SIZE 255→256; then `net-gap-freturn` |
+| **Sprint** | `net-gap-value-indirect` — VALUE() by name; `$.var` indirect syntax (1115, 1116, 210) |
 | **HEAD TINY** | `8761bc1` session121: 5-primitive SEQ counter instrumented |
 | **HEAD HARNESS** | `0bf728b` session124: oracle-verify complete — keyword grid live-verified |
 | **HEAD CORPUS** | `82907ff` session122: M-DIAG1 suite committed 35/35 CSNOBOL4 oracle |
-| **HEAD DOTNET** | `5f35dad` net-gap-prototype: PROTOTYPE() CSNOBOL4 format, 1733/1744 |
-| **HEAD HQ** | `(see git)` session128: oracle verification, net-alphabet sprint, session archive |
-| **Next action** | `net-alphabet`: fix &ALPHABET 255→256 (both oracles agree); then `net-gap-freturn` |
+| **HEAD DOTNET** | `2fd79cd` net-gap-freturn: FRETURN/NRETURN fixed, 1735/1744 |
+| **HEAD HQ** | `e622c62` DOTNET.md: net-gap-freturn complete; net-gap-value-indirect active |
+| **Next action** | `net-gap-value-indirect`: implement VALUE() by variable name; fix `$.var` indirect (1115, 1116, 210) |
 | **Invariant** | 106/106 rungs 1–11 must pass before any work on SNOBOL4-tiny |
 
 **Read the active L2 doc: [JVM.md](JVM.md)**
