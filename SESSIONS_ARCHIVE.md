@@ -6444,3 +6444,30 @@ Full sprint specs written into DOTNET.md including step-by-step breakdown, C str
    - Step 4: `CustomFunction/SpitbolNoconvLib/spitbol_noconv.c` fixture
    - Step 5: `CustomFunction/NoconvDotNetLibrary/` IExternalLibrary fixture
    - Step 6: `ExtNoconvTests.cs` — 6 tests covering both sides
+
+## Session 144 — 2026-03-17
+
+**Repo:** snobol4dotnet · **HEAD in:** `b397b17` · **HEAD out:** `348b3ed`
+
+**Goal:** Verify invariant for net-ext-noconv (session143 left dotnet test unrun); fix and fire M-NET-EXT-NOCONV.
+
+**What happened:**
+- Installed dotnet SDK 10.0.201 in container via dotnet-install.sh
+- Cloned snobol4dotnet, snobol4corpus, snobol4harness, .github
+- Read RULES.md + PLAN.md + DOTNET.md per session lifecycle
+- Also read SNOBOL4 tarball (snobol4-2.3.3) — learned full syntax and semantics from ~40 test/library files
+- Build failed with 3 categories of errors from session143 code; fixed all:
+  1. `AreaLibrary.csproj`: added Compile Remove for 5 sub-projects with own csproj/fsproj/vbproj (duplicate assembly attribute errors)
+  2. `NoconvLib.cs`: VarType namespace (`Executive.VarType.INTEGER`); Convert out param types (`out Var _, out object iv`); **root cause of error 22**: `Init()` used lowercase literal keys — must use `executive.Parent.FoldCase(name)` (→ uppercase) to match `FunctionSlot.Symbol`
+  3. `ExtNoconvTests.cs`: `b.StandardOutput` (nonexistent) → `IdentifierTable`; `A[n]` → `A<n>`; `& ` chains → separate statements; `:F(FAIL)` → `:F(FEND)` (FAIL is a pattern primitive); C-ABI pin tests `[Ignore]`; DotNet tests switched from `RunCapture` (Console.Error race) to `Run()` + `IdentifierTable`
+- **Result: 1862/1865 passed, 0 failed, 3 skipped**
+  - 3 parser unit tests ✅, 3 .NET traversal tests ✅, 2 C-ABI pin [Ignore]
+  - 1 pre-existing skip (1012 semicolons gap)
+- **M-NET-EXT-NOCONV ✅ fires** — `348b3ed`
+
+**SNOBOL4 learnings (for future sessions):**
+- `&` is concatenation, not logical AND — assignments must be on separate lines or `;`
+- Array subscripts are `<n>` not `[n]`; `FAIL` is a pattern primitive not a goto label
+- `FunctionTable` keys must match `FoldCase()` → uppercase (not lowercase literals)
+
+**Next:** `net-ext-xnblk` Step 1 — `XnBlkData`/`FirstCall` on `NativeEntry`; pinned `long[]` xndta buffer.

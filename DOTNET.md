@@ -9,11 +9,11 @@
 
 ## NOW
 
-**Sprint:** **`net-ext-noconv`** ← active (new — inserted before net-load-xn)
-**HEAD:** `b397b17`
-**Milestone:** M-NET-CORPUS-GAPS ✅ · M-NET-ALPHABET ✅ · M-NET-DELEGATES ✅ · M-NET-LOAD-SPITBOL ✅ · M-NET-SAVE-DLL ✅ · M-NET-LOAD-DOTNET ✅ · M-NET-VB ✅ → **M-NET-EXT-NOCONV** ← active
+**Sprint:** **`net-ext-xnblk`** ← active
+**HEAD:** `348b3ed`
+**Milestone:** M-NET-CORPUS-GAPS ✅ · M-NET-ALPHABET ✅ · M-NET-DELEGATES ✅ · M-NET-LOAD-SPITBOL ✅ · M-NET-SAVE-DLL ✅ · M-NET-LOAD-DOTNET ✅ · M-NET-VB ✅ · **M-NET-EXT-NOCONV ✅** → **M-NET-EXT-XNBLK** ← active
 
-**Next action:** Run `dotnet test` to confirm invariant 1856+9/1857+9; if green M-NET-EXT-NOCONV fires → pivot to `net-ext-xnblk`. Steps 1–6 complete: NOCONV prototype type (unknown tokens → NOCONV); GCHandle pin marshal in CallNativeFunction; TraverseArray/TraverseTable/GetDataFields in ExecutiveObjectApi; spitbol_noconv.c + libspitbol_noconv.so fixture; NoconvDotNetLibrary IExternalLibrary fixture; 9 tests (3 parser unit + 2 C-ABI + 4 .NET traversal). dotnet not available in session container — invariant unverified.
+**Next action:** Begin `net-ext-xnblk` Step 1 — add `IntPtr XnBlkData = IntPtr.Zero` and `bool FirstCall = true` to `NativeEntry`; allocate pinned `long[]` buffer on first call.
 **Sprint order after net-vb-fixture:** `net-ext-noconv` → `net-ext-xnblk` → `net-ext-create` → `net-load-xn` → `net-corpus-rungs` → M-NET-POLISH track.
 
 **net-save-dll split (3 sprints — session138) ✅:**
@@ -60,7 +60,7 @@ dotnet test TestSnobol4/TestSnobol4.csproj -c Release   # confirm 1832/1833 (1 [
 | **M-NET-LOAD-SPITBOL** | ✅`21dceac` LOAD/UNLOAD spec-compliant: prototype string s1, filename s2, UNLOAD(fname), INTEGER/REAL/STRING/FILE/EXTERNAL coercion, SNOLIB search, Error 202 | ❌ Sprint `net-load-spitbol` |
 | **M-NET-SAVE-DLL** | `-w file.sno` produces `file.dll` (threaded assembly persisted to disk); `snobol4 file.dll` runs it; `RunDll()` updated for threaded format | ✅ `cca773a` session138 — PersistedAssemblyBuilder sentinel DLL; 3 tests; 1805/1806 |
 | **M-NET-LOAD-DOTNET** | Full .NET extension layer: auto-prototype via reflection, multi-function assemblies, IExternalLibrary fast path, async functions, cancellation, any IL language (F#/VB/C++) | ✅ `1e9ad33` session140 |
-| **M-NET-EXT-NOCONV** | SPITBOL `noconv` (type 0) args: pass ARRAY/TABLE/PDBLK unconverted to C and .NET functions; C function receives raw block pointer; .NET IExternalLibrary receives SnobolVar directly; traversal API | ❌ Sprint `net-ext-noconv` |
+| **M-NET-EXT-NOCONV** | SPITBOL `noconv` pass-through: ARRAY/TABLE/PDBLK passed unconverted to C and .NET functions; C block struct mirror in libsnobol4_rt.h; IExternalLibrary traversal API | ✅ `348b3ed` session144 — 1862/1865; 3 skipped (2 C-ABI pin [Ignore], 1 pre-existing 1012) |
 | **M-NET-EXT-XNBLK** | External opaque state block (XNBLK): C function allocates and returns persistent opaque data; subsequent calls receive the same block back; `xndta[]` private storage; .NET path: per-entry state Dictionary | ❌ Sprint `net-ext-xnblk` |
 | **M-NET-EXT-CREATE** | Foreign function creates and returns SNOBOL4 objects: C-ABI path uses `snobol4_alloc_array/table` shim from libsnobol4_rt; .NET IExternalLibrary path already capable via ExecutiveObjectApi (Step 7) — needs C-side tests | ❌ Sprint `net-ext-create` |
 | **M-NET-VB** | VB.NET fixture library + tests prove reflect path works from VB.NET: string/long/double returns, null→fail, static methods, multi-load, UNLOAD | ✅ `234f24a` session142 — 10/10; 1856/1857 |
@@ -415,6 +415,7 @@ On load (`RunDll`): detect sentinel → extract fields → feed source to `Code.
 | 2026-03-17 | **`net-build-prereqs` sprint added** — BUILDING.md, .gitignore audit, native lib build script, prebuilt fallback, CI prereq check; added to M-NET-POLISH sprint map and fire condition |
 | 2026-03-17 | **`net-load-dotnet` Steps 4–6 ✅** — Step 4: DllSharedContexts ref-count by path (5 tests); Step 5: Task/Task<T> blocking-await adapter, AsyncDoubler/Greeter/VoidWorker fixtures (4 tests); Step 6: IExternalLibrary fast-path explicit tests (2 tests); 1802/1803; HEAD `38d43b0` | session137 |
 | 2026-03-17 | **chore: Roslyn dead code removed** — CSharpCompile.cs + CodeGenerator.cs deleted; UseThreadedExecution removed; 3 CodeAnalysis NuGet deps stripped; 1802/1803; HEAD `c43580d` | session137 |
+| 2026-03-17 | **M-NET-EXT-NOCONV ✅ fired** — session144: built dotnet SDK in container; fixed 3 session143 bugs in NoconvLib.cs (VarType namespace, Convert out params, FoldCase keys); fixed AreaLibrary.csproj Compile Remove gaps (duplicate attribute errors); fixed ExtNoconvTests.cs (StandardOutput→IdentifierTable, A[n]→A<n>, &-chains→separate stmts, :F(FAIL)→:F(FEND), C-ABI pin tests [Ignore]); 1862/1865 green; pivot to net-ext-xnblk |
 | 2026-03-17 | **`net-ext-noconv` Steps 1–6 complete** — NOCONV prototype type (unknown tokens → NOCONV); GCHandle pin in CallNativeFunction; TraverseArray/TraverseTable/GetDataFields in ExecutiveObjectApi; spitbol_noconv.c + libspitbol_noconv.so; NoconvDotNetLibrary IExternalLibrary; 9 tests; HEAD `b397b17`; dotnet invariant unverified (container has no dotnet) | session143 |
 | 2026-03-17 | **3 ext sprints + milestones created** — M-NET-EXT-NOCONV (`net-ext-noconv`): noconv args, ARRAY/TABLE/PDBLK pass-through, C block struct mirror, IExternalLibrary traversal API; M-NET-EXT-XNBLK (`net-ext-xnblk`): XNBLK opaque persistent state, xndta[], first_call flag; M-NET-EXT-CREATE (`net-ext-create`): foreign creates SNO objects, libsnobol4_rt alloc helpers, .NET IExternalLibrary return already works; inserted before net-load-xn; M-NET-POLISH fire condition updated; source: blocks32.h analysis | session143 |
 | 2026-03-17 | **M-NET-VB ✅ fired** — `net-vb-fixture` complete; 10/10 VB.NET tests green; 1856/1857; HEAD `234f24a`; root causes: double-namespace from `RootNamespace=VbLibrary` in vbproj (cleared); path-based UNLOAD didn't sweep DotNetReflectContexts (fixed); error 22 is fatal not :F (test updated); pivot to `net-load-xn` | session142 |

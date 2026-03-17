@@ -11,14 +11,14 @@ Shared frontends. Multiple backends. Self-hosting goal: sno2c compiles sno2c.
 | | |
 |-|-|
 | **Active repo** | snobol4dotnet |
-| **Sprint** | `net-ext-noconv` — SPITBOL noconv args: pass ARRAY/TABLE/PDBLK unconverted to foreign functions |
+| **Sprint** | `net-ext-xnblk` — XNBLK opaque persistent state: C function allocates/returns state block; xndta[] private storage; .NET per-entry Dictionary equivalent |
 | **HEAD TINY** | `cf27329` session136: AGPL-3.0 LICENSE + badge added |
 | **HEAD HARNESS** | `9fed541` session136: MIT badge added to README |
 | **HEAD CORPUS** | `9c00acd` session136: CC0 badge + NOTICE added |
-| **HEAD DOTNET** | `b397b17` session143: net-ext-noconv Steps 1–6 complete |
-| **HEAD HQ** | (this commit) session143 |
-| **Next action** | Run `dotnet test` → confirm 1865/1866; if green M-NET-EXT-NOCONV fires → begin `net-ext-xnblk` Step 1 |
-| **Invariant** | `dotnet test` → 1856/1857 before any dotnet work (+ 9 new noconv tests pending verification) |
+| **HEAD DOTNET** | `348b3ed` session144: M-NET-EXT-NOCONV fires — noconv build+test fixes |
+| **HEAD HQ** | (this commit) session144 |
+| **Next action** | `net-ext-xnblk` Step 1: add `XnBlkData`/`FirstCall` to `NativeEntry`; allocate pinned `long[]` xndta buffer on first call |
+| **Invariant** | `dotnet test` → 1862/1865 before any dotnet work |
 
 **Read the active L2 doc: [DOTNET.md](DOTNET.md)**
 
@@ -98,7 +98,7 @@ Sprint detail lives in the active platform L2 doc (TINY.md / JVM.md / DOTNET.md)
 | **M-NET-LOAD-SPITBOL** | LOAD/UNLOAD spec-compliant: prototype string, UNLOAD(fname), type coercion, SNOLIB, Error 202 | ✅ `21dceac` |
 | **M-NET-SAVE-DLL** | `-w file.sno` → `file.dll` (threaded assembly); `snobol4 file.dll` runs it; RunDll() updated | ❌ Sprint `net-save-dll` |
 | **M-NET-LOAD-DOTNET** | Full .NET extension layer: auto-prototype via reflection, multi-function assemblies, async/cancellation, IExternalLibrary fast path, any IL language (F#/VB/C++) | ✅ `1e9ad33` session140 |
-| **M-NET-EXT-NOCONV** | SPITBOL noconv pass-through: ARRAY/TABLE/PDBLK passed unconverted; C block struct mirror in libsnobol4_rt.h; IExternalLibrary traversal API | ❌ Sprint `net-ext-noconv` |
+| **M-NET-EXT-NOCONV** | SPITBOL noconv pass-through: ARRAY/TABLE/PDBLK passed unconverted; C block struct mirror in libsnobol4_rt.h; IExternalLibrary traversal API | ✅ `348b3ed` session144 |
 | **M-NET-EXT-XNBLK** | XNBLK opaque persistent state: C function allocates/returns state block; xndta[] private storage; .NET per-entry Dictionary equivalent | ❌ Sprint `net-ext-xnblk` |
 | **M-NET-EXT-CREATE** | Foreign creates SNO objects: libsnobol4_rt alloc helpers for C-ABI; .NET IExternalLibrary already capable — C-side tests | ❌ Sprint `net-ext-create` |
 | **M-NET-VB** | VB.NET fixture + tests: string/long/double returns, null→fail, static, multi-load, UNLOAD | ✅ `234f24a` session142 |
