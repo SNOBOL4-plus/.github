@@ -10,10 +10,10 @@
 ## NOW
 
 **Sprint:** **`net-ext-noconv`** ← active (new — inserted before net-load-xn)
-**HEAD:** `234f24a`
+**HEAD:** `b397b17`
 **Milestone:** M-NET-CORPUS-GAPS ✅ · M-NET-ALPHABET ✅ · M-NET-DELEGATES ✅ · M-NET-LOAD-SPITBOL ✅ · M-NET-SAVE-DLL ✅ · M-NET-LOAD-DOTNET ✅ · M-NET-VB ✅ → **M-NET-EXT-NOCONV** ← active
 
-**Next action:** Begin `net-ext-noconv` Step 1: implement `noconv` (type 0) in prototype parser; Step 2: marshal ARRAY/TABLE/PDBLK as opaque handles through C-ABI path; Step 3: IExternalLibrary traversal API; Step 4: tests (SNO passes ARRAY/TABLE/PDBLK to C and .NET functions that traverse them).
+**Next action:** Run `dotnet test` to confirm invariant 1856+9/1857+9; if green M-NET-EXT-NOCONV fires → pivot to `net-ext-xnblk`. Steps 1–6 complete: NOCONV prototype type (unknown tokens → NOCONV); GCHandle pin marshal in CallNativeFunction; TraverseArray/TraverseTable/GetDataFields in ExecutiveObjectApi; spitbol_noconv.c + libspitbol_noconv.so fixture; NoconvDotNetLibrary IExternalLibrary fixture; 9 tests (3 parser unit + 2 C-ABI + 4 .NET traversal). dotnet not available in session container — invariant unverified.
 **Sprint order after net-vb-fixture:** `net-ext-noconv` → `net-ext-xnblk` → `net-ext-create` → `net-load-xn` → `net-corpus-rungs` → M-NET-POLISH track.
 
 **net-save-dll split (3 sprints — session138) ✅:**
@@ -415,6 +415,7 @@ On load (`RunDll`): detect sentinel → extract fields → feed source to `Code.
 | 2026-03-17 | **`net-build-prereqs` sprint added** — BUILDING.md, .gitignore audit, native lib build script, prebuilt fallback, CI prereq check; added to M-NET-POLISH sprint map and fire condition |
 | 2026-03-17 | **`net-load-dotnet` Steps 4–6 ✅** — Step 4: DllSharedContexts ref-count by path (5 tests); Step 5: Task/Task<T> blocking-await adapter, AsyncDoubler/Greeter/VoidWorker fixtures (4 tests); Step 6: IExternalLibrary fast-path explicit tests (2 tests); 1802/1803; HEAD `38d43b0` | session137 |
 | 2026-03-17 | **chore: Roslyn dead code removed** — CSharpCompile.cs + CodeGenerator.cs deleted; UseThreadedExecution removed; 3 CodeAnalysis NuGet deps stripped; 1802/1803; HEAD `c43580d` | session137 |
+| 2026-03-17 | **`net-ext-noconv` Steps 1–6 complete** — NOCONV prototype type (unknown tokens → NOCONV); GCHandle pin in CallNativeFunction; TraverseArray/TraverseTable/GetDataFields in ExecutiveObjectApi; spitbol_noconv.c + libspitbol_noconv.so; NoconvDotNetLibrary IExternalLibrary; 9 tests; HEAD `b397b17`; dotnet invariant unverified (container has no dotnet) | session143 |
 | 2026-03-17 | **3 ext sprints + milestones created** — M-NET-EXT-NOCONV (`net-ext-noconv`): noconv args, ARRAY/TABLE/PDBLK pass-through, C block struct mirror, IExternalLibrary traversal API; M-NET-EXT-XNBLK (`net-ext-xnblk`): XNBLK opaque persistent state, xndta[], first_call flag; M-NET-EXT-CREATE (`net-ext-create`): foreign creates SNO objects, libsnobol4_rt alloc helpers, .NET IExternalLibrary return already works; inserted before net-load-xn; M-NET-POLISH fire condition updated; source: blocks32.h analysis | session143 |
 | 2026-03-17 | **M-NET-VB ✅ fired** — `net-vb-fixture` complete; 10/10 VB.NET tests green; 1856/1857; HEAD `234f24a`; root causes: double-namespace from `RootNamespace=VbLibrary` in vbproj (cleared); path-based UNLOAD didn't sweep DotNetReflectContexts (fixed); error 22 is fatal not :F (test updated); pivot to `net-load-xn` | session142 |
 | 2026-03-17 | **EMERGENCY WIP: `net-vb-fixture`** — VbLibrary.vb (Reverser/Arithmetic/Geometry/Predicate/Formatter); VbLibraryTests.cs (10 tests); sln wired; build clean; tests NOT yet run; HEAD `6528e77` | session141 — context limit |

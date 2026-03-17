@@ -15,10 +15,10 @@ Shared frontends. Multiple backends. Self-hosting goal: sno2c compiles sno2c.
 | **HEAD TINY** | `cf27329` session136: AGPL-3.0 LICENSE + badge added |
 | **HEAD HARNESS** | `9fed541` session136: MIT badge added to README |
 | **HEAD CORPUS** | `9c00acd` session136: CC0 badge + NOTICE added |
-| **HEAD DOTNET** | `234f24a` session142: M-NET-VB fired — 10/10 VB tests; 1856/1857 |
+| **HEAD DOTNET** | `b397b17` session143: net-ext-noconv Steps 1–6 complete |
 | **HEAD HQ** | (this commit) session143 |
-| **Next action** | Begin `net-ext-noconv` Step 1: `noconv` in prototype parser |
-| **Invariant** | `dotnet test` → 1856/1857 before any dotnet work |
+| **Next action** | Run `dotnet test` → confirm 1865/1866; if green M-NET-EXT-NOCONV fires → begin `net-ext-xnblk` Step 1 |
+| **Invariant** | `dotnet test` → 1856/1857 before any dotnet work (+ 9 new noconv tests pending verification) |
 
 **Read the active L2 doc: [DOTNET.md](DOTNET.md)**
 
