@@ -11,17 +11,17 @@ Shared frontends. Multiple backends. Self-hosting goal: sno2c compiles sno2c.
 | | |
 |-|-|
 | **Active repos** | `snobol4x` (TINY) · `snobol4dotnet` (DOTNET) |
-| **TINY sprint** | `asm-backend` — Sprint A2/A3: POS/RPOS + CAT → M-ASM-SEQ |
-| **TINY HEAD** | `5a6861e` session145 (local A1–A3 work session146, no push yet) |
+| **TINY sprint** | `asm-backend` — Sprint A4: ALT node → M-ASM-ALT |
+| **TINY HEAD** | `426da47` session146: M-ASM-LIT + M-ASM-SEQ ✅ |
 | **TINY next** | Sprint A4: ALT node → M-ASM-ALT |
-| **DOTNET sprint** | `net-ext-noconv` Steps 1–6 complete → Step 7 next |
-| **DOTNET HEAD** | `b397b17` session143 |
-| **DOTNET next** | Continue net-ext-noconv per DOTNET.md |
+| **DOTNET sprint** | `net-ext-create` — M-NET-EXT-CREATE: foreign function creates SNOBOL4 objects |
+| **DOTNET HEAD** | `b821d4d` session145: M-NET-EXT-XNBLK ✅ |
+| **DOTNET next** | net-ext-create Step 1: C-ABI EXTERNAL return type → ExternalVar wrapper |
 | **HEAD HARNESS** | `9fed541` session136 |
 | **HEAD CORPUS** | `9c00acd` session136 |
 | **HEAD HQ** | (this commit) session146 |
 | **Invariant TINY** | `106/106` crosscheck before any snobol4x work |
-| **Invariant DOTNET** | `dotnet test` → 1856/1857 before any dotnet work |
+| **Invariant DOTNET** | `dotnet test` → 1865/1868 before any dotnet work |
 | **⚠ Concurrent push** | `git pull --rebase origin main` before every .github push — see RULES.md |
 
 **Read the active L2 docs: [TINY.md](TINY.md) (TINY chat) · [DOTNET.md](DOTNET.md) (DOTNET chat)**
@@ -107,7 +107,7 @@ Sprint detail lives in the active platform L2 doc (TINY.md / JVM.md / DOTNET.md)
 | **M-NET-SAVE-DLL** | `-w file.sno` → `file.dll` (threaded assembly); `snobol4 file.dll` runs it; RunDll() updated | ❌ Sprint `net-save-dll` |
 | **M-NET-LOAD-DOTNET** | Full .NET extension layer: auto-prototype via reflection, multi-function assemblies, async/cancellation, IExternalLibrary fast path, any IL language (F#/VB/C++) | ✅ `1e9ad33` session140 |
 | **M-NET-EXT-NOCONV** | SPITBOL noconv pass-through: ARRAY/TABLE/PDBLK passed unconverted; C block struct mirror in libsnobol4_rt.h; IExternalLibrary traversal API | ❌ Sprint `net-ext-noconv` |
-| **M-NET-EXT-XNBLK** | XNBLK opaque persistent state: C function allocates/returns state block; xndta[] private storage; .NET per-entry Dictionary equivalent | ❌ Sprint `net-ext-xnblk` |
+| **M-NET-EXT-XNBLK** | XNBLK opaque persistent state: C function allocates/returns state block; xndta[] private storage; .NET per-entry Dictionary equivalent | ✅ `b821d4d` session145 |
 | **M-NET-EXT-CREATE** | Foreign creates SNO objects: libsnobol4_rt alloc helpers for C-ABI; .NET IExternalLibrary already capable — C-side tests | ❌ Sprint `net-ext-create` |
 | **M-NET-VB** | VB.NET fixture + tests: string/long/double returns, null→fail, static, multi-load, UNLOAD | ✅ `234f24a` session142 |
 | **M-NET-XN** | SPITBOL x32 C-ABI parity: xn1st first-call flag, xncbp shutdown callback, xnsave double-fire guard; libsnobol4_rt.so helper shim | ❌ Sprint `net-load-xn` |
