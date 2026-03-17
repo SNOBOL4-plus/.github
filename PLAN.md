@@ -12,8 +12,8 @@ Shared frontends. Multiple backends. Self-hosting goal: sno2c compiles sno2c.
 |-|-|
 | **Active repos** | `snobol4x` (TINY) · `snobol4dotnet` (DOTNET) |
 | **TINY sprint** | `asm-backend` — Sprint A7: ASM harness → emitter crosscheck |
-| **TINY HEAD** | `de085e1` session148: M-ASM-ASSIGN ✅ + M-ASM-NAMED ✅; full named pattern support in emit_byrd_asm.c |
-| **TINY next** | Sprint A9: snobol4_asm_harness.c + body-only emitter + ASM crosscheck driver → M-ASM-CROSSCHECK |
+| **TINY HEAD** | `a7c324e` session149: Sprint A9 begun — snobol4_asm_harness.c + -asm-body + run_crosscheck_asm.sh; 038_pat_literal PASS |
+| **TINY next** | Sprint A9 continued: wire emit_asm_any/span/break/notany/tab/rtab/len/rem/arb into E_FNC switch → grow ASM crosscheck rungs → M-ASM-CROSSCHECK |
 | **DOTNET sprint** | `net-corpus-rungs` — 106/106 crosscheck rungs 1–11 against DOTNET |
 | **DOTNET HEAD** | `26e2144` session148: M-NET-XN ✅ |
 | **DOTNET next** | net-corpus-rungs: run crosscheck, fix all failures |
