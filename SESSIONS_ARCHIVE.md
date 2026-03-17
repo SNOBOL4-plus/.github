@@ -5932,3 +5932,51 @@ dotnet test TestSnobol4/TestSnobol4.csproj -c Release   # confirm 1735/1744, 9 s
   - 210: `$.var` indirect reference syntax — `bal = 'the real bal'` then `$.'bal'` or similar
 - After `net-gap-value-indirect`: `net-gap-eval-opsyn` (7 tests), then `net-alphabet`
 - `net-alphabet`: DOTNET `&ALPHABET` = 255 chars (0x01–0xFF); both oracles = 256 (include 0x00)
+
+## Session 130 — 2026-03-16 — SNOBOL4-dotnet — EMERGENCY HANDOFF
+
+**Repo:** SNOBOL4-dotnet
+**Sprint completed:** `net-gap-value-indirect`
+**HEAD:** `a99f1d3`
+**Result:** 1738/1744 (+3 from 1735), 6 skipped (net-gap-eval-opsyn), 0 failures
+
+### What was done
+
+**VALUE() builtin** (`Snobol4.Common/Runtime/Functions/Miscellaneous/Value.cs`):
+- New builtin registered as `"VALUE"` in Executive.cs after SIZE
+- Looks up `IdentifierTable[name]` for StringVar/IntegerVar/RealVar/NameVar args
+- Dispatches `ProgramDefinedDataVar` to `GetProgramDefinedDataField` (handles field named "value" on user types)
+- Fails with error 239 on bad arg type
+
+**DATA() field registration fix** (`Data.cs`):
+- Collision guard: only block if existing function is NOT protected (user-defined) — allows fields to shadow builtins
+- foreach loop: skip overwrite if existing entry IS protected (don't kill VALUE builtin)
+- Allow re-registration of existing field accessors (polymorphic dispatch — lson works on both node and clunk)
+- GetProgramDefinedDataField already dispatches by actual type's FieldNames — no change needed there
+
+**Test 210 — $.var syntax:**
+- $.var already parsed and executed correctly (Indirection handler handles NameVar)
+- Blocker was BAL being a protected SPITBOL pattern — test script used `bal` as variable
+- Fix: rewrote test script to use `myvar` instead of `bal`
+- SPITBOL semantics confirmed via corpus/programs/inc/is.sno discriminator:
+  - `DIFFER(.NAME, 'NAME') :S(RETURN)F(FRETURN)` — succeeds in SPITBOL (name ≠ string), fails in CSNOBOL4
+
+**Diagnostic work during session:**
+- Multiple rounds of instrumentation to trace DATA('clunk(value,lson)') failure
+- Root cause chain: VALUE builtin → field name collision guard → overwrite in foreach → polymorphic dispatch bug
+- is.sno (corpus/programs/inc/is.sno) found and read — key reference for SPITBOL vs CSNOBOL4 semantics
+- x64-main.zip uploaded by Lon — sbl.min confirms: `vrsto = b_vre` marks protected pattern variables (error 042/209)
+
+### Files changed
+- `Snobol4.Common/Runtime/Functions/Miscellaneous/Value.cs` — NEW
+- `Snobol4.Common/Runtime/Execution/Executive.cs` — VALUE registered
+- `Snobol4.Common/Runtime/Functions/ProgramDefinedDataType/Data.cs` — collision guards fixed
+- `TestSnobol4/Corpus/Rung11_DataStructures.cs` — [Ignore] removed from 1115, 1116
+- `TestSnobol4/Corpus/Rung2_Indirect.cs` — [Ignore] removed from 210; bal→myvar
+
+### Next session start
+1. Read RULES.md, PLAN.md, DOTNET.md
+2. Active sprint: `net-gap-eval-opsyn`
+3. Run invariant: `dotnet test TestSnobol4/... -c Release -p:EnableWindowsTargeting=true` → must be 1738/1744
+4. 6 [Ignore] tests: 1010, 1011, 1012, 1015, 1016, 1017, 1018 (net-gap-eval-opsyn)
+5. Gaps: EVAL with *expr unevaluated, OPSYN alias, alternate DEFINE entry, ARG/LOCAL/APPLY
