@@ -44,7 +44,7 @@ git config user.name "LCherryholmes" && git config user.email "lcherryh@yahoo.co
 export PATH=$PATH:/usr/local/dotnet
 git log --oneline -3   # verify HEAD
 dotnet build Snobol4.sln -c Release -p:EnableWindowsTargeting=true
-dotnet test TestSnobol4/TestSnobol4.csproj -c Release   # confirm 1732/1744 (12 [Ignore])
+dotnet test TestSnobol4/TestSnobol4.csproj -c Release   # confirm 1832/1833 (1 [Ignore])
 ```
 
 **CRITICAL:** Always pass `-p:EnableWindowsTargeting=true` on Linux builds.

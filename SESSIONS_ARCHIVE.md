@@ -6318,3 +6318,39 @@ See Session 134 for full next-session start instructions.
 3. If done: update remotes, push, then sweep individual repos (Phase 7)
 4. If not done: wait — do not sweep individual repos until GitHub renames are complete
 5. Active code sprint unchanged: `net-load-dotnet` Step 4 in snobol4dotnet
+
+---
+
+## Session 139
+
+**Date:** 2026-03-17
+**Repo:** snobol4dotnet
+**Sprint:** `net-load-dotnet` Step 7
+
+### Work done
+- Added `ExecutiveObjectApi.cs` — 12 public methods on `Executive` exposing ArrayVar/TableVar lifecycle to external IExternalLibrary consumers without leaking internal members: `CreateArray(long)`, `CreateArray(string, Var?)`, `ArrayGet`, `ArraySet`, `ArrayTotalSize`, `ArrayData`, `ArrayFillEmpty`, `CreateTable`, `TablePut` (×2), `TableGet` (×2), `TableKeys`, `TableWipe`, `TableCount`
+- Added `CustomFunction/ObjectLifecycleLibrary/` — new IExternalLibrary fixture project with 15 SNOBOL4 functions: MakeArray, ArraySet, ArrayGet, ArraySum, ArrayClear, MakeTable, TablePut, TableGet, TableKeys, TableWipe, MakePoint, PointX, PointY, PointMove, PointReset
+- Added `AreaLibrary.csproj` exclusion for `ObjectLifecycleLibrary/**` (SDK glob fix)
+- Added `TestSnobol4/Function/FunctionControl/LoadObjectLifecycleTests.cs` — 27 tests across all 3 groups; confirmed DOTNET DATATYPE returns lowercase (`array`, `table`) for builtin types
+- Added `SetupTests.ObjectLifecycleLibraryPath` helper
+- Added ObjectLifecycleLibrary as `ReferenceOutputAssembly="false"` dependency in TestSnobol4.csproj
+- Confirmed `Var v => v` pass-through arm in `CallReflectFunction` already handles ArrayVar/TableVar/PatternVar/ProgramDefinedDataVar zero-copy return — Step 7 coercion was already wired; Step 7 deliverable is the public API + lifecycle tests proving it
+
+### Test result
+1832/1833 (was 1805/1806) — 27 new tests all green, 1 [Ignore] (1012 semicolons gap unchanged)
+
+### HEADs at end of session
+- `snobol4dotnet`: `6edc653`
+- `.github`: `69724cf`
+- All other repos: unchanged
+
+### Next session start
+1. Read RULES.md → PLAN.md → DOTNET.md
+2. Clone snobol4dotnet, set git identity, verify HEAD = `6edc653`
+3. Run invariant: `dotnet test` → 1832/1833
+4. Start `net-load-dotnet` Step 8: F# option/DU coercion layer
+   - Survey `CustomFunction/FSharpLibrary/` — what exists, what the async tests already exercise
+   - Add F# functions returning `option<T>` (None → SNOBOL4 failure, Some T → value) and a DU
+   - Wire coercion in `CallReflectFunction`: detect `FSharpOption<T>` via reflection, unwrap or call `NonExceptionFailure()`; detect F# DU, map cases to StringVar/IntegerVar
+   - Tests: option success branch, option failure branch, DU → string, mixed F# + C# same program
+   - M-NET-LOAD-DOTNET fires when all Step 9 (tests) pass + spec path unaffected + F# library loads and executes correctly
