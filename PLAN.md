@@ -95,6 +95,7 @@ Sprint detail lives in the active platform L2 doc (TINY.md / JVM.md / DOTNET.md)
 |----|---------|--------|
 | **M-NET-CORPUS-GAPS** | 12 corpus [Ignore] tests pass — PROTOTYPE/FRETURN/VALUE/EVAL | ✅ `e21e944` session131 — 11/12; 1012 semicolons separate gap |
 | M-NET-DELEGATES | Instruction[] → pure Func<Executive,int>[] dispatch | ✅ `baeaa52` |
+| **M-NET-LOAD-SPITBOL** | LOAD/UNLOAD spec-compliant: prototype string, UNLOAD(fname), type coercion, SNOLIB, .NET extensions layer | ❌ Sprint `net-load-spitbol` |
 | M-NET-SNOCONE | Snocone self-test: compile snocone.sc, diff oracle | ❌ |
 | **M-NET-POLISH** | 106/106 corpus rungs pass, diag1 35/35, benchmark grid published | ❌ see DOTNET.md |
 | M-NET-BOOTSTRAP | snobol4-dotnet compiles itself | ❌ |
