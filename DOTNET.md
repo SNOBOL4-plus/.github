@@ -10,7 +10,7 @@
 ## NOW
 
 **Sprint:** **`net-ext-xnblk`** ← active
-**HEAD:** `348b3ed`
+**HEAD:** `b821d4d`
 **Milestone:** M-NET-CORPUS-GAPS ✅ · M-NET-ALPHABET ✅ · M-NET-DELEGATES ✅ · M-NET-LOAD-SPITBOL ✅ · M-NET-SAVE-DLL ✅ · M-NET-LOAD-DOTNET ✅ · M-NET-VB ✅ · **M-NET-EXT-NOCONV ✅** → **M-NET-EXT-XNBLK** ← active
 
 **Next action:** Begin `net-ext-xnblk` Step 1 — add `IntPtr XnBlkData = IntPtr.Zero` and `bool FirstCall = true` to `NativeEntry`; allocate pinned `long[]` buffer on first call.
@@ -400,6 +400,7 @@ On load (`RunDll`): detect sentinel → extract fields → feed source to `Code.
 ---
 
 ## Pivot Log
+| 2026-03-17 | **EMERGENCY WIP: net-ext-xnblk Steps 1-5** — NativeEntry xndta/FirstCall; libsnobol4_rt.so; IStatefulExternalLibrary; 3 tests; dotnet test NOT run — context limit | HEAD b821d4d |
 
 | Date | What | Why |
 |------|------|-----|
