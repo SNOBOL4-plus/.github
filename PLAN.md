@@ -11,13 +11,13 @@ Shared frontends. Multiple backends. Self-hosting goal: sno2c compiles sno2c.
 | | |
 |-|-|
 | **Active repo** | SNOBOL4-dotnet |
-| **Sprint** | `net-delegates` — Step 16 next: audit `ThreadIsMsilOnly=false` programs |
+| **Sprint** | `net-corpus-rungs` — run 106/106 crosscheck rungs 1–11 against DOTNET; fix all failures |
 | **HEAD TINY** | `8761bc1` session121: 5-primitive SEQ counter instrumented |
 | **HEAD HARNESS** | `0bf728b` session124: oracle-verify complete — keyword grid live-verified |
 | **HEAD CORPUS** | `82907ff` session122: M-DIAG1 suite committed 35/35 CSNOBOL4 oracle |
-| **HEAD DOTNET** | `118e41b` net-delegates Steps 14–15 ✅: 1746/1747 |
-| **HEAD HQ** | (this commit) session132 continued: Steps 14–15 ✅; Step 16 next |
-| **Next action** | `net-delegates` Step 16: audit `ThreadIsMsilOnly=false` programs; decide elimination or declare M-NET-DELEGATES |
+| **HEAD DOTNET** | `baeaa52` net-delegates Step16 ✅: 1750/1751; M-NET-DELEGATES ✅ |
+| **HEAD HQ** | (this commit) M-NET-DELEGATES ✅; pivot to net-corpus-rungs |
+| **Next action** | `net-corpus-rungs`: run crosscheck harness against DOTNET, fix all failures toward M-NET-POLISH |
 | **Invariant** | 106/106 rungs 1–11 must pass before any work on SNOBOL4-tiny |
 
 **Read the active L2 doc: [JVM.md](JVM.md)**
@@ -94,7 +94,7 @@ Sprint detail lives in the active platform L2 doc (TINY.md / JVM.md / DOTNET.md)
 | ID | Trigger | Status |
 |----|---------|--------|
 | **M-NET-CORPUS-GAPS** | 12 corpus [Ignore] tests pass — PROTOTYPE/FRETURN/VALUE/EVAL | ✅ `e21e944` session131 — 11/12; 1012 semicolons separate gap |
-| M-NET-DELEGATES | Instruction[] → pure Func<Executive,int>[] dispatch | ❌ Sprint `net-delegates` |
+| M-NET-DELEGATES | Instruction[] → pure Func<Executive,int>[] dispatch | ✅ `baeaa52` |
 | M-NET-SNOCONE | Snocone self-test: compile snocone.sc, diff oracle | ❌ |
 | **M-NET-POLISH** | 106/106 corpus rungs pass, diag1 35/35, benchmark grid published | ❌ see DOTNET.md |
 | M-NET-BOOTSTRAP | snobol4-dotnet compiles itself | ❌ |

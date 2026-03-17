@@ -9,12 +9,12 @@
 
 ## NOW
 
-**Sprint:** `net-delegates` ← active
-**HEAD:** `118e41b`
-**Milestone:** M-NET-CORPUS-GAPS ✅ · `net-alphabet` ✅ → M-NET-DELEGATES track
+**Sprint:** `net-corpus-rungs` ← next
+**HEAD:** `baeaa52`
+**Milestone:** M-NET-CORPUS-GAPS ✅ · M-NET-ALPHABET ✅ · **M-NET-DELEGATES ✅** → M-NET-POLISH track
 
-**Next action:** `net-delegates` Step 16 — audit remaining `ThreadIsMsilOnly=false` programs (angle-bracket gotos, CODE/EVAL); decide elimination strategy or declare M-NET-DELEGATES met.
-**After net-delegates:** `net-corpus-rungs` → M-NET-POLISH track.
+**Next action:** `net-corpus-rungs` — run 106/106 crosscheck rungs 1–11 against DOTNET; fix all failures.
+**After net-corpus-rungs:** `net-diag1` → M-NET-POLISH track.
 
 **Downstream (M-NET-POLISH sprints, in order after M-NET-DELEGATES):**
 `net-corpus-rungs` → `net-diag1` → `net-feature-audit` → `net-save-dll` → `net-load-unload` → `net-feature-fill` → `net-benchmark-scaffold` → `net-benchmark-publish`
@@ -51,7 +51,7 @@ dotnet test TestSnobol4/TestSnobol4.csproj -c Release   # confirm 1732/1744 (12 
 | ID | Trigger | Status |
 |----|---------|--------|
 | **M-NET-CORPUS-GAPS** | All 12 corpus [Ignore] tests pass — PROTOTYPE, FRETURN/NRETURN, VALUE, EVAL/OPSYN | ❌ Sprint `net-gap-prototype` active |
-| **M-NET-DELEGATES** | Instruction[] eliminated — pure Func<Executive,int>[] dispatch | ❌ |
+| **M-NET-DELEGATES** | Instruction[] eliminated — pure Func<Executive,int>[] dispatch | ✅ `baeaa52` |
 | M-NET-SNOCONE | Snocone self-test: compile snocone.sc, diff oracle | ❌ |
 | **M-NET-POLISH** | 106/106 corpus rungs pass · diag1 35/35 · benchmark grid published | ❌ |
 | M-NET-BOOTSTRAP | snobol4-dotnet compiles itself | ❌ |
@@ -90,7 +90,7 @@ its [Ignore] tags and confirms `dotnet test` passes the newly enabled tests.
 | `net-msil-operators` | ✅ |
 | `net-msil-gotos` | ✅ |
 | `net-msil-collapse` | ✅ |
-| **`net-delegates`** | ← active |
+| **`net-delegates`** | ✅ `baeaa52` |
 
 ### → M-NET-SNOCONE
 
@@ -160,7 +160,8 @@ Three tracks run in sequence: corpus coverage first, feature gaps second, benchm
 | 2026-03-16 | `net-gap-freturn` ✅ — 1013+1014 pass; 1735/1744; HEAD `2fd79cd` | Bug 1: FunctionPrototypePattern [^)]+→[^)]* (empty param list); Bug 2: Assign() NameVar.Pointer dereference for lvalue |
 | 2026-03-16 | `net-gap-value-indirect` ✅ — 1115+1116+210 pass; 1738/1744; HEAD `a99f1d3` | VALUE() builtin; DATA fields shadow builtins polymorphically; $.var SPITBOL-safe; BAL protected per is.sno discriminator |
 | 2026-03-17 | `net-gap-eval-opsyn` ✅ — 1743/1744; 5 [Ignore] removed (1010/1011/1016/1017/1018); Define.cs: argumentCount bug (locals→parameters), redefinition guard (user funcs allowed), string entry label arg, returnVarName from definition.FunctionName; Opsyn.cs: UserFunctionTable copy preserving original FunctionName for alias return var resolution; 1012 semicolons genuine parser gap left [Ignore] | session131 |
-| 2026-03-16 | `net-delegates` Step 14 ✅ — re-enabled MSIL fast path (removed `false &&` from ThreadedExecuteLoop.cs); Step12 MsilOnly tests confirm path taken; HEAD `89a2855` | diagnostic disable no longer needed |
+| 2026-03-16 | `net-delegates` Step 16 ✅ — absorb angle-bracket gotos into delegates; EmitMixedConditionalGotoIL for mixed :S<VAR>F(LABEL) cases; fix savedFailure init before skip branch; 1750/1751; HEAD `baeaa52` | audit showed GotoIndirectCode was intentionally left in thread — wired existing indirectGotoExpr path to absorb all cases |
+| 2026-03-16 | **M-NET-DELEGATES ✅** fired — all thread opcodes are CallMsil/Halt for static programs; CODE() runtime append recomputes ThreadIsMsilOnly correctly; pivot to `net-corpus-rungs` | Step16 complete |
 | 2026-03-16 | `net-delegates` Step 15 ✅ — `R_PAREN_FUNCTION` stack guard (Pop crash fix); Step15 MsilOnly coverage tests (arith_loop, pattern_match, TABLE stack safety); 1746/1747; HEAD `118e41b` | defensive fix for mismatched function token pairs |
 | 2026-03-16 | `net-alphabet` ✅ — `&ALPHABET` SIZE 255→256; `Range(0,256)`; tests 006/097/Alphabet_001 tightened to `AreEqual(256)`; 1743/1744; HEAD `dc5d132` | both oracles agree SIZE==256 |
 | 2026-03-17 | M-NET-CORPUS-GAPS ✅ fired (11/12 [Ignore] removed; 1743/1744); pivot to `net-alphabet` then `net-delegates` | session131 |
