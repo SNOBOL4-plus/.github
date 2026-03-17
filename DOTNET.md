@@ -9,12 +9,11 @@
 
 ## NOW
 
-**Sprint:** **`net-diag1`** ← active
+**Sprint:** **`net-feature-audit`** ← active
 **HEAD:** `b86954d` (net-diag1: fix comment semicolon-split bug; 1870/1876)
-**Milestone:** M-NET-CORPUS-GAPS ✅ · M-NET-ALPHABET ✅ · M-NET-DELEGATES ✅ · M-NET-LOAD-SPITBOL ✅ · M-NET-SAVE-DLL ✅ · M-NET-LOAD-DOTNET ✅ · M-NET-VB ✅ · M-NET-EXT-NOCONV ✅ · M-NET-EXT-XNBLK ✅ · M-NET-EXT-CREATE ✅ · **M-NET-XN ✅** → **`net-corpus-rungs`** ← active
+**Milestone:** M-NET-CORPUS-GAPS ✅ · M-NET-ALPHABET ✅ · M-NET-DELEGATES ✅ · M-NET-LOAD-SPITBOL ✅ · M-NET-SAVE-DLL ✅ · M-NET-LOAD-DOTNET ✅ · M-NET-VB ✅ · M-NET-EXT-NOCONV ✅ · M-NET-EXT-XNBLK ✅ · M-NET-EXT-CREATE ✅ · **M-NET-XN ✅** · **M-NET-DIAG1 ✅** → **`net-feature-audit`** ← active
 
-**Next action:** net-diag1: diag1 baseline 31/35 → 35/35. Remaining bugs: (1) `210_indirect_ref` — `bal = 'the real bal'` triggers error 209; BAL is a pattern primitive but must be assignable as user variable per SPITBOL — find keyword protection list and fix. (2) `1113_table` — should be fixed by session152 comment-semicolon fix (`b86954d`); verify on next run. `net-corpus-rungs` cross/@N deferred (pivot: going in circles).
-**Sprint order after net-vb-fixture:** `net-ext-noconv` → `net-ext-xnblk` → `net-ext-create` → `net-load-xn` → `net-corpus-rungs` → M-NET-POLISH track.
+**Next action:** `net-feature-audit` — compare DOTNET feature coverage vs CSNOBOL4/SPITBOL ref: keywords, data types, built-ins, I/O, CODE()/EVAL() stubs; produce gap list. `net-corpus-rungs` cross/@N deferred (going in circles).
 
 **SPITBOL oracle rule (established session149):** When CSNOBOL4 and SPITBOL MINIMAL diverge, SPITBOL MINIMAL wins. Reference: sbl.min in snobol4ever/spitbol-x64 (uploaded this session).
 
@@ -458,6 +457,7 @@ On load (`RunDll`): detect sentinel → extract fields → feed source to `Code.
 ---
 
 ## Pivot Log
+| 2026-03-17 | **net-diag1 ✅ session153** — 35/35 diag1 rungs pass via `dotnet test`; 210 (indirect_ref) and 1113 (table) confirmed passing — both covered by session152 b86954d fix; 34/35 pass + 1 skip (1012 semicolons, known gap); invariant 1873/1876 0 failed; pivot to net-feature-audit | session153 |
 | 2026-03-17 | **net-diag1 session152** — PIVOT from net-corpus-rungs (cross/@N going in circles); diag1 baseline 31/35; fixed: comment semicolon-split bug (column-1 * skipped before ; split, SourceCode.cs `b86954d`); corpus 911/1115 DATATYPE lowercase per SPITBOL sbl.min; remaining: 210 BAL keyword protection, 1113 verify fix; invariant 1870/1876 0 failed | session152 |
 | 2026-03-17 | **net-corpus-rungs session151** — BuildFromPattern null-guard fix applied (`f2ac8ea`): `if (rootPattern.StartNode == null)` prevents cache poisoning; `cross` now produces 3 SNOBOL output blocks (was blank); cursor=0 in AtSign.Scan still wrong — DUPL/indentation broken; next: trace CursorPosition flow through Scanner.Match() to find where advance should occur | session151 |
 | 2026-03-17 | **net-corpus-rungs session150** — @N root cause isolated: Pattern.StartNode cache poisoned; BuildFromPattern writes StartNode back to Pattern object; 2nd PatternMatch call on same pattern (NEXTH loop) rebuilds AST, StartNode overwritten with wrong node; AtSign.Scan skipped on cursor≥1 retries; fix: null-guard write-back; SPITBOL oracle confirmed 0-based via sbl binary (x64-main.zip); invariant 1870/1876 0 failed | session150 |
