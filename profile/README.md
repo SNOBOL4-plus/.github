@@ -336,4 +336,4 @@ snobol4all. snobol4now. snobol4ever.
 
 ## License
 
-Each repository carries its own license. See the individual repos for details. Core libraries: GPL-3.0-or-later.
+Each repository carries its own license — AGPL v3 (SNOBOL4-tiny, SNOBOL4-jvm), MIT (SNOBOL4-dotnet), LGPL v3 (SNOBOL4-python, SNOBOL4-csharp, SNOBOL4-cpython), CC0 (SNOBOL4-corpus). See individual repos for details.
