@@ -14,9 +14,9 @@ Shared frontends. Multiple backends. Self-hosting goal: sno2c compiles sno2c.
 | **TINY sprint** | `asm-backend` — Sprint A10: M-ASM-BEAUTY |
 | **TINY HEAD** | `3624d9d` session151: M-ASM-CROSSCHECK ✅ 26/26 ASM PASS; per-var cap bufs; E_INDR; /dev/null dry-run; .asm.ref convention; 106/106 |
 | **TINY next** | Sprint A10: beauty.sno self-beautifies via ASM backend → M-ASM-BEAUTY |
-| **DOTNET sprint** | `net-corpus-rungs` — 106/106 crosscheck rungs 1–11 against DOTNET |
-| **DOTNET HEAD** | `26e2144` session148: M-NET-XN ✅ |
-| **DOTNET next** | net-corpus-rungs: run crosscheck, fix all failures |
+| **DOTNET sprint** | `net-benchmark-scaffold` — wire DOTNET into harness benchmark pipeline |
+| **DOTNET HEAD** | `d8f11f9` session153: net-feature-fill ✅ BAL/ARB error 42; lle fix; diag1 35/35 ✅; feature-audit ✅ |
+| **DOTNET next** | net-benchmark-scaffold: 3 corpus programs, wall-clock baseline, BenchmarkDotNet scaffold |
 | **HEAD HARNESS** | `9fed541` session136 |
 | **HEAD CORPUS** | `9c00acd` session136 |
 | **HEAD HQ** | (this commit) session146 |
