@@ -11,9 +11,9 @@ snobol4x: multiple frontends, multiple backends.
 
 ## NOW
 
-**Sprint:** `asm-backend` — Sprint A0, x64 ASM backend for sno2c
-**HEAD:** `f509126` session144: rename housekeeping (no code change)
-**Milestone:** M-ASM-HELLO → M-ASM-CROSSCHECK → M-ASM-BEAUTY
+**Sprint:** `asm-backend` — Sprint A1, LIT node
+**HEAD:** `5a6861e` session145: M-ASM-HELLO — null.s → exit 0
+**Milestone:** M-ASM-LIT → M-ASM-CROSSCHECK → M-ASM-BEAUTY
 
 **PIVOT (session144):** Abandoned `monitor-scaffold` / `bug7-bomb` in favor of x64 ASM backend.
 Rationale: C backend has a fundamental structural problem — named patterns require C functions
@@ -46,7 +46,7 @@ Prolog reader
 
 | Milestone | Trigger | Status | Sprint |
 |-----------|---------|--------|--------|
-| **M-ASM-HELLO** | null.s assembles, links, runs → exit 0 | ⏳ | A0 |
+| **M-ASM-HELLO** | null.s assembles, links, runs → exit 0 | ✅ session145 | A0 |
 | **M-ASM-LIT** | LIT node: lit_hello.s PASS | ❌ | A1 |
 | **M-ASM-SEQ** | SEQ/POS/RPOS: cat_pos_lit_rpos.s PASS | ❌ | A2–A3 |
 | **M-ASM-ALT** | ALT: alt_first/second/fail PASS | ❌ | A4 |
@@ -344,6 +344,7 @@ git add -A && git commit && git push
 
 | Sessions | What | Why |
 |----------|------|-----|
+| 145 | **M-ASM-HELLO fires** — `emit_byrd_asm.c` created, `-asm` flag added to `main.c`+`Makefile`, `null.s` assembles+links+runs → exit 0. 106/106 crosscheck clean. Next: Sprint A1 (LIT node). | Sprint A0 complete. |
 | 144 | **PIVOT: x64 ASM backend** — abandon monitor-scaffold/bug7-bomb | C backend has structural flaw: named patterns require reentrant C functions, `pat_X_t` structs, `calloc`, three-level scoping. ASM eliminates all of it: α/β/γ/ω = real labels, all vars flat `.bss`, named patterns = labels + 2-way jmp. One scope. Sprint plan A0–A10 documented in NOW. |
 | 80–89 | Attacked beauty.sno directly | Burned — needed smaller test cases first |
 | 89 | Pivot: corpus ladder | Prove each feature before moving up |
