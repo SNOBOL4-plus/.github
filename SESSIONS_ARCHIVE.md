@@ -6219,3 +6219,51 @@ User functions registered with wrong arg count. Fixed.
 - Next action: Step 2 — auto-prototype via reflection
 
 See Session 134 for full next-session start instructions.
+
+## Session 136 — 2026-03-17 — License sweep + Emergency Handoff
+
+**No code work.** License and related files added/corrected across all 9 repos.
+
+### Work done
+
+**Cloned this session:** `.github`, `SNOBOL4-corpus`, `SNOBOL4-harness`, `SNOBOL4-tiny`, `SNOBOL4-jvm`, `SNOBOL4-python`, `SNOBOL4-csharp`, `SNOBOL4-cpython`, `SNOBOL4-dotnet`
+
+**License changes committed and pushed:**
+
+| Repo | Action | License |
+|------|--------|---------|
+| `.github` | Added README badge | CC BY 4.0 |
+| `SNOBOL4-corpus` | Added README badge + NOTICE (Gimpel/Catspaw attribution) | CC0 |
+| `SNOBOL4-harness` | Added README badge | MIT |
+| `SNOBOL4-tiny` | Created LICENSE + README badge | AGPL v3 |
+| `SNOBOL4-jvm` | Replaced EPL-2.0 with AGPL v3; updated `project.clj`; README badge | AGPL v3 |
+| `SNOBOL4-python` | Replaced GPL-3.0 with LGPL v3; updated `pyproject.toml`; README badge | LGPL v3 |
+| `SNOBOL4-csharp` | Created LICENSE + README badge | LGPL v3 |
+| `SNOBOL4-cpython` | Created LICENSE + README badge | LGPL v3 |
+| `SNOBOL4-dotnet` | AGPL applied then **reverted** — back to original MIT | MIT (unchanged) |
+
+**SNOBOL4-dotnet note:** Was not in original scope. Cloned mid-session, license stomped, then reverted cleanly (`d109967`). Lon has a full local mirror backup. Dotnet license decision deferred — deliberate action required next time.
+
+### HEADs at end of session
+
+- `.github`: `ea8c475`
+- `SNOBOL4-corpus`: `9c00acd`
+- `SNOBOL4-harness`: `9fed541`
+- `SNOBOL4-tiny`: `cf27329`
+- `SNOBOL4-jvm`: `73a8315`
+- `SNOBOL4-dotnet`: `d109967` (reverted, MIT restored)
+- `SNOBOL4-python`: `dfb05c2`
+- `SNOBOL4-csharp`: `3224979`
+- `SNOBOL4-cpython`: `fcd4868`
+
+### Active sprint unchanged
+- **Repo:** SNOBOL4-dotnet
+- **Sprint:** `net-load-dotnet`
+- **Next action:** Step 4 — ref-count `ActiveContexts` by DLL path for multi-function support
+- **Invariant:** `dotnet test` → 1791/1792
+
+### Next session start
+1. Read RULES.md → PLAN.md → DOTNET.md
+2. Confirm HEAD dotnet: `8bbd573` (the actual code HEAD, before the license commit/revert noise)
+3. Run invariant: `dotnet test` → confirm 1791/1792
+4. Resume `net-load-dotnet` Step 4

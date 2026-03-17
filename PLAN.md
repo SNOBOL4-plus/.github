@@ -12,13 +12,13 @@ Shared frontends. Multiple backends. Self-hosting goal: sno2c compiles sno2c.
 |-|-|
 | **Active repo** | SNOBOL4-dotnet |
 | **Sprint** | `net-load-dotnet` — .NET extension layer: auto-prototype via reflection, multi-function, IExternalLibrary fast path, async, any IL language |
-| **HEAD TINY** | `8761bc1` session121: 5-primitive SEQ counter instrumented |
-| **HEAD HARNESS** | `0bf728b` session124: oracle-verify complete — keyword grid live-verified |
-| **HEAD CORPUS** | `82907ff` session122: M-DIAG1 suite committed 35/35 CSNOBOL4 oracle |
-| **HEAD DOTNET** | `a47fb84` fix: SNOLIB env-var race + GC.Collect after ALC unload; 1777/1778 |
-| **HEAD HQ** | (this commit) net-load-xn sprint + M-NET-XN milestone added |
-| **Next action** | `net-load-dotnet` Step 2: auto-prototype via reflection — reflect ClassName, find callable methods, build FunctionTableEntry |
-| **Invariant** | 106/106 rungs 1–11 must pass before any work on SNOBOL4-tiny |
+| **HEAD TINY** | `cf27329` session136: AGPL-3.0 LICENSE + badge added |
+| **HEAD HARNESS** | `9fed541` session136: MIT badge added to README |
+| **HEAD CORPUS** | `9c00acd` session136: CC0 badge + NOTICE added |
+| **HEAD DOTNET** | `d109967` session136: license stomp reverted — MIT restored; code HEAD is `8bbd573` |
+| **HEAD HQ** | (this commit) session136 emergency handoff |
+| **Next action** | `net-load-dotnet` Step 4: ref-count `ActiveContexts` by DLL path; UNLOAD decrements, unloads at zero |
+| **Invariant** | `dotnet test` → 1791/1792 before any dotnet work |
 
 **Read the active L2 doc: [DOTNET.md](DOTNET.md)**
 
