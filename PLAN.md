@@ -11,14 +11,14 @@ Shared frontends. Multiple backends. Self-hosting goal: sno2c compiles sno2c.
 | | |
 |-|-|
 | **Active repo** | snobol4x |
-| **Sprint** | `asm-backend` — Sprint A0: x64 ASM backend skeleton, null program |
+| **Sprint** | `net-ext-create` — M-NET-EXT-CREATE: foreign function creates SNOBOL4 objects |
 | **HEAD TINY** | `5a6861e` session145: M-ASM-HELLO — null.s → exit 0 |
 | **HEAD HARNESS** | `9fed541` session136: MIT badge added to README |
 | **HEAD CORPUS** | `9c00acd` session136: CC0 badge + NOTICE added |
-| **HEAD DOTNET** | `b397b17` session143: net-ext-noconv Steps 1–6 complete |
-| **HEAD HQ** | (this commit) session144 |
-| **Next action** | Sprint A1: LIT node — inline byte compare, emit lit_hello.s → M-ASM-LIT |
-| **Invariant** | `dotnet test` → 1856/1857 before any dotnet work · `106/106` crosscheck before any snobol4x work |
+| **HEAD DOTNET** | `b821d4d` session145: M-NET-EXT-XNBLK ✅ — xnblk invariant verified 1865/1868 |
+| **HEAD HQ** | (this commit) session145 |
+| **Next action** | net-ext-create Step 1: C-ABI EXTERNAL return type → ExternalVar wrapper |
+| **Invariant** | `dotnet test` → 1865/1868 before any dotnet work · `106/106` crosscheck before any snobol4x work |
 
 **Read the active L2 doc: [TINY.md](TINY.md)**
 
@@ -103,7 +103,7 @@ Sprint detail lives in the active platform L2 doc (TINY.md / JVM.md / DOTNET.md)
 | **M-NET-SAVE-DLL** | `-w file.sno` → `file.dll` (threaded assembly); `snobol4 file.dll` runs it; RunDll() updated | ❌ Sprint `net-save-dll` |
 | **M-NET-LOAD-DOTNET** | Full .NET extension layer: auto-prototype via reflection, multi-function assemblies, async/cancellation, IExternalLibrary fast path, any IL language (F#/VB/C++) | ✅ `1e9ad33` session140 |
 | **M-NET-EXT-NOCONV** | SPITBOL noconv pass-through: ARRAY/TABLE/PDBLK passed unconverted; C block struct mirror in libsnobol4_rt.h; IExternalLibrary traversal API | ❌ Sprint `net-ext-noconv` |
-| **M-NET-EXT-XNBLK** | XNBLK opaque persistent state: C function allocates/returns state block; xndta[] private storage; .NET per-entry Dictionary equivalent | ❌ Sprint `net-ext-xnblk` |
+| **M-NET-EXT-XNBLK** | XNBLK opaque persistent state: C function allocates/returns state block; xndta[] private storage; .NET per-entry Dictionary equivalent | ✅ `b821d4d` session145 |
 | **M-NET-EXT-CREATE** | Foreign creates SNO objects: libsnobol4_rt alloc helpers for C-ABI; .NET IExternalLibrary already capable — C-side tests | ❌ Sprint `net-ext-create` |
 | **M-NET-VB** | VB.NET fixture + tests: string/long/double returns, null→fail, static, multi-load, UNLOAD | ✅ `234f24a` session142 |
 | **M-NET-XN** | SPITBOL x32 C-ABI parity: xn1st first-call flag, xncbp shutdown callback, xnsave double-fire guard; libsnobol4_rt.so helper shim | ❌ Sprint `net-load-xn` |
