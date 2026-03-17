@@ -52,7 +52,8 @@ dotnet test TestSnobol4/TestSnobol4.csproj -c Release   # confirm 1732/1744 (12 
 |----|---------|--------|
 | **M-NET-CORPUS-GAPS** | All 12 corpus [Ignore] tests pass — PROTOTYPE, FRETURN/NRETURN, VALUE, EVAL/OPSYN | ❌ Sprint `net-gap-prototype` active |
 | **M-NET-DELEGATES** | Instruction[] eliminated — pure Func<Executive,int>[] dispatch | ✅ `baeaa52` |
-| **M-NET-LOAD-SPITBOL** | LOAD/UNLOAD conform to SPITBOL spec: prototype string s1, filename s2, UNLOAD(fname), type coercion, SNOLIB search, .NET extensions layer | ❌ Sprint `net-load-spitbol` |
+| **M-NET-LOAD-SPITBOL** | LOAD/UNLOAD spec-compliant: prototype string s1, filename s2, UNLOAD(fname), INTEGER/REAL/STRING/FILE/EXTERNAL coercion, SNOLIB search, Error 202 | ❌ Sprint `net-load-spitbol` |
+| **M-NET-LOAD-DOTNET** | Full .NET extension layer: auto-prototype via reflection, multi-function assemblies, IExternalLibrary fast path, async functions, cancellation, any IL language (F#/VB/C++) | ❌ Sprint `net-load-dotnet` |
 | **M-NET-POLISH** | 106/106 corpus rungs pass · diag1 35/35 · benchmark grid published | ❌ |
 | M-NET-BOOTSTRAP | snobol4-dotnet compiles itself | ❌ |
 
@@ -112,7 +113,8 @@ Three tracks run in sequence: corpus coverage first, feature gaps second, benchm
 | `net-diag1` | Run diag1 35-test suite (from SNOBOL4-corpus) against DOTNET; fix all failures | 35/35 green |
 | `net-feature-audit` | Compare DOTNET feature coverage vs CSNOBOL4 ref: keywords, data types, built-ins, I/O, CODE()/EVAL() stubs | zero open gaps |
 | `net-save-dll` | Wire `-w` (WriteDll) into the threaded execution path; save compiled MSIL to DLL with source extension replaced by `.dll` (see notes below) | `-w file.sno` produces `file.dll`; `snobol4 file.dll` runs it directly |
-| `net-load-spitbol` | Make LOAD/UNLOAD spec-compliant AND extend for .NET (see full spec below) | LOAD/UNLOAD pass spec-conformant corpus tests; extensions layer works |
+| `net-load-spitbol` | LOAD/UNLOAD spec-compliant: prototype string, UNLOAD(fname), type coercion, SNOLIB (see spec below) | M-NET-LOAD-SPITBOL fires |
+| `net-load-dotnet` | .NET extension layer on top of spec base: reflection, multi-function, IExternalLibrary fast path, async, cancellation, any IL language (see spec below) | M-NET-LOAD-DOTNET fires |
 | `net-feature-fill` | Implement any remaining missing features identified by audit (one sub-sprint per gap) | audit clean |
 | `net-benchmark-scaffold` | Wire DOTNET into harness benchmark pipeline; collect DOTNET timing column | pipeline green |
 | `net-benchmark-publish` | Run full benchmark grid (DOTNET vs CSNOBOL4 vs SPITBOL vs TINY); publish results in HARNESS.md | grid published |
@@ -133,67 +135,93 @@ Three tracks run in sequence: corpus coverage first, feature gaps second, benchm
 - `BuildMain()` runs the **threaded path** (`ThreadedCodeCompiler`) by default; `CreateAssembly()` is never called → `-w` is currently a **no-op** on the active code path
 - Fix: after `tc.Compile()` in `BuildMain()`, if `BuildOptions.WriteDll`, persist the in-memory assembly to the `.dll` output file using `AssemblyLoadContext` save or Roslyn `Emit()` to `FileStream`
 
-### net-load-spitbol Sprint — Full Spec
+### net-load-spitbol Sprint — M-NET-LOAD-SPITBOL
 
-**Why:** Current DOTNET `LOAD`/`UNLOAD` uses a .NET-native plugin API (`IExternalLibrary`) that does not match the SPITBOL spec. Existing corpus programs written against CSNOBOL4 or SPITBOL will fail silently or incorrectly.
+**Goal:** Any SNOBOL4 program using `LOAD`/`UNLOAD` written for CSNOBOL4 or SPITBOL runs correctly on DOTNET without modification.
 
-#### SPITBOL spec (Macro SPITBOL Manual, Appendix F + Chapter 19)
+**Spec source:** Macro SPITBOL Manual v3.7, Appendix F + Chapter 19.
+
+#### SPITBOL spec
 
 **`LOAD(s1, s2)`**
-- `s1` — prototype string: `'FNAME(DATATYPE1,...,DATATYPEn)DATATYPEr'`
-  - `FNAME` is the name by which the function is called in SNOBOL4 — need not match the symbol in the library
-  - `DATATYPEi` controls argument coercion before the call: `INTEGER`, `REAL`, `STRING`, `FILE`, `EXTERNAL`, or anything else = pass unconverted in internal form
-  - `DATATYPEr` is the declared return type (hint only — the function itself signals the actual return type)
-  - Zero-arg form: `'FNAME()'`; no-return form: `'FNAME(STRING)'` (omit closing type)
-- `s2` — filename of the shared library; if omitted SPITBOL searches for `fname.slf` / `fname.dll` in SNOLIB paths
+- `s1` — prototype string `'FNAME(T1,...,Tn)Tr'`
+  - `FNAME` — callable name in SNOBOL4; need not match the symbol in the library
+  - `Ti` — argument coercion: `INTEGER`, `REAL`, `STRING`, `FILE`, `EXTERNAL`, anything else = pass unconverted
+  - `Tr` — declared return type (hint; function signals actual type at runtime)
+  - Zero-arg: `'FNAME()'`; void return: omit closing type
+- `s2` — library filename; if omitted search for `fname.slf`/`fname.dll` via `SNOLIB`
 - After `LOAD`, `FNAME` is callable exactly like a `DEFINE`'d function
-- Fails (`:F`) if file not found, memory exhausted, or device error (trappable via `SETEXIT`)
+- Fails (`:F`) on file-not-found, device error, memory exhausted; trappable via `SETEXIT`
 
 **`UNLOAD(name)`**
-- `name` — the **function name** (FNAME from the prototype), not a file path
-- Undefines the function; reclaiming memory is implementation-dependent
-- Error 202: `UNLOAD argument is not natural variable name`
-- In SPITBOL, only user-defined and external functions can be UNLOADed (not builtins)
+- `name` — function name (FNAME), not a file path
+- Undefines the function; memory reclaim is implementation-dependent
+- Error 202 if argument is not a natural variable name
+- Only user-defined and external functions may be UNLOADed (not builtins)
 
-**`SNOLIB` search path** — if `s2` omitted, search: current dir → directories in `SNOLIB` env var
+**`SNOLIB`** — if `s2` omitted: search current dir, then all dirs in `SNOLIB` env var
 
-#### Current DOTNET gaps vs. spec
+#### Current DOTNET gaps
 
 | Spec requirement | Current DOTNET | Gap |
-|-----------------|---------------|-----|
-| `s1` = prototype string `'FNAME(T1,T2)Tr'` | `s1` = DLL file path | **inverted** |
-| `s2` = library filename | `s2` = .NET class name | **different semantics** |
-| `FNAME` registered by name after LOAD | requires `IExternalLibrary.Init()` to register | **manual registration** |
-| Argument coercion per DATATYPEi | none — .NET types only | **missing** |
-| `UNLOAD(fname)` — function name | `UNLOAD(path)` — DLL path | **inverted** |
-| SNOLIB path search on missing s2 | no search path | **missing** |
-| Error 202 on bad UNLOAD arg | no such check | **missing** |
-
-#### .NET extensions (beyond SPITBOL spec)
-
-The difference between SPITBOL's C shared-library ABI and .NET opens design space for extensions. These are **additions**, not replacements — the spec-compliant path is always available:
-
-| Extension | Description | Rationale |
-|-----------|-------------|-----------|
-| **Prototype-less .NET form** | `LOAD('path/to.dll', 'ClassName')` — current syntax kept as an explicit .NET extension when `s1` looks like a path (contains `/` or `\` or ends `.dll`) | Backward compat; ergonomic for pure .NET users |
-| **Auto-prototype from reflection** | If `s2` is a .NET class name and `s1` has no `(` — reflect the class to discover function name, arg types, return type automatically | Eliminates boilerplate for .NET-native libs |
-| **Multi-function libraries** | One DLL can export multiple functions; each `LOAD` call registers one name from it; the DLL stays loaded until all its names are UNLOADed | Natural for .NET assemblies |
-| **`IExternalLibrary` fast path** | Classes implementing `IExternalLibrary` bypass type-coercion dispatch and call `Init(executive)` directly — maximum performance for pure-.NET plugins | Preserve existing 27-test suite |
-| **SNOLIB via env var** | `SNOLIB` env var for search path, exactly per spec | Spec compliance + portability |
-| **F# / VB.NET libraries** | Any .NET language compiles to IL — `LOAD` works on any assembly implementing the agreed entry point | Goal 3: CI substrate, polyglot |
+|-----------------|----------------|-----|
+| `s1` = prototype string | `s1` = DLL path | inverted |
+| `s2` = library filename | `s2` = .NET class name | different semantics |
+| FNAME registered by name after LOAD | requires `IExternalLibrary.Init()` | manual registration |
+| Arg coercion per Ti | none | missing |
+| `UNLOAD(fname)` | `UNLOAD(path)` | inverted |
+| SNOLIB path search | none | missing |
+| Error 202 on bad UNLOAD arg | none | missing |
 
 #### Sprint steps
 
-1. Parse prototype string `s1`: extract FNAME, arg types, return type
-2. Dispatch on `s1` form: prototype string → spec path; path-like → .NET extension path
-3. Spec path: load DLL by `s2` (with SNOLIB search), find exported C-ABI entry point by `FNAME`, register in function table with type coercion wrappers
-4. .NET extension path: existing `IExternalLibrary` / reflection path, keyed by FNAME not path
-5. Rekey `ActiveContexts` by FNAME (not path) so `UNLOAD(fname)` works per spec
+1. Parse prototype string `s1`: extract FNAME, arg type list, return type
+2. Detect `s1` form: prototype string (contains `(`) vs. path-like → route path-like to `net-load-dotnet`
+3. Spec path: load shared library by `s2` with SNOLIB fallback; resolve C-ABI entry point by FNAME
+4. Register FNAME in function table with type-coercion wrappers (INTEGER/REAL/STRING/FILE/EXTERNAL)
+5. Rekey `ActiveContexts` by FNAME so `UNLOAD(fname)` works per spec
 6. Add Error 202 check on `UNLOAD`
-7. Add SNOLIB env var search
-8. Update corpus tests: add spec-conformant LOAD/UNLOAD tests; keep existing 27 IExternalLibrary tests (now explicitly the .NET extension path)
+7. Add `SNOLIB` env var search
+8. Corpus tests: add spec-conformant LOAD/UNLOAD tests against a C shared library; existing 27 IExternalLibrary tests stay passing (they are now explicitly the .NET extension path)
 
-**M-NET-LOAD-SPITBOL fires when:** spec-conformant corpus tests pass + existing 27 IExternalLibrary tests still pass + UNLOAD(fname) works + SNOLIB search works.
+**M-NET-LOAD-SPITBOL fires when:** spec-conformant prototype-string LOAD/UNLOAD corpus tests pass + UNLOAD(fname) works + SNOLIB search works + existing 27 tests still pass.
+
+---
+
+### net-load-dotnet Sprint — M-NET-LOAD-DOTNET
+
+**Goal:** Expose the full power of the .NET runtime through `LOAD`/`UNLOAD` — reflection, any IL language, async, rich type system, multi-function assemblies. The spec-compliant path remains the portable baseline; this layer is explicitly .NET-specific and opt-in.
+
+**Design principle:** A program that uses only prototype-string `LOAD` is always portable. A program that uses .NET extensions knows it's .NET-specific and gets everything the platform offers.
+
+#### Extension inventory
+
+| Extension | `LOAD` syntax / behavior | Description |
+|-----------|--------------------------|-------------|
+| **Auto-prototype** | `LOAD('path/to.dll', 'Namespace.Class')` | Reflect the class — discover method name, parameter types, return type automatically. Zero prototype string needed. Backward-compatible with existing 27 tests. |
+| **Explicit method binding** | `LOAD('path/to.dll', 'Namespace.Class::MethodName')` | Bind to a specific named method when the class exposes multiple candidates. |
+| **Multi-function assembly** | Multiple `LOAD` calls to the same DLL, different method/class names | Each call registers one SNOBOL4 function. DLL stays loaded until the last registered name is UNLOADed. `ActiveContexts` ref-counts by DLL path. |
+| **`IExternalLibrary` fast path** | Auto-detected when class implements `IExternalLibrary` | Bypasses coercion dispatch entirely; calls `Init(executive)` for full executive access. Maximum performance for pure-.NET plugins. |
+| **Async functions** | Method returns `Task<T>` | LOAD detects async return; the SNOBOL4 call blocks on `GetAwaiter().GetResult()` transparently. Future: cooperative yield via coroutine adapter. |
+| **Cancellation** | `UNLOAD` on a running async function | Issues `CancellationToken` to the function; function is responsible for honoring it. |
+| **Any IL language** | F#, VB.NET, C++/CLI, any .NET language | Any assembly whose entry point satisfies the agreed signature is loadable. F# `option<T>` and discriminated unions coerced to SNOBOL4 types (None → fail, Some → value). |
+| **Static methods** | `LOAD('Assembly.dll', 'Namespace.Class::StaticMethod')` | No instance created; `PluginLoadContext` still handles isolation and unload. |
+| **Native DOTNET return types** | Method returns `SnobolVar`, `Pattern`, `Table`, `Array` | Direct return of internal DOTNET types — zero-copy, no coercion overhead. |
+| **SNOLIB .NET search** | `SNOLIB` env var also searched for `.dll` assemblies | Consistent search semantics across C-ABI and .NET libraries. |
+
+#### Sprint steps
+
+1. `s1` form dispatcher (from `net-load-spitbol`) routes path-like `s1` here
+2. Auto-prototype: reflect `ClassName`, find callable methods, build `FunctionTableEntry`
+3. `::MethodName` explicit binding
+4. Ref-count `ActiveContexts` by DLL path for multi-function support; `UNLOAD` decrements, unloads assembly at zero
+5. Detect `Task<T>` return; wrap in blocking-await adapter
+6. Detect `IExternalLibrary` implementors; use existing fast path
+7. Add return type coercions for `SnobolVar`/`Pattern`/`Table`/`Array`
+8. F# option/DU coercion layer
+9. Tests: auto-prototype (C# + F#), multi-function, async, static, explicit binding, UNLOAD ref-counting, native return types
+
+**M-NET-LOAD-DOTNET fires when:** all extension tests pass + spec-compliant path unaffected + F# library loads and executes correctly + async cancellation via UNLOAD works.
 
 ### LOAD / UNLOAD Reference (original)
 
