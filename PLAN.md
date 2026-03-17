@@ -2,7 +2,7 @@
 
 SNOBOL4/SPITBOL compilers targeting JVM, .NET, and native C.
 Shared frontends. Multiple backends. Self-hosting goal: sno2c compiles sno2c.
-**Team:** Lon Jones Cherryholmes (arch, MSIL), Jeffrey Cooper M.D. (DOTNET Roslyn), Claude Sonnet 4.6 (TINY co-author, third developer).
+**Team:** Lon Jones Cherryholmes (arch, MSIL), Jeffrey Cooper M.D. (DOTNET), Claude Sonnet 4.6 (TINY co-author, third developer).
 
 ---
 

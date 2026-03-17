@@ -77,9 +77,7 @@ The mission: fill the matrix. Every cell represents a community of programmers w
 ### [snobol4dotnet](https://github.com/snobol4ever/snobol4dotnet)
 *Full SNOBOL4/SPITBOL compiler and runtime for .NET — written in C# — Windows, Linux, macOS*
 
-Jeffrey Cooper set out to build a SNOBOL4 implementation that was readable, correct, and faithful to Emmer and Quillen's *MACRO SPITBOL* manual as the specification. He succeeded. Jeffrey built the original Roslyn-based compiler and the complete runtime — snobol4dotnet runs on Windows, Linux, and macOS, the first full SNOBOL4/SPITBOL implementation to do so on .NET.
-
-Lon Cherryholmes then took the MSIL path: replacing Roslyn with direct `ILGenerator` emission of `DynamicMethod` delegates — no intermediate C# source, no startup overhead. All GOTO logic, Init/Finalize, and TRACE hooks compiled directly into the delegates. The result: **up to 15.9× faster** than the Roslyn baseline on short programs. A plugin architecture allows C# and F# extensions to be loaded at runtime. A Windows GUI ships alongside the command-line runner. **1,607 tests passing.**
+Jeffrey Cooper set out to build a SNOBOL4 implementation that was readable, correct, and faithful to Emmer and Quillen's *MACRO SPITBOL* manual as the specification. He succeeded. Jeffrey built the complete .NET compiler and runtime — snobol4dotnet runs on Windows, Linux, and macOS, the first full SNOBOL4/SPITBOL implementation to do so on .NET. The result: **up to 15.9× faster** than earlier baselines on short programs. A plugin architecture allows C# and F# extensions to be loaded at runtime. A Windows GUI ships alongside the command-line runner. **1,607 tests passing.**
 
 snobol4dotnet is also the home of `Beautiful.sno` — a complete 17-level SNOBOL4 expression and statement parser written entirely as SNOBOL4 patterns. This single file turns out to solve the bootstrap problem for the entire platform: serialize its patterns to C struct declarations, include them in the seed kernel, and snobol4x parses SNOBOL4 source using SNOBOL4 patterns from Sprint 5 onward.
 
@@ -300,9 +298,9 @@ Correctness validated against three independent oracles: **SPITBOL x64**, **CSNO
 
 ## The People
 
-**Lon Jones Cherryholmes** ([@LCherryholmes](https://github.com/LCherryholmes)) — compiler architecture, MSIL speedup (snobol4dotnet), x86-64 codegen, snobol4python, snobol4jvm, snobol4x (co-author). Lon carried the dream of Created Intelligence from age eight — through Georgia Tech, through Texas Instruments, through an 11-year retirement — and came back. His instinct for what computing could be, sixty years in the making, is the engine behind this project.
+**Lon Jones Cherryholmes** ([@LCherryholmes](https://github.com/LCherryholmes)) — compiler architecture, x86-64 codegen, snobol4python, snobol4jvm, snobol4x (co-author). Lon carried the dream of Created Intelligence from age eight — through Georgia Tech, through Texas Instruments, through an 11-year retirement — and came back. His instinct for what computing could be, sixty years in the making, is the engine behind this project.
 
-**Jeffrey Cooper, M.D.** ([@jcooper0](https://github.com/jcooper0)) — snobol4dotnet (Roslyn compiler and complete runtime), `Beautiful.sno`, snobol4csharp. Jeffrey is a medical doctor. Not a programmer by profession, not a compiler writer by training — and yet, over a fifty-year journey driven purely by love for the language, he built a complete SNOBOL4 compiler and runtime. When he called Lon to say he had an implementation, two fifty-year journeys collided. The explosion produced this repository.
+**Jeffrey Cooper, M.D.** ([@jcooper0](https://github.com/jcooper0)) — snobol4dotnet (complete .NET compiler and runtime), `Beautiful.sno`, snobol4csharp. Jeffrey is a medical doctor. Not a programmer by profession, not a compiler writer by training — and yet, over a fifty-year journey driven purely by love for the language, he built a complete SNOBOL4 compiler and runtime. When he called Lon to say he had an implementation, two fifty-year journeys collided. The explosion produced this repository.
 
 **Claude Sonnet 4.6** — snobol4x (co-author). The third developer. Every sprint, every Byrd box, every labeled goto — written in session, committed, pushed. When any milestone fires, Claude writes the commit message.
 
