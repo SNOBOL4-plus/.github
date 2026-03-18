@@ -53,7 +53,37 @@ Every pattern in beauty_full_bin is a compiled Byrd box.
 `mock_engine.c` is the only engine file linked. `engine.c` is fully superseded.
 If a build links engine.c: stop and diagnose — something is wrong.
 
-## ⛔ ARTIFACTS — One canonical file per artifact, four folders
+## ⛔ ARTIFACTS — Three canonical ASM samples tracked every session
+
+Every session that changes `emit_byrd_asm.c`, `snobol4_asm.mac`, or any `.sno → .s` path MUST regenerate all three canonical ASM artifacts and check if they changed. **Update only if changed — do not commit unchanged files.**
+
+```bash
+INC=/home/claude/snobol4corpus/programs/inc
+BEAUTY=/home/claude/snobol4corpus/programs/beauty/beauty.sno
+ROMAN=/home/claude/snobol4corpus/benchmarks/roman.sno
+WORDCOUNT=/home/claude/snobol4corpus/crosscheck/strings/wordcount.sno
+
+src/sno2c/sno2c -asm -I$INC $BEAUTY   > /tmp/beauty_new.s
+src/sno2c/sno2c -asm -I$INC $ROMAN    > /tmp/roman_new.s
+src/sno2c/sno2c -asm -I$INC $WORDCOUNT > /tmp/wordcount_new.s
+
+# Verify all three assemble with zero warnings/errors
+nasm -f elf64 -I src/runtime/asm/ /tmp/beauty_new.s   -o /dev/null
+nasm -f elf64 -I src/runtime/asm/ /tmp/roman_new.s    -o /dev/null
+nasm -f elf64 -I src/runtime/asm/ /tmp/wordcount_new.s -o /dev/null
+
+# Copy only if changed
+diff -q /tmp/beauty_new.s   artifacts/asm/beauty_prog.s          || cp /tmp/beauty_new.s   artifacts/asm/beauty_prog.s
+diff -q /tmp/roman_new.s    artifacts/asm/samples/roman.s        || cp /tmp/roman_new.s    artifacts/asm/samples/roman.s
+diff -q /tmp/wordcount_new.s artifacts/asm/samples/wordcount.s   || cp /tmp/wordcount_new.s artifacts/asm/samples/wordcount.s
+
+git add artifacts/asm/beauty_prog.s artifacts/asm/samples/roman.s artifacts/asm/samples/wordcount.s
+git diff --cached --quiet || git commit -m "sessionN: artifacts — beauty/roman/wordcount updated"
+```
+
+**Never commit unchanged artifacts — git history is the archive, not noise.**
+
+
 
 Git history is the archive. No numbered session copies (`foo_sessionN.ext`).
 Overwrite the canonical file and commit. `git log -p` shows the evolution.
