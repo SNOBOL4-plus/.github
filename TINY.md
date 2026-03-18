@@ -11,9 +11,9 @@ snobol4x: multiple frontends, multiple backends.
 
 ## NOW
 
-**Sprint:** `asm-backend` — Sprint A11: M-ASM-READABLE (M-ASM-BEAUTIFUL ✅ session175)
-**HEAD:** `7d6add6` session175
-**Milestone:** M-ASM-BEAUTIFUL ✅ session175 → **M-ASM-READABLE** (A11, active)
+**Sprint:** `asm-backend` — Sprint A13: M-ASM-IR (M-ASM-READABLE ✅ session176)
+**HEAD:** `e0371fe` session176
+**Milestone:** M-ASM-BEAUTIFUL ✅ session175 → M-ASM-READABLE ✅ session176 → **M-ASM-IR** (A13, active)
 
 **Session168 — FAIL_BR/FAIL_BR16/SUBJ_FROM16 renames; CONC2/ALT2 macros; COL2_W=12; CONC2_N/CONC2 fast paths:**
 - `IS_FAIL_BRANCH` → `FAIL_BR` (14→7 chars); `IS_FAIL_BRANCH16` → `FAIL_BR16` (16→8 chars)
@@ -408,7 +408,7 @@ Prolog reader
 | **M-ASM-NAMED** | Named patterns: ref_astar_bstar/anbn PASS | ✅ session148 | A8 |
 | **M-ASM-CROSSCHECK** | 26/26 ASM crosscheck PASS | ✅ session151 | A9 |
 | **M-ASM-BEAUTY** | beauty.sno self-beautifies via ASM backend | ❌ | A10 |
-| **M-ASM-READABLE** | Label names: keep alnum, expand special chars to names (pp_>= → _L_pp_GT_EQ_N). Injective because named tokens are unique and _ delimits. Lon's idea session152. | ❌ | A11 |
+| **M-ASM-READABLE** | Label names: special-char expansion (pp_>= → S_pp_GT_EQ); _ literal passthrough; uid on collision only. Original bijection spec revised — expanding _ destroys readability for normal names. M-ASM-READABLE-A. | ✅ `e0371fe` session176 | A11 |
 | **M-ASM-BEAUTIFUL** | beauty_prog.s as readable as beauty_full.c. Lon reads it and declares it beautiful. | ✅ `7d6add6` session175 | A14 |
 | M-BOOTSTRAP | sno2c_stage1 output = sno2c_stage2 | ❌ | final goal |
 
