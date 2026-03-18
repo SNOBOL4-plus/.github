@@ -12,7 +12,23 @@ snobol4x: multiple frontends, multiple backends.
 ## NOW
 
 **Sprint:** `asm-backend` — Sprint A14: M-ASM-BEAUTIFUL (PIVOT session159)
-**HEAD:** `6ed79c5` session162
+**HEAD:** `88653f6` session163
+**Milestone:** M-ASM-CROSSCHECK ✅ session151 → **M-ASM-BEAUTIFUL** (A14, active)
+
+**Session163 — four-column format complete: label: MACRO args ; comment**
+- DOL_SAVE macro: 3 raw instructions → 1 line
+- DOL_CAPTURE macro: 9 raw instructions → 1 line
+- ALT_ALPHA macro: absorbs trailing jmp lα
+- ALT_OMEGA macro: absorbs trailing jmp rα
+- All \n\n double-newlines removed (45 instances)
+- Every state is one line: `label:  MACRO args ; comment`
+- beauty_prog_session163.s: 14448 lines (down 3772 from session159), assembles clean
+- 106/106 C crosscheck PASS, 26/26 ASM crosscheck PASS
+
+**⚠ CRITICAL NEXT ACTION:**
+Lon reviews `artifacts/asm/beauty_prog_session163.s` → M-ASM-BEAUTIFUL fires.
+
+**HEAD (previous):** `6ed79c5` session162
 **Milestone:** M-ASM-CROSSCHECK ✅ session151 → **M-ASM-BEAUTIFUL** (A14, active)
 
 **Session162 — three-column format: label: MACRO args ; comment:**
