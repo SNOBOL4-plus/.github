@@ -12,7 +12,7 @@ snobol4x: multiple frontends, multiple backends.
 ## NOW
 
 **Sprint:** `asm-backend` — Sprint A14: M-ASM-BEAUTIFUL (PIVOT session159)
-**HEAD:** `bc7a707` session174
+**HEAD:** `7d6add6` session175
 **Milestone:** M-ASM-CROSSCHECK ✅ session151 → **M-ASM-BEAUTIFUL** (A14, active)
 
 **Session168 — FAIL_BR/FAIL_BR16/SUBJ_FROM16 renames; CONC2/ALT2 macros; COL2_W=12; CONC2_N/CONC2 fast paths:**
@@ -42,6 +42,23 @@ snobol4x: multiple frontends, multiple backends.
 - `SEP_W` 80 → 120; separator lines now 120 chars (Cherryholmes standard)
 - Four-column layout retained as-is per Lon's decision
 - 12689 lines, 106/106 26/26
+
+**Session175 — col3 alignment perfected; emit_instr() helper; 11594→11654 lines:**
+- `emit_instr(instr)` helper added: emits opcode word, pads to COL_W+COL2_W=40, then operands
+- Three paths fixed: `asmLB()` (ALF), `ALFC` macro inline expansion, `A()` pending-label fold
+- Before: 901 instruction lines misaligned (706 `jmp`/`sub`/`mov` at col 37, 38 macros at col 42)
+- After: 0 misaligned instruction lines; every line: label@0, opcode@28, operands@40
+- `asmLC` comment-only lines (`label: ; comment`) correctly exempt — no opcode/operand split
+- beauty_prog_session175.s: 11654 lines, NASM clean, 106/106 26/26
+
+**⚠ CRITICAL NEXT ACTION — Session176:**
+
+The 15 remaining verbose `sub rsp,32` blocks all have complex children (E_IDX/E_SUB/E_FNC/E_NAM — confirmed session174). Use the result-temp strategy:
+1. Declare `.bss` scratch pair: `conc_tmp0_rax resq 1` / `conc_tmp0_rdx resq 1`
+2. For each complex child: evaluate normally (result in `[rbp-32/24]`), then `mov rax,[rbp-32]; mov [conc_tmp0_rax],rax` etc.
+3. Build args array using scratch values
+4. New macros `CONC2_TV/VT/TS/TN` for temp+atom patterns
+5. Target: 15 → 0 verbose blocks; further line-count reduction toward M-ASM-BEAUTIFUL
 
 **Session174 — CALL1_VAR + integer-arg fast paths; 12594→11594 lines:**
 - `CALL1_VAR fn, varlab` macro + emitter fast path: 1-arg calls with E_VART arg (100 cases) → single macro
