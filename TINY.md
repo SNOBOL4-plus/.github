@@ -12,7 +12,7 @@ snobol4x: multiple frontends, multiple backends.
 ## NOW
 
 **Sprint:** `asm-backend` — Sprint A10: beauty.sno self-beautifies via ASM backend
-**HEAD:** `14a071b` session151
+**HEAD:** `249922f` session154
 **Milestone:** M-ASM-CROSSCHECK ✅ session151 → **M-ASM-BEAUTY** next
 
 **Session151 — M-ASM-CROSSCHECK fires — 26/26 ASM PASS:**
@@ -26,12 +26,17 @@ snobol4x: multiple frontends, multiple backends.
 
 **⚠ CRITICAL NEXT ACTION — Sprint A10 (M-ASM-BEAUTY):**
 
-Goal: `beauty.sno` self-beautifies via ASM backend. This requires the ASM backend to handle full SNOBOL4 statements (OUTPUT, variable assignment, goto), not just pattern-match nodes.
+Session154 state:
+- `asm_emit_program()` walks all stmts, emits `main()` with `stmt_*` C-shim calls
+- Label scheme: `_L_<alnum_base>_<N>` — N guarantees uniqueness, base aids readability
+- `emit_jmp()` handles RETURN/FRETURN/END → `_SNO_END`; stub labels for undefined/computed gotos
+- beauty.sno assembles and links cleanly via `-asm`
+- Statement-only programs work: `OUTPUT = 'hello'` → correct output ✅
+- **beauty.sno hangs**: pattern-match stmts (Case 2) fall through without running the pattern
 
-Sprint A10 steps:
-1. Survey what beauty.sno actually requires beyond pattern nodes
-2. Extend `asm_emit_body` (or new `asm_emit_stmt`) to handle simple statement forms
-3. Ladder: single OUTPUT → variable assign → goto → full beauty.sno round-trip
+**Next step — pattern-match stmt execution:**
+Case 2 must: (1) get subject string via `stmt_get()`, (2) set `subject_data`/`subject_len_val`/`cursor` globals, (3) call `root_alpha` (Byrd box), (4) on `match_success` → apply replacement + goto S-label; on `match_fail` → goto F-label.
+Approach: inline Byrd box + C-shim `match_success`/`match_fail` as ASM labels per stmt.
 
 - `ref_astar_bstar.s`: ASTAR=ARBNO("a"), BSTAR=ARBNO("b") on "aaabb" → `aaabb\n` PASS ✅
 - `anbn.s`: 4 sequential named-pattern call sites (2×A_BLOCK + 2×B_BLOCK) on "aabb" → `aabb\n` PASS ✅
