@@ -9,11 +9,11 @@
 
 ## NOW
 
-**Sprint:** **`net-benchmark-scaffold`** ← active (baseline done; next: net-perf-analysis)
+**Sprint:** **`net-benchmark-scaffold`** ← active (INCOMPLETE — scope is cross-repo)
 **HEAD:** `4c32ee7` (net-benchmark-scaffold: perf/baseline.md — BenchmarkSuite2 baseline session154)
 **Milestone:** M-NET-CORPUS-GAPS ✅ · M-NET-ALPHABET ✅ · M-NET-DELEGATES ✅ · M-NET-LOAD-SPITBOL ✅ · M-NET-SAVE-DLL ✅ · M-NET-LOAD-DOTNET ✅ · M-NET-VB ✅ · M-NET-EXT-NOCONV ✅ · M-NET-EXT-XNBLK ✅ · M-NET-EXT-CREATE ✅ · **M-NET-XN ✅** · **M-NET-DIAG1 ✅**
 
-**Next action:** `net-perf-analysis` — BenchmarkSuite2 baseline recorded in `perf/baseline.md`; harness dotnet adapter stubs committed to snobol4harness. Hot candidates: `Var.Convert` fast-path (VarAccess 98ms/6MB), FunctionTable fold+lookup (Fibonacci 237ms), SystemStack List pressure (MixedWorkload 220ms/14MB). `IndirectDispatch_500` error 22 known gap.
+**Next action:** Finish `net-benchmark-scaffold` — this is a **cross-repo harness sprint**, not just a dotnet sprint. See sprint definition below for full scope and next steps.
 
 **SPITBOL oracle rule (established session149):** When CSNOBOL4 and SPITBOL MINIMAL diverge, SPITBOL MINIMAL wins. Reference: sbl.min in snobol4ever/spitbol-x64 (uploaded this session).
 
@@ -150,7 +150,7 @@ Three tracks run in sequence: corpus coverage first, feature gaps second, benchm
 | `net-save-dll-3` | Tests: `WriteDll_HelloWorld`, `WriteDll_Variables`, `WriteDll_OutputMatchesDirect`; invariant stays ≥1802+3 | all green, full invariant passes |
 | `net-load-spitbol` | LOAD/UNLOAD spec-compliant: prototype string, UNLOAD(fname), type coercion, SNOLIB (see spec below) | M-NET-LOAD-SPITBOL fires |
 | `net-feature-fill` | Implement any remaining missing features identified by audit (one sub-sprint per gap) | audit clean |
-| `net-benchmark-scaffold` | Wire DOTNET into harness benchmark pipeline; collect DOTNET timing column | pipeline green |
+| `net-benchmark-scaffold` | **Cross-repo harness sprint** (touches snobol4harness, snobol4dotnet, snobol4x, snobol4jvm). snobol4harness gets real `crosscheck.sh` + `bench.sh` callable from any dir; each engine gets a thin `adapters/<engine>/run.sh`; dotnet gets `run_crosscheck_dotnet.sh` committed (was built session149, never landed); cross-engine timing grid produced. snobol4harness README "No code yet" becomes real code. | `crosscheck.sh` runs all engines vs corpus; DOTNET timing column in grid |
 | `net-perf-analysis` | Profile hot paths; land ≥1 measurable win; publish regression baseline | M-NET-PERF fires |
 | `net-benchmark-publish` | Run full benchmark grid (DOTNET vs CSNOBOL4 vs SPITBOL vs TINY); publish results in HARNESS.md | grid published |
 | **`net-build-prereqs`** | Document and validate all build prerequisites: BUILDING.md (SDK version, C toolchain for native libs, platform matrix); `.gitignore` audit for build outputs; CI prereq check on clean clone | BUILDING.md present; CI green on clean clone |
@@ -457,7 +457,7 @@ On load (`RunDll`): detect sentinel → extract fields → feed source to `Code.
 ---
 
 ## Pivot Log
-| 2026-03-17 | **net-benchmark-scaffold session154** — BenchmarkSuite2 already existed with 17 benchmarks (Roman/ArithLoop/StringPattern/Fibonacci/StringManip + bottleneck isolation + CODE/EVAL); ran baseline: Fibonacci_18 237ms/12MB, VarAccess_2000 98ms/6MB, MixedWorkload_200 221ms/14MB; recorded in `perf/baseline.md` `4c32ee7`; dotnet adapter stubs added to snobol4harness; pivot to net-perf-analysis | session154 |
+| 2026-03-17 | **EMERGENCY HANDOFF session154** — net-benchmark-scaffold INCOMPLETE. Ran BenchmarkSuite2 baseline (perf/baseline.md `4c32ee7`). Wrote adapter stubs to snobol4harness. Discovered: true sprint scope is cross-repo. snobol4harness README still says "No code yet"; crosscheck.sh is TBD; run_crosscheck_dotnet.sh built session149 never committed; JVM harness.clj partially migrated; snobol4x has ad-hoc runner. **True sprint**: write real crosscheck.sh + bench.sh in snobol4harness; thin adapters/<engine>/run.sh for dotnet/tiny/jvm; commit run_crosscheck_dotnet.sh; reconcile all runners. Context 92% — cannot finish. Sprint definition updated in sprint map. Next session: clone all 4 repos (snobol4harness, snobol4dotnet, snobol4x, snobol4jvm), read DOTNET.md, build crosscheck.sh. | session154 |
 | 2026-03-17 | **net-feature-fill ✅ session153** — BAL/ARB/FAIL/FENCE/NULL/REM/SUCCEED: isKeyword=false,isReadOnly=true; error 42 not 209 on assignment; AssignReplace checks !IsKeyword&&IsReadOnly before keyword block; `d8f11f9`; 1873/1876; pivot to net-benchmark-scaffold | session153 |
 | 2026-03-17 | **net-feature-audit ✅ session153** — lle/LLE symbol name bug fixed (was "lge", `25cb1c5`); full audit: all SPITBOL builtins + keywords present; CODE()/EVAL() fully implemented; one remaining gap: BAL read-only protection (blocks `bal = 'string'`); pivot to net-feature-fill | session153 |
 | 2026-03-17 | **net-diag1 ✅ session153** — 35/35 diag1 rungs pass via `dotnet test`; 210 (indirect_ref) and 1113 (table) confirmed passing — both covered by session152 b86954d fix; 34/35 pass + 1 skip (1012 semicolons, known gap); invariant 1873/1876 0 failed; pivot to net-feature-audit | session153 |
