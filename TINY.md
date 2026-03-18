@@ -43,6 +43,14 @@ snobol4x: multiple frontends, multiple backends.
 - Four-column layout retained as-is per Lon's decision
 - 12689 lines, 106/106 26/26
 
+**Session173 — col3 alignment; no fourth column; sep→label fold:**
+- col3: operands now at COL_W+COL2_W=40 — A() scans opcode end, pads to col 40 before operands
+- No 4th column: ALFC uses one space before `;` (was padding to COL_CMT=72)
+- Sep→label: emit_sep_major buffers into pending_sep; A() fold path emits `; sep` immediately before `label:  INSTR` (no blank gap between sep and label)
+- Non-label sep sites (PROGRAM BODY, END, NAMED PATTERN BODIES, STUB LABELS, STRING TABLE) use flush_pending_sep()
+- 12594 lines; 496 verbose sub-rsp,32 blocks remain (unchanged — formatting only); NASM clean
+- 106/106 C crosscheck PASS, 26/26 ASM crosscheck PASS
+
 **Session172 — CONC2_*16/ALT2_*16 macros; E_FNC 2-arg fast paths; 529→496 verbose blocks:**
 - `CONC2_16/CONC2_N16/CONC2_SV16/CONC2_VS16/CONC2_VN16/CONC2_VV16` + `ALT2_*16` aliases added to `snobol4_asm.mac` — result stored at `[rbp-16/8]` (subject slot)
 - E_FNC 2-arg fast paths added in `emit_byrd_asm.c`: detect atom arg shapes (SS/SN/SV/VS/VN/VV) for both `rbp_off==-32` and `rbp_off==-16`, emit CONC2_* macros (which work for any fn label, not just CONCAT/ALT)
