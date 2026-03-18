@@ -11,9 +11,9 @@ Shared frontends. Multiple backends. Self-hosting goal: sno2c compiles sno2c.
 | | |
 |-|-|
 | **Active repos** | `snobol4x` (TINY) · `snobol4dotnet` (DOTNET) |
-| **TINY sprint** | `asm-backend` — Sprint A14: M-ASM-BEAUTIFUL (PIVOT session159) |
+| **TINY sprint** | `asm-backend` — Sprint A14: M-ASM-BEAUTIFUL ✅ session175 → next: M-ASM-READABLE (A11) |
 | **TINY HEAD** | `7d6add6` session175: col3 alignment perfected; emit_instr() helper; 11654 lines; 106/106 26/26 |
-| **TINY next** | Result-temp strategy for 15 remaining verbose blocks (all complex children: E_IDX/E_SUB/E_FNC — need scratch .bss pair); then M-ASM-BEAUTIFUL eval |
+| **TINY next** | M-ASM-READABLE: label named expansion — alnum-base kept, special chars expanded (pp_>= → _L_pp_GT_EQ_N). Sprint A11. |
 | **DOTNET sprint** | `net-perf-analysis` — hotfixes landed; dotnet test + BenchmarkSuite2 re-run needed |
 | **DOTNET HEAD** | `a029cae` session156: hotfixes A–D; BUILDING.md; build_native.sh; net-build-prereqs ✅ |
 | **DOTNET next** | `dotnet test` 1873/1876 → BenchmarkSuite2 re-run → M-NET-PERF → `cross` @N fix → net-benchmark-publish |
@@ -104,7 +104,7 @@ Sprint detail lives in the active platform L2 doc (TINY.md / JVM.md / DOTNET.md)
 | **M-ASM-READABLE** | Label scheme: alnum-base + named-expansion for special chars (pp_>= → pp_GT_EQ_N); replaces current alnum-collapse | ❌ post M-ASM-BEAUTY |
 | **M-ASM-MACROS** | NASM macro library `snobol4_asm.mac` — every emitted line is `LABEL  MACRO(args)  GOTO`. LIT/SPAN/SEQ/ALT/DOL/SUBJECT/MATCH/REPLACE/GOTO. Three-column .s matches three-column .c. | ❌ Sprint A12 |
 | **M-ASM-IR** | ASM IR phase: AsmNode tree between parse and emit. Same architecture as CNode. Separates tree walk from pretty-print. One IR, two emitters (C + ASM). | ❌ Sprint A13 |
-| **M-ASM-BEAUTIFUL** | beauty_prog.s as readable as beauty_full.c. Lon reads it and declares it beautiful. | ❌ Sprint A14 |
+| **M-ASM-BEAUTIFUL** | beauty_prog.s as readable as beauty_full.c. Lon reads it and declares it beautiful. | ✅ `7d6add6` session175 |
 | **M-BOOTSTRAP** | sno2c_stage1 output = sno2c_stage2 | ❌ |
 
 ### JVM (snobol4jvm)
