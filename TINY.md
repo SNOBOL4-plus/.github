@@ -43,9 +43,21 @@ snobol4x: multiple frontends, multiple backends.
 - Four-column layout retained as-is per Lon's decision
 - 12689 lines, 106/106 26/26
 
-**⚠ CRITICAL NEXT ACTION — Session172:**
+**Session172 — CONC2_*16/ALT2_*16 macros; E_FNC 2-arg fast paths; 529→496 verbose blocks:**
+- `CONC2_16/CONC2_N16/CONC2_SV16/CONC2_VS16/CONC2_VN16/CONC2_VV16` + `ALT2_*16` aliases added to `snobol4_asm.mac` — result stored at `[rbp-16/8]` (subject slot)
+- E_FNC 2-arg fast paths added in `emit_byrd_asm.c`: detect atom arg shapes (SS/SN/SV/VS/VN/VV) for both `rbp_off==-32` and `rbp_off==-16`, emit CONC2_* macros (which work for any fn label, not just CONCAT/ALT)
+- Diagnosis: 529 blocks split into two root causes: (a) E_FNC 2-arg with atom children at rbp_off==-16 (now fixed), (b) E_CONC/E_OR/E_FNC with complex (non-atom) children (440 blocks remain — need result-temp strategy)
+- 12444 → 12100 lines (−344); 529 → 496 verbose blocks; NASM clean
+- 106/106 C crosscheck PASS, 26/26 ASM crosscheck PASS
 
-Remaining 529 verbose `sub rsp,32` blocks are nested expression trees — left or right child is `E_CONC`/`E_OR`/`E_FNC`, not an atom. Atom fast-paths are exhausted. Next structural move: **result-temp strategy**.
+**⚠ CRITICAL NEXT ACTION — Session173:**
+
+Remaining 496 verbose `sub rsp, 32` blocks have at least one complex (non-atom) child. Survey the shapes: from prior classification, ~188 are `E_CONC/E_OR` with `left=other right=NUL slot=-32` (left child is itself `E_CONC`/`E_OR`/`E_FNC`). Strategy: **CONC3 survey** — check if the dominant nested shape is `CONCAT(CONCAT(atom,atom), atom)` collapsible with a 3-arg macro.
+
+Steps:
+1. Classify remaining 496 blocks: for each, what is the left child's shape (E_CONC? E_FNC? depth?)
+2. If dominant shape is depth-2 left-associative CONCAT chains → add `CONC3` macro + emitter fast path
+3. Otherwise → result-temp strategy per session172 plan
 
 Evaluate complex child into a `.bss` scratch pair (`conc_tmp_rax`, `conc_tmp_rdx`), then collapse with new macros:
 - `CONC2_TV fn, tmplab, varlab` — fn(pre-computed-temp, variable)
