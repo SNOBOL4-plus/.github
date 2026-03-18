@@ -12,8 +12,18 @@ snobol4x: multiple frontends, multiple backends.
 ## NOW
 
 **Sprint:** `asm-backend` — Sprint A14: M-ASM-BEAUTIFUL (PIVOT session159)
-**HEAD:** `88653f6` session163
+**HEAD:** `db80921` session164
 **Milestone:** M-ASM-CROSSCHECK ✅ session151 → **M-ASM-BEAUTIFUL** (A14, active)
+
+**Session164 — label folds onto instruction (pending-label mechanism):**
+- Added pending-label buffer in A() — label survives blank lines and STMT_SEP
+- Rule: label on own line only when two labels are consecutive
+- `L_sn_0:  GET_VAR S_457` — one line per state throughout program body
+- beauty_prog_session164.s: 13664 lines (down 4556 from session159), assembles clean
+- 106/106 C crosscheck PASS, 26/26 ASM crosscheck PASS
+
+**⚠ CRITICAL NEXT ACTION:**
+Lon reviews `artifacts/asm/beauty_prog_session164.s` → M-ASM-BEAUTIFUL fires.
 
 **Session163 — four-column format complete: label: MACRO args ; comment**
 - DOL_SAVE macro: 3 raw instructions → 1 line
@@ -408,12 +418,12 @@ depth is correct before `$'('` runs.
 
 ---
 
-## Session Start (session164)
+## Session Start (session165)
 
 ```bash
 cd /home/claude/snobol4x
 git config user.name "LCherryholmes" && git config user.email "lcherryh@yahoo.com"
-git log --oneline -3   # verify HEAD = 88653f6
+git log --oneline -3   # verify HEAD = db80921
 
 apt-get install -y libgc-dev nasm && make -C src/sno2c
 
