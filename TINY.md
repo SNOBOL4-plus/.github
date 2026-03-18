@@ -408,18 +408,20 @@ depth is correct before `$'('` runs.
 
 ---
 
-## Session Start
+## Session Start (session164)
 
 ```bash
 cd /home/claude/snobol4x
 git config user.name "LCherryholmes" && git config user.email "lcherryh@yahoo.com"
-git log --oneline -3   # verify HEAD matches above
+git log --oneline -3   # verify HEAD = 88653f6
 
-apt-get install -y libgc-dev && make -C src/sno2c
+apt-get install -y libgc-dev nasm && make -C src/sno2c
 
 mkdir -p /home/snobol4corpus
 ln -sf /home/claude/snobol4corpus/crosscheck /home/snobol4corpus/crosscheck
-STOP_ON_FAIL=0 bash test/crosscheck/run_crosscheck.sh   # must be 106/106
+gcc -c src/runtime/asm/snobol4_asm_harness.c -o src/runtime/asm/snobol4_asm_harness.o
+STOP_ON_FAIL=0 bash test/crosscheck/run_crosscheck.sh        # must be 106/106
+bash test/crosscheck/run_crosscheck_asm.sh                   # must be 26/26
 ```
 
 ## Build beauty_full_bin
