@@ -22,7 +22,23 @@ snobol4x: multiple frontends, multiple backends.
 - beauty_prog_session164.s: 13664 lines (down 4556 from session159), assembles clean
 - 106/106 C crosscheck PASS, 26/26 ASM crosscheck PASS
 
-**⚠ CRITICAL NEXT ACTION:**
+**⚠ CRITICAL NEXT ACTION — Session165:**
+
+**Column alignment — inline, no post-processing:**
+
+Lon's spec: every instruction starts at a fixed column (COL_W=28). Study how
+`beauty.sno` tracks column position while generating output — keep a running
+`col` counter in the emitter, emit spaces to reach COL_W before each instruction.
+
+Design in `emit_byrd_asm.c`:
+- Add `static int out_col = 0;` — tracks current output column
+- Wrap `fputc`/`fputs`/`fprintf` to update `out_col` on every char written
+- New `emit_to_col(int n)` — emits spaces until `out_col == n`
+- In A(): after any newline resets col to 0; before instruction content call `emit_to_col(COL_W)`
+- In asmL()/pending-label fold: emit label, then `emit_to_col(COL_W)` before instruction
+- Rule: if label+colon >= COL_W, emit newline then `emit_to_col(COL_W)` for instruction
+- No post-processing pass needed — column tracking is inline like beauty.sno's pp/ss
+
 Lon reviews `artifacts/asm/beauty_prog_session164.s` → M-ASM-BEAUTIFUL fires.
 
 **Session163 — four-column format complete: label: MACRO args ; comment**
