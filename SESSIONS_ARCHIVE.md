@@ -6902,3 +6902,46 @@ STOP_ON_FAIL=0 bash test/crosscheck/run_crosscheck.sh        # must be 106/106
 bash test/crosscheck/run_crosscheck_asm.sh                   # must be 26/26
 # Then read beauty.sno for pp/ss column-tracking pattern before writing any code
 ```
+
+---
+
+## Session 165
+
+**Sprint:** asm-backend — A14 M-ASM-BEAUTIFUL
+**Date:** 2026-03-18
+
+### What happened
+
+- Implemented inline column alignment in `emit_byrd_asm.c` (COL_W=28)
+- Added `out_col` tracker, `oc_char()`, `oc_str()`, `emit_to_col()`
+- `oc_char()` counts display columns, skips UTF-8 continuation bytes — α/β/γ/ω each count as 1 column
+- `emit_to_col(n)`: pads to col n; if already past n, emits newline then pads
+- All unlabeled instructions now route through `emit_to_col(COL_W)` in `A()`
+- `asmLB()` updated to use `oc_str`+`emit_to_col` (replaces `%-28s` printf padding)
+- `ALFC` fixed: was byte-counting via `%-28s`, now display-column-accurate
+- STMT_SEP/PORT_SEP/section directives/`.bss` content exempt from col-28 alignment
+- Comment column: COL_W+44=72; non-wrapping (one space if instruction past col 72)
+- Diagnosed root cause of α vs β misalignment: ALFC used old `%-28s` byte-padding path bypassing `oc_char`
+- **0 misaligned lines** across 13664-line beauty_prog_session165.s
+- 106/106 C crosscheck PASS, 26/26 ASM crosscheck PASS, nasm clean
+
+### State at handoff
+
+- HEAD snobol4x: `10184a0`
+- HEAD .github: `d8dca83`
+- 106/106 C crosscheck PASS, 26/26 ASM crosscheck PASS
+- Next: Lon reviews beauty_prog_session165.s → M-ASM-BEAUTIFUL fires, or decoupled emitter/beautifier
+
+### Session 166 start
+
+```bash
+cd /home/claude/snobol4x
+git config user.name "LCherryholmes" && git config user.email "lcherryh@yahoo.com"
+git log --oneline -3   # verify HEAD = 10184a0
+apt-get install -y libgc-dev nasm && make -C src/sno2c
+mkdir -p /home/snobol4corpus
+ln -sf /home/claude/snobol4corpus/crosscheck /home/snobol4corpus/crosscheck
+gcc -c src/runtime/asm/snobol4_asm_harness.c -o src/runtime/asm/snobol4_asm_harness.o
+STOP_ON_FAIL=0 bash test/crosscheck/run_crosscheck.sh        # must be 106/106
+bash test/crosscheck/run_crosscheck_asm.sh                   # must be 26/26
+```
