@@ -7207,3 +7207,33 @@ Priority:
 After history replay, artifact check revealed beauty_prog.s still had old spelled-out
 `_alpha`/`_beta`/`_gamma`/`_omega` names from the history-replay commits.
 Regenerated and committed with Greek fix applied. Final HEAD: `6260084`.
+
+---
+
+## Session 179 — 2026-03-18
+
+**Repo:** snobol4x · **HEAD at close:** `38f69b5`
+
+**What happened:**
+- Arithmetic ops fixed: E_ADD/E_SUB/E_MPY/E_DIV/E_EXPOP/E_MNS cases added to prog_emit_expr; add/sub/mul/DIVIDE_fn/POWER_fn/neg registered in SNO_INIT_fn. All 8 arith_new tests pass.
+- Named-pattern scan fix: expr_is_pattern_expr() prevents plain value assignments (X='hello', OUTPUT=X) from generating spurious Byrd-box bodies and P_X_ret_γ references.
+- E_MNS operand: e->left not e->right (unop() convention).
+- Synthetic labels renamed: L_sn_N → Ln_N (next/fall-through), L_sf_N → Lf_N (fail dispatch).
+- artifacts/asm/ reorganised: beauty_prog.s at top; fixtures/ for sprint oracles; samples/ for programs.
+- RULES.md strengthened: token rule explicitly forbids token in handoff summaries.
+- Corpus: 47 → 64 PASS, 16 → 4 NASM_FAIL. 106/106 C ✅. 25/26 ASM (056_pat_star_deref).
+
+**State at handoff:**
+- 056_pat_star_deref: PAT='hello' (E_QLIT) skipped by expr_is_pattern_expr, but *PAT E_INDR emit still references P_PAT_ret_γ. Fix: E_INDR path must check named-pattern registry; fall back when not registered.
+- 4 NASM_FAIL remaining: 019, 056, 086, wordcount.
+
+**Next session start:**
+```bash
+cd /home/claude/snobol4x
+git config user.name "LCherryholmes" && git config user.email "lcherryh@yahoo.com"
+apt-get install -y libgc-dev nasm && make -C src/sno2c
+mkdir -p /home/snobol4corpus && ln -sf /home/claude/snobol4corpus/crosscheck /home/snobol4corpus/crosscheck
+gcc -c src/runtime/asm/snobol4_asm_harness.c -o src/runtime/asm/snobol4_asm_harness.o
+STOP_ON_FAIL=0 bash test/crosscheck/run_crosscheck.sh   # 106/106
+bash test/crosscheck/run_crosscheck_asm.sh               # fix 056 → 26/26 first
+```
