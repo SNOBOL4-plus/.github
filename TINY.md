@@ -12,8 +12,18 @@ snobol4x: multiple frontends, multiple backends.
 ## NOW
 
 **Sprint:** `asm-backend` — Sprint A14: M-ASM-BEAUTIFUL (PIVOT session159)
-**HEAD:** `d55ee76` session160
+**HEAD:** `0f7f20b` session161
 **Milestone:** M-ASM-CROSSCHECK ✅ session151 → M-ASM-BEAUTY (A10, blocked 102-109) → **M-ASM-BEAUTIFUL** (A14, active)
+
+**Session161 — label: MACRO args on one line:**
+- Added `ALF(lbl, fmt, ...)` helper — emits `label:  INSTRUCTION args` on one line
+- 40 `asmL()+A()` and `asmL()+asmJ()` pairs folded into single `ALF()` calls
+- Every Byrd box port: `seq_l26_alpha:  LIT_ALPHA lit_str_6, 2, saved, cursor, ...`
+- beauty_prog_session161.s: 15883 lines (was 16421 — 538 more eliminated), assembles clean
+- 106/106 C crosscheck PASS, 26/26 ASM crosscheck PASS
+
+**⚠ CRITICAL NEXT ACTION — Sprint A14 (M-ASM-BEAUTIFUL):**
+Lon reviews `artifacts/asm/beauty_prog_session161.s` → M-ASM-BEAUTIFUL fires.
 
 **Session160 — M-ASM-BEAUTIFUL: all pattern port macros landed:**
 - All primitive emitters replaced with one macro call per port:
@@ -34,7 +44,7 @@ snobol4x: multiple frontends, multiple backends.
 ```bash
 cd /home/claude/snobol4x
 git config user.name "LCherryholmes" && git config user.email "lcherryh@yahoo.com"
-git log --oneline -3   # verify HEAD = d55ee76
+git log --oneline -3   # verify HEAD = 0f7f20b
 
 apt-get install -y libgc-dev nasm
 make -C src/sno2c
