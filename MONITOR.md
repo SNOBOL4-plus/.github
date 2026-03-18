@@ -219,7 +219,7 @@ Skip or special-case this test.
 **Run:**
 ```bash
 bash snobol4harness/monitor/run_monitor_suite.sh \
-    /home/socrates/snobol4corpus/crosscheck \
+    /home/claude/snobol4corpus/crosscheck \
     snobol4 \
     ./snobol4-tiny-bin \
     2>monitor_results.txt
