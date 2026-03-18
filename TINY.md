@@ -12,32 +12,25 @@ snobol4x: multiple frontends, multiple backends.
 ## NOW
 
 **Sprint:** `asm-backend` — Sprint A14: M-ASM-BEAUTIFUL (PIVOT session159)
-**HEAD:** `03dece0` session166
+**HEAD:** `8e5e9cb` session167
 **Milestone:** M-ASM-CROSSCHECK ✅ session151 → **M-ASM-BEAUTIFUL** (A14, active)
 
-**Session166 — STMT_SEP at column 28:**
-- `STMT_SEP` was emitted with 4-space indent; now emits at col 28 (instruction column)
-- Fix: `A("\n    STMT_SEP\n")` → `A("\n%*sSTMT_SEP\n", COL_W, "")`
-- beauty_prog_session166.s: 13664 lines, assembles clean, STMT_SEP aligned throughout
+**Session167 — ASSIGN_INT/STR, CALL1_INT/STR macros; emit_sep_major/minor separators:**
+- `ASSIGN_INT var, n, fail_lbl` — collapses LOAD_INT + IS_FAIL_BRANCH + SET_VAR (6 lines → 1)
+- `ASSIGN_STR var, s, fail_lbl` — collapses LOAD_STR + IS_FAIL_BRANCH + SET_VAR (6 lines → 1)
+- `CALL1_INT fn, n` — collapses sub rsp + LOAD_INT + STORE_ARG32 + APPLY_FN_N + add rsp + mov-pair (9 lines → 1)
+- `CALL1_STR fn, s` — same with string literal arg
+- Redundant `mov [rbp-32],rax` / `mov [rbp-24],rdx` after LOAD_INT/LOAD_STR eliminated
+- Post-APPLY_FN_N mov pair → STORE_RESULT macro
+- `emit_sep_major(tag)` — `; === tag ====...` (80 cols, configurable SEP_W) at every SNOBOL4 stmt, section headers, named pattern headers; source label embedded when present
+- `emit_sep_minor(tag)` — `; --- tag ----...` before γ/ω trampolines in named pattern defs
+- STMT_SEP NASM macro bypassed — separators are raw comment text, visible without expansion
+- beauty_prog_session167.s: 12745 lines (down 919 from session166), assembles clean
 - 106/106 C crosscheck PASS, 26/26 ASM crosscheck PASS
 
-**⚠ CRITICAL NEXT ACTION — Session167:**
+**⚠ CRITICAL NEXT ACTION — Session168:**
 
-Continue M-ASM-BEAUTIFUL: collapse raw `mov [rbp-32],rax` / `STORE_ARG32` / `APPLY_FN_N` sequences in `main` body into high-level macros. Pattern in generated .s:
-```nasm
-                            sub     rsp, 16
-                            LOAD_STR    S_6
-                            mov     [rbp-32], rax
-                            mov     [rbp-24], rdx
-                            STORE_ARG32 0
-                            APPLY_FN_N  S_5, 1
-                            add     rsp, 16
-                            mov     [rbp-32], rax
-                            mov     [rbp-24], rdx
-                            IS_FAIL_BRANCH  L_sn_3
-                            SET_VAR     S_4
-```
-Target: one macro call per logical operation. Also: `LOAD_INT x` / `mov [rbp-32],rax` / `mov [rbp-24],rdx` / `IS_FAIL_BRANCH` / `SET_VAR` should collapse to `ASSIGN_INT var, x, next`.
+Continue M-ASM-BEAUTIFUL: the multi-arg E_OR/E_CONC (ALT/CONCAT) 2-arg calls still emit verbose sub/LOAD/STORE/APPLY/add sequences. Add `CALL2_SS`, `CALL2_SN` macro fast-paths in emit_byrd_asm.c E_OR/E_CONC case (macros already in snobol4_asm.mac from session167). Also: L_sn_10 still has a deeply nested raw sequence — the CALL2_SS/SN paths will collapse it.
 
 **Session165 — inline column alignment (COL_W=28):**
 - Added `out_col` tracker + `oc_char()`/`oc_str()`/`emit_to_col()` in emit_byrd_asm.c
@@ -459,12 +452,12 @@ depth is correct before `$'('` runs.
 
 ---
 
-## Session Start (session165)
+## Session Start (session168)
 
 ```bash
 cd /home/claude/snobol4x
 git config user.name "LCherryholmes" && git config user.email "lcherryh@yahoo.com"
-git log --oneline -3   # verify HEAD = db80921
+git log --oneline -3   # verify HEAD = 8e5e9cb
 
 apt-get install -y libgc-dev nasm && make -C src/sno2c
 
