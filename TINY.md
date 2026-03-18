@@ -12,8 +12,32 @@ snobol4x: multiple frontends, multiple backends.
 ## NOW
 
 **Sprint:** `asm-backend` — fix corpus tests → M-MONITOR (ASM)
-**HEAD:** `38f69b5` session179
-**Milestone:** M-ASM-READABLE ✅ session176 → M-ASM-IR ⏸ deferred → **fix corpus tests + M-MONITOR**
+**HEAD:** `f3ca7f2` session181
+**Milestone:** M-REORG ✅ session181 → fix corpus tests (75→113) + M-MONITOR
+
+**Session181 — M-REORG: full repo reorganisation + scan-retry omega fix:**
+- `src/frontend/snobol4/` ← lex, parse, sno.l/y, sno2c.h (from src/sno2c/)
+- `src/frontend/rebus/` ← rebus frontend (from src/rebus/)
+- `src/frontend/icon/` ← Python parser prototypes (from src/parser/)
+- `src/frontend/{snocone,prolog}/` ← placeholders
+- `src/ir/byrd/` ← emit_cnode.c/.h + byrd_ir/ir/lower.py (from src/sno2c/ + src/ir/)
+- `src/backend/c/` ← emit.c, emit_byrd.c, trampoline files (from src/sno2c/)
+- `src/backend/x64/` ← emit_byrd_asm.c (from src/sno2c/)
+- `src/backend/{jvm,net}/` ← Python stubs (from src/codegen/)
+- `src/driver/main.c` ← compiler entry point (from src/sno2c/)
+- `src/runtime/mock/` ← mock_engine.c, mock_includes.c (from src/runtime/ + src/runtime/snobol4/)
+- `src/runtime/engine/` ← engine.c/.h, runtime.c/.h (from src/runtime/)
+- `src/runtime/runtime.h` + `src/runtime/engine.h` ← forwarding shims for relative includes
+- `artifacts/c/beautiful.c` ← generated file moved out of runtime source tree
+- `test/frontend/snobol4/` ← .sno fixtures (from test/sprintN/)
+- `test/backend/c/` ← .c + .py oracles (from test/sprintN/)
+- `scratch/` ← gitignored working dir
+- `sno2c` ← binary now at repo root (was src/sno2c/sno2c)
+- `src/Makefile` ← new build root
+- Scan-retry omega fix: `jg next_lbl` → `jg tgt_f` in omega block of `asm_emit_program`
+  Fixes 034_goto_failure, 057_pat_fail_builtin, 098_keyword_anchor
+- beauty_prog.s artifact updated, NASM clean
+- 106/106 C PASS ✅, 26/26 ASM PASS ✅
 
 **Session168 — FAIL_BR/FAIL_BR16/SUBJ_FROM16 renames; CONC2/ALT2 macros; COL2_W=12; CONC2_N/CONC2 fast paths:**
 - `IS_FAIL_BRANCH` → `FAIL_BR` (14→7 chars); `IS_FAIL_BRANCH16` → `FAIL_BR16` (16→8 chars)
@@ -422,6 +446,7 @@ Prolog reader
 | **M-ASM-BEAUTY** | beauty.sno self-beautifies via ASM backend | ❌ | A10 |
 | **M-ASM-READABLE** | Label names: special-char expansion (pp_>= → S_pp_GT_EQ); _ literal passthrough; uid on collision only. Original bijection spec revised — expanding _ destroys readability for normal names. M-ASM-READABLE-A. | ✅ `e0371fe` session176 | A11 |
 | **M-ASM-BEAUTIFUL** | beauty_prog.s as readable as beauty_full.c. Lon reads it and declares it beautiful. | ✅ `7d6add6` session175 | A14 |
+| **M-REORG** | Full repo layout: frontend/ ir/ backend/ driver/ runtime/; binary at snobol4x/sno2c; 106/106 26/26 | ✅ `f3ca7f2` session181 | — |
 | M-BOOTSTRAP | sno2c_stage1 output = sno2c_stage2 | ❌ | final goal |
 
 
@@ -859,32 +884,29 @@ The emit pass just prints them in three-column format. No logic in the emit pass
 - Corpus: **75 PASS** (up from 64 session179). 106/106 C ✅. 26/26 ASM ✅.
 - HEAD: `ee4b118`
 
-**⚠ CRITICAL NEXT ACTION — Session181:**
+**⚠ CRITICAL NEXT ACTION — Session182:**
 
-1. **Fix scan retry omega** (one line): in `asm_emit_program` Case 2 omega block, the `jg next_lbl` must jump to `tgt_f` (or fall through correctly to `emit_jmp(tgt_f)`). Current code:
-   ```c
-   A("    jg      %s\n", next_lbl);   /* BUG: should reach tgt_f */
-   A("    mov     [%s], rax\n", scan_start);
-   A("    jmp     %s\n", scan_retry);
-   emit_jmp(tgt_f, next_lbl);
-   ```
-   Fix: change `jg next_lbl` → `jg <tgt_f_label>` where tgt_f_label is the resolved F-target. Use `emit_jmp` helper or inline the label. Then `034_goto_failure`, `057`, `098_keyword_anchor` should recover. Target: **78+ PASS**.
+1. **Run corpus** — scan-retry fix should recover 034, 057, 098. Target 78+ PASS.
+2. **Continue corpus fixes** per session180 priority order:
+   - NASM_FAIL remaining (4 tests: 019, 056, 086, wordcount)
+   - Capture fixes (060–064)
+   - Define/functions (083–090)
+3. **Update beauty_prog.s artifact** if emit_byrd_asm.c changed.
 
-2. **Update beauty_prog.s artifact** per RULES.md (session touched emit_byrd_asm.c).
-
-3. **Run corpus/bench** as requested.
-
-**Session181 start commands:**
+**Session182 start commands:**
 ```bash
 cd /home/claude/snobol4x
 git config user.name "LCherryholmes" && git config user.email "lcherryh@yahoo.com"
-git log --oneline -3   # verify HEAD = ee4b118
+git log --oneline -3   # verify HEAD = f3ca7f2
 
-apt-get install -y libgc-dev nasm && make -C src/sno2c
+apt-get install -y libgc-dev nasm && make -C src
 mkdir -p /home/snobol4corpus && ln -sf /home/claude/snobol4corpus/crosscheck /home/snobol4corpus/crosscheck
 gcc -c src/runtime/asm/snobol4_asm_harness.c -o src/runtime/asm/snobol4_asm_harness.o
 STOP_ON_FAIL=0 bash test/crosscheck/run_crosscheck.sh        # must be 106/106
 bash test/crosscheck/run_crosscheck_asm.sh                   # must be 26/26
+
+# Then run full corpus
+STOP_ON_FAIL=0 bash test/crosscheck/run_crosscheck_asm_prog.sh 2>&1 | tail -5
 ```
 
 **Session180 — arithmetic ops, named-pattern fix, label rename, artifacts reorg:**
