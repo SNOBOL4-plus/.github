@@ -7046,3 +7046,61 @@ bash test/crosscheck/run_crosscheck_asm.sh                   # must be 26/26
 **Active sprint: M-ASM-IR (Sprint A13)**
 AsmNode tree between parse and emit. Same architecture as CNode.
 See TINY.md §Sprint A13 for full spec.
+
+**session177 — housekeeping: M-ASM-IR deferred; artifact reorganization; test baseline (`c768f7c`):**
+
+**Decisions:**
+- M-ASM-IR (Sprint A13) **deferred** — ASM and C backends may need different IR shapes.
+  Premature unification risks blocking ASM progress. Revisit after both backends reach
+  feature parity. Marked ⏸ in PLAN.md.
+- M-MONITOR retargeted to **ASM backend** (was C backend). MONITOR.md update pending.
+
+**Artifact protocol overhaul:**
+- Canonical-file protocol adopted: one file per artifact, git history is the archive
+- `artifacts/` reorganized into four folders: `asm/` · `c/` · `jvm/` · `net/`
+- 23 `beauty_prog_sessionN.s` numbered copies deleted; replaced by single `artifacts/asm/beauty_prog.s`
+- 4 `beauty_tramp_sessionN.c` files collapsed to `artifacts/c/beauty_prog.c`
+- `trampoline_session5x/` folders collapsed to `artifacts/c/trampoline_*.c`
+- `retired/` folder deleted
+- RULES.md §ARTIFACTS rewritten; PLAN.md artifact reminder updated
+- `artifacts/README.md` rewritten as unified four-folder index
+
+**ASM backend test baseline established:**
+- Full corpus run against ASM backend: **47/113 PASS**
+- NASM_FAIL (16): two root causes —
+  1. `P_X_ret_gamma not defined` — named pattern return slots missing for inline patterns
+  2. `P_1_α_saved not defined` — ALT cursor save slot missing in statement context
+- FAIL wrong output (38): arithmetic returns empty; real literals; concat; indirect assign; &ALPHABET=0
+- TIMEOUT (12): infinite loops — goto-on-failure path likely loops unconditionally
+
+**Next session — fix tests, then build M-MONITOR for ASM:**
+1. Fix arithmetic (7 tests) — `stmt_apply` for add/sub/mul/div/exp/neg
+2. Fix NASM_FAIL `P_X_ret_gamma` (9 tests) — named pattern return slot declaration
+3. Fix NASM_FAIL `P_1_α_saved` (6 tests) — ALT cursor save slot in statement context
+4. Then: build M-MONITOR runner infrastructure targeting ASM backend
+
+**Next session start commands:**
+```bash
+cd /home/claude/snobol4x
+git config user.name "LCherryholmes" && git config user.email "lcherryh@yahoo.com"
+git log --oneline -3   # verify HEAD = c768f7c
+
+apt-get install -y libgc-dev nasm && make -C src/sno2c
+mkdir -p /home/snobol4corpus && ln -sf /home/claude/snobol4corpus/crosscheck /home/snobol4corpus/crosscheck
+gcc -c src/runtime/asm/snobol4_asm_harness.c -o src/runtime/asm/snobol4_asm_harness.o
+# Build runtime objects for full-program ASM tests:
+RT=src/runtime
+gcc -O0 -g -c $RT/snobol4/snobol4.c -I$RT/snobol4 -I$RT -Isrc/sno2c -lgc -lm -w -o /tmp/snobol4.o
+gcc -O0 -g -c $RT/snobol4/mock_includes.c -I$RT/snobol4 -I$RT -Isrc/sno2c -w -o /tmp/mock_includes.o
+gcc -O0 -g -c $RT/snobol4/snobol4_pattern.c -I$RT/snobol4 -I$RT -Isrc/sno2c -w -o /tmp/snobol4_pattern.o
+gcc -O0 -g -c $RT/mock_engine.c -I$RT/snobol4 -I$RT -Isrc/sno2c -w -o /tmp/mock_engine.o
+gcc -O0 -g -c $RT/asm/snobol4_stmt_rt.c -I$RT/snobol4 -I$RT -Isrc/sno2c -w -o /tmp/stmt_rt.o
+STOP_ON_FAIL=0 bash test/crosscheck/run_crosscheck.sh        # must be 106/106
+bash test/crosscheck/run_crosscheck_asm.sh                   # must be 26/26
+
+**Active sprint: asm-backend — fix corpus tests, then M-MONITOR**
+Priority fixes:
+  1. Arithmetic (023-029) — stmt_apply for add/sub/mul/div/exp/neg returning empty
+  2. NASM_FAIL P_X_ret_gamma — named pattern return slot not declared for inline patterns
+  3. NASM_FAIL P_1_α_saved — ALT cursor save slot missing in statement context
+Then: build snobol4harness/monitor/ runner for ASM backend (Sprint M1)

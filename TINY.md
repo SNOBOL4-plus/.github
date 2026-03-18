@@ -11,9 +11,9 @@ snobol4x: multiple frontends, multiple backends.
 
 ## NOW
 
-**Sprint:** `asm-backend` — Sprint A13: M-ASM-IR (M-ASM-READABLE ✅ session176)
-**HEAD:** `e0371fe` session176
-**Milestone:** M-ASM-BEAUTIFUL ✅ session175 → M-ASM-READABLE ✅ session176 → **M-ASM-IR** (A13, active)
+**Sprint:** `asm-backend` — fix corpus tests → M-MONITOR (ASM)
+**HEAD:** `c768f7c` session177
+**Milestone:** M-ASM-READABLE ✅ session176 → M-ASM-IR ⏸ deferred → **fix corpus tests + M-MONITOR**
 
 **Session168 — FAIL_BR/FAIL_BR16/SUBJ_FROM16 renames; CONC2/ALT2 macros; COL2_W=12; CONC2_N/CONC2 fast paths:**
 - `IS_FAIL_BRANCH` → `FAIL_BR` (14→7 chars); `IS_FAIL_BRANCH16` → `FAIL_BR16` (16→8 chars)
@@ -51,9 +51,21 @@ snobol4x: multiple frontends, multiple backends.
 - `asmLC` comment-only lines (`label: ; comment`) correctly exempt — no opcode/operand split
 - beauty_prog_session175.s: 11654 lines, NASM clean, 106/106 26/26
 
-**⚠ CRITICAL NEXT ACTION — Session176:**
+**session177 — housekeeping; artifact reorg; test baseline:**
+- M-ASM-IR deferred — IR shape unknown until both backends mature
+- M-MONITOR retargeted to ASM backend
+- Artifact protocol: canonical files only, asm/c/jvm/net folders, no numbered copies
+- ASM corpus baseline: 47/113 PASS; 16 NASM_FAIL (2 root causes); 38 FAIL; 12 TIMEOUT
+- Next: fix arithmetic (7 tests), fix 2 NASM_FAIL root causes (15 tests), then M-MONITOR
 
-The 15 remaining verbose `sub rsp,32` blocks all have complex children (E_IDX/E_SUB/E_FNC/E_NAM — confirmed session174). Use the result-temp strategy:
+**⚠ CRITICAL NEXT ACTION — Session178:**
+
+Fix corpus tests in priority order:
+1. **Arithmetic (023–029, 7 tests):** `prog_emit_expr` for `E_ADD`/`E_SUB`/`E_MPY`/`E_DIV`/`E_EXP`/`E_NEG` — currently returning empty. Check `stmt_apply` calls in `snobol4_stmt_rt.c` for arithmetic ops.
+2. **NASM_FAIL `P_X_ret_gamma`** (9 tests: 009–013, 019, 056 + others) — named pattern return slot not declared when pattern appears inline in assignment RHS. Fix: ensure `AsmNamedPat` registry entries are emitted for all referenced patterns.
+3. **NASM_FAIL `P_1_α_saved`** (6 tests: 033–035, 038, 062–064) — ALT cursor save slot missing in statement-context pattern. Fix: ensure `.bss` slot is declared for every ALT node regardless of context.
+
+Then Sprint M1 (M-MONITOR): build `snobol4harness/monitor/` runner targeting ASM backend.
 1. Declare `.bss` scratch pair: `conc_tmp0_rax resq 1` / `conc_tmp0_rdx resq 1`
 2. For each complex child: evaluate normally (result in `[rbp-32/24]`), then `mov rax,[rbp-32]; mov [conc_tmp0_rax],rax` etc.
 3. Build args array using scratch values

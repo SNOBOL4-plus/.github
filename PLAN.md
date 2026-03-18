@@ -11,9 +11,9 @@ Shared frontends. Multiple backends. Self-hosting goal: sno2c compiles sno2c.
 | | |
 |-|-|
 | **Active repos** | `snobol4x` (TINY) · `snobol4dotnet` (DOTNET) |
-| **TINY sprint** | `asm-backend` — M-ASM-READABLE ✅ session176; M-ASM-IR ⏸ deferred; next TBD |
-| **TINY HEAD** | `e0371fe` session176: M-ASM-READABLE-A; asm_expand_name(); 11656 lines; 106/106 26/26 |
-| **TINY next** | TBD — see session177 milestone analysis |
+| **TINY sprint** | `asm-backend` — M-ASM-IR ⏸ deferred; fix corpus tests (47/113) → M-MONITOR (ASM) |
+| **TINY HEAD** | `c768f7c` session177: artifact reorg asm/c/jvm/net; canonical files; 106/106 26/26 |
+| **TINY next** | Fix arithmetic (7 tests) → fix NASM_FAIL root causes (15 tests) → Sprint M1 M-MONITOR |
 | **DOTNET sprint** | `net-perf-analysis` — hotfixes landed; dotnet test + BenchmarkSuite2 re-run needed |
 | **DOTNET HEAD** | `a029cae` session156: hotfixes A–D; BUILDING.md; build_native.sh; net-build-prereqs ✅ |
 | **DOTNET next** | `dotnet test` 1873/1876 → BenchmarkSuite2 re-run → M-NET-PERF → `cross` @N fix → net-benchmark-publish |
