@@ -51,27 +51,23 @@ Every pattern in beauty_full_bin is a compiled Byrd box.
 `mock_engine.c` is the only engine file linked. `engine.c` is fully superseded.
 If a build links engine.c: stop and diagnose — something is wrong.
 
-## ⛔ ASM ARTIFACTS — Place generated ASM in artifacts/asm/
+## ⛔ ASM ARTIFACTS — One canonical file per artifact
 
-Every `.s` file that fires a milestone or serves as a sprint oracle must be
-archived in `snobol4x/artifacts/asm/` and recorded in `artifacts/README.md`.
+Git history is the archive. No numbered session copies (`foo_sessionN.s`).
+Overwrite the canonical file and commit. `git log -p` shows the evolution.
 
-```
-artifacts/asm/null.s          — Sprint A0, M-ASM-HELLO ✅ session145
-artifacts/asm/lit_hello.s     — Sprint A1, M-ASM-LIT   ✅ session146
-artifacts/asm/pos0_rpos0.s    — Sprint A2, M-ASM-SEQ   (next)
-artifacts/asm/cat_*.s         — Sprint A3
-artifacts/asm/alt_*.s         — Sprint A4
+**Canonical files:**
+- `artifacts/asm/beauty_prog.s` — beauty.sno via `-asm`; update every session that changes `emit_byrd_asm.c` or `.mac`
+- `artifacts/asm/null.s`, `lit_hello.s`, `alt_*.s`, etc. — one file per test fixture; update when the node type changes
+
+**Update beauty_prog.s:**
+```bash
+src/sno2c/sno2c -asm -I$INC $BEAUTY > artifacts/asm/beauty_prog.s
+nasm -f elf64 -I src/runtime/asm/ artifacts/asm/beauty_prog.s -o /dev/null   # confirm clean
+git add artifacts/asm/beauty_prog.s artifacts/README.md && git commit -m "sessionN: artifacts — beauty_prog.s updated (reason)"
 ```
 
-Entry format in artifacts/README.md:
-```
-### artifacts/asm/FOO.s  (Sprint AX — M-ASM-BAR ✅)
-- status: PASS — <what it does>
-- milestone: M-ASM-BAR fires sessionN
-- assemble: nasm -f elf64 FOO.s -o FOO.o && ld FOO.o -o FOO && ./FOO
-- design: <key design notes — labels, .bss layout>
-```
+**Never create** `beauty_prog_sessionN.s` or any other numbered copy.
 
 ## ⛔ ARTIFACTS — Snapshot generated C every session
 
