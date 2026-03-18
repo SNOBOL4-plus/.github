@@ -12,7 +12,7 @@ snobol4x: multiple frontends, multiple backends.
 ## NOW
 
 **Sprint:** `asm-backend` — Sprint A14: M-ASM-BEAUTIFUL (PIVOT session159)
-**HEAD:** `d872625` session168
+**HEAD:** `48a67b3` session169
 **Milestone:** M-ASM-CROSSCHECK ✅ session151 → **M-ASM-BEAUTIFUL** (A14, active)
 
 **Session168 — FAIL_BR/FAIL_BR16/SUBJ_FROM16 renames; CONC2/ALT2 macros; COL2_W=12; CONC2_N/CONC2 fast paths:**
@@ -26,7 +26,12 @@ snobol4x: multiple frontends, multiple backends.
 - beauty_prog_session168.s: 12689 lines (down 56 from session167), assembles clean
 - 106/106 C crosscheck PASS, 26/26 ASM crosscheck PASS
 
-**⚠ CRITICAL NEXT ACTION — Session169:**
+**Session169 — SEP_W 80→120 (Cherryholmes standard):**
+- `SEP_W` changed from 80 to 120 in `emit_byrd_asm.c`; separator lines (`; ===...` / `; ---...`) now 120 chars wide
+- beauty_prog_session169.s: 12689 lines, NASM clean, 106/106 26/26
+- Four-column layout (label/macro/operands/comment) retained as-is per Lon's decision
+
+**⚠ CRITICAL NEXT ACTION — Session170:**
 
 The dominant `CONCAT(E_QLIT, E_VART)` shape — string literal left, variable right — accounts for the bulk of the ~409 remaining verbose blocks (each 10 lines). Add `CONC2_SV` macro and fast path:
 

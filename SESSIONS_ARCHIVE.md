@@ -6972,3 +6972,11 @@ bash test/crosscheck/run_crosscheck_asm.sh                   # must be 26/26
 - **Artifact:** `artifacts/asm/beauty_prog_session168.s` — 12689 lines (−56), nasm clean
 - **Invariants:** 106/106 C crosscheck PASS, 26/26 ASM crosscheck PASS
 - **Next session start:** `d872625`; add `CONC2_SV`/`ALT2_SV` (QLIT+VART), then `CONC2_VN`/`CONC2_VV` for further coverage
+
+## Session169
+- **Change:** SEP_W 80 → 120 in emit_byrd_asm.c. Separator lines (`; ===...` / `; ---...`) now 120 chars wide (Cherryholmes standard vs Hollerith 80).
+- **Four-column layout** (label / macro / operands / comment at COL_CMT) retained unchanged per Lon's decision.
+- **beauty_prog_session169.s:** 12689 lines, NASM clean, archived.
+- **Invariants:** 106/106 C crosscheck PASS, 26/26 ASM crosscheck PASS.
+- **HEAD:** `48a67b3`
+- **Next:** Session170 — CONC2_SV fast path (QLIT+VART dominant shape, ~551 verbose blocks remaining).
