@@ -12,7 +12,7 @@ snobol4x: multiple frontends, multiple backends.
 ## NOW
 
 **Sprint:** `asm-backend` — fix corpus tests → M-MONITOR (ASM)
-**HEAD:** `6260084` session178
+**HEAD:** `38f69b5` session179
 **Milestone:** M-ASM-READABLE ✅ session176 → M-ASM-IR ⏸ deferred → **fix corpus tests + M-MONITOR**
 
 **Session168 — FAIL_BR/FAIL_BR16/SUBJ_FROM16 renames; CONC2/ALT2 macros; COL2_W=12; CONC2_N/CONC2 fast paths:**
@@ -847,3 +847,19 @@ The emit pass just prints them in three-column format. No logic in the emit pass
 | 120 | beauty.sno PATTERN read in full (lines 293–419). Bug7 confirmed: Expr17 FENCE arm 1 calls nPush() then $'(' fails — nPop() never called on ω path. Expr15 FENCE arm same issue. Fix target: emit_byrd.c FENCE backtrack path. HQ updated with full pattern structure. ~55% context at session start. | Plan only — awaiting instruction |
 | 122 | Pivot: diag1-corpus sprint before bug7-micro. 35 tests 152 assertions rungs 2–11, 35/35 PASS CSNOBOL4 2.3.3. M-FLAT documented (flat() Gray/White bypass of pp/ss). HQ updated. Context ~94% at close. | diag1 corpus ready to commit with token; bug7-micro is next |
 | 122b | PIVOT: M-DIAG1 now top priority. Run diag1 35-test suite on JVM + DOTNET. Fix failures. Fire M-DIAG1. Then bug7-micro. Priority order: M-DIAG1 → M-BEAUTY-CORE → M-FLAT → M-BEAUTY-FULL → M-BOOTSTRAP. | New session opens on snobol4jvm |
+
+**Session179 — arithmetic ops, named-pattern fix, label rename, artifacts reorg:**
+- `E_ADD/E_SUB/E_MPY/E_DIV/E_EXPOP/E_MNS` cases added to `prog_emit_expr` in `emit_byrd_asm.c`
+- `add/sub/mul/DIVIDE_fn/POWER_fn/neg` registered as builtins in `SNO_INIT_fn` (`snobol4.c`)
+- `E_MNS` operand fixed: `e->left` not `e->right` (unop() convention)
+- `expr_is_pattern_expr()` guard: only register `VAR=expr` as named pattern when replacement contains E_FNC/E_OR/E_CONC — plain value assignments (`X='hello'`, `OUTPUT=X`) no longer generate spurious Byrd-box bodies
+- `E_VART/E_KW` added to .bss skip list
+- Synthetic labels renamed: `L_sn_N` → `Ln_N` (next/fall-through), `L_sf_N` → `Lf_N` (fail dispatch)
+- `artifacts/asm/` reorganised: `beauty_prog.s` at top; `fixtures/` for sprint oracles; `samples/` for programs
+- Corpus: **47 → 64 PASS**, 16 → 4 NASM_FAIL; 106/106 C crosscheck ✅; 25/26 ASM crosscheck
+- `056_pat_star_deref` FAIL: `PAT = 'hello'` (E_QLIT) skipped by expr_is_pattern_expr — `*PAT` indirect ref has no .bss slots; fix next session
+
+**⚠ CRITICAL NEXT ACTION — Session180:**
+1. Fix `056_pat_star_deref`: `PAT = 'hello'` assigns E_QLIT but `*PAT` uses it as indirect pattern ref. The expr_is_pattern_expr guard correctly skips it as non-pattern, but the `*VAR` (E_INDR) emit path in `emit_asm_node` still tries to reference `P_PAT_ret_γ`. Fix: when E_INDR references a variable that is NOT in the named-pattern registry, fall back to value-based pattern matching instead. Restore 26/26 ASM crosscheck.
+2. Continue NASM_FAIL fixes: 4 remaining (`019_concat_var_string`, `056_pat_star_deref`, `086_define_locals`, `wordcount`)
+3. Fix remaining FAILs: concat (017–022), capture (060–064), define/functions (083–090)
