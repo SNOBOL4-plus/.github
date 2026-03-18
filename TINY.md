@@ -12,7 +12,20 @@ snobol4x: multiple frontends, multiple backends.
 ## NOW
 
 **Sprint:** `asm-backend` — Sprint A14: M-ASM-BEAUTIFUL (PIVOT session159)
-**HEAD:** `0f7f20b` session161
+**HEAD:** `6ed79c5` session162
+**Milestone:** M-ASM-CROSSCHECK ✅ session151 → **M-ASM-BEAUTIFUL** (A14, active)
+
+**Session162 — three-column format: label: MACRO args ; comment:**
+- Added `ALFC(lbl, comment, fmt, ...)` — folds preceding comment line onto instruction line
+- Result: `seq_l26_alpha:  LIT_ALPHA lit_str_6, 2, ... ; LIT α`
+- ALT emitter fully uses ALT_SAVE_CURSOR/ALT_RESTORE_CURSOR macros
+- beauty_prog_session162.s: 14950 lines (down 3270 from session159), assembles clean
+- 106/106 C crosscheck PASS, 26/26 ASM crosscheck PASS
+
+**⚠ CRITICAL NEXT ACTION:**
+Lon reviews `artifacts/asm/beauty_prog_session162.s` → M-ASM-BEAUTIFUL fires.
+
+**HEAD (previous):** `0f7f20b` session161
 **Milestone:** M-ASM-CROSSCHECK ✅ session151 → M-ASM-BEAUTY (A10, blocked 102-109) → **M-ASM-BEAUTIFUL** (A14, active)
 
 **Session161 — label: MACRO args on one line:**
