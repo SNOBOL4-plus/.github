@@ -28,6 +28,20 @@ Shared frontends. Multiple backends. Self-hosting goal: sno2c compiles sno2c.
 
 ---
 
+## ⛔ ARTIFACT REMINDER — VISIBLE EVERY SESSION
+
+**Every session that touches `emit_byrd_asm.c` or any `.sno` → `.s` path MUST:**
+
+1. `src/sno2c/sno2c -asm -I$INC $BEAUTY > artifacts/asm/beauty_prog_sessionN.s`
+2. `nasm -f elf64 artifacts/asm/beauty_prog_sessionN.s -o /dev/null` — confirm clean
+3. `git add artifacts/asm/beauty_prog_sessionN.s artifacts/README.md && git commit`
+
+**This is not optional. The .s file is the sprint oracle. If it is not committed, it does not exist.**
+
+See also: RULES.md §ASM ARTIFACTS
+
+---
+
 ## Goals
 
 **Goal 1 — Fill the 4D matrix:**
