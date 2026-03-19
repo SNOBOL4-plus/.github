@@ -8231,6 +8231,26 @@ N-200 — Sprint N-R3: Byrd box pattern emission in CIL → M-NET-PATTERN
 ### Next
 N-201 — Sprint N-R4: capture/ + strings/ → M-NET-CAPTURE
 
+### Next session start block (N-201)
+```bash
+cd /home/claude/snobol4x
+git config user.name "LCherryholmes" && git config user.email "lcherryh@yahoo.com"
+# TOKEN via git remote set-url — see Lon
+git log --oneline -3   # verify HEAD = 7f66297 N-200
+apt-get install -y libgc-dev nasm mono-complete && make -C src
+mkdir -p /home/snobol4corpus && ln -sf /home/claude/snobol4corpus/crosscheck /home/snobol4corpus/crosscheck
+gcc -c src/runtime/asm/snobol4_asm_harness.c -o src/runtime/asm/snobol4_asm_harness.o
+STOP_ON_FAIL=0 bash test/crosscheck/run_crosscheck.sh        # must be 106/106
+bash test/crosscheck/run_crosscheck_asm.sh                   # must be 26/26
+CORPUS=/home/claude/snobol4corpus/crosscheck
+bash test/crosscheck/run_crosscheck_net_rung.sh \
+    $CORPUS/hello $CORPUS/output $CORPUS/assign \
+    $CORPUS/control_new $CORPUS/keywords $CORPUS/patterns
+# current: 51/58; then baseline capture/ and strings/:
+bash test/crosscheck/run_crosscheck_net_rung.sh $CORPUS/capture $CORPUS/strings
+# fix failures → M-NET-CAPTURE fires at capture/ 100%
+```
+
 ## Session B-201 — A-SAMPLES: wordcount PASS; roman segfault root-caused
 
 **Sprint:** `asm-backend` A-SAMPLES
