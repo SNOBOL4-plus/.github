@@ -15,6 +15,125 @@ snobol4x: multiple frontends, multiple backends.
 **HEAD:** `3f2c8b9` B-201
 **Milestone:** M-DROP-MOCK-ENGINE ✅ B-200 · M-ASM-R11 ✅ session198 · M-ASM-R10 ✅ session197
 
+**Session B-202 (backend) — M-ASM-RECUR: fix recursive function frames:**
+
+**⚠ CRITICAL NEXT ACTION — Session B-202:**
+
+Sprint A-RECUR — fix recursive function segfault → M-ASM-RECUR → M-ASM-SAMPLES
+
+```bash
+cd /home/claude/snobol4x
+git config user.name "LCherryholmes" && git config user.email "lcherryh@yahoo.com"
+git log --oneline -3   # verify HEAD = 71c86d3 B-201
+apt-get install -y libgc-dev nasm gdb && make -C src
+mkdir -p /home/snobol4corpus && ln -sf /home/claude/snobol4corpus/crosscheck /home/snobol4corpus/crosscheck
+gcc -c src/runtime/asm/snobol4_asm_harness.c -o src/runtime/asm/snobol4_asm_harness.o
+STOP_ON_FAIL=0 bash test/crosscheck/run_crosscheck.sh        # must be 106/106
+bash test/crosscheck/run_crosscheck_asm.sh                   # must be 26/26
+```
+
+**Root cause (fully diagnosed B-201/B-202):**
+
+The current ASM backend has ONE `rbp` frame for the entire program (established by
+`PROG_INIT` in `main`). All `[rbp-8/16/32/48]` temporaries are shared globals.
+When a user-defined function (`ROMAN`) calls itself recursively:
+
+1. Call site saves old N and ret addresses → `.bss` uid slots (`ucall0_sv_*`, `ucall0_rsv_*`)
+2. `jmp P_ROMAN_α` → body runs in the **same `rbp` frame** as the caller
+3. Inner call overwrites `ucall0_sv_*` `.bss` slots with its own save
+4. Inner call returns via `ucall0_ret_g` → restores from `.bss` → correct for inner
+5. Outer call's `ucall0_ret_g` runs → `.bss` slots now hold **inner call's** saved
+   values, not outer call's → `rbp` corrupted to `0x1` → segfault
+
+**Architecture discussion (B-202 session):**
+
+Long-term correct architecture (BACKEND-X64.md Technique 2, post-M-BOOTSTRAP):
+- Each Byrd Box = self-contained CODE + DATA pair
+- On `*X` / function call: `memcpy` CODE+DATA to new region, relocate, jump
+- Each active invocation has its **own DATA copy** — locals are per-invocation
+- Completely stackless — no `rbp`, no shared slots, no save/restore at all
+- One register points to current box's DATA; recurse = new copy, own register
+
+Near-term fix (implement now, unblocks M-ASM-SAMPLES):
+- `P_ROMAN_α` (every `is_fn` α port) establishes its own stack frame:
+  `push rbp / mov rbp,rsp / sub rsp,56`
+- `fn_ROMAN_gamma` / `fn_ROMAN_omega` tear it down before dispatching:
+  `add rsp,56 / pop rbp / jmp [ret_γ|ω]`
+- Call sites continue using `.bss` uid slots for save/restore — safe because
+  each recursive invocation has its own `rbp`, so `.bss` slots are written
+  **once per call-site uid** before `jmp α`, and the callee's fresh frame
+  means inner calls don't touch the outer call's `.bss` slots
+- The `.bss` uid slots are per-call-site in source (ucall0 vs ucall1) —
+  mutual recursion and self-recursion both safe because each dynamic
+  invocation gets a new `rbp` frame
+
+**Fix location:** `emit_asm_named_def()` in `src/backend/x64/emit_byrd_asm.c`,
+`is_fn` branch only. Three lines at α, two lines each at γ/ω.
+
+**Implementation:**
+
+In `emit_asm_named_def`, `is_fn` branch, α label:
+```c
+asmL(np->alpha_lbl);
+A("    push    rbp\n");
+A("    mov     rbp, rsp\n");
+A("    sub     rsp, 56\n");
+/* ... load args, jmp body ... */
+```
+
+γ label:
+```c
+asmL(gamma_lbl);
+A("    add     rsp, 56\n");
+A("    pop     rbp\n");
+A("    jmp     [%s]\n", np->ret_gamma);
+```
+
+ω label:
+```c
+asmL(omega_lbl);
+A("    add     rsp, 56\n");
+A("    pop     rbp\n");
+A("    jmp     [%s]\n", np->ret_omega);
+```
+
+Call sites: **no change needed** — `.bss` uid slots already correct.
+
+**Verify fix:**
+```bash
+# Quick smoke test:
+cat > /tmp/roman_mini.sno << 'EOF'
+    &TRIM = 1
+    DEFINE('ROMAN(N)T')                 :(ROMAN_END)
+ROMAN   N   RPOS(1)  LEN(1) . T  =         :F(RETURN)
+    '0,1I,'
++   T   BREAK(',') . T                  :F(FRETURN)
+    ROMAN = ROMAN(N) T
++                                       :S(RETURN)F(FRETURN)
+ROMAN_END
+    R = ROMAN('12')
+    OUTPUT = "result: " R
+END
+EOF
+RT=src/runtime
+./sno2c -asm /tmp/roman_mini.sno > /tmp/roman_mini.s
+nasm -f elf64 -I $RT/asm/ /tmp/roman_mini.s -o /tmp/roman_mini.o
+gcc -no-pie /tmp/roman_mini.o $RT/asm/snobol4_stmt_rt.c $RT/snobol4/snobol4.c \
+    $RT/mock/mock_includes.c $RT/snobol4/snobol4_pattern.c $RT/engine/engine.c \
+    -I$RT/snobol4 -I$RT -Isrc/frontend/snobol4 -lgc -lm -w -no-pie -o /tmp/roman_mini_bin
+timeout 5 /tmp/roman_mini_bin
+# expected: result: XI  (or similar roman numeral output)
+# Then run full invariants + functions/ rung + roman.sno + wordcount.sno
+STOP_ON_FAIL=0 bash test/crosscheck/run_crosscheck.sh        # 106/106
+bash test/crosscheck/run_crosscheck_asm.sh                   # 26/26
+CORPUS=/home/claude/snobol4corpus/crosscheck
+STOP_ON_FAIL=0 bash test/crosscheck/run_crosscheck_asm_rung.sh $CORPUS/functions  # 8/8
+PROGS=/home/claude/snobol4corpus/programs
+./sno2c -asm $PROGS/roman/roman.sno > artifacts/asm/samples/roman.s
+nasm -f elf64 -I $RT/asm/ artifacts/asm/samples/roman.s -o /tmp/roman.o
+# link + run + diff vs oracle → M-ASM-RECUR fires → M-ASM-SAMPLES fires
+```
+
 **Session B-201 (backend) — wordcount PASS; roman segfault root-caused:**
 
 - **wordcount.sno** — assembles, links, runs correctly: `14 words` vs ref ✅
@@ -1208,6 +1327,7 @@ Prolog reader
 | **M-ASM-R9** | keywords/ — 11 tests PASS | ❌ | A-R9 |
 | **M-ASM-R10** | functions/ — DEFINE/RETURN/recursion PASS | ✅ session197 | A-R10 |
 | **M-ASM-R11** | data/ — ARRAY/TABLE/DATA PASS | ❌ | A-R11 |
+| **M-ASM-RECUR** | Recursive functions correct — roman.sno segfault fixed | ❌ | A-RECUR |
 | **M-ASM-SAMPLES** | roman.sno + wordcount.sno PASS | ❌ | A-S1 |
 | **M-ASM-BEAUTY** | beauty.sno self-beautifies via ASM backend | ❌ | A10 |
 | **M-ASM-READABLE** | Label names: special-char expansion (pp_>= → S_pp_GT_EQ); _ literal passthrough; uid on collision only. Original bijection spec revised — expanding _ destroys readability for normal names. M-ASM-READABLE-A. | ✅ `e0371fe` session176 | A11 |

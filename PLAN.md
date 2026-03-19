@@ -14,7 +14,7 @@ Session numbers use per-type prefixes (see RULES.md §SESSION NUMBERS): B=backen
 
 | Session | Sprint | HEAD | Next milestone |
 |---------|--------|------|----------------|
-| **TINY backend** | `asm-backend` A-SAMPLES — roman.sno + wordcount.sno PASS | `3f2c8b9` B-201 | M-ASM-SAMPLES |
+| **TINY backend** | `asm-backend` A-RECUR — fix recursive fn frame (push rbp/mov rbp,rsp at α; add rsp/pop rbp at γ/ω) → M-ASM-RECUR → M-ASM-SAMPLES | `71c86d3` B-201 | M-ASM-RECUR |
 | **TINY JVM** | `jvm-backend` J-R1 — corpus ladder rungs 1–4 | `62c668f` J-201 | M-JVM-R1 |
 | **TINY NET** | `net-backend` N-R2 — verify goto/:S/:F + E_FNC results | `b15164e` N-198 | M-NET-GOTO |
 | **TINY frontend** | `sc-corpus-ladder` SC-CORPUS-2 — control/ | `23765b1` F-192 | M-SC-CORPUS-R2 |
@@ -111,6 +111,7 @@ Sprint detail lives in the active platform L2 doc (TINY.md / JVM.md / DOTNET.md)
 | **M-ASM-R9** | keywords/ — IDENT/DIFFER/GT/LT/EQ/DATATYPE PASS | ✅ session193 |
 | **M-ASM-R10** | functions/ — DEFINE/RETURN/FRETURN/recursion PASS | ✅ session197 |
 | **M-ASM-R11** | data/ — ARRAY/TABLE/DATA PASS | ✅ session198 |
+| **M-ASM-RECUR** | Recursive SNOBOL4 functions correct via ASM backend — roman.sno segfault fixed; each function invocation gets its own frame (push rbp/mov rbp,rsp/sub rsp,56 at α; add rsp,56/pop rbp at γ/ω); call sites use .bss uid slots not stack pushes; 26/26 + 106/106 hold | ❌ |
 | **M-ASM-SAMPLES** | roman.sno and wordcount.sno pass via ASM backend; artifacts/asm/roman.s and artifacts/asm/wordcount.s committed and assembling clean | ❌ |
 | **M-DROP-MOCK-ENGINE** | `mock_engine.c` removed from ASM program link path; 26-test harness suite migrated to full `.sno` format or harness rewritten to not call `engine_match`; 26/26 + 106/106 hold without linking `mock_engine.o` in ASM path | ✅ `06df4cb` B-200 |
 | **M-SNOC-LEX** | sc_lex.c: all Snocone tokens; `OUTPUT = 'hello'` → 3 tokens PASS | ✅ `573575e` session183 |

@@ -8260,3 +8260,22 @@ CORPUS=/home/claude/snobol4corpus/crosscheck
 bash test/crosscheck/run_crosscheck_jvm_rung.sh \
   $CORPUS/hello $CORPUS/output $CORPUS/assign $CORPUS/arith 2>&1 | tail -5
 ```
+
+## B-202 (backend) — diagnosis complete; M-ASM-RECUR milestone written; no code commit
+
+**Root cause of roman.sno segfault fully diagnosed:**
+- Single shared `rbp` frame in `main` (from `PROG_INIT`) — all `[rbp-...]` slots global
+- Recursive call overwrites caller's `.bss` uid save slots → `rbp` corrupted to `0x1` → segfault
+- GDB confirmed: `rbp=0x1` at crash; `P_ROMAN_ret_γ` contains `0x1`
+
+**Architecture discussion:**
+- Long-term: Technique 2 (mmap+memcpy+relocate per BACKEND-X64.md) — stackless, each
+  invocation has own DATA copy, one register per box's locals, no save/restore at all
+- Near-term fix: `is_fn` α establishes own frame (`push rbp/mov rbp,rsp/sub rsp,56`);
+  γ/ω tear it down (`add rsp,56/pop rbp`) before dispatching via ret_ slots
+- Call sites: `.bss` uid slots unchanged — safe because each invocation has own `rbp`
+
+**M-ASM-RECUR milestone written in PLAN.md + TINY.md**
+- Complete diagnosis, architecture rationale, implementation spec, verify script
+- Next session: implement 6-line fix in `emit_asm_named_def` → test → M-ASM-RECUR → M-ASM-SAMPLES
+- 106/106 C ✅ · 26/26 ASM ✅ · HEAD 71c86d3 B-201 (no new commit this session)
