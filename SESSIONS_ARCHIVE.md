@@ -7930,3 +7930,41 @@ bash test/crosscheck/run_crosscheck_jvm_rung.sh \
   /home/claude/snobol4corpus/crosscheck/output   # 11/11 (1 xfail)
 # Sprint J2: variable assign + arith corpus rungs (assign/ + arith/)
 ```
+
+## Session B-197 — ASM backend: M-ASM-R10 functions/ 8/8; PLAN.md restructure
+
+**Date:** 2026-03-19
+**HEAD snobol4x:** `d832a86` B-197
+**HEAD .github:** `13590e9` B-197
+
+**What happened:**
+- Invariants confirmed: 106/106 C, 26/26 ASM
+- Diagnosed 087/088 failures (6/8 baseline from session194)
+- Fix 1 (087): ucall omega return emitted LOAD_NULVCL32 → FAIL_BR took :S instead of :F. Fixed: emit LOAD_FAILDESCR32 (DT_FAIL=99). Added LOAD_FAILDESCR32 macro to snobol4_asm.mac.
+- Fix 2 (088): static .bss ucallN_sv_*/rsv_* slots overwritten by recursive calls (same slot reused at every recursion depth). Fixed: replaced all static slots with stack push/pop — recursion-safe at arbitrary depth.
+- 8/8 functions/ PASS — M-ASM-R10 fires
+- beauty_prog.s updated, NASM clean
+- PLAN.md: resolved conflict markers; restructured NOW into 4 per-session rows (TINY backend/JVM/NET/frontend + DOTNET)
+- RULES.md: added §SESSION NUMBERS — per-type prefix scheme (B/J/N/F/D) to prevent session number collisions across concurrent sessions
+- PLAN.md NOW: HEAD column now uses prefixed numbers
+
+**State at handoff:**
+- snobol4x pushed ✅ `d832a86`
+- .github pushed ✅ `13590e9`
+
+**Session B-198 start (TINY backend):**
+```bash
+cd /home/claude/snobol4x
+git config user.name "LCherryholmes" && git config user.email "lcherryh@yahoo.com"
+git pull --rebase origin main
+git log --oneline -3   # verify HEAD = d832a86
+apt-get install -y libgc-dev nasm && make -C src
+mkdir -p /home/snobol4corpus && ln -sf /home/claude/snobol4corpus/crosscheck /home/snobol4corpus/crosscheck
+gcc -c src/runtime/asm/snobol4_asm_harness.c -o src/runtime/asm/snobol4_asm_harness.o
+STOP_ON_FAIL=0 bash test/crosscheck/run_crosscheck.sh        # must be 106/106
+bash test/crosscheck/run_crosscheck_asm.sh                   # must be 26/26
+CORPUS=/home/claude/snobol4corpus/crosscheck
+STOP_ON_FAIL=0 bash test/crosscheck/run_crosscheck_asm_rung.sh $CORPUS/functions   # must be 8/8
+STOP_ON_FAIL=0 bash test/crosscheck/run_crosscheck_asm_rung.sh $CORPUS/data
+# Sprint A-R11: data/ — ARRAY/TABLE/DATA
+```
