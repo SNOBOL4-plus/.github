@@ -11,9 +11,42 @@ snobol4x: multiple frontends, multiple backends.
 
 ## NOW
 
-**Sprint:** `asm-backend` A-R8 — M-ASM-R8 (strings: SIZE/SUBSTR/REPLACE/DUPL) · `snocone-frontend` SC6-ASM — snocone.sc self-compile
-**HEAD:** `d8901b4` session189 (frontend) / `6248aab` session190 (backend)
-**Milestone:** M-ASM-R7 ✅ session190 · **M-SNOC-ASM-CORPUS** ✅ session189
+**Sprint:** `asm-backend` A-R8 — M-ASM-R8 (strings: 15/17, fix word1+cross) · `snocone-frontend` SC6-ASM — snocone.sc self-compile
+**HEAD:** `454c226` session191
+**Milestone:** M-ASM-R7 ✅ session190 · M-SNOC-ASM-CORPUS ✅ session189
+
+**Session191 (backend) — Sprint A-R8 partial: 15/17 strings/ PASS:**
+
+Fixes: `STORE_RESULT16` (E_FNC rbp_off==-16 slot mismatch → 075 PASS); `stmt_span_var/break_var/any_var/notany_var` (charset from variable); BREAK zero-advance allowed; `stmt_breakx_var/lit` (BREAKX, word4 PASS, wordcount PASS); `stmt_at_capture` / `AT_ALPHA`/`AT_BETA` / `E_ATP` case; `expr_has_pattern_fn` recognises E_NAM/E_DOL; `E_VART` in emit_asm_node gets asm_str_var fallback; ANY E_VART dispatch fixed. word1: first match PASS, second ARB retry still failing. 106/106 C ✅ 26/26 ASM ✅
+
+**Still failing (2/17):** `word1` (ARB second-match in named-pat), `cross` (ANY_VAR in named-pat body)
+
+**Root causes:**
+- `word1`: PAT now registered as named pattern. First ARB match ok. Second retry: outer scan_start doesn't advance after named-pat γ fires — scan loop exits instead of retrying.
+- `cross`: `HC ? @NH ANY(V) . CROSS = '*'` — AT_ALPHA fires but ANY_ALPHA_VAR in named-pat body may not see correct `subject_data`/`cursor` globals.
+
+**⚠ CRITICAL NEXT ACTION — Session192 (backend):**
+
+Sprint A-R8 completion — fix word1 + cross → M-ASM-R8
+
+```bash
+cd /home/claude/snobol4x
+git config user.name "LCherryholmes" && git config user.email "lcherryh@yahoo.com"
+git log --oneline -3   # verify HEAD = 454c226
+apt-get install -y libgc-dev nasm && make -C src
+mknod /dev/null c 1 3 && chmod 666 /dev/null   # /dev/null was missing — recreate if needed
+mkdir -p /home/snobol4corpus && ln -sf /home/claude/snobol4corpus/crosscheck /home/snobol4corpus/crosscheck
+gcc -c src/runtime/asm/snobol4_asm_harness.c -o src/runtime/asm/snobol4_asm_harness.o
+STOP_ON_FAIL=0 bash test/crosscheck/run_crosscheck.sh        # must be 106/106
+bash test/crosscheck/run_crosscheck_asm.sh                   # must be 26/26
+CORPUS=/home/claude/snobol4corpus/crosscheck
+STOP_ON_FAIL=0 bash test/crosscheck/run_crosscheck_asm_rung.sh $CORPUS/strings
+# expected: 15/17 (word1 second match + cross failing)
+```
+
+**word1 fix:** After named-pat γ fires → scan_start must advance and retry. Check `P_2_γ` path: it currently jumps to `Ln_2` → `GOTO_ALWAYS L_SNO_END`. The `:LOOP` goto is missing — the program never loops back. Fix: verify the pattern-match stmt success path jumps to `:S(LOOP)` not END.
+
+**cross fix:** Compile cross, run `printf "AB\nBC\n" | ./cross_bin`. Confirm AT_ALPHA fires (add stderr debug to `stmt_at_capture`). Check ANY_ALPHA_VAR macro: `subj` arg must be the global `subject_data` label, not a stale pointer. Named-pattern body shares globals — confirm `cursor` and `subject_data` are the same symbols used in the body.
 
 **Session189 (frontend) — M-SNOC-ASM-CORPUS: SC corpus 10/10 PASS via -sc -asm:**
 - `SC_KW_THEN` added to `sc_lex.h` enum (appended after `SC_UNKNOWN` — safe, no shift) + keyword table + `sc_kind_name`
@@ -770,7 +803,7 @@ Prolog reader
 | **M-ASM-R5** | control/ + control_new/ PASS | ❌ | A-R5 |
 | **M-ASM-R6** | patterns/ program-mode 20 tests PASS | ❌ | A-R6 |
 | **M-ASM-R7** | capture/ — 7 tests PASS | ✅ session190 | A-R7 |
-| **M-ASM-R8** | strings/ — 17 tests PASS | ❌ | A-R8 |
+| **M-ASM-R8** | strings/ — 17 tests PASS | ⏳ session191 15/17 | A-R8 |
 | **M-ASM-R9** | keywords/ — 11 tests PASS | ❌ | A-R9 |
 | **M-ASM-R10** | functions/ — DEFINE/RETURN/recursion PASS | ❌ | A-R10 |
 | **M-ASM-R11** | data/ — ARRAY/TABLE/DATA PASS | ❌ | A-R11 |

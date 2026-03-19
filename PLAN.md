@@ -107,7 +107,7 @@ Sprint detail lives in the active platform L2 doc (TINY.md / JVM.md / DOTNET.md)
 | **M-ASM-R5** | control/ + control_new/ — goto/:S/:F PASS | ✅ session189 |
 | **M-ASM-R6** | patterns/ — 20 program-mode pattern tests PASS | ✅ session189 |
 | **M-ASM-R7** | capture/ — 7 tests PASS | ✅ session190 |
-| **M-ASM-R8** | strings/ — SIZE/SUBSTR/REPLACE/DUPL PASS | ❌ Sprint A-R8 |
+| **M-ASM-R8** | strings/ — SIZE/SUBSTR/REPLACE/DUPL PASS | ⏳ session191 15/17 |
 | **M-ASM-R9** | keywords/ — IDENT/DIFFER/GT/LT/EQ/DATATYPE PASS | ❌ Sprint A-R9 |
 | **M-ASM-R10** | functions/ — DEFINE/RETURN/FRETURN/recursion PASS | ❌ Sprint A-R10 |
 | **M-ASM-R11** | data/ — ARRAY/TABLE/DATA PASS | ❌ Sprint A-R11 |
