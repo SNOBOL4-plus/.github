@@ -12,7 +12,7 @@ snobol4x: multiple frontends, multiple backends.
 ## NOW
 
 **Sprint:** `asm-backend` — fix corpus tests → M-MONITOR (ASM)
-**HEAD:** `f3ca7f2` session181
+**HEAD:** `f4f2475` session182
 **Milestone:** M-REORG ✅ session181 → fix corpus tests (75→113) + M-MONITOR
 
 **Session181 — M-REORG: full repo reorganisation + scan-retry omega fix:**
@@ -884,7 +884,15 @@ The emit pass just prints them in three-column format. No logic in the emit pass
 - Corpus: **75 PASS** (up from 64 session179). 106/106 C ✅. 26/26 ASM ✅.
 - HEAD: `ee4b118`
 
-**⚠ CRITICAL NEXT ACTION — Session182:**
+**Session182 — archive src/ir; emit_cnode relocated to backend/c:**
+- `src/ir/byrd/emit_cnode.c/.h` → `src/backend/c/` (live production code, was misplaced)
+- `src/Makefile`: drop `-I ir/byrd`, merge `IR_BYRD` into `BACKEND_C`, update header dep
+- `src/ir/byrd/{byrd_ir,ir,lower}.py` → `archive/ir/` with README.md
+- `src/ir/jvm/.gitkeep`, `src/ir/net/.gitkeep` deleted
+- `lower.py` preserved in archive as design reference for `emit_byrd.c` four-port wiring
+- 106/106 C PASS ✅, 26/26 ASM PASS ✅ confirmed after rebuild
+
+**⚠ CRITICAL NEXT ACTION — Session183:**
 
 1. **Run corpus** — scan-retry fix should recover 034, 057, 098. Target 78+ PASS.
 2. **Continue corpus fixes** per session180 priority order:
