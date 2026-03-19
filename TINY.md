@@ -11,23 +11,54 @@ snobol4x: multiple frontends, multiple backends.
 
 ## NOW
 
-**Sprint:** `asm-backend` A-R10 — functions/ — DEFINE/RETURN/FRETURN/recursion · `net-backend` N-R1 — OUTPUT='hello' → M-NET-LIT
-**HEAD:** `e6a62ad` session195 (net)
+**Sprint:** `asm-backend` A-R10 — functions/ — DEFINE/RETURN/FRETURN/recursion (6/8 — fix fast-path bypass)
+**HEAD:** `3cddca5` session194 (backend)
 **Milestone:** M-ASM-R9 ✅ session193 · M-ASM-R8 ✅ session192 · M-SC-CORPUS-R1 ✅ session192 (frontend)
 
-**Session193 (backend) — M-ASM-R9: keywords/ 10/10 PASS (1 XFAIL); 3 fixes:**
+**Session194 (backend) — Sprint A-R10: 6/8 functions/ PASS; 5 fixes:**
 
-- **Fix 1** — `emit_byrd_asm.c`: emit `mov edi, <lineno>` + `call comm_stno` at top of every statement; add `extern comm_stno` to `.s` header — increments `&STCOUNT`/`&STNO` per execution, mirroring `trampoline_stno()` in C backend.
-- **Fix 2** — `snobol4.c` `comm_stno()`: was only incrementing `kw_stcount` inside `if (kw_stlimit >= 0)` guard; default `-1` meant `&STCOUNT` always returned 0. Fixed to always increment.
-- **Fix 3** — `.xfail` protocol added to `run_crosscheck_asm_rung.sh`; `100_roman_numeral.xfail` tagged (requires `ARRAY()` — A-R11 scope).
-- Rebase onto `d7bef4c` (session192-warnings) required; `comm_stno` changes re-applied clean.
-- 106/106 C ✅  26/26 ASM ✅  **keywords/ 10/10 PASS 1 XFAIL ✅  M-ASM-R9 fires**
+- **Fix 1** — DEFINE skip block drops `tgt_u` unconditional goto → execution fell into function body at program start. Add `if (tgt_u) { A("GOTO_ALWAYS %s", prog_label_nasm(tgt_u)); }` in DEFINE skip block.
+- **Fix 2** — FRETURN routed to `ret_γ` instead of `ret_ω` in both `emit_jmp` and `prog_emit_goto`. Fixed both sites to use `ret_omega` for FRETURN/NRETURN.
+- **Fix 3** — `a1n` fast-path classifier: integer literal `0` wrongly classified as NULVCL → `GT(x,0)` emitted as `CONC2_VN` (1-arg). Removed `(a1->kind==E_ILIT && a1->ival==0)` from `a1n`.
+- **Fix 4** — Two-arg `DEFINE('fname(args)', .entryLabel)` form not scanned. `asm_scan_named_patterns` now handles `nargs>=1`; second arg overrides `body_label`.
+- **Fix 5** — Recursion-safe param save/restore: per-call-uid `.bss` slots (`ucallN_sv_I_t/p`, `ucallN_rsv_g/o`); `asm_prescan_ucall()` pre-registers all slots before `.bss` emission; alpha simplified to load args + jmp body; gamma/omega just jmp via ret slots; call site saves/restores old param values and ret slots.
+- 083/084/085/086/089/090 PASS (6/8) · 106/106 C ✅ · 26/26 ASM ✅
 
-**⚠ CRITICAL NEXT ACTION — Session194 (backend):**
+**⚠ CRITICAL NEXT ACTION — Session195 (backend):**
 
-Sprint A-R10 — functions/ — DEFINE/RETURN/FRETURN/recursion
+Sprint A-R10 — fix fast-path bypass → 087+088 PASS → M-ASM-R10 fires
+
+**Root cause of 087+088:** `ispos(-3)` has arg `E_FNC(neg, ILIT(3))` — a nested function call. The user-function call-site block is preceded by fast-path checks (`na==1 && arg->kind==E_ILIT` etc.) that match BEFORE the `asm_named_lookup_fn` check. So the complex-arg call bypasses the save/restore machinery entirely.
+
+**One-line fix** in `prog_emit_expr`, E_FNC dispatch — move the `asm_named_lookup_fn` check to the TOP of the E_FNC block, before ALL fast paths:
+
+```c
+/* User-defined function? Must go through full ucall save/restore machinery.
+ * This check must precede ALL fast paths. */
+const AsmNamedPat *ufn = (e->sval) ? asm_named_lookup_fn(e->sval) : NULL;
+if (ufn) {
+    /* ... full ucall code ... */
+    return 1;
+}
+/* Fast paths below only apply to built-in functions */
+```
+
+Currently `ufn` is looked up mid-block after fast paths already ran. Move lookup + ufn block before `if (na == 1 && ...)`.
 
 ```bash
+cd /home/claude/snobol4x
+git config user.name "LCherryholmes" && git config user.email "lcherryh@yahoo.com"
+git log --oneline -3   # verify HEAD = 3cddca5
+apt-get install -y libgc-dev nasm && make -C src
+mkdir -p /home/snobol4corpus && ln -sf /home/claude/snobol4corpus/crosscheck /home/snobol4corpus/crosscheck
+gcc -c src/runtime/asm/snobol4_asm_harness.c -o src/runtime/asm/snobol4_asm_harness.o
+STOP_ON_FAIL=0 bash test/crosscheck/run_crosscheck.sh        # must be 106/106
+bash test/crosscheck/run_crosscheck_asm.sh                   # must be 26/26
+CORPUS=/home/claude/snobol4corpus/crosscheck
+STOP_ON_FAIL=0 bash test/crosscheck/run_crosscheck_asm_rung.sh $CORPUS/functions
+# current: 6/8; move ufn check before fast paths → 8/8 → M-ASM-R10 fires
+```
+
 cd /home/claude/snobol4x
 git config user.name "LCherryholmes" && git config user.email "lcherryh@yahoo.com"
 git log --oneline -3   # verify HEAD = 018d913

@@ -12,7 +12,7 @@ Shared frontends. Multiple backends. Self-hosting goal: sno2c compiles sno2c.
 |-|-|
 | **Active repos** | `snobol4x` (TINY) · `snobol4dotnet` (DOTNET) |
 | **TINY sprint** | `asm-backend` A-R10 — functions/ (backend session) · `jvm-backend` J1 — OUTPUT='hello' (JVM session) · `net-backend` N-R1 — OUTPUT='hello' (NET session) · `sc-corpus-ladder` SC-CORPUS-2 — control/ (frontend session) |
-| **TINY HEAD** | `b430ceb` session194 |
+| **TINY HEAD** | `3cddca5` session194 |
 | **TINY next** | Backend: A-R10 functions/ → M-ASM-R10 · JVM: J1 OUTPUT='hello' → M-JVM-LIT · NET: N-R1 OUTPUT='hello' → M-NET-LIT |
 | **DOTNET sprint** | `net-perf-analysis` — hotfixes landed; dotnet test + BenchmarkSuite2 re-run needed |
 | **DOTNET HEAD** | `a029cae` session156: hotfixes A–D; BUILDING.md; build_native.sh; net-build-prereqs ✅ |
