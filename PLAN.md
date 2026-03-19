@@ -11,9 +11,15 @@ Shared frontends. Multiple backends. Self-hosting goal: sno2c compiles sno2c.
 | | |
 |-|-|
 | **Active repos** | `snobol4x` (TINY) · `snobol4dotnet` (DOTNET) |
+<<<<<<< Updated upstream
 | **TINY sprint** | `asm-backend` A-R10 — functions/ (backend session) · `jvm-backend` J2 — variable assign (JVM session) · `net-backend` N-R1 — OUTPUT='hello' (NET session) · `sc-corpus-ladder` SC-CORPUS-2 — control/ (frontend session) |
 | **TINY HEAD** | `3cddca5` session194 |
 | **TINY next** | Backend: A-R10 functions/ → M-ASM-R10 · JVM: J2 variable assign → M-JVM-ASSIGN · NET: N-R1 OUTPUT='hello' → M-NET-LIT |
+=======
+| **TINY sprint** | `asm-backend` A-R11 — data/ (backend session) · `jvm-backend` J1 — OUTPUT='hello' (JVM session) · `net-backend` N-R1 — OUTPUT='hello' (NET session) · `sc-corpus-ladder` SC-CORPUS-2 — control/ (frontend session) |
+| **TINY HEAD** | `06af4ec` session197 |
+| **TINY next** | Backend: A-R11 data/ → M-ASM-R11 · JVM: J1 OUTPUT='hello' → M-JVM-LIT · NET: N-R1 OUTPUT='hello' → M-NET-LIT |
+>>>>>>> Stashed changes
 | **DOTNET sprint** | `net-perf-analysis` — hotfixes landed; dotnet test + BenchmarkSuite2 re-run needed |
 | **DOTNET HEAD** | `a029cae` session156: hotfixes A–D; BUILDING.md; build_native.sh; net-build-prereqs ✅ |
 | **DOTNET next** | `dotnet test` 1873/1876 → BenchmarkSuite2 re-run → M-NET-PERF → `cross` @N fix → net-benchmark-publish |
@@ -109,7 +115,7 @@ Sprint detail lives in the active platform L2 doc (TINY.md / JVM.md / DOTNET.md)
 | **M-ASM-R7** | capture/ — 7 tests PASS | ✅ session190 |
 | **M-ASM-R8** | strings/ — SIZE/SUBSTR/REPLACE/DUPL PASS | ✅ session192 |
 | **M-ASM-R9** | keywords/ — IDENT/DIFFER/GT/LT/EQ/DATATYPE PASS | ✅ session193 |
-| **M-ASM-R10** | functions/ — DEFINE/RETURN/FRETURN/recursion PASS | ❌ Sprint A-R10 |
+| **M-ASM-R10** | functions/ — DEFINE/RETURN/FRETURN/recursion PASS | ✅ session197 |
 | **M-ASM-R11** | data/ — ARRAY/TABLE/DATA PASS | ❌ Sprint A-R11 |
 | **M-ASM-SAMPLES** | roman.sno and wordcount.sno pass via ASM backend; artifacts/asm/roman.s and artifacts/asm/wordcount.s committed and assembling clean | ❌ |
 | **M-SNOC-LEX** | sc_lex.c: all Snocone tokens; `OUTPUT = 'hello'` → 3 tokens PASS | ✅ `573575e` session183 |

@@ -11,9 +11,34 @@ snobol4x: multiple frontends, multiple backends.
 
 ## NOW
 
-**Sprint:** `asm-backend` A-R10 — functions/ — DEFINE/RETURN/FRETURN/recursion (6/8 — fix fast-path bypass)
-**HEAD:** `3cddca5` session194 (backend)
-**Milestone:** M-ASM-R9 ✅ session193 · M-ASM-R8 ✅ session192 · M-SC-CORPUS-R1 ✅ session192 (frontend)
+**Sprint:** `asm-backend` A-R11 — data/ — ARRAY/TABLE/DATA PASS
+**HEAD:** `06af4ec` session197 (backend)
+**Milestone:** M-ASM-R10 ✅ session197 · M-ASM-R9 ✅ session193 · M-ASM-R8 ✅ session192
+
+**Session197 (backend) — M-ASM-R10: functions/ 8/8 PASS; FRETURN + recursion fixes:**
+
+- **Fix 1 — FRETURN signalling** (087): ucall omega return emitted `LOAD_NULVCL32` → `FAIL_BR` after call site saw non-fail descriptor and took `:S` instead of `:F`. Fix: omega path now emits `LOAD_FAILDESCR32` (DT_FAIL=99). Added `LOAD_FAILDESCR32` macro to `snobol4_asm.mac`.
+- **Fix 2 — Recursion-safe save/restore** (088): static `.bss` slots `ucallN_sv_*/rsv_*` overwritten by recursive calls — `fib(n)` and `fib(n-1)` both used same `ucall0_rsv_g` slot, corrupting return addresses. Fix: replaced all static slots with stack push/pop. Before `jmp alpha`: push old `ret_gamma`, `ret_omega`, old param values (reverse order). At `ret_g/ret_o`: pop in reverse to restore. Stack layout survives arbitrary recursion depth.
+- 8/8 functions/ PASS · 106/106 C ✅ · 26/26 ASM ✅
+
+**⚠ CRITICAL NEXT ACTION — Session198 (backend):**
+
+Sprint A-R11 — data/ — ARRAY/TABLE/DATA
+
+```bash
+cd /home/claude/snobol4x
+git config user.name "LCherryholmes" && git config user.email "lcherryh@yahoo.com"
+git log --oneline -3   # verify HEAD = 06af4ec
+apt-get install -y libgc-dev nasm && make -C src
+mkdir -p /home/snobol4corpus && ln -sf /home/claude/snobol4corpus/crosscheck /home/snobol4corpus/crosscheck
+gcc -c src/runtime/asm/snobol4_asm_harness.c -o src/runtime/asm/snobol4_asm_harness.o
+STOP_ON_FAIL=0 bash test/crosscheck/run_crosscheck.sh        # must be 106/106
+bash test/crosscheck/run_crosscheck_asm.sh                   # must be 26/26
+CORPUS=/home/claude/snobol4corpus/crosscheck
+STOP_ON_FAIL=0 bash test/crosscheck/run_crosscheck_asm_rung.sh $CORPUS/functions   # must be 8/8
+STOP_ON_FAIL=0 bash test/crosscheck/run_crosscheck_asm_rung.sh $CORPUS/data
+# baseline: see how many pass; fix failures; M-ASM-R11 fires at 100%
+```
 
 **Session194 (backend) — Sprint A-R10: 6/8 functions/ PASS; 5 fixes:**
 
@@ -982,7 +1007,7 @@ Prolog reader
 | **M-ASM-R7** | capture/ — 7 tests PASS | ✅ session190 | A-R7 |
 | **M-ASM-R8** | strings/ — 17 tests PASS | ⏳ session191 15/17 | A-R8 |
 | **M-ASM-R9** | keywords/ — 11 tests PASS | ❌ | A-R9 |
-| **M-ASM-R10** | functions/ — DEFINE/RETURN/recursion PASS | ❌ | A-R10 |
+| **M-ASM-R10** | functions/ — DEFINE/RETURN/recursion PASS | ✅ session197 | A-R10 |
 | **M-ASM-R11** | data/ — ARRAY/TABLE/DATA PASS | ❌ | A-R11 |
 | **M-ASM-SAMPLES** | roman.sno + wordcount.sno PASS | ❌ | A-S1 |
 | **M-ASM-BEAUTY** | beauty.sno self-beautifies via ASM backend | ❌ | A10 |
