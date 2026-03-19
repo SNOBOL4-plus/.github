@@ -7237,3 +7237,58 @@ gcc -c src/runtime/asm/snobol4_asm_harness.c -o src/runtime/asm/snobol4_asm_harn
 STOP_ON_FAIL=0 bash test/crosscheck/run_crosscheck.sh   # 106/106
 bash test/crosscheck/run_crosscheck_asm.sh               # fix 056 → 26/26 first
 ```
+
+---
+
+## Session 183 — frontend session (Snocone frontend planning)
+
+**Date:** 2026-03-18
+**Session type:** Frontend (snocone-frontend sprint)
+**Concurrent:** Backend session active on asm-backend corpus fixes
+
+### What happened
+
+- Searched all 10 snobol4ever repos for Snocone artifacts
+- Found complete Snocone lexer + expression emitter in `snobol4jvm` (Clojure): `snocone.clj`, `snocone_emitter.clj`, `snocone_grammar.clj`, `test_snocone.clj`, `test_snocone_parser.clj`
+- User uploaded `SNOCONE.zip` containing: `snocone.sno` (777 lines, SNOBOL4 compiler), `snocone.sc` (1071 lines, self-hosting Snocone source), `snocone.snobol4` (694 lines, compiled oracle output)
+- Read full Koenig Snocone language spec from `snobol4corpus/programs/snocone/report.md`
+- Read C backend emitter style (`emit.c`) to confirm IR compatibility
+- **Decision:** Target C directly via existing `emit.c` backend — no SNOBOL4 intermediate. Pipeline: `.sc → sc_lex → sc_parse → sc_lower → EXPR_t/STMT_t → emit.c → .c → binary`
+- Defined 6 sprints SC0–SC5 and 6 milestones M-SNOC-LEX through M-SNOC-SELF
+- Updated PLAN.md: NOW block, 6 new milestone rows in TINY dashboard
+- Updated TINY.md: full sprint definitions SC0–SC5, two-session protocol documented
+- Pushed HQ at `8368b80`
+- snobol4x HEAD unchanged at `583c5a5` — no code written this session
+
+### State at handoff
+
+- **snobol4x HEAD:** `583c5a5` (unchanged)
+- **HQ HEAD:** `8368b80`
+- **Active sprint:** `snocone-frontend` SC0
+- **Next action:** Write `src/frontend/snocone/sc_lex.h` + `sc_lex.c` + `test/frontend/snocone/sc_lex_test.c`
+
+### Next session start block
+
+```bash
+cd /home/claude/snobol4x
+git config user.name "LCherryholmes" && git config user.email "lcherryh@yahoo.com"
+git log --oneline -3   # verify HEAD = 583c5a5
+
+apt-get install -y libgc-dev nasm && make -C src
+mkdir -p /home/snobol4corpus && ln -sf /home/claude/snobol4corpus/crosscheck /home/snobol4corpus/crosscheck
+gcc -c src/runtime/asm/snobol4_asm_harness.c -o src/runtime/asm/snobol4_asm_harness.o
+STOP_ON_FAIL=0 bash test/crosscheck/run_crosscheck.sh        # must be 106/106
+bash test/crosscheck/run_crosscheck_asm.sh                   # must be 26/26
+
+# Then begin SC0:
+# Write src/frontend/snocone/sc_lex.h + sc_lex.c
+# Write test/frontend/snocone/sc_lex_test.c
+# gcc -o /tmp/sc_lex_test test/frontend/snocone/sc_lex_test.c src/frontend/snocone/sc_lex.c
+# /tmp/sc_lex_test   # PASS → M-SNOC-LEX fires
+```
+
+**Reference files for SC0:**
+- JVM lexer oracle: `/home/claude/snobol4jvm/src/SNOBOL4clojure/snocone.clj`
+- JVM tests oracle: `/home/claude/snobol4jvm/test/SNOBOL4clojure/test_snocone.clj`
+- Snocone spec: `snobol4corpus/programs/snocone/report.md`
+- Uploaded sources: `SNOCONE/snocone.sc`, `SNOCONE/snocone.sno`, `SNOCONE/snocone.snobol4`
