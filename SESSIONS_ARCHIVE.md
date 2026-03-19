@@ -7822,3 +7822,20 @@ CORPUS=/home/claude/snobol4corpus/crosscheck
 STOP_ON_FAIL=0 bash test/crosscheck/run_crosscheck_asm_rung.sh $CORPUS/functions
 # baseline → fix → M-ASM-R10 fires
 ```
+
+---
+
+## Session193 addendum — A-R10 baseline + handoff
+
+**A-R10 baseline (functions/ 0/8):** All 8 tests segfault / produce empty output.
+Root cause diagnosed: DEFINE stmt emitter does `asmL(next_lbl); continue` but
+drops `tgt_u` uncond goto — execution falls into function body at startup.
+Fix: one line in the DEFINE skip block (see TINY.md A-R10 diagnosis).
+Context too full to implement safely; diagnosis committed to TINY.md.
+
+**Full handoff state:**
+- snobol4x `018d913` ✅ pushed
+- snobol4corpus `60b19f2` ✅ pushed
+- .github this commit ✅
+- 106/106 C · 26/26 ASM · keywords/ 10/10 PASS all green
+- Next: Session194 applies one-line DEFINE-goto fix → functions/ → M-ASM-R10

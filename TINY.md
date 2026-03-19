@@ -47,6 +47,23 @@ M-ASM-R10 (functions/) and M-ASM-R11 (data/) are prerequisites for M-SC-CORPUS-R
 (keywords/functions/data via `-sc -asm`), which gates M-SC-CORPUS-FULL → M-SNOC-ASM-SELF.
 Backend must complete R10+R11 before frontend session can reach M-SNOC-ASM-SELF.
 
+**A-R10 root-cause diagnosis (session193 baseline run — 0/8 FAIL):**
+
+All 8 functions/ tests produce empty output. Root cause: DEFINE statement with unconditional
+goto `:(label)` — emitter does `asmL(next_lbl); continue` (skips DEFINE compile-time body)
+but silently **drops the `tgt_u` uncond goto**. Execution falls straight into the function body
+at program start instead of jumping to `double_end`.
+
+**One-line fix in `emit_byrd_asm.c`, DEFINE skip block:**
+```c
+if (s->subject->sval && strcasecmp(s->subject->sval, "DEFINE") == 0) {
+    asmL(next_lbl);
+    if (tgt_u) { A("    GOTO_ALWAYS  %s\n", prog_label_nasm(tgt_u)); }  /* ADD THIS */
+    continue;
+}
+```
+After fix: re-run `$CORPUS/functions` — expect most/all to PASS, then fix residuals.
+
 **Session192 (backend) — M-ASM-R8: strings 17/17 PASS; 7 root-cause fixes:**
 
 - **Fix 1** — Case 2 gamma/omega: `emit_jmp(tgt_s, next_lbl)` → `emit_jmp(tgt_s ? tgt_s : tgt_u, next_lbl)` in both gamma and omega paths. `:(LOOP)` unconditional goto was silently discarded. Fixes word1/2/3/4.
