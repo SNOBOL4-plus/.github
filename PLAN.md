@@ -16,7 +16,7 @@ Session numbers use per-type prefixes (see RULES.md §SESSION NUMBERS): B=backen
 |---------|--------|------|----------------|
 | **TINY backend** | `asm-backend` A-R11 — data/ | `d832a86` B-197 | M-ASM-R11 |
 | **TINY JVM** | `jvm-backend` J3 — :S/:F + INPUT + built-ins | `0362994` J-197 | M-JVM-GOTO |
-| **TINY NET** | `net-backend` N-R1 — OUTPUT='hello' | `23765b1` N-196 | M-NET-LIT |
+| **TINY NET** | `net-backend` N-R2 — goto :S/:F + E_FNC builtins | `efc3772` N-197 | M-NET-GOTO |
 | **TINY frontend** | `sc-corpus-ladder` SC-CORPUS-2 — control/ | `23765b1` F-192 | M-SC-CORPUS-R2 |
 | **DOTNET** | `net-perf-analysis` — dotnet test + BenchmarkSuite2 re-run | `a029cae` D-156 | M-NET-PERF |
 
@@ -166,7 +166,7 @@ Sprint detail lives in the active platform L2 doc (TINY.md / JVM.md / DOTNET.md)
 | ID | Trigger | Status |
 |----|---------|--------|
 | **M-NET-HELLO** | `sno2c -net null.sno > null.il && ilasm null.il && mono null.exe` → exit 0 | ✅ session195 |
-| **M-NET-LIT** | `OUTPUT = 'hello'` → `hello` via NET backend | ❌ Sprint N-R1 |
+| **M-NET-LIT** | `OUTPUT = 'hello'` → `hello` via NET backend | ✅ `efc3772` N-197 |
 | **M-NET-ASSIGN** | Variable assign + arith correct | ❌ Sprint N-R2 |
 | **M-NET-GOTO** | :S(X)F(Y) branching correct | ❌ Sprint N-R3 |
 | **M-NET-PATTERN** | Byrd boxes in CIL — LIT/SEQ/ALT/ARBNO | ❌ Sprint N-R4 |

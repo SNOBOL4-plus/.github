@@ -126,9 +126,7 @@ After fix: re-run `$CORPUS/functions` — expect most/all to PASS, then fix resi
 - hello/ rung: **hello ✅  empty_string ✅  multi ✅**  literals FAIL (root cause: START-label pure-label stmt; `OUTPUT =` null RHS needs E_NULV path; real literal format `1.` vs `1`)
 - 106/106 C ✅  26/26 ASM ✅
 
-**⚠ CRITICAL NEXT ACTION — Session197 (net):**
-
-Sprint N-R1 continued — fix literals FAIL → M-NET-LIT fires
+-LIT fires
 
 Root causes in `net_emit.c`:
 1. **Pure-label stmt** (`START` label, no subject/has_eq): stub path emits `nop` ✅ (fixed this session) — verify no extra output
@@ -189,6 +187,68 @@ done
 - `artifacts/jvm/hello_prog.j` — canonical JVM artifact (J0 skeleton, previously missing)
 - `RULES.md` — NET and JVM artifact tracking rules added (mirrors ASM rules)
 - 106/106 C ✅  26/26 ASM ✅  **M-NET-HELLO fires**
+
+**N-197 (net) — M-NET-LIT fires: hello/ 4/4 PASS; arithmetic helpers; E_FLIT fix:**
+
+- **Fix 1 — E_FLIT real format**: `1.0` now emits `"1."` per SNOBOL4 convention. Integer-valued doubles get trailing dot.
+- **Fix 2 — Arithmetic API**: Replaced broken `Int32.ToString(int32)` static call (not in Mono CIL) with emitted helper methods `sno_add/sub/mpy/div/neg/fmt_dbl/parse_dbl` baked into each class.
+- **Fix 3 — Empty-string numeric coercion**: `'' + ''` yields `0` — empty string coerces to 0 for numeric arithmetic. `sno_add` trims operand, replaces empty with `"0"` before `Double.TryParse`.
+- hello/ rung: **hello ✅  empty_string ✅  multi ✅  literals ✅** — **M-NET-LIT fires**
+- output/ 7/8 (006_keyword_alphabet needs E_KW) · assign/ 6/8 (014/015 indirect $ = N-R3+) · arith/ 0/2 (loops+INPUT = N-R3+)
+- 106/106 C ✅  26/26 ASM ✅  commit `efc3772` N-197
+
+**⚠ CRITICAL NEXT ACTION — N-198 (net):**
+
+Sprint N-R2 — goto :S/:F/:uncond + E_FNC builtins (GT/LT/EQ/GE/LE/NE/IDENT/DIFFER/SIZE) → M-NET-GOTO
+
+Root causes of remaining output/ + control_new/ failures:
+1. **Bare-predicate stmt** (`GT(N,5) :S(DONE)` — no `has_eq`, subject=E_FNC, goto): hits `nop` stub in `net_emit_one_stmt`. Need: eval subject expr, check success flag, branch.
+2. **E_FNC builtins** in `net_emit_expr`: `GT/LT/EQ/GE/LE/NE` — numeric compare, return value or fail. `IDENT/DIFFER` — string compare. `SIZE` — string length. Each must: leave result string on stack and set success flag (local 0).
+3. **E_KW &ALPHABET**: 256-char string of all bytes 0–255. Emit as `ldstr` with the literal string, or call a helper.
+
+Fix strategy for `net_emit_one_stmt` — bare predicate case:
+```c
+/* Case 2: bare expression predicate — subject only, no has_eq, no pattern */
+if (!s->has_eq && s->subject && !s->pattern) {
+    net_emit_expr(s->subject);   /* leaves string on stack + sets local 0 */
+    /* pop the string result (not assigned anywhere) */
+    N("    pop\n");
+    if (tgt_u) net_emit_goto(tgt_u, next_lbl);
+    else {
+        if (tgt_s) net_emit_branch_success(tgt_s);
+        if (tgt_f) net_emit_branch_fail(tgt_f);
+    }
+    return;
+}
+```
+
+Fix strategy for `net_emit_expr` E_FNC — numeric comparisons emit as:
+```c
+case E_FNC:
+    if (strcasecmp(e->sval, "GT") == 0 || strcasecmp(e->sval, "LT") == 0 ...) {
+        /* eval both args as doubles, compare, set local 0, leave right arg on stack */
+        net_emit_expr(arg0); net_emit_expr(arg1);
+        N("    call string %s::sno_gt(string,string)\n", net_classname);
+        /* sno_gt: parse both, compare; if true: stloc 0 = 1, return right arg string */
+        /*         if false: stloc 0 = 0, return "" */
+    }
+```
+
+Emit sno_gt/lt/eq/ge/le/ne as helper methods alongside sno_add etc. Success flag local 0 must be set inside helper or via return convention. Simplest: helper returns "" on fail, non-empty on success — then `net_emit_branch_success/fail` uses `ldloc.0` already set by stloc.0 inside helper.
+
+```bash
+cd /home/claude/snobol4x
+git config user.name "LCherryholmes" && git config user.email "lcherryh@yahoo.com"
+git log --oneline -3   # verify HEAD = efc3772 N-197
+apt-get install -y libgc-dev nasm mono-complete && make -C src
+mkdir -p /home/snobol4corpus && ln -sf /home/claude/snobol4corpus/crosscheck /home/snobol4corpus/crosscheck
+STOP_ON_FAIL=0 bash test/crosscheck/run_crosscheck.sh        # 106/106
+bash test/crosscheck/run_crosscheck_asm.sh                   # 26/26
+CORPUS=/home/claude/snobol4corpus/crosscheck
+# hello/ must be 4/4:
+for f in $CORPUS/hello/*.sno; do ref="${f%.sno}.ref"; ./sno2c -net "$f" > /tmp/t.il 2>/dev/null && ilasm /tmp/t.il /output:/tmp/t.exe >/dev/null 2>&1; actual=$(mono /tmp/t.exe 2>/dev/null); expected=$(cat "$ref"); [ "$actual" = "$expected" ] && echo "PASS $(basename $f)" || echo "FAIL $(basename $f)"; done
+# Then implement E_FNC builtins + bare-predicate stmt → run control_new/ → M-NET-GOTO
+```
 
 **⚠ CRITICAL NEXT ACTION — Session196 (net):**
 

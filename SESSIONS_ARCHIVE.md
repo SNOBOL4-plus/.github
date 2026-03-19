@@ -8002,3 +8002,21 @@ STOP_ON_FAIL=0 bash test/crosscheck/run_crosscheck_jvm_rung.sh \
   $CORPUS/hello $CORPUS/output $CORPUS/assign $CORPUS/concat
 # Sprint J3: :S/:F goto wiring + INPUT + SIZE/DUPL/REMDR → M-JVM-GOTO
 ```
+
+## Session N-197 — NET backend: M-NET-LIT fires; hello/ 4/4 PASS
+
+**Date:** 2026-03-19  
+**Repo HEAD:** snobol4x `efc3772`  
+**Sprint:** `net-backend` N-R1 → N-R2
+
+**Milestone fired:** M-NET-LIT ✅
+
+**Work done:**
+- Fix 1 — E_FLIT real format: integer-valued doubles emit `"1."` not `"1"` per SNOBOL4 convention
+- Fix 2 — Arithmetic CIL API: replaced `System.Int32.ToString(int32)` (not in Mono) with emitted helper methods `sno_add/sno_sub/sno_mpy/sno_div/sno_neg/sno_fmt_dbl/sno_parse_dbl` baked into each generated class
+- Fix 3 — Empty-string numeric coercion: `'' + ''` = `0`; sno_add trims operands and substitutes `"0"` for empty before `Double.TryParse`
+- hello/ rung: 4/4 PASS (hello, empty_string, multi, literals) — M-NET-LIT fires
+- output/ 7/8 · assign/ 6/8 · arith/ 0/2 (loops/INPUT/indirect — N-R3+ scope)
+- Invariants: 106/106 C ✅ · 26/26 ASM ✅
+
+**Next:** N-198 — Sprint N-R2: bare-predicate stmt + E_FNC builtins (GT/LT/EQ/SIZE/IDENT/DIFFER) + goto :S/:F → M-NET-GOTO
