@@ -7443,3 +7443,54 @@ cat /home/claude/snobol4jvm/src/SNOBOL4clojure/snocone_emitter.clj
 # Then read src/frontend/snobol4/sno2c.h for EXPR_t/STMT_t IR target types
 # Begin sc_lower.h + sc_lower.c
 ```
+
+---
+
+## Session 185 — M-SNOC-LOWER
+
+**Date:** 2026-03-18
+**Repo:** snobol4x (frontend session)
+**HEAD before:** `5e20058` session184
+**HEAD after:** `2c71fc1` session185
+**Milestone fired:** M-SNOC-LOWER ✅
+
+**What happened:**
+- Read PLAN.md, TINY.md, RULES.md, FRONTEND-SNOCONE.md, sc_parse.h, sno2c.h
+- Read JVM snocone_emitter.clj (operator→IR table) + dotnet SnoconeLexer.cs (op kinds)
+- 106/106 invariant confirmed before any work
+- Implemented Sprint SC2 in full:
+  - `src/frontend/snocone/sc_lower.h` — ScLowerResult struct + sc_lower()/sc_lower_free() API
+  - `src/frontend/snocone/sc_lower.c` — 1024-slot EXPR_t* operand stack; dispatch for all
+    ScKind values; binary arithmetic → E_ADD/SUB/MPY/DIV/EXPOP; string/pattern →
+    E_CONC/E_OR/E_NAM/E_DOL; unary: E_MNS/E_INDR/E_KW/E_ATP/NOT/DIFFER; fn-ops:
+    EQ/NE/LT/GT/LE/GE/IDENT/DIFFER/LLT/LGT/LLE/LGE/LEQ/LNE/REMDR → E_FNC;
+    SC_CALL → E_FNC; SC_ARRAY_REF → E_IDX; SC_ASSIGN → E_ASGN → STMT_t assembly
+  - `test/frontend/snocone/sc_lower_test.c` — 50 assertions, 10 test cases
+  - Bug found and fixed: pipeline() must keep ScParseResult alive until after sc_lower()
+    (combined[] holds text pointers into parse result; premature free → wrong sval)
+  - switch((int)tok->kind) cast added to silence SC_CALL/SC_ARRAY_REF enum warnings
+- M-SNOC-LOWER trigger: OUTPUT = 'hello' → STMT_t(subject=E_VART("OUTPUT"), replacement=E_QLIT("hello")) PASS
+- 50/50 test assertions PASS
+- 106/106 C crosscheck invariant unaffected
+
+**State at handoff:**
+- snobol4x HEAD: `2c71fc1` pushed ✅
+- .github updated: TINY.md NOW block + PLAN.md dashboard + SESSIONS_ARCHIVE ✅
+
+**Next session start (Session186 — frontend session, Sprint SC3 — M-SNOC-EMIT):**
+
+```bash
+cd /home/claude/snobol4x
+git config user.name "LCherryholmes" && git config user.email "lcherryh@yahoo.com"
+git log --oneline -3   # verify HEAD = 2c71fc1
+apt-get install -y libgc-dev nasm && make -C src
+mkdir -p /home/snobol4corpus && ln -sf /home/claude/snobol4corpus/crosscheck /home/snobol4corpus/crosscheck
+STOP_ON_FAIL=0 bash test/crosscheck/run_crosscheck.sh   # must be 106/106
+
+# Sprint SC3: wire -sc flag in src/driver/main.c
+# sc_compile() helper: read file → sc_lex → per-stmt sc_parse → sc_lower → Program*
+# Quick-check: echo "OUTPUT = 'hello'" > /tmp/t.sc && ./sno2c -sc /tmp/t.sc > /tmp/t.c
+#              gcc /tmp/t.c runtime/... -lgc -lm -o /tmp/t_bin && /tmp/t_bin
+#              expected: hello
+# M-SNOC-EMIT fires → begin Sprint SC4
+```

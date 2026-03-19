@@ -11,49 +11,73 @@ snobol4x: multiple frontends, multiple backends.
 
 ## NOW
 
-**Sprint:** `snocone-frontend` SC2 — sc_lower.c
-**HEAD:** `5e20058` session184
-**Milestone:** M-SNOC-PARSE ✅ session184 → begin Sprint SC2 (sc_lower.c)
+**Sprint:** `snocone-frontend` SC3 — sc driver wiring
+**HEAD:** `2c71fc1` session185
+**Milestone:** M-SNOC-LOWER ✅ session185 → begin Sprint SC3 (driver wiring)
 
-**Session184 — M-SNOC-PARSE: sc_parse.h + sc_parse.c + test; 78/78 PASS:**
-- `src/frontend/snocone/sc_parse.h` — ScPToken (kind/text/line/is_unary/arg_count),
-  ScParseResult, SC_CALL/SC_ARRAY_REF synthetic kinds above SC_UNKNOWN, public API
-- `src/frontend/snocone/sc_parse.c` — shunting-yard: prec table (lp/rp from bconv in
-  snocone.sc), 9 unary ops ANY("+-*&@~?.$"), frame stack (FRAME_CALL/ARRAY/GROUP),
-  dotck fixup, parse_operand_into recursive unary helper with full call-consumption
-  fix: -f(x) -> f x CALL(1) unary- (C# reopens main loop; C must consume args+')' before
-  returning so unary lands after SC_CALL, not inside arg list)
-- `test/frontend/snocone/sc_parse_test.c` — 78 assertions mirroring TestSnoconeParser.cs:
-  single operands, binary, precedence (6), associativity (left+right), unary (4),
-  parens (2), calls (5: noargs/1arg/2args/expr-arg/nested), string ops (3), dotck (2),
-  extra (nested calls, all string ops, double-unary, empty), M-SNOC-PARSE trigger PASS
-- M-SNOC-PARSE trigger: OUTPUT = 'hello' -> IDENT STRING ASSIGN PASS
-- 106/106 C crosscheck invariant unaffected; 26/26 ASM unaffected
+**Session185 — M-SNOC-LOWER: sc_lower.h + sc_lower.c + test; 50/50 PASS:**
+- `src/frontend/snocone/sc_lower.h` — ScLowerResult (prog + nerrors), sc_lower() API,
+  sc_lower_free() API; full operator mapping table in header comment
+- `src/frontend/snocone/sc_lower.c` — postfix RPN evaluator: EXPR_t* operand stack
+  (1024 slots), per-kind dispatch for all 40+ ScKind values;
+  binary: E_ADD/E_SUB/E_MPY/E_DIV/E_EXPOP/E_CONC/E_OR/E_NAM/E_DOL;
+  unary: E_MNS (SC_MINUS), E_INDR (SC_STAR/SC_DOLLAR), E_KW (SC_AMPERSAND),
+         E_ATP (SC_AT), NOT/DIFFER (SC_TILDE/SC_QUESTION);
+  fn-ops: EQ/NE/LT/GT/LE/GE/IDENT/DIFFER/LLT/LGT/LLE/LGE/LEQ/LNE/REMDR → E_FNC;
+  SC_CALL → E_FNC(name, nargs); SC_ARRAY_REF → E_IDX(name, nargs);
+  SC_ASSIGN → E_ASGN(lhs, rhs) then assembled into STMT_t at SC_NEWLINE boundary;
+  statement assembly: E_ASGN → subject+replacement+has_eq; other → subject-only stmt
+- `test/frontend/snocone/sc_lower_test.c` — 50 assertions: hello assign (trigger),
+  arith (E_ADD/E_ILIT), fnc call (GT nargs=2), eq op (== → EQ), multi-stmt (2 stmts),
+  OR (|| → E_OR), concat (&& → E_CONC), percent (% → REMDR), array ref (E_IDX),
+  unary minus (E_MNS)
+- Pipeline helper: splits at SC_NEWLINE, parses each segment independently, keeps
+  ScParseResult alive until after sc_lower (text pointers shared), then frees
+- M-SNOC-LOWER trigger: OUTPUT = 'hello' lowers to assignment STMT_t with E_QLIT rhs PASS
+- 106/106 C crosscheck invariant unaffected
 
-**⚠ CRITICAL NEXT ACTION — Session185 (frontend session):**
+**⚠ CRITICAL NEXT ACTION — Session186 (frontend session):**
 
-Sprint SC2 — M-SNOC-LOWER: `src/frontend/snocone/sc_lower.c`
+Sprint SC3 — M-SNOC-EMIT: wire `-sc` flag in `src/driver/main.c`
 
-Walk the postfix `ScPToken[]` from sc_parse and emit `EXPR_t`/`STMT_t` IR nodes.
-Port from snobol4jvm `snocone_emitter.clj` + snobol4dotnet emitter (if exists).
-Operator mapping from bconv table in snocone.sc (== → EQ, != → NE, etc.).
+When input filename ends `.sc`, run the Snocone pipeline:
+  `sc_lex → sc_parse (per-stmt) → sc_lower → snoc_emit`
 
-Files:
-- `src/frontend/snocone/sc_lower.h` — ScLowerResult, API
-- `src/frontend/snocone/sc_lower.c` — postfix evaluator: operand stack of EXPR_t*,
-  SC_CALL/SC_ARRAY_REF → E_FNC/E_IDX, binary ops → E_ADD/E_SUB/etc., unary → E_MNS/etc.,
-  statement assembly from top of stack per newline boundary
-- `test/frontend/snocone/sc_lower_test.c` — quick-check: OUTPUT = 'hello' lowers to
-  assignment STMT_t with E_QLIT rhs PASS
+The per-stmt split logic is already proven in `sc_lower_test.c` pipeline() helper —
+port that into a `sc_compile(FILE *in, const char *filename, Program **out)` function,
+or inline it in main.c behind the `-sc` / `.sc` detection.
 
-Quick-check trigger (M-SNOC-LOWER):
+Files to create/modify:
+- `src/frontend/snocone/sc_driver.h` + `sc_driver.c` — `sc_compile(src, filename)` →
+  Program*: reads whole file into buffer, calls sc_lex → per-stmt sc_parse → sc_lower
+- `src/driver/main.c` — detect `.sc` suffix or `-sc` flag → call sc_driver instead of
+  snoc_parse; pass resulting Program to existing snoc_emit path unchanged
+- `src/Makefile` — add sc_lower.c + sc_driver.c to FRONTEND_SNOCONE sources
+
+Quick-check trigger (M-SNOC-EMIT):
 ```bash
-gcc -I src/frontend/snocone -I src/frontend/snobol4 -o /tmp/sc_lower_test \
-    test/frontend/snocone/sc_lower_test.c \
-    src/frontend/snocone/sc_lex.c src/frontend/snocone/sc_parse.c \
-    src/frontend/snocone/sc_lower.c
-/tmp/sc_lower_test
-# PASS -> M-SNOC-LOWER fires -> begin Sprint SC3
+cd /home/claude/snobol4x
+make -C src
+echo "OUTPUT = 'hello'" > /tmp/t.sc
+INC=/home/claude/snobol4corpus/programs/inc
+RT=src/runtime
+./sno2c -sc /tmp/t.sc > /tmp/t.c
+gcc /tmp/t.c $RT/snobol4/snobol4.c $RT/snobol4/mock_includes.c \
+    $RT/snobol4/snobol4_pattern.c $RT/mock_engine.c \
+    -I$RT/snobol4 -I$RT -Isrc/frontend/snobol4 -lgc -lm -w -o /tmp/t_bin
+/tmp/t_bin
+# expected output: hello
+# PASS → M-SNOC-EMIT fires → begin Sprint SC4
+```
+
+Session start commands:
+```bash
+cd /home/claude/snobol4x
+git config user.name "LCherryholmes" && git config user.email "lcherryh@yahoo.com"
+git log --oneline -3   # verify HEAD = 2c71fc1
+apt-get install -y libgc-dev nasm && make -C src
+mkdir -p /home/snobol4corpus && ln -sf /home/claude/snobol4corpus/crosscheck /home/snobol4corpus/crosscheck
+STOP_ON_FAIL=0 bash test/crosscheck/run_crosscheck.sh   # must be 106/106
 ```
 
 **Session183 — M-SNOC-LEX: sc_lex.h + sc_lex.c + test; 187/187 PASS:**
