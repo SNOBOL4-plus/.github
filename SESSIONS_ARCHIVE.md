@@ -7335,3 +7335,54 @@ bash test/crosscheck/run_crosscheck_asm.sh                   # must be 26/26
 cat /home/claude/snobol4dotnet/Snobol4.Common/Builder/SnoconeParser.cs
 # Begin sc_parse.h + sc_parse.c
 ```
+
+## Session183 — backend session — DEFINE design diagnosis
+
+**Date:** 2026-03-18
+**Repo:** snobol4x (backend session — concurrent with frontend session183)
+**Sprint:** asm-backend corpus fixes
+**HEAD before:** `23fadaf` session182
+**HEAD after:** `23fadaf` session182 (no code changes — diagnosis only)
+
+**What happened:**
+- Verified invariants: 106/106 C ✅ · 26/26 ASM ✅ · 79/106 corpus PASS
+- Identified 27 failing tests: DEFINE/functions (083-090), arrays/data (091-095),
+  captures (061-063), real literals (003), builtins (075/081), samples (word*/roman/cross)
+- **DEFINE calling convention — wrong approach attempted and discarded:**
+  - First attempt: C-ABI trampoline `DESCR_t fn(DESCR_t *args, int nargs)` with
+    `stmt_define_asm()` runtime function, ~300 lines added then stash-dropped
+  - Lon pointed to BACKEND-C.md: "α port saves caller locals; γ/ω ports restore"
+  - Correct design: user-defined functions ARE named patterns — no C-ABI needed
+- **Correct design documented in TINY.md:**
+  - Extend `AsmNamedPat` with `is_fn`, `nparams`, `arg_slots[]`, `save_slots[]`
+  - `asm_scan_named_patterns`: detect `DEFINE('spec')` calls, register as AsmNamedPat
+  - Call site: bind args via `stmt_set` before `emit_asm_named_ref`
+  - α prologue: save old param vars → `.bss` save slots; install new args from arg slots
+  - γ/ω epilogue: restore old param vars; then `jmp [ret_γ/ω]`
+  - RETURN in body: `jmp [P_fn_ret_γ]` (detect via `current_ufunc` context)
+  - DEFINE statement itself: suppress `APPLY_FN_N S_DEFINE` — body emitted at compile time
+  - No runtime changes — compile-time only
+
+**State at handoff:**
+- snobol4x HEAD `23fadaf` unchanged ✅
+- .github updated with session entry ✅
+- 79/106 corpus — next session implements correct DEFINE design
+
+**Session184 start (backend):**
+```bash
+cd /home/claude/snobol4x
+git config user.name "LCherryholmes" && git config user.email "lcherryh@yahoo.com"
+git log --oneline -3   # verify HEAD = 23fadaf
+
+apt-get install -y libgc-dev nasm && make -C src
+mkdir -p /home/snobol4corpus && ln -sf /home/claude/snobol4corpus/crosscheck /home/snobol4corpus/crosscheck
+gcc -c src/runtime/asm/snobol4_asm_harness.c -o src/runtime/asm/snobol4_asm_harness.o
+STOP_ON_FAIL=0 bash test/crosscheck/run_crosscheck.sh        # must be 106/106
+bash test/crosscheck/run_crosscheck_asm.sh                   # must be 26/26
+STOP_ON_FAIL=0 bash test/crosscheck/run_crosscheck_asm_corpus.sh 2>&1 | tail -3  # 79/106
+
+# Read the design spec before touching any code:
+grep -A 80 "CRITICAL NEXT ACTION.*Session184" /home/claude/.github/TINY.md
+# Then read BACKEND-C.md §Save/Restore and ARCH.md §Byrd Box
+# Then implement: AsmNamedPat extension → asm_scan → call site → α/γω emit → RETURN fix
+```
