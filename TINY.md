@@ -1046,3 +1046,12 @@ SC1 literals · SC2 assign · SC3 arith · SC4 control · SC5 while/do · SC6 fo
 `snocone.sc` → `./sno2c -sc` → binary → run → diff vs `snocone.snobol4` oracle (or fresh compile).
 **M-SNOC-SELF fires** when diff is empty.
 
+
+**Session183 (backend session) — diagnosis 79/106; correct DEFINE design:**
+- Corpus confirmed: 79/106 PASS
+- DEFINE calling convention: **user-defined functions ARE named patterns** (BACKEND-C.md)
+- Wrong approach (C-ABI trampoline) identified and discarded
+- Correct design: extend AsmNamedPat with is_fn/nparams/arg_slots/save_slots
+- α port binds args + saves old param vars; γ/ω ports restore; RETURN → jmp [ret_γ]
+- No runtime changes — compile-time only
+- See CRITICAL NEXT ACTION above for Session184 implementation steps
