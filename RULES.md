@@ -92,8 +92,65 @@ Overwrite the canonical file and commit. `git log -p` shows the evolution.
 artifacts/
   asm/    — x64 NASM output (.s)       beauty_prog.s + fixture files
   c/      — C backend output (.c)       beauty_prog.c + trampoline fixtures
-  jvm/    — JVM bytecode (future)
-  net/    — .NET MSIL (future)
+  jvm/    — JVM Jasmin text (.j)        hello_prog.j + samples/
+  net/    — .NET CIL text (.il)         hello_prog.il + samples/
+```
+
+## ⛔ ARTIFACTS — NET canonical samples tracked every session
+
+Every session that changes `net_emit.c` or any `.sno → .il` path MUST regenerate
+the canonical NET artifacts and check if they changed. **Update only if changed.**
+
+```bash
+INC=/home/claude/snobol4corpus/programs/inc
+NULL_SNO=/home/claude/snobol4x/test/crosscheck/null.sno      # simplest program
+
+# After N-R1+ milestones fire, add beauty/roman/wordcount here too:
+# BEAUTY=/home/claude/snobol4corpus/programs/beauty/beauty.sno
+# ROMAN=/home/claude/snobol4corpus/benchmarks/roman.sno
+
+cd /home/claude/snobol4x
+
+# Generate
+./sno2c -net $NULL_SNO > /tmp/null_new.il
+
+# Verify assembles clean
+ilasm /tmp/null_new.il /output:/tmp/null_new.exe 2>&1 | grep -E "error|Error" && echo FAIL || echo OK
+
+# Copy only if changed
+mkdir -p artifacts/net/samples
+diff -q /tmp/null_new.il artifacts/net/hello_prog.il 2>/dev/null \
+    || cp /tmp/null_new.il artifacts/net/hello_prog.il
+
+git add artifacts/net/
+git diff --cached --quiet || git commit -m "sessionN: artifacts/net — hello_prog.il updated"
+```
+
+**After N-R1 (OUTPUT='hello' works), extend to:**
+```bash
+./sno2c -net $BEAUTY  -I$INC > /tmp/beauty_new.il
+./sno2c -net $ROMAN   -I$INC > /tmp/roman_new.il
+# verify ilasm clean, copy if changed, commit
+```
+
+## ⛔ ARTIFACTS — JVM canonical samples tracked every session
+
+Every session that changes `emit_byrd_jvm.c` or any `.sno → .j` path MUST regenerate
+the canonical JVM artifacts and check if they changed. **Update only if changed.**
+
+```bash
+cd /home/claude/snobol4x
+NULL_SNO=test/crosscheck/null.sno
+
+./sno2c -jvm $NULL_SNO > /tmp/null_new.j
+
+# Verify assembles (requires jasmin.jar — skip verify until J1)
+mkdir -p artifacts/jvm/samples
+diff -q /tmp/null_new.j artifacts/jvm/hello_prog.j 2>/dev/null \
+    || cp /tmp/null_new.j artifacts/jvm/hello_prog.j
+
+git add artifacts/jvm/
+git diff --cached --quiet || git commit -m "sessionN: artifacts/jvm — hello_prog.j updated"
 ```
 
 **Update beauty_prog.s (every session touching emit_byrd_asm.c or .mac):**
