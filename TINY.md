@@ -932,3 +932,82 @@ STOP_ON_FAIL=0 bash test/crosscheck/run_crosscheck_asm_prog.sh 2>&1 | tail -5
 1. Fix `056_pat_star_deref`: `PAT = 'hello'` assigns E_QLIT but `*PAT` uses it as indirect pattern ref. The expr_is_pattern_expr guard correctly skips it as non-pattern, but the `*VAR` (E_INDR) emit path in `emit_asm_node` still tries to reference `P_PAT_ret_γ`. Fix: when E_INDR references a variable that is NOT in the named-pattern registry, fall back to value-based pattern matching instead. Restore 26/26 ASM crosscheck.
 2. Continue NASM_FAIL fixes: 4 remaining (`019_concat_var_string`, `056_pat_star_deref`, `086_define_locals`, `wordcount`)
 3. Fix remaining FAILs: concat (017–022), capture (060–064), define/functions (083–090)
+
+---
+
+## NOW (session183 — frontend session)
+
+**⚠ TWO CONCURRENT SESSIONS — different concerns, same repo:**
+- **Frontend session** (this chat): `snocone-frontend` sprint — SC0→SC5 → M-SNOC-SELF
+- **Backend session** (other chat): `asm-backend` sprint — corpus fixes (72/106) → M-MONITOR
+
+Each session edits `snobol4x` independently. Both push to `.github`. Per RULES.md: `git pull --rebase` before every `.github` push. No `--force` ever.
+
+**Frontend session sprint: `snocone-frontend`**
+**HEAD:** `583c5a5` session182
+**Active milestone:** M-SNOC-LEX (Sprint SC0)
+
+### Sprint SC0 — M-SNOC-LEX
+
+**Goal:** `src/frontend/snocone/sc_lex.c` — tokenize any `.sc` file.
+Ported from `snobol4jvm/src/SNOBOL4clojure/snocone.clj` (tested, complete).
+
+**Files:**
+- `src/frontend/snocone/sc_lex.h` — token kinds + `ScToken` struct + `sc_lex()` API
+- `src/frontend/snocone/sc_lex.c` — lexer implementation
+- `test/frontend/snocone/sc_lex_test.c` — quick-check: `OUTPUT = 'hello'` → 3 tokens PASS
+
+**Token kinds** (from JVM KIND table):
+```c
+SC_INTEGER, SC_REAL, SC_STRING, SC_IDENT,
+SC_KW_IF, SC_KW_ELSE, SC_KW_WHILE, SC_KW_DO, SC_KW_FOR,
+SC_KW_RETURN, SC_KW_FRETURN, SC_KW_NRETURN,
+SC_KW_GO, SC_KW_TO, SC_KW_PROCEDURE, SC_KW_STRUCT,
+SC_LPAREN, SC_RPAREN, SC_LBRACE, SC_RBRACE, SC_LBRACKET, SC_RBRACKET,
+SC_COMMA, SC_SEMICOLON, SC_COLON,
+SC_ASSIGN, SC_QUESTION, SC_PIPE, SC_OR, SC_CONCAT,
+SC_EQ, SC_NE, SC_LT, SC_GT, SC_LE, SC_GE,
+SC_STR_IDENT, SC_STR_DIFFER, SC_STR_LT, SC_STR_GT, SC_STR_LE, SC_STR_GE,
+SC_STR_EQ, SC_STR_NE,
+SC_PLUS, SC_MINUS, SC_SLASH, SC_STAR, SC_PERCENT, SC_CARET,
+SC_PERIOD, SC_DOLLAR, SC_AT, SC_AMPERSAND, SC_TILDE,
+SC_NEWLINE, SC_EOF, SC_UNKNOWN
+```
+
+**Continuation chars:** `@ $ % ^ & * ( - + = [ < > | ~ , ? :`
+
+**Quick-check trigger (M-SNOC-LEX):**
+```bash
+cd /home/claude/snobol4x
+gcc -o /tmp/sc_lex_test test/frontend/snocone/sc_lex_test.c src/frontend/snocone/sc_lex.c
+/tmp/sc_lex_test
+# PASS → M-SNOC-LEX fires → begin Sprint SC1
+```
+
+### Sprint SC1 — M-SNOC-PARSE
+
+`src/frontend/snocone/sc_parse.c` — recursive-descent parser consuming `ScToken[]`.
+Produces `ScNode` AST covering: expr (full prec table), stmt, if/while/do/for/procedure/struct/goto/return/block.
+
+### Sprint SC2 — M-SNOC-LOWER
+
+`src/frontend/snocone/sc_lower.c` — walks `ScNode` tree, emits `EXPR_t`/`STMT_t` IR.
+Operator mapping from `snocone.sc` bconv table (already read).
+**No changes to emit.c or the C backend.**
+
+### Sprint SC3 — M-SNOC-EMIT
+
+`-sc` flag in `src/driver/main.c`: if input ends `.sc`, run `sc_lex → sc_parse → sc_lower → emit`.
+Quick-check: `echo "OUTPUT = 'hello'" > /tmp/t.sc && ./sno2c -sc /tmp/t.sc > /tmp/t.c && gcc /tmp/t.c ... && ./a.out`
+Expected output: `hello`
+
+### Sprint SC4 — M-SNOC-CORPUS
+
+10-rung corpus in `test/frontend/snocone/`:
+SC1 literals · SC2 assign · SC3 arith · SC4 control · SC5 while/do · SC6 for · SC7 procedure · SC8 struct · SC9 patterns · SC10 snocone.sno word-count example
+
+### Sprint SC5 — M-SNOC-SELF
+
+`snocone.sc` → `./sno2c -sc` → binary → run → diff vs `snocone.snobol4` oracle (or fresh compile).
+**M-SNOC-SELF fires** when diff is empty.
+
