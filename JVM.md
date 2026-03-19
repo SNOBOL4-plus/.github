@@ -9,29 +9,30 @@ JVM/Clojure backend: SNOBOL4 → JVM bytecode via multi-stage pipeline.
 
 ## NOW
 
-**Sprint:** `jvm-backend` J-R1 — corpus ladder rungs 1–4 → M-JVM-R1
-**HEAD:** `62c668f` J-201
-**Milestone:** M-JVM-LIT ✅ session195 · M-JVM-ASSIGN ✅ session197 · M-JVM-GOTO ✅ J-198 · M-JVM-PATTERN ✅ J-199 · M-JVM-CAPTURE ✅ J-201
+**Sprint:** `jvm-backend` J-R2 — corpus ladder rungs 5–7 → M-JVM-R2
+**HEAD:** `2b1d6a9` J-202
+**Milestone:** M-JVM-LIT ✅ · M-JVM-ASSIGN ✅ · M-JVM-GOTO ✅ · M-JVM-PATTERN ✅ · M-JVM-CAPTURE ✅ J-201 · M-JVM-R1 ✅ J-202
 
-**J-201 — M-JVM-CAPTURE complete; 7/7 capture/ PASS:**
-- Bug fixed: success label fell into fail block when `:F` present but no `:S` — added `goto Jpat_after` to skip fail-goto
-- Bug fixed: subject replacement (`= rhs`) was a TODO stub — implemented StringBuilder rebuild: `subject[0..cursor_start] + replacement + subject[cursor..end]`, stored back via `sno_var_put`
-- Pre-existing failures (not regressions): `fileinfo`, `triplet`, `expr_eval` (EVAL!), `053_pat_alt_commit`
-- 46/50 PASS on rungs 1–7
+**J-202 — M-JVM-R1: 22/22 rungs 1–4 PASS:**
+- EQ/NE/LT/GT/LE/GE builtins: emit dcmpl + branch, return "" on success, null on failure
+- Null-RHS failure propagation: OUTPUT/VAR assignments skip store/print when RHS is null
+- INPUT-in-arithmetic pre-hoist: read INPUT into local 5 before expression, null-check at stack depth 0; eliminates VerifyError from partial-stack goto
+- Rungs 5–7: 26/28 (pre-existing: expr_eval sno2c error, 053_pat_alt_commit)
 
-**⚠ CRITICAL NEXT ACTION — Session J-202 (JVM):**
+**⚠ CRITICAL NEXT ACTION — Session J-203 (JVM):**
 
-Sprint J-R1 — corpus ladder rungs 1–4 PASS → M-JVM-R1
+Sprint J-R2 — rungs 5–7 PASS → M-JVM-R2
 
 ```bash
 cd /home/claude/snobol4x
 git config user.name "LCherryholmes" && git config user.email "lcherryh@yahoo.com"
-git log --oneline -3   # verify HEAD = 62c668f
+git log --oneline -3   # verify HEAD = 2b1d6a9
 apt-get install -y libgc-dev nasm default-jdk && make -C src
 CORPUS=/home/claude/snobol4corpus/crosscheck
 bash test/crosscheck/run_crosscheck_jvm_rung.sh \
-  $CORPUS/hello $CORPUS/output $CORPUS/assign $CORPUS/arith 2>&1 | tail -5
-# Fix any failures in rungs 1-4, then add control/ patterns/ capture/
+  $CORPUS/control $CORPUS/patterns $CORPUS/capture 2>&1 | tail -5
+# 26/28 expected — expr_eval and 053 are pre-existing, investigate if any new failures
+# Then push to M-JVM-R2 and advance to rungs 8-9
 ```
 ---
 

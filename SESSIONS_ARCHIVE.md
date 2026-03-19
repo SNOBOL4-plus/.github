@@ -8302,3 +8302,43 @@ bash test/crosscheck/run_crosscheck_jvm_rung.sh \
 - Complete diagnosis, architecture rationale, implementation spec, verify script
 - Next session: implement 6-line fix in `emit_asm_named_def` → test → M-ASM-RECUR → M-ASM-SAMPLES
 - 106/106 C ✅ · 26/26 ASM ✅ · HEAD 71c86d3 B-201 (no new commit this session)
+
+## Session J-202 — M-JVM-R1: 22/22 rungs 1–4 PASS
+
+**Date:** 2026-03-19
+**HEAD at start:** `62c668f` J-201
+**HEAD at end:** `2b1d6a9` J-202
+**Branch:** main
+
+### What happened
+
+**EQ/NE/LT/GT/LE/GE numeric comparison builtins:**
+Were falling through to "unrecognised stub → ldc ''". Now emit `dcmpl` + conditional branch. Return `""` (empty string) on success (SNOBOL4 predicates return null string, not their args). Return `aconst_null` on failure.
+
+**Null-RHS failure propagation for OUTPUT and VAR assignments:**
+When RHS expression returns null (predicate failed), the statement must fail silently — not store null to a variable or print "null". Implemented null checks with skip-labels for both OUTPUT and VAR paths. When no explicit `:F`, falls through to next statement.
+
+**INPUT nested in arithmetic — VerifyError fix:**
+`CHARS = CHARS + SIZE(INPUT) :F(DONE)` was jumping to `:F` mid-expression with a partial double (2 slots) on the JVM operand stack → VerifyError "0 != 2". Fixed by pre-hoisting: `expr_contains_input()` detects INPUT in the RHS tree; if found and nested (not direct top-level INPUT), reads INPUT into local slot 5 *before* any expression evaluation begins, null-checks there at stack depth 0, then expression uses `aload 5` instead of calling `sno_input_read()` again.
+
+### Results
+- Rungs 1–4: **22/22 PASS** — M-JVM-R1 ✅
+- Rungs 5–7: **26/28** (pre-existing failures only: expr_eval sno2c error, 053_pat_alt_commit)
+
+### State at handoff
+- snobol4x pushed at `2b1d6a9`
+- PLAN.md: M-JVM-R1 ✅, JVM row → J-R2 sprint
+- JVM.md: NOW block updated
+
+### Next session start block (J-203)
+```bash
+cd /home/claude/snobol4x
+git config user.name "LCherryholmes" && git config user.email "lcherryh@yahoo.com"
+git log --oneline -3   # verify HEAD = 2b1d6a9
+apt-get install -y libgc-dev nasm default-jdk && make -C src
+CORPUS=/home/claude/snobol4corpus/crosscheck
+bash test/crosscheck/run_crosscheck_jvm_rung.sh \
+  $CORPUS/control $CORPUS/patterns $CORPUS/capture 2>&1 | tail -5
+# 26/28 expected baseline — if clean, M-JVM-R2 fires immediately
+# Next: rungs 8-9 (strings/ keywords/)
+```
