@@ -8211,6 +8211,26 @@ done
 ### Next
 N-200 — Sprint N-R3: Byrd box pattern emission in CIL → M-NET-PATTERN
 
+## Session N-200 — M-NET-PATTERN fires; 51/58 PASS; 18/20 patterns
+
+**Sprint:** `net-backend` N-R3 → N-R4
+**HEAD:** `7f66297` N-200
+**Date:** 2026-03-19
+
+### Milestone fired
+- **M-NET-PATTERN** ✅ `7f66297`
+
+### What was done
+- **`net_emit_pat_node`**: full recursive Byrd box pattern emitter in CIL, ported from JVM backend. Nodes: E_QLIT/E_CONC/E_OR/E_NAM/E_DOL/E_VART/E_FNC(ARBNO/ANY/NOTANY/SPAN/BREAK/LEN/POS/RPOS/TAB/RTAB/REM/ARB/FAIL/SUCCEED/FENCE/ABORT).
+- **Two-pool locals**: int32 slots V_6..V_19 (cursor saves, counters); string slots V_20..V_29 (charset, char, literal). Fixes CIL type-safety InvalidProgramException from stloc.s into wrong-typed slot.
+- **`kw_anchor` field**: static string field, init "0"; scan-start retry loop checks it.
+- 18/20 patterns PASS; 2 deferred: 053 (pattern-in-var), 056 (*var indirect)
+- 51/58 total; suite runtime ~17s
+- Invariants: 106/106 C ✅ · 26/26 ASM ✅
+
+### Next
+N-201 — Sprint N-R4: capture/ + strings/ → M-NET-CAPTURE
+
 ## Session B-201 — A-SAMPLES: wordcount PASS; roman segfault root-caused
 
 **Sprint:** `asm-backend` A-SAMPLES

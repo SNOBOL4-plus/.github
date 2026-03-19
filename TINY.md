@@ -480,6 +480,36 @@ done
 - Suite runtime: ~13s (parallel ilasm + serial mono)
 - Invariants: 106/106 C ✅ · 26/26 ASM ✅
 
+**N-200 (net) — M-NET-PATTERN fires; 51/58 PASS; 18/20 patterns:**
+
+- **Pattern emitter `net_emit_pat_node`**: full Byrd box pattern emission in CIL, ported from JVM backend
+- **Two-pool locals**: int32 slots V_6..V_19 for cursor/counter temps; string slots V_20..V_29 for charset/char temps. Fixes CIL type-safety InvalidProgramException that killed ANY/NOTANY/SPAN/BREAK.
+- **Nodes implemented**: E_QLIT(LIT), E_CONC(SEQ), E_OR(ALT), E_NAM(. capture), E_DOL($ capture), E_VART(indirect/builtins), ARBNO/ANY/NOTANY/SPAN/BREAK/LEN/POS/RPOS/TAB/RTAB/REM/ARB/FAIL/SUCCEED/FENCE/ABORT
+- **Scan-start retry loop**: anchor check against `kw_anchor` field; `kw_anchor` static field added + init to "0"
+- 18/20 patterns PASS; 2 deferred: 053(pattern-in-var), 056(*var indirect) — N-R4+
+- 51/58 total across hello+output+assign+control_new+keywords+patterns
+- Suite runtime: ~17s (parallel ilasm + serial mono)
+- **M-NET-PATTERN fires** `7f66297` N-200
+- Invariants: 106/106 C ✅ · 26/26 ASM ✅
+
+**⚠ CRITICAL NEXT ACTION — N-201 (net):**
+
+Sprint N-R4 — capture/ and strings/ rungs → M-NET-CAPTURE
+
+```bash
+cd /home/claude/snobol4x
+git config user.name "LCherryholmes" && git config user.email "lcherryh@yahoo.com"
+git log --oneline -3   # verify HEAD = 7f66297 N-200
+apt-get install -y libgc-dev nasm mono-complete && make -C src
+mkdir -p /home/snobol4corpus && ln -sf /home/claude/snobol4corpus/crosscheck /home/snobol4corpus/crosscheck
+STOP_ON_FAIL=0 bash test/crosscheck/run_crosscheck.sh        # 106/106
+bash test/crosscheck/run_crosscheck_asm.sh                   # 26/26
+CORPUS=/home/claude/snobol4corpus/crosscheck
+bash test/crosscheck/run_crosscheck_net_rung.sh $CORPUS/hello $CORPUS/output $CORPUS/assign $CORPUS/control_new $CORPUS/keywords $CORPUS/patterns
+# current: 51/58; target: capture/ and strings/ rungs
+bash test/crosscheck/run_crosscheck_net_rung.sh $CORPUS/capture $CORPUS/strings
+```
+
 **⚠ CRITICAL NEXT ACTION — N-200 (net):**
 
 Sprint N-R3 — Byrd boxes in CIL: LIT/SEQ/ALT/ARBNO pattern nodes → M-NET-PATTERN
