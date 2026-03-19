@@ -17,10 +17,36 @@ On 2026-03-18 the token was written repeatedly in chat handoff summaries. **Neve
 - Write `TOKEN=TOKEN_SEE_LON` as placeholder in any file that references it.
 - If token appears in a commit: notify Lon immediately. Token rotation and history rewriting are Lon's decisions only — Claude never rotates the token.
 
+## ⛔ SESSION NUMBERS — globally unique, per-session-type prefix
+
+Each concurrent session type has its own numbering namespace. No two sessions
+ever share a number. Format: `PREFIX-NNN` where NNN increments within that
+namespace only.
+
+| Session type | Prefix | Example | Owns in PLAN.md NOW |
+|---|---|---|---|
+| TINY backend (ASM) | `B` | B-197, B-198 | **TINY backend** row |
+| TINY JVM backend   | `J` | J-195, J-196 | **TINY JVM** row |
+| TINY NET backend   | `N` | N-195, N-196 | **TINY NET** row |
+| TINY frontend (SC) | `F` | F-192, F-193 | **TINY frontend** row |
+| DOTNET             | `D` | D-156, D-157 | **DOTNET** row |
+
+**Rules:**
+- Commit messages: `B-198: M-ASM-R11 — data/ PASS`
+- SESSIONS_ARCHIVE.md entries: `## Session B-198 — ...`
+- HEAD fields in PLAN.md NOW table: `d832a86 B-198`
+- Each session increments only its own counter — never touch another session's number
+- The last known number per namespace lives in the NOW table HEAD column
+
+**Migration:** pre-prefix sessions (1–196) are legacy. First session after this
+rule uses the prefix. The PLAN.md NOW table HEAD column shows last known number
+per namespace so the next session can find its starting point.
+
 ## ⛔ CONCURRENT SESSIONS — rebase before every .github push
 
-Two chats may work simultaneously on different repos (e.g. snobol4x + snobol4dotnet).
-Both will push .github. They WILL collide unless every chat does:
+Four chats may work simultaneously on snobol4x (backend, JVM, NET, frontend)
+plus one on snobol4dotnet. All push .github. They WILL collide unless every
+chat does:
 
 ```bash
 cd /home/claude/.github
@@ -28,10 +54,12 @@ git pull --rebase origin main   # always, immediately before push
 git push
 ```
 
-This is safe because each chat edits different files:
-- TINY chat   → TINY.md + PLAN.md TINY milestone rows
-- DOTNET chat → DOTNET.md + PLAN.md DOTNET milestone rows
-- JVM chat    → JVM.md + PLAN.md JVM milestone rows
+Each chat edits only its own files and its own row in PLAN.md NOW:
+- TINY backend   → TINY.md  + PLAN.md **TINY backend** row only
+- TINY JVM       → JVM.md   + PLAN.md **TINY JVM** row only
+- TINY NET       → BACKEND-NET.md + PLAN.md **TINY NET** row only
+- TINY frontend  → FRONTEND-SNOCONE.md + PLAN.md **TINY frontend** row only
+- DOTNET         → DOTNET.md + PLAN.md **DOTNET** row only
 
 Line-level conflicts are structurally impossible given this discipline.
 RULES.md and SESSIONS_ARCHIVE.md are append-only — rebase handles them.
