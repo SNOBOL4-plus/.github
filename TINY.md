@@ -11,9 +11,50 @@ snobol4x: multiple frontends, multiple backends.
 
 ## NOW
 
-**Sprint:** `snocone-frontend` SC1 — sc_parse.c
-**HEAD:** `573575e` session183
-**Milestone:** M-SNOC-LEX ✅ session183 → begin Sprint SC1 (sc_parse.c)
+**Sprint:** `snocone-frontend` SC2 — sc_lower.c
+**HEAD:** `5e20058` session184
+**Milestone:** M-SNOC-PARSE ✅ session184 → begin Sprint SC2 (sc_lower.c)
+
+**Session184 — M-SNOC-PARSE: sc_parse.h + sc_parse.c + test; 78/78 PASS:**
+- `src/frontend/snocone/sc_parse.h` — ScPToken (kind/text/line/is_unary/arg_count),
+  ScParseResult, SC_CALL/SC_ARRAY_REF synthetic kinds above SC_UNKNOWN, public API
+- `src/frontend/snocone/sc_parse.c` — shunting-yard: prec table (lp/rp from bconv in
+  snocone.sc), 9 unary ops ANY("+-*&@~?.$"), frame stack (FRAME_CALL/ARRAY/GROUP),
+  dotck fixup, parse_operand_into recursive unary helper with full call-consumption
+  fix: -f(x) -> f x CALL(1) unary- (C# reopens main loop; C must consume args+')' before
+  returning so unary lands after SC_CALL, not inside arg list)
+- `test/frontend/snocone/sc_parse_test.c` — 78 assertions mirroring TestSnoconeParser.cs:
+  single operands, binary, precedence (6), associativity (left+right), unary (4),
+  parens (2), calls (5: noargs/1arg/2args/expr-arg/nested), string ops (3), dotck (2),
+  extra (nested calls, all string ops, double-unary, empty), M-SNOC-PARSE trigger PASS
+- M-SNOC-PARSE trigger: OUTPUT = 'hello' -> IDENT STRING ASSIGN PASS
+- 106/106 C crosscheck invariant unaffected; 26/26 ASM unaffected
+
+**⚠ CRITICAL NEXT ACTION — Session185 (frontend session):**
+
+Sprint SC2 — M-SNOC-LOWER: `src/frontend/snocone/sc_lower.c`
+
+Walk the postfix `ScPToken[]` from sc_parse and emit `EXPR_t`/`STMT_t` IR nodes.
+Port from snobol4jvm `snocone_emitter.clj` + snobol4dotnet emitter (if exists).
+Operator mapping from bconv table in snocone.sc (== → EQ, != → NE, etc.).
+
+Files:
+- `src/frontend/snocone/sc_lower.h` — ScLowerResult, API
+- `src/frontend/snocone/sc_lower.c` — postfix evaluator: operand stack of EXPR_t*,
+  SC_CALL/SC_ARRAY_REF → E_FNC/E_IDX, binary ops → E_ADD/E_SUB/etc., unary → E_MNS/etc.,
+  statement assembly from top of stack per newline boundary
+- `test/frontend/snocone/sc_lower_test.c` — quick-check: OUTPUT = 'hello' lowers to
+  assignment STMT_t with E_QLIT rhs PASS
+
+Quick-check trigger (M-SNOC-LOWER):
+```bash
+gcc -I src/frontend/snocone -I src/frontend/snobol4 -o /tmp/sc_lower_test \
+    test/frontend/snocone/sc_lower_test.c \
+    src/frontend/snocone/sc_lex.c src/frontend/snocone/sc_parse.c \
+    src/frontend/snocone/sc_lower.c
+/tmp/sc_lower_test
+# PASS -> M-SNOC-LOWER fires -> begin Sprint SC3
+```
 
 **Session183 — M-SNOC-LEX: sc_lex.h + sc_lex.c + test; 187/187 PASS:**
 - `src/frontend/snocone/sc_lex.h` — ScKind enum (48 kinds), ScToken, ScTokenArray, API
