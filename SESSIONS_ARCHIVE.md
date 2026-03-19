@@ -7386,3 +7386,60 @@ grep -A 80 "CRITICAL NEXT ACTION.*Session184" /home/claude/.github/TINY.md
 # Then read BACKEND-C.md §Save/Restore and ARCH.md §Byrd Box
 # Then implement: AsmNamedPat extension → asm_scan → call site → α/γω emit → RETURN fix
 ```
+
+---
+
+## Session184 — frontend session — M-SNOC-PARSE
+
+**Date:** 2026-03-18
+**Repo:** snobol4x
+**Sprint:** snocone-frontend SC1
+**HEAD before:** `573575e` session183
+**HEAD after:** `5e20058` session184
+
+**What happened:**
+- Answered architecture question: why LALR(1)/bison+flex is wrong for Snocone —
+  9 dual unary/binary ops, juxtaposition concatenation (whitespace-as-operator
+  stripped by lexer), output must be postfix RPN (not parse tree), dangling-else.
+  Correct approach: shunting-yard for expressions + hand-written RD for statements.
+- Found `sc_parse.h`, `sc_parse.c`, `sc_parse_test.c` already stub-created by
+  interrupted prior session; completed `sc_parse.c` and `sc_parse_test.c` in full.
+- `src/frontend/snocone/sc_parse.h` — ScPToken (kind/text/line/is_unary/arg_count),
+  ScParseResult, SC_CALL/SC_ARRAY_REF synthetic kinds above SC_UNKNOWN, public API
+- `src/frontend/snocone/sc_parse.c` — shunting-yard: prec table lp/rp from bconv
+  in snocone.sc, 9 unary ops ANY("+-*&@~?.$"), frame stack (FRAME_CALL/ARRAY/GROUP),
+  dotck fixup (.5 → "0.5"), parse_operand_into recursive unary helper
+- Key bug fixed over C# model: parse_operand_into must fully consume f(args…) + ')'
+  before returning — C# continues in main loop to close the frame; C cannot, so
+  -f(x) would emit unary minus inside the arg list. Fixed with inner arg-segment loop
+  calling sc_parse recursively per argument, then emitting SC_CALL before return.
+- `test/frontend/snocone/sc_parse_test.c` — 78 assertions mirroring TestSnoconeParser.cs:
+  9 groups (single operands, binary, precedence, associativity, unary, parens, calls,
+  string ops, dotck) + extra + M-SNOC-PARSE trigger
+- 77/78 on first run (Complex_NegatedCall failing) → fixed → 78/78 PASS, zero warnings
+- **M-SNOC-PARSE fires** — 78/78 PASS
+- 106/106 C crosscheck unaffected; 26/26 ASM unaffected
+
+**State at handoff:**
+- snobol4x HEAD `5e20058` pushed ✅
+- .github TINY.md + PLAN.md updated ✅
+- Frontend session next: Sprint SC2 — sc_lower.c
+
+**Session185 start (frontend):**
+```bash
+cd /home/claude/snobol4x
+git config user.name "LCherryholmes" && git config user.email "lcherryh@yahoo.com"
+git log --oneline -3   # verify HEAD = 5e20058
+
+apt-get install -y libgc-dev nasm && make -C src
+mkdir -p /home/snobol4corpus && ln -sf /home/claude/snobol4corpus/crosscheck /home/snobol4corpus/crosscheck
+gcc -c src/runtime/asm/snobol4_asm_harness.c -o src/runtime/asm/snobol4_asm_harness.o
+STOP_ON_FAIL=0 bash test/crosscheck/run_crosscheck.sh        # must be 106/106
+bash test/crosscheck/run_crosscheck_asm.sh                   # must be 26/26
+
+# Read primary reference for sc_lower.c (Sprint SC2):
+cat /home/claude/snobol4jvm/src/SNOBOL4clojure/snocone_emitter.clj
+# Then read sc_parse.h to understand ScPToken/ScParseResult input
+# Then read src/frontend/snobol4/sno2c.h for EXPR_t/STMT_t IR target types
+# Begin sc_lower.h + sc_lower.c
+```
