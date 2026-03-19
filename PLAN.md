@@ -14,7 +14,7 @@ Session numbers use per-type prefixes (see RULES.md §SESSION NUMBERS): B=backen
 
 | Session | Sprint | HEAD | Next milestone |
 |---------|--------|------|----------------|
-| **TINY backend** | `asm-backend` A-R11 — data/ | `d832a86` B-197 | M-ASM-R11 |
+| **TINY backend** | `asm-backend` A-SAMPLES — roman/wordcount | `617631c` B-198 | M-ASM-SAMPLES |
 | **TINY JVM** | `jvm-backend` J3 — :S/:F + INPUT + built-ins | `0362994` J-197 | M-JVM-GOTO |
 | **TINY NET** | `net-backend` N-R2 — goto :S/:F + E_FNC builtins | `efc3772` N-197 | M-NET-GOTO |
 | **TINY frontend** | `sc-corpus-ladder` SC-CORPUS-2 — control/ | `23765b1` F-192 | M-SC-CORPUS-R2 |
@@ -110,7 +110,7 @@ Sprint detail lives in the active platform L2 doc (TINY.md / JVM.md / DOTNET.md)
 | **M-ASM-R8** | strings/ — SIZE/SUBSTR/REPLACE/DUPL PASS | ✅ session192 |
 | **M-ASM-R9** | keywords/ — IDENT/DIFFER/GT/LT/EQ/DATATYPE PASS | ✅ session193 |
 | **M-ASM-R10** | functions/ — DEFINE/RETURN/FRETURN/recursion PASS | ✅ session197 |
-| **M-ASM-R11** | data/ — ARRAY/TABLE/DATA PASS | ❌ Sprint A-R11 |
+| **M-ASM-R11** | data/ — ARRAY/TABLE/DATA PASS | ✅ session198 |
 | **M-ASM-SAMPLES** | roman.sno and wordcount.sno pass via ASM backend; artifacts/asm/roman.s and artifacts/asm/wordcount.s committed and assembling clean | ❌ |
 | **M-SNOC-LEX** | sc_lex.c: all Snocone tokens; `OUTPUT = 'hello'` → 3 tokens PASS | ✅ `573575e` session183 |
 | **M-SNOC-PARSE** | sc_parse.c: full stmt grammar; SC corpus exprs + control flow PASS | ✅ `5e20058` session184 |

@@ -11,9 +11,41 @@ snobol4x: multiple frontends, multiple backends.
 
 ## NOW
 
-**Sprint:** `asm-backend` A-R11 — data/ — ARRAY/TABLE/DATA PASS
-**HEAD:** `06af4ec` session197 (backend)
-**Milestone:** M-ASM-R10 ✅ session197 · M-ASM-R9 ✅ session193 · M-ASM-R8 ✅ session192
+**Sprint:** `asm-backend` A-SAMPLES — roman.sno + wordcount.sno PASS
+**HEAD:** `5bac5cd` session198 (backend)
+**Milestone:** M-ASM-R11 ✅ session198 · M-ASM-R10 ✅ session197 · M-ASM-R9 ✅ session193
+
+**Session198 (backend) — M-ASM-R11: data/ 6/6 PASS; emit3 refactor:**
+
+- **Fix 1 — E_IDX read** (091/092/093): `A<i>`/`T['k']` → new `stmt_aref(arr,key)` shim wrapping `_aref_impl`; `E_IDX` case added to `prog_emit_expr`; evaluates arr→[rbp-16/8], key→[rbp-32/24], calls `stmt_aref` via SysV regs.
+- **Fix 2 — E_IDX write** (091/092/093): `A<i>=val`/`T['k']=val` → new `stmt_aset(arr,key,val)` shim; `has_eq`+`E_IDX` path pushes arr+key onto C stack, evaluates RHS, loads all args into SysV regs, calls `stmt_aset`, pops.
+- **Fix 3 — field set** (095): `x(P)=99` → new `stmt_field_set(obj,field,val)` shim wrapping `FIELD_SET_fn`; `has_eq`+`E_FNC`-1arg path added.
+- **Fix 4 — skip guard**: `E_IDX` and `E_FNC`-lhs exempt from subject-load prescan.
+- **`snobol4.h`**: declared `FIELD_SET_fn`.
+- **`A()` refactor**: introduced `emit3(label,opcode,operands)` structured emitter + `emit_raw(text)` for directives + `fmt_op(fmt,...)`. Old `A()` re-parsed its own output string (~90 lines of sniffing); new `A()` splits once into opcode+operands and delegates to `emit3`. Pending-label fold logic now lives only in `emit3`. `emit_instr()` retained for `asmLB`/`ALFC` bypass path.
+- 6/6 data/ PASS · 106/106 C ✅ · 26/26 ASM ✅ · **M-ASM-R11 fires**
+
+**⚠ CRITICAL NEXT ACTION — Session199 (backend):**
+
+Sprint A-SAMPLES — roman.sno + wordcount.sno PASS → M-ASM-SAMPLES
+
+```bash
+cd /home/claude/snobol4x
+git config user.name "LCherryholmes" && git config user.email "lcherryh@yahoo.com"
+git log --oneline -3   # verify HEAD = 5bac5cd
+apt-get install -y libgc-dev nasm && make -C src
+mkdir -p /home/snobol4corpus && ln -sf /home/claude/snobol4corpus/crosscheck /home/snobol4corpus/crosscheck
+gcc -c src/runtime/asm/snobol4_asm_harness.c -o src/runtime/asm/snobol4_asm_harness.o
+STOP_ON_FAIL=0 bash test/crosscheck/run_crosscheck.sh        # must be 106/106
+bash test/crosscheck/run_crosscheck_asm.sh                   # must be 26/26
+CORPUS=/home/claude/snobol4corpus/crosscheck
+STOP_ON_FAIL=0 bash test/crosscheck/run_crosscheck_asm_rung.sh $CORPUS/data   # must be 6/6
+# Then attempt roman.sno and wordcount.sno:
+PROGS=/home/claude/snobol4corpus/programs
+./sno2c -asm $PROGS/roman/roman.sno > /tmp/roman.s
+nasm -f elf64 -I src/runtime/asm/ /tmp/roman.s -o /tmp/roman.o
+# link + run + diff vs oracle
+```
 
 **Session197 (backend) — M-ASM-R10: functions/ 8/8 PASS; FRETURN + recursion fixes:**
 
