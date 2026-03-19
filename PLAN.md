@@ -14,7 +14,7 @@ Session numbers use per-type prefixes (see RULES.md §SESSION NUMBERS): B=backen
 
 | Session | Sprint | HEAD | Next milestone |
 |---------|--------|------|----------------|
-| **TINY backend** | `asm-backend` A-SAMPLES — roman/wordcount | `617631c` B-198 | M-ASM-SAMPLES |
+| **TINY backend** | `asm-backend` A-SAMPLES — roman/wordcount | `617631c` B-199 | M-ASM-SAMPLES |
 | **TINY JVM** | `jvm-backend` J4 — Byrd box patterns: LIT/SEQ/ALT/ARBNO | `f24fb97` J-198 | M-JVM-PATTERN |
 | **TINY NET** | `net-backend` N-R2 — goto :S/:F + E_FNC builtins | `efc3772` N-197 | M-NET-GOTO |
 | **TINY frontend** | `sc-corpus-ladder` SC-CORPUS-2 — control/ | `23765b1` F-192 | M-SC-CORPUS-R2 |
@@ -112,6 +112,7 @@ Sprint detail lives in the active platform L2 doc (TINY.md / JVM.md / DOTNET.md)
 | **M-ASM-R10** | functions/ — DEFINE/RETURN/FRETURN/recursion PASS | ✅ session197 |
 | **M-ASM-R11** | data/ — ARRAY/TABLE/DATA PASS | ✅ session198 |
 | **M-ASM-SAMPLES** | roman.sno and wordcount.sno pass via ASM backend; artifacts/asm/roman.s and artifacts/asm/wordcount.s committed and assembling clean | ❌ |
+| **M-DROP-MOCK-ENGINE** | `mock_engine.c` removed from ASM program link path; 26-test harness suite migrated to full `.sno` format or harness rewritten to not call `engine_match`; 26/26 + 106/106 hold without linking `mock_engine.o` in ASM path | ❌ |
 | **M-SNOC-LEX** | sc_lex.c: all Snocone tokens; `OUTPUT = 'hello'` → 3 tokens PASS | ✅ `573575e` session183 |
 | **M-SNOC-PARSE** | sc_parse.c: full stmt grammar; SC corpus exprs + control flow PASS | ✅ `5e20058` session184 |
 | **M-SNOC-LOWER** | sc_lower.c: Snocone AST → EXPR_t/STMT_t wired | ✅ `2c71fc1` session185 |

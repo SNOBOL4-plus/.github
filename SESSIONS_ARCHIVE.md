@@ -8065,3 +8065,24 @@ done; rm -rf $TMPD
 # Reference: emit_byrd_asm.c — structural oracle (same IR)
 ```
 **Sprint J4 goal:** M-JVM-PATTERN — LIT/SEQ/ALT/ARBNO Byrd boxes in JVM bytecode.
+
+## Session B-199 — A-SAMPLES diagnosis; M-DROP-MOCK-ENGINE milestone
+
+**Sprint:** `asm-backend` A-SAMPLES
+**HEAD in:** `617631c` (B-198) · **HEAD out:** `617631c` (no new commit)
+**Milestone fired:** none
+
+**What happened:**
+- Environment verified clean: 106/106 C, 26/26 ASM
+- `roman.sno` compiles, assembles, and links successfully via ASM backend
+- Segfaults at runtime — root cause not diagnosed (likely REPLACE/TIME builtins unregistered)
+- Studied mock_engine.c/mock_includes.c architecture
+- Identified that `engine_match`/`engine_match_ex` are never called by compiled programs — legacy pattern-only harness scaffolding from sprints A0–A8
+- Created **M-DROP-MOCK-ENGINE** milestone: remove mock_engine.c from ASM link path, migrate 26-test harness to full .sno format
+- Also read REBUS TR84-9 (Griswold) and Proebsting Byrd box paper from uploaded PDFs
+
+**State at handoff:**
+- No uncommitted changes in snobol4x
+- roman.sno segfault unresolved — next session diagnoses via GDB/valgrind + checks REPLACE/TIME registration
+
+**Next session start block:** See TINY.md ⚠ CRITICAL NEXT ACTION — Session B-200
