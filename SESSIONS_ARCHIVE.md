@@ -7751,3 +7751,38 @@ bash test/crosscheck/run_sc_corpus_rung.sh \
 - `-Wformat-truncation`: `LBUF` 128→320, `ASM_NAMED_NAMELEN` 128→320; all struct fields + locals updated
 - 106/106 C ✅  26/26 ASM ✅  20/20 SC-CORPUS ✅  artifacts unchanged
 - Commit: `64ce79a`
+
+---
+
+## Session 192 (full — frontend + warning cleanup)
+
+**What happened:**
+- M-SC-CORPUS-R1 fires: 20/20 SC corpus (hello/output/assign) PASS via `-sc -asm`
+- Created test/crosscheck/sc_corpus/ tree + run_sc_corpus_rung.sh runner
+- .xfail protocol added to runner + documented in RULES.md (frontend/backend separation)
+- emit_byrd_asm.c: **fully clean, 0 warnings** — LBUF/ASM_NAMED_NAMELEN 128→320, LBUF2, all buffer fixes
+- emit_byrd.c: NAMED_PAT_NAMELEN 128→320, NAMED_PAT_LBUF2 defined, major buffers bumped; ~20 format-truncation warnings remain in compound-label paths
+- emit_cnode.c: #include <ctype.h>; emit.c: unused vars removed, indentation fixed; parse.c: const casts; sc_cf.c: def_buf 816
+- E_INDR fix: Snocone uses ->left, SNOBOL4 uses ->right — accept either
+- 106/106 C ✅  26/26 ASM ✅  20/20 SC-CORPUS ✅
+- HEAD: d7bef4c
+
+**Remaining work for session193:**
+- Task A: Finish emit_byrd.c warnings — all remaining are char[LBUF] compound-label locals; change to [NAMED_PAT_LBUF2]
+- Task B: SC-CORPUS-2 — control/ + control_new/ hand-conversion → M-SC-CORPUS-R2
+
+**Session193 start:**
+```bash
+cd /home/claude/snobol4x
+git config user.name "LCherryholmes" && git config user.email "lcherryh@yahoo.com"
+git log --oneline -3   # expect d7bef4c
+apt-get install -y libgc-dev nasm && make -C src
+mkdir -p /home/snobol4corpus && ln -sf /home/claude/snobol4corpus/crosscheck /home/snobol4corpus/crosscheck
+STOP_ON_FAIL=0 bash test/crosscheck/run_crosscheck.sh        # 106/106
+bash test/crosscheck/run_crosscheck_asm.sh                   # 26/26
+bash test/crosscheck/run_sc_corpus_rung.sh \
+    test/crosscheck/sc_corpus/hello \
+    test/crosscheck/sc_corpus/output \
+    test/crosscheck/sc_corpus/assign   # 20/20
+make -C src clean && make -C src 2>&1 | grep "warning:" | sort -u  # ~20 in emit_byrd.c
+```

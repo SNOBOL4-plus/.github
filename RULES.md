@@ -185,3 +185,32 @@ Steps 5–7 are automatic. No prompting needed. Claude does not wait to be asked
 push all → one-line pivot log entry in platform MD.
 
 **SWITCH REPO:** run HANDOFF on current repo first, then read the new platform MD.
+
+## ⛔ FRONTEND/BACKEND SEPARATION — emitter gaps queue via .xfail
+
+The frontend session (snocone) and backend session (ASM emitter) share the same repo
+but must not edit each other's source directories:
+- **Frontend session owns:** `src/frontend/snocone/` · `test/crosscheck/sc_corpus/` · `test/frontend/`
+- **Backend session owns:** `src/backend/x64/emit_byrd_asm.c` · `src/runtime/asm/` · `test/crosscheck/crosscheck/`
+
+**When the frontend hits an emitter gap** (a `.sc` test that fails because the ASM
+backend doesn't handle the construct yet):
+
+1. Commit the `.sc` + `.ref` as normal.
+2. Add a `.xfail` file alongside with one line describing the root cause:
+   ```
+   echo "E_INDR left/right: sc_lower uses ->left, emitter expects ->right" \
+       > test/crosscheck/sc_corpus/assign/014_assign_indirect_dollar.xfail
+   ```
+3. The `run_sc_corpus_rung.sh` runner treats `.xfail` as SKIP (not FAIL) and prints the reason.
+4. File a milestone `M-SC-EMITTER-GAP-N` in PLAN.md pointing at the test and root cause.
+5. **Frontend session does NOT touch** `src/backend/` — ever.
+
+**Backend session** picks up `M-SC-EMITTER-GAP-N` on next recycle:
+1. Fix the emitter.
+2. Delete the `.xfail` file.
+3. Confirm the test now PASS via `run_sc_corpus_rung.sh`.
+4. Mark milestone ✅ in PLAN.md.
+
+**Net effect:** frontend and backend sessions never conflict on source files.
+The `.xfail` file is the contract between them.
