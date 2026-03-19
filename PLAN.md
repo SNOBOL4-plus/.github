@@ -11,9 +11,9 @@ Shared frontends. Multiple backends. Self-hosting goal: sno2c compiles sno2c.
 | | |
 |-|-|
 | **Active repos** | `snobol4x` (TINY) · `snobol4dotnet` (DOTNET) |
-| **TINY sprint** | `asm-backend` A-R9 — keywords/ (backend session) · `sc-corpus-ladder` SC-CORPUS-2 — control/ (frontend session) |
-| **TINY HEAD** | `9f784fa` session192 |
-| **TINY next** | Frontend: SC6-ASM self → M-SNOC-ASM-SELF |
+| **TINY sprint** | `asm-backend` A-R10 — functions/ (backend session) · `sc-corpus-ladder` SC-CORPUS-2 — control/ (frontend session) |
+| **TINY HEAD** | `018d913` session193 |
+| **TINY next** | Backend: A-R10 functions/ → A-R11 data/ (gates SC-CORPUS-R5 → M-SNOC-ASM-SELF) · Frontend: SC-CORPUS-R2 control/ |
 | **DOTNET sprint** | `net-perf-analysis` — hotfixes landed; dotnet test + BenchmarkSuite2 re-run needed |
 | **DOTNET HEAD** | `a029cae` session156: hotfixes A–D; BUILDING.md; build_native.sh; net-build-prereqs ✅ |
 | **DOTNET next** | `dotnet test` 1873/1876 → BenchmarkSuite2 re-run → M-NET-PERF → `cross` @N fix → net-benchmark-publish |
@@ -108,7 +108,7 @@ Sprint detail lives in the active platform L2 doc (TINY.md / JVM.md / DOTNET.md)
 | **M-ASM-R6** | patterns/ — 20 program-mode pattern tests PASS | ✅ session189 |
 | **M-ASM-R7** | capture/ — 7 tests PASS | ✅ session190 |
 | **M-ASM-R8** | strings/ — SIZE/SUBSTR/REPLACE/DUPL PASS | ✅ session192 |
-| **M-ASM-R9** | keywords/ — IDENT/DIFFER/GT/LT/EQ/DATATYPE PASS | ❌ Sprint A-R9 |
+| **M-ASM-R9** | keywords/ — IDENT/DIFFER/GT/LT/EQ/DATATYPE PASS | ✅ session193 |
 | **M-ASM-R10** | functions/ — DEFINE/RETURN/FRETURN/recursion PASS | ❌ Sprint A-R10 |
 | **M-ASM-R11** | data/ — ARRAY/TABLE/DATA PASS | ❌ Sprint A-R11 |
 | **M-ASM-SAMPLES** | roman.sno and wordcount.sno pass via ASM backend; artifacts/asm/roman.s and artifacts/asm/wordcount.s committed and assembling clean | ❌ |
