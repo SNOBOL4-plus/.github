@@ -11,7 +11,7 @@ snobol4x: multiple frontends, multiple backends.
 
 ## NOW
 
-**Sprint:** `asm-backend` A-R10 — functions/ — DEFINE/RETURN/FRETURN/recursion
+**Sprint:** `asm-backend` A-R10 — functions/ — DEFINE/RETURN/FRETURN/recursion · `net-backend` N-R0 — scaffold → M-NET-HELLO
 **HEAD:** `018d913` session193 (backend)
 **Milestone:** M-ASM-R9 ✅ session193 · M-ASM-R8 ✅ session192 · M-SC-CORPUS-R1 ✅ session192 (frontend)
 
@@ -1434,3 +1434,68 @@ SC1 literals · SC2 assign · SC3 arith · SC4 control · SC5 while/do · SC6 fo
 - α port binds args + saves old param vars; γ/ω ports restore; RETURN → jmp [ret_γ]
 - No runtime changes — compile-time only
 - See CRITICAL NEXT ACTION above for Session184 implementation steps
+
+---
+
+## NET Backend — snobol4x TINY (net_emit.c)
+
+**Strategy:** `sno2c -net prog.sno > prog.il` → `ilasm prog.il` → `prog.exe`
+
+Same pipeline shape as the ASM backend. `net_emit.c` walks `Program*` and emits CIL `.il` text. `ilasm` assembles it. Runtime support lives in `src/runtime/net/`, grown rung by rung exactly as `src/runtime/asm/` grew. No dependency on snobol4dotnet — fully self-contained.
+
+**snobol4dotnet was reference only** — it showed what a complete .NET SNOBOL4 runtime looks like. `net_emit.c` mirrors `emit_byrd_asm.c` structurally: same IR in, different target out.
+
+### Sprint N-R0 — M-NET-HELLO
+
+**Goal:** `-net` flag wired; `null.sno` → `null.il` → `ilasm` → `null.exe` → exit 0.
+
+**Files:**
+- `src/backend/net/net_emit.c` — new emitter (mirrors `emit_byrd_asm.c` structure)
+- `src/runtime/net/snobol4_net.il` — minimal runtime stubs (mirrors `src/runtime/asm/`)
+- `src/driver/main.c` — add `-net` flag → `net_emit(prog, out)`
+- `src/Makefile` — wire `net_emit.c` into build
+- `test/crosscheck/run_crosscheck_net_rung.sh` — harness (mirrors ASM version)
+- `artifacts/net/hello_prog.il` — canonical artifact committed
+
+**Steps:**
+1. Add `extern void net_emit(Program *prog, FILE *f);` + `-net` dispatch to `main.c`
+2. Stub `net_emit.c`: emit minimal valid `.il` header + `.entrypoint` + `ret`
+3. Confirm `ilasm null.il` assembles clean, `mono null.exe` exits 0
+4. Add `run_crosscheck_net_rung.sh`
+5. Commit `artifacts/net/hello_prog.il`
+6. **M-NET-HELLO fires**
+
+**Session start:**
+```bash
+cd /home/claude/snobol4x
+git config user.name "LCherryholmes" && git config user.email "lcherryh@yahoo.com"
+git log --oneline -3   # verify HEAD
+apt-get install -y libgc-dev nasm mono-complete && make -C src
+mkdir -p /home/snobol4corpus && ln -sf /home/claude/snobol4corpus/crosscheck /home/snobol4corpus/crosscheck
+STOP_ON_FAIL=0 bash test/crosscheck/run_crosscheck.sh   # 106/106
+# Then: implement net_emit.c + N-R0 steps above
+```
+
+### Sprint N-R1 — M-NET-LIT / M-NET-R1
+
+**Goal:** `OUTPUT = 'hello'` → `hello`. Corpus rungs hello/output/assign/arith PASS.
+
+- `net_emit.c`: emit string constants, `OUTPUT` assignment, basic arith ops
+- Grow `src/runtime/net/` with string/output/arith support stubs
+
+### Sprint N-R2 — M-NET-GOTO / M-NET-R2
+
+**Goal:** `:S(X)F(Y)` branching, control/. Corpus rungs control/patterns/capture PASS.
+
+### Sprint N-R3 — M-NET-R3
+
+**Goal:** strings/ keywords/ PASS.
+
+### Sprint N-R4 — M-NET-R4
+
+**Goal:** functions/ data/ PASS.
+
+### Sprint N-R5 — M-NET-CROSSCHECK
+
+**Goal:** 106/106 corpus PASS via NET backend. M-NET-CROSSCHECK fires.
+

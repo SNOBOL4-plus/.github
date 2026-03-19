@@ -7824,3 +7824,35 @@ STOP_ON_FAIL=0 bash test/crosscheck/run_crosscheck.sh   # 106/106
 # Then Sprint J1: OUTPUT = 'hello' → M-JVM-LIT
 # Edit src/backend/jvm/emit_byrd_jvm.c jvm_emit() to walk STMT_t and emit OUTPUT
 ```
+
+---
+
+## Session NET-PLAN-1 — NET backend design + HQ update
+
+**What happened:**
+- Cloned snobol4x, snobol4dotnet, snobol4corpus for research
+- Read `BuilderEmitMsil.cs` (911 lines), `Instruction.cs`, `ThreadedExecuteLoop.cs`, `emit_byrd_asm.c`, `emit_byrd_jvm.c`, `main.c`, `sno2c.h`, `emit_cnode.h`, PLAN.md, DOTNET.md, RULES.md
+- Established NET backend strategy: `net_emit.c` walks `Program*` → emits CIL `.il` text → `ilasm` → `.exe`. Self-contained. No dependency on snobol4dotnet at runtime. Runtime support in `src/runtime/net/` grown rung by rung. Mirrors ASM backend structure exactly.
+- snobol4dotnet used as **reference only** to understand what a complete runtime looks like — no code, no DLL dependency crosses into snobol4x
+- Updated PLAN.md: NET backend milestone table (M-NET-HELLO through M-NET-BEAUTY), 4D matrix TINY-NET cell ⏳, NOW block, TINY next
+- Updated TINY.md: NET backend section with sprint N-R0 through N-R5, session start block
+
+**Milestones fired:** none (planning session)
+
+**State at handoff:**
+- snobol4x untouched (no code written)
+- .github updated with NET backend plan
+
+**Next session start (NET backend — N-R0):**
+```bash
+cd /home/claude/snobol4x
+git config user.name "LCherryholmes" && git config user.email "lcherryh@yahoo.com"
+git log --oneline -3
+apt-get install -y libgc-dev nasm mono-complete && make -C src
+mkdir -p /home/snobol4corpus && ln -sf /home/claude/snobol4corpus/crosscheck /home/snobol4corpus/crosscheck
+STOP_ON_FAIL=0 bash test/crosscheck/run_crosscheck.sh   # must be 106/106
+# Read TINY.md NET Backend section → implement Sprint N-R0
+# Files: src/backend/net/net_emit.c · src/driver/main.c (-net flag) · src/Makefile
+# Deliverable: null.sno → null.il → ilasm → null.exe → exit 0 → M-NET-HELLO fires
+# Artifact: artifacts/net/hello_prog.il committed
+```
