@@ -11,8 +11,8 @@ snobol4x: multiple frontends, multiple backends.
 
 ## NOW
 
-**Sprint:** `asm-backend` A-R5 — control flow (goto/:S/:F) · `snocone-frontend` SC5-ASM — SC corpus via -sc -asm
-**HEAD:** `0371fad` session188
+**Sprint:** `asm-backend` A-R7 — M-ASM-R7 (fix POS(var)) · `snocone-frontend` SC5-ASM — SC corpus via -sc -asm
+**HEAD:** `6f72fa3` session189
 **Milestone:** M-ASM-R1 ✅ session188 · M-ASM-R2 ✅ session188 · M-ASM-R4 ✅ session188 · **M-SNOC-ASM-CF** ✅ session188
 
 **Session188 (frontend) — M-SNOC-ASM-CF: DEFINE calling convention; user-defined procedures via Byrd-box:**
@@ -78,27 +78,31 @@ STOP_ON_FAIL=0 bash test/crosscheck/run_crosscheck.sh   # must be 106/106
 - Artifacts: beauty_prog.s + roman.s + wordcount.s updated, all NASM-clean
 - 106/106 C ✅  26/26 ASM ✅
 
-**⚠ CRITICAL NEXT ACTION — Session189 (backend session):**
+**⚠ CRITICAL NEXT ACTION — Session190 (backend session):**
 
-Sprint A-R5 — `control/` + `control_new/` — goto/:S/:F PASS
+Sprint A-R7 — fix `061_capture_in_arbno` → M-ASM-R7 fires
+
+**Root cause:** `emit_asm_pos(long n,...)` always takes a literal. In E_FNC POS case,
+`arg->ival` is used regardless of arg kind. For `POS(N)` where N is `E_VART`, `ival=0`
+→ always emits `POS_ALPHA 0`. Fix:
+1. `stmt_pos_var(varname)` in `snobol4_stmt_rt.c`: fetch N, coerce int, check `cursor==n`
+2. `POS_ALPHA_VAR varlab, cursor, gamma, omega` macro in `snobol4_asm.mac`
+3. In E_FNC POS case: if `arg->kind == E_VART` → call `emit_asm_pos_var()` helper
 
 **Session start commands:**
 ```bash
 cd /home/claude/snobol4x
 git config user.name "LCherryholmes" && git config user.email "lcherryh@yahoo.com"
-git log --oneline -3   # verify HEAD = f161ae4
+git log --oneline -3   # verify HEAD = 6f72fa3
 apt-get install -y libgc-dev nasm && make -C src
 mkdir -p /home/snobol4corpus && ln -sf /home/claude/snobol4corpus/crosscheck /home/snobol4corpus/crosscheck
 STOP_ON_FAIL=0 bash test/crosscheck/run_crosscheck.sh        # must be 106/106
 bash test/crosscheck/run_crosscheck_asm.sh                   # must be 26/26
 CORPUS=/home/claude/snobol4corpus/crosscheck
-STOP_ON_FAIL=0 bash test/crosscheck/run_crosscheck_asm_rung.sh \
-    $CORPUS/hello $CORPUS/output $CORPUS/assign $CORPUS/concat $CORPUS/arith
-# expected: 26/28 (fileinfo + triplet deferred R8)
+STOP_ON_FAIL=0 bash test/crosscheck/run_crosscheck_asm_rung.sh $CORPUS/capture
+# expected: 6/7 (061 POS(N) variable arg still failing)
 ```
-
-**Sprint A-R5 target:** `control/` and `control_new/` directories — goto, :S, :F dispatch.
-Survey the tests, identify root causes, fix. M-ASM-R5 fires when all control/ tests PASS.
+After fix: M-ASM-R7 fires → begin Sprint A-R8 (strings/).
 
 **Session start commands:**
 ```bash

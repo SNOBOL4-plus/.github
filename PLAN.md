@@ -104,8 +104,8 @@ Sprint detail lives in the active platform L2 doc (TINY.md / JVM.md / DOTNET.md)
 | **M-ASM-R2** | assign/ — 8 tests PASS | ✅ session188 |
 | **M-ASM-R3** | concat/ — 6 tests PASS | ✅ session187 |
 | **M-ASM-R4** | arith/ — 2 tests PASS | ✅ session188 |
-| **M-ASM-R5** | control/ + control_new/ — goto/:S/:F PASS | ❌ Sprint A-R5 |
-| **M-ASM-R6** | patterns/ — 20 program-mode pattern tests PASS | ❌ Sprint A-R6 |
+| **M-ASM-R5** | control/ + control_new/ — goto/:S/:F PASS | ✅ session189 |
+| **M-ASM-R6** | patterns/ — 20 program-mode pattern tests PASS | ✅ session189 |
 | **M-ASM-R7** | capture/ — 7 tests PASS | ❌ Sprint A-R7 |
 | **M-ASM-R8** | strings/ — SIZE/SUBSTR/REPLACE/DUPL PASS | ❌ Sprint A-R8 |
 | **M-ASM-R9** | keywords/ — IDENT/DIFFER/GT/LT/EQ/DATATYPE PASS | ❌ Sprint A-R9 |
