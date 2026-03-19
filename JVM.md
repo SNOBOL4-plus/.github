@@ -9,9 +9,11 @@ JVM/Clojure backend: SNOBOL4 → JVM bytecode via multi-stage pipeline.
 
 ## NOW
 
-**Sprint:** `jvm-inline-eval`
-**HEAD:** `9cf0af3`
-**Milestone:** M-JVM-EVAL
+**Sprint:** `jvm-backend` J2 — variable assign + arithmetic → M-JVM-ASSIGN
+**HEAD:** `b430ceb` session194 (session195 commit pending push)
+**Milestone:** M-JVM-LIT ✅ session195
+
+**Next action:** Sprint J2 — assign to variables, read variables, full arith corpus rung (assign/ + arith/)
 
 **Next action:** Implement inline EVAL! in `jvm_codegen.clj` — emit arithmetic/assign/cmp
 directly into JVM bytecode instead of calling back into the interpreter.
@@ -21,10 +23,21 @@ directly into JVM bytecode instead of calling back into the interpreter.
 ## Session Start
 
 ```bash
-cd snobol4jvm
+cd /home/claude/snobol4x
 git config user.name "LCherryholmes" && git config user.email "lcherryh@yahoo.com"
-git log --oneline -3   # verify HEAD
-lein test               # confirm 1896/4120/0
+git log --oneline -3   # verify HEAD = session195 commit
+# Push if needed (token required):
+git remote set-url origin https://TOKEN@github.com/snobol4ever/snobol4x
+git push origin main
+# Build + invariant:
+apt-get install -y libgc-dev nasm && make -C src
+ln -sfn /home/claude/snobol4corpus /home/snobol4corpus
+STOP_ON_FAIL=0 bash test/crosscheck/run_crosscheck.sh   # 106/106
+# JVM rung check:
+bash test/crosscheck/run_crosscheck_jvm_rung.sh \
+  /home/claude/snobol4corpus/crosscheck/hello \
+  /home/claude/snobol4corpus/crosscheck/output  # 11/11
+# Then Sprint J2: assign/ + arith/ rungs
 ```
 
 ---

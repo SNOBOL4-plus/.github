@@ -7895,3 +7895,38 @@ bash test/crosscheck/run_crosscheck_asm.sh               # 26/26
 **State at handoff:** `a9b3da9` pushed to snobol4x/main
 
 **Next:** Fix literals root causes (see session197 CRITICAL NEXT ACTION above) → M-NET-LIT → M-NET-R1
+
+---
+
+## Session 195 — JVM backend
+
+**HEAD snobol4x:** `e690c58` session195 merge
+**HEAD .github:** (this commit)
+
+**What happened:**
+- Invariant: 106/106 C crosscheck confirmed
+- Sprint J1 complete: emit_byrd_jvm.c — OUTPUT/literals/arith/concat/E_MNS/E_FNC(neg,abs,add,sub,mul,div); sno_to_double helper; label-only stmts
+- Wrote run_crosscheck_jvm_rung.sh
+- hello/ corpus 4/4 PASS; output/ corpus 7/7 PASS (1 xfail: SIZE(&ALPHABET) J2+) — M-JVM-LIT fires
+- Generated canonical artifacts: artifacts/jvm/hello.j, multi.j, literals.j
+- Merged concurrent NET session commit (e6a62ad): absorbed net_emit.c, Makefile, main.c additions; removed stale artifacts/jvm/hello_prog.j (NET session wrote into JVM artifact dir — ownership violation)
+- HQ: discovered artifact ownership collision; discussed with Lon — JVM session owns only JVM.md + JVM rows in PLAN.md; RULES.md ownership matrix proposed but deferred to appropriate session
+
+**State at handoff:**
+- snobol4x pushed ✅ `e690c58`
+- .github pushed ✅ (this commit)
+
+**Session 196 start (JVM):**
+```bash
+cd /home/claude/snobol4x
+git config user.name "LCherryholmes" && git config user.email "lcherryh@yahoo.com"
+git pull origin main  # get any concurrent session work
+# Symlink fix:
+ln -sfn /home/claude/snobol4corpus /home/snobol4corpus
+make -C src
+STOP_ON_FAIL=0 bash test/crosscheck/run_crosscheck.sh   # 106/106
+bash test/crosscheck/run_crosscheck_jvm_rung.sh \
+  /home/claude/snobol4corpus/crosscheck/hello \
+  /home/claude/snobol4corpus/crosscheck/output   # 11/11 (1 xfail)
+# Sprint J2: variable assign + arith corpus rungs (assign/ + arith/)
+```
