@@ -17,7 +17,7 @@ Shared frontends. Multiple backends. Self-hosting goal: sno2c compiles sno2c.
 | **DOTNET sprint** | `net-perf-analysis` — hotfixes landed; dotnet test + BenchmarkSuite2 re-run needed |
 | **DOTNET HEAD** | `a029cae` session156: hotfixes A–D; BUILDING.md; build_native.sh; net-build-prereqs ✅ |
 | **DOTNET next** | `dotnet test` 1873/1876 → BenchmarkSuite2 re-run → M-NET-PERF → `cross` @N fix → net-benchmark-publish |
-| **HEAD TINY** | `d01fb57` session186 |
+| **HEAD TINY** | `f161ae4` session188 |
 | **HEAD CORPUS** | `9c00acd` session136 |
 | **HEAD HQ** | (this commit) session146 |
 | **Invariant TINY** | `106/106` crosscheck before any snobol4x work |
@@ -100,10 +100,10 @@ Sprint detail lives in the active platform L2 doc (TINY.md / JVM.md / DOTNET.md)
 | **M-ASM-ASSIGN** | $ capture PASS | ✅ session148 |
 | **M-ASM-NAMED** | Named patterns flat labels PASS | ✅ session148 |
 | **M-ASM-CROSSCHECK** | 106/106 via ASM backend | ✅ session151 |
-| **M-ASM-R1** | hello/ + output/ — 12 tests PASS via run_crosscheck_asm_rung.sh | ❌ Sprint A-R1 |
-| **M-ASM-R2** | assign/ — 8 tests PASS | ❌ Sprint A-R2 |
+| **M-ASM-R1** | hello/ + output/ — 12 tests PASS via run_crosscheck_asm_rung.sh | ✅ session188 |
+| **M-ASM-R2** | assign/ — 8 tests PASS | ✅ session188 |
 | **M-ASM-R3** | concat/ — 6 tests PASS | ✅ session187 |
-| **M-ASM-R4** | arith/ — 2 tests PASS | ❌ Sprint A-R4 |
+| **M-ASM-R4** | arith/ — 2 tests PASS | ✅ session188 |
 | **M-ASM-R5** | control/ + control_new/ — goto/:S/:F PASS | ❌ Sprint A-R5 |
 | **M-ASM-R6** | patterns/ — 20 program-mode pattern tests PASS | ❌ Sprint A-R6 |
 | **M-ASM-R7** | capture/ — 7 tests PASS | ❌ Sprint A-R7 |

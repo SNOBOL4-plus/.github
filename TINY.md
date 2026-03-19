@@ -11,9 +11,20 @@ snobol4x: multiple frontends, multiple backends.
 
 ## NOW
 
-**Sprint:** `asm-backend` A-R1 — corpus ladder rung 1
-**HEAD:** `ba178d7` session187
-**Milestone:** M-ASM-CROSSCHECK ✅ session151 → **M-ASM-R1** active
+**Sprint:** `asm-backend` A-R5 — control flow (goto/:S/:F)
+**HEAD:** `f161ae4` session188
+**Milestone:** M-ASM-R1 ✅ session188 · M-ASM-R2 ✅ session188 · M-ASM-R4 ✅ session188 → **M-ASM-R5** active
+
+**Session188 — M-ASM-R1/R2/R4: indirect-$ fix; coerce_numeric; OUTPUT= blank line; 26/28 PASS:**
+- Fix A — indirect `$` LHS (014/015): parser produces `E_INDR` (right=operand) for `$X` in
+  subject position, not `E_DOL`. Emitter `has_eq` handler now matches `E_INDR || E_DOL`;
+  extracts name from `e->right` for E_INDR. Guard skips spurious `prog_emit_expr(subject,-16)`.
+- Fix B — `coerce_numeric` empty string: `''` + 1 now returns integer 0 (was DT_S); `snobol4.c` line 1719
+- Fix C — `OUTPUT =` null RHS: emits `LOAD_NULVCL` + `SET_OUTPUT` (was silently dropped); blank line correct
+- M-ASM-R1 fires (hello/ + output/ all PASS), M-ASM-R2 fires (assign/ all PASS), M-ASM-R4 fires (arith/ basic PASS)
+- Remaining: fileinfo (INPUT loop + :F branch → R8), triplet (DUPL/REMDR → R8)
+- Artifacts: beauty_prog.s updated, NASM clean
+- 106/106 C ✅  26/26 ASM ✅  26/28 rung ✅
 
 **Session187 — corpus ladder infrastructure + R1-R4 fixes; 23/28 PASS:**
 - `test/crosscheck/run_crosscheck_asm_rung.sh` — new per-rung ASM corpus driver
@@ -25,37 +36,27 @@ snobol4x: multiple frontends, multiple backends.
 - Artifacts: beauty_prog.s + roman.s + wordcount.s updated, all NASM-clean
 - 106/106 C ✅  26/26 ASM ✅
 
-**⚠ CRITICAL NEXT ACTION — Session188 (backend session):**
+**⚠ CRITICAL NEXT ACTION — Session189 (backend session):**
 
-Sprint A-R1/R2 — fix 3 remaining R1–R4 issues:
+Sprint A-R5 — `control/` + `control_new/` — goto/:S/:F PASS
 
-**Fix A — indirect `$` LHS (`014`/`015`):** E_DOL subject path was added to emitter
-but not firing. Diagnose: generate .s for 014, check what subject node kind is.
+**Session start commands:**
 ```bash
 cd /home/claude/snobol4x
-./sno2c -asm /home/claude/snobol4corpus/crosscheck/assign/014_assign_indirect_dollar.sno > /tmp/014.s
-grep -A5 "SET_VAR_INDIR\|E_DOL\|indirect" /tmp/014.s | head -20
-# If not present: parser puts $'X' as E_INDR not E_DOL — check parse tree
-```
-
-**Fix B — `literals` coerce_numeric:** `'' + 1` returns real `0.` instead of int `0`.
-Root cause: `coerce_numeric` on empty string `""` calls `atof("")=0.0` → DT_R instead of INTVAL(0).
-Fix in `snobol4.c`: in `coerce_numeric`, if string is empty/whitespace → return INTVAL(0).
-```c
-/* snobol4.c coerce_numeric — before atof/atoll dispatch */
-if (!s || !*s) return INTVAL(0);   /* empty string → integer 0 */
-```
-
-**Quick-check target after fixes:**
-```bash
-cd /home/claude/snobol4x && make -C src
+git config user.name "LCherryholmes" && git config user.email "lcherryh@yahoo.com"
+git log --oneline -3   # verify HEAD = f161ae4
+apt-get install -y libgc-dev nasm && make -C src
+mkdir -p /home/snobol4corpus && ln -sf /home/claude/snobol4corpus/crosscheck /home/snobol4corpus/crosscheck
+STOP_ON_FAIL=0 bash test/crosscheck/run_crosscheck.sh        # must be 106/106
+bash test/crosscheck/run_crosscheck_asm.sh                   # must be 26/26
 CORPUS=/home/claude/snobol4corpus/crosscheck
 STOP_ON_FAIL=0 bash test/crosscheck/run_crosscheck_asm_rung.sh \
-    $CORPUS/hello $CORPUS/output $CORPUS/assign $CORPUS/concat $CORPUS/arith 2>&1
-# target: 26/28 PASS (fileinfo + triplet deferred R8)
-# M-ASM-R1 fires (hello+output clean), M-ASM-R2 fires (assign clean)
-STOP_ON_FAIL=0 bash test/crosscheck/run_crosscheck.sh   # must stay 106/106
+    $CORPUS/hello $CORPUS/output $CORPUS/assign $CORPUS/concat $CORPUS/arith
+# expected: 26/28 (fileinfo + triplet deferred R8)
 ```
+
+**Sprint A-R5 target:** `control/` and `control_new/` directories — goto, :S, :F dispatch.
+Survey the tests, identify root causes, fix. M-ASM-R5 fires when all control/ tests PASS.
 
 **Session start commands:**
 ```bash
