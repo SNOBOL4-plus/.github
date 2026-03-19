@@ -7856,3 +7856,30 @@ STOP_ON_FAIL=0 bash test/crosscheck/run_crosscheck.sh   # must be 106/106
 # Deliverable: null.sno → null.il → ilasm → null.exe → exit 0 → M-NET-HELLO fires
 # Artifact: artifacts/net/hello_prog.il committed
 ```
+
+## Session195 — NET backend Sprint N-R0; RULES.md artifact tracking
+
+**What happened:**
+- Read PLAN.md, TINY.md, RULES.md, BACKEND-NET.md; studied emit_byrd_jvm.c as template
+- Verified environment: mono 6.8.0.105 + ilasm available; null CIL pipeline tested end-to-end
+- Created `src/backend/net/net_emit.c` — CIL emitter skeleton (three-column layout, mirrors JVM twin)
+- Wired `-net` flag in `src/driver/main.c` + `src/Makefile`
+- Build clean; 106/106 C ✅; 26/26 ASM ✅
+- **M-NET-HELLO fires**: `null.sno → sno2c -net → ilasm → mono → exit 0`
+- Generated `artifacts/net/hello_prog.il` (canonical NET artifact, ilasm-clean)
+- Generated `artifacts/jvm/hello_prog.j` (canonical JVM artifact, was missing)
+- Updated `RULES.md`: added NET and JVM artifact tracking rules (mirrors ASM rules)
+
+**State at handoff:** `e6a62ad` pushed to snobol4x/main
+
+**Next session start:**
+```bash
+cd /home/claude/snobol4x
+git config user.name "LCherryholmes" && git config user.email "lcherryh@yahoo.com"
+git log --oneline -3   # verify HEAD = e6a62ad
+apt-get install -y libgc-dev nasm mono-complete && make -C src
+mkdir -p /home/snobol4corpus && ln -sf /home/claude/snobol4corpus/crosscheck /home/snobol4corpus/crosscheck
+STOP_ON_FAIL=0 bash test/crosscheck/run_crosscheck.sh   # 106/106
+bash test/crosscheck/run_crosscheck_asm.sh               # 26/26
+# Sprint N-R1: implement OUTPUT='hello' in net_emit.c
+```

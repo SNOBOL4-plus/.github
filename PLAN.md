@@ -11,9 +11,9 @@ Shared frontends. Multiple backends. Self-hosting goal: sno2c compiles sno2c.
 | | |
 |-|-|
 | **Active repos** | `snobol4x` (TINY) · `snobol4dotnet` (DOTNET) |
-| **TINY sprint** | `asm-backend` A-R10 — functions/ (backend session) · `jvm-backend` J1 — OUTPUT='hello' (JVM session) · `net-backend` N-R0 — scaffold (NET session) · `sc-corpus-ladder` SC-CORPUS-2 — control/ (frontend session) |
+| **TINY sprint** | `asm-backend` A-R10 — functions/ (backend session) · `jvm-backend` J1 — OUTPUT='hello' (JVM session) · `net-backend` N-R1 — OUTPUT='hello' (NET session) · `sc-corpus-ladder` SC-CORPUS-2 — control/ (frontend session) |
 | **TINY HEAD** | `b430ceb` session194 |
-| **TINY next** | Backend: A-R10 functions/ → M-ASM-R10 · JVM: J1 OUTPUT='hello' → M-JVM-LIT · NET: N-R0 scaffold → M-NET-HELLO |
+| **TINY next** | Backend: A-R10 functions/ → M-ASM-R10 · JVM: J1 OUTPUT='hello' → M-JVM-LIT · NET: N-R1 OUTPUT='hello' → M-NET-LIT |
 | **DOTNET sprint** | `net-perf-analysis` — hotfixes landed; dotnet test + BenchmarkSuite2 re-run needed |
 | **DOTNET HEAD** | `a029cae` session156: hotfixes A–D; BUILDING.md; build_native.sh; net-build-prereqs ✅ |
 | **DOTNET next** | `dotnet test` 1873/1876 → BenchmarkSuite2 re-run → M-NET-PERF → `cross` @N fix → net-benchmark-publish |
@@ -165,7 +165,7 @@ Sprint detail lives in the active platform L2 doc (TINY.md / JVM.md / DOTNET.md)
 
 | ID | Trigger | Status |
 |----|---------|--------|
-| **M-NET-HELLO** | `sno2c -net null.sno > null.il && ilasm null.il && mono null.exe` → exit 0 | ❌ Sprint N-R0 |
+| **M-NET-HELLO** | `sno2c -net null.sno > null.il && ilasm null.il && mono null.exe` → exit 0 | ✅ session195 |
 | **M-NET-LIT** | `OUTPUT = 'hello'` → `hello` via NET backend | ❌ Sprint N-R1 |
 | **M-NET-ASSIGN** | Variable assign + arith correct | ❌ Sprint N-R2 |
 | **M-NET-GOTO** | :S(X)F(Y) branching correct | ❌ Sprint N-R3 |

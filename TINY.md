@@ -11,8 +11,8 @@ snobol4x: multiple frontends, multiple backends.
 
 ## NOW
 
-**Sprint:** `asm-backend` A-R10 — functions/ — DEFINE/RETURN/FRETURN/recursion · `net-backend` N-R0 — scaffold → M-NET-HELLO
-**HEAD:** `018d913` session193 (backend)
+**Sprint:** `asm-backend` A-R10 — functions/ — DEFINE/RETURN/FRETURN/recursion · `net-backend` N-R1 — OUTPUT='hello' → M-NET-LIT
+**HEAD:** `e6a62ad` session195 (net)
 **Milestone:** M-ASM-R9 ✅ session193 · M-ASM-R8 ✅ session192 · M-SC-CORPUS-R1 ✅ session192 (frontend)
 
 **Session193 (backend) — M-ASM-R9: keywords/ 10/10 PASS (1 XFAIL); 3 fixes:**
@@ -63,6 +63,43 @@ if (s->subject->sval && strcasecmp(s->subject->sval, "DEFINE") == 0) {
 }
 ```
 After fix: re-run `$CORPUS/functions` — expect most/all to PASS, then fix residuals.
+
+**Session195 (net) — M-NET-HELLO: NET backend scaffold; Sprint N-R0 complete:**
+
+- `src/backend/net/net_emit.c` — new emitter (mirrors `emit_byrd_jvm.c` structure); three-column CIL layout; `net_set_classname()`; `net_emit_header/main_open/main_close/footer()`; stmt label walker (stubs, N-R1+ fills body)
+- `src/driver/main.c` — `-net` flag + `net_emit()` dispatch added
+- `src/Makefile` — `BACKEND_NET` block; `net_emit.c` in SRCS
+- `artifacts/net/hello_prog.il` — canonical NET artifact; assembles clean via `ilasm`; `mono null.exe` → exit 0 ✅
+- `artifacts/jvm/hello_prog.j` — canonical JVM artifact (J0 skeleton, previously missing)
+- `RULES.md` — NET and JVM artifact tracking rules added (mirrors ASM rules)
+- 106/106 C ✅  26/26 ASM ✅  **M-NET-HELLO fires**
+
+**⚠ CRITICAL NEXT ACTION — Session196 (net):**
+
+Sprint N-R1 — `OUTPUT = 'hello'` → `hello` via NET backend
+
+```bash
+cd /home/claude/snobol4x
+git config user.name "LCherryholmes" && git config user.email "lcherryh@yahoo.com"
+git log --oneline -3   # verify HEAD = e6a62ad
+apt-get install -y libgc-dev nasm mono-complete && make -C src
+mkdir -p /home/snobol4corpus && ln -sf /home/claude/snobol4corpus/crosscheck /home/snobol4corpus/crosscheck
+STOP_ON_FAIL=0 bash test/crosscheck/run_crosscheck.sh        # must be 106/106
+bash test/crosscheck/run_crosscheck_asm.sh                   # must be 26/26
+CORPUS=/home/claude/snobol4corpus/crosscheck
+STOP_ON_FAIL=0 bash test/crosscheck/run_crosscheck_asm_rung.sh $CORPUS/functions  # A-R10 baseline
+# Then: implement net_emit_stmts() body for S_ASGN + OUTPUT in net_emit.c
+# Quick-check: echo "OUTPUT = 'hello'" | ./sno2c -net > /tmp/t.il && ilasm /tmp/t.il /output:/tmp/t.exe && mono /tmp/t.exe
+# expected: hello
+# M-NET-LIT fires → M-NET-R1
+```
+
+**N-R1 design notes:**
+- `S_ASGN` with `OUTPUT` subject: emit `ldstr <value>` + `call void [mscorlib]System.Console::WriteLine(string)`
+- SNOBOL4 variable storage: `.field static string sno_<NAME>` per variable; `stsfld`/`ldsfld` for set/get
+- String literal (`E_QLIT`): `ldstr "<value>"`
+- Variable ref (`E_VART`): `ldsfld string <classname>::sno_<name>`
+- Assignment (`S_ASGN`): eval RHS → `stsfld string <classname>::sno_<name>`
 
 **Session192 (backend) — M-ASM-R8: strings 17/17 PASS; 7 root-cause fixes:**
 
