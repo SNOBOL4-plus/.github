@@ -12,9 +12,9 @@ snobol4x: multiple frontends, multiple backends.
 
 ## NOW
 
-**Sprint:** `asm-backend` B-212 — M-ASM-RUNG11: fix ITEM lvalue emitter + PROTOTYPE/VALUE verification
+**Sprint:** `asm-backend` B-212 — M-EMITTER-NAMING: cross-emitter naming consistency + C backend flat-tree fix
 **HEAD:** `15e818b` B-211
-**Milestone:** M-ASM-RUNG11 ❌ (2/7 — ITEM lvalue emitter path broken; PROTOTYPE/VALUE need verification)
+**Milestone:** M-EMITTER-NAMING ❌ — C backend emit.c E_INDR flat-tree bugs (6 failing: 014/015/091/092/093/100); naming audit all 4 emitters
 **Invariants:** 100/106 C · 26/26 ASM
 
 **⚠ CRITICAL NEXT ACTION — Session B-212:**

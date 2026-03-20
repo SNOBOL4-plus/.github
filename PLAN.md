@@ -14,7 +14,7 @@ Session numbers use per-type prefixes (see RULES.md §SESSION NUMBERS): B=backen
 
 | Session | Sprint | HEAD | Next milestone |
 |---------|--------|------|----------------|
-| **TINY backend** | `asm-backend` B-211 — PROTOTYPE + ITEM + VALUE + array default-fill added to snobol4.c. rung11 2/7. ITEM lvalue emitter path broken (duplicate register loads) — needs rewrite to mirror E_IDX write path. beauty.sno segfault pre-existing. 100/106 C + 26/26 ASM hold. → next: fix ITEM lvalue emitter → M-ASM-RUNG11 | `15e818b` B-211 | M-ASM-RUNG11 |
+| **TINY backend** | `asm-backend` B-212 — PIVOT to M-EMITTER-NAMING. C backend emit.c E_INDR flat-tree bugs diagnosed (6 failing tests). Naming audit all 4 emitters in progress. 100/106 C + 26/26 ASM hold. → next: fix emit.c, audit names, 106/106 C restored → M-EMITTER-NAMING | `15e818b` B-211 | M-EMITTER-NAMING |
 | **TINY JVM** | `jvm-backend` J-208 — M-JVM-CROSSCHECK ✅; E_CONC null-prop + DIFFER returns "" + OUTPUT routing + INPUT :F stack fix; 89/92 active PASS; next: M-JVM-SAMPLES | `a063ed9` J-208 | M-JVM-SAMPLES |
 | **TINY NET** | `net-backend` N-205 — INPUT/ARB/KW fixes: INPUT reads stdin, &ANCHOR wired, E_NAM/E_DOL OUTPUT capture, ARB min-first WIP (SEQ-ARB omega bug); 74/82 pass; next: fix ARB backtrack omega wiring in SEQ → word1-4/cross PASS → M-NET-R1 | `a30365b` N-205 | M-NET-R1 |
 | **TINY frontend** | `main` F-210 — M-FLAT-NARY ✅ merged to main; sc7_procedure/sc9_multiproc FAIL diagnosed: do_procedure body stmts not appearing in output; next: fix sc_cf.c do_procedure → M-SC-CORPUS-R2 | `6495074` F-210 | M-SC-CORPUS-R2 |
@@ -122,7 +122,8 @@ Sprint detail lives in the active platform L2 doc (TINY.md / JVM.md / DOTNET.md)
 | **M-ENG685-CLAWS** | claws5.sno — CLAWS5 POS corpus tokenizer; uses lib/stack.sno; .ref oracle committed; PASS via CSNOBOL4 and ASM backend | ❌ Sprint B-ENG685 |
 | **M-ENG685-TREEBANK** | treebank.sno — Penn Treebank S-expr parser; uses lib/stack.sno (same pattern as beauty.sno); .ref oracle committed; PASS via CSNOBOL4 and ASM backend | ❌ Sprint B-ENG685 |
 | **M-DROP-MOCK-ENGINE** | `mock_engine.c` removed from ASM program link path; 26-test harness suite migrated to full `.sno` format or harness rewritten to not call `engine_match`; 26/26 + 106/106 hold without linking `mock_engine.o` in ASM path | ✅ `06df4cb` B-200 |
-| **M-FLAT-NARY** | Parser: `E_CONC` and `E_OR` emitted as flat n-ary nodes (`args[]`, no `left`/`right`); all backends (C, ASM, NET) updated to iterate `args[0..nargs-1]`; 106/106 C + 26/26 ASM hold | ✅ `6495074` F-209 |
+| **M-FLAT-NARY** | Parser: `E_CONC` and `E_OR` emitted as flat n-ary nodes (`args[]`, no `left`/`right`); ASM+JVM+NET updated; C backend `emit.c` E_INDR/iset children[1]→children[0] bugs remain (6 failures: 014/015 indirect assign, 091/092/093 array/table, 100 roman) — fixed in M-EMITTER-NAMING | ⚠ `6495074` F-209 |
+| **M-EMITTER-NAMING** | All four emitters (C, ASM, JVM, NET) use consistent names for variables, functions, and files: emit functions named `emit_*` uniformly; variable registries `*_var_register`/`*_vars[]`; named-pattern registries `*_named_pat_register`/`*_named_pat_count`; uid counters `*_uid()`; output macros `A()`/`J()`/`N()`/`B()` documented; C backend `emit.c` E_INDR flat-tree bugs fixed (014/015/091/092/093/100 — 106/106 C restored); entry points `asm_emit`/`jvm_emit`/`net_emit`/`c_emit` consistent; all stale `left`/`right` comments purged | ❌ Sprint B-212 |
 | **M-SNOC-LEX** | sc_lex.c: all Snocone tokens; `OUTPUT = 'hello'` → 3 tokens PASS | ✅ `573575e` session183 |
 | **M-SNOC-PARSE** | sc_parse.c: full stmt grammar; SC corpus exprs + control flow PASS | ✅ `5e20058` session184 |
 | **M-SNOC-LOWER** | sc_lower.c: Snocone AST → EXPR_t/STMT_t wired | ✅ `2c71fc1` session185 |
