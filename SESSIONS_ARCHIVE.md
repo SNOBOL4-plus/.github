@@ -8427,3 +8427,39 @@ apt-get install -y libgc-dev nasm default-jdk && make -C src
 CORPUS=/home/claude/snobol4corpus/crosscheck
 bash test/crosscheck/run_crosscheck_jvm_rung.sh $CORPUS/functions $CORPUS/data 2>&1 | tail -5
 ```
+
+## Session N-201 — Snobol4Lib/Snobol4Run DLL split
+
+**HEAD at end:** `8bae0fe` N-201
+**Milestones fired:** none (infrastructure sprint)
+**Invariants:** 106/106 C ✅ · 26/26 ASM ✅ · 51/58 NET baseline unchanged ✅
+
+**What happened:**
+- Diagnosed slow ilasm times: all sno_* helpers were inlined into every emitted .il
+- Designed two-DLL architecture: Snobol4Lib.dll (helpers) + Snobol4Run.dll (runtime state)
+- Created `src/runtime/net/snobol4lib.il`: all sno_* as public static [snobol4lib]Snobol4Lib
+  (arithmetic, comparisons, string ops, alphabet, datatype, lexical compares)
+  NOTE: will grow to include all beauty.sno INCLUDE functions (SIZE/DUPL/REPLACE/etc.)
+- Created `src/runtime/net/snobol4run.il`: keyword state + I/O [snobol4run]Snobol4Run
+- Updated emit_byrd_net.c: removed ~13KB inline helper emitters; all call sites now
+  reference [snobol4lib]Snobol4Lib::; emitted .il header has extern assembly refs
+- Updated run_crosscheck_net_rung.sh: compile both DLLs once into CACHE_DIR; MONO_PATH set
+- Fixed corpus symlink loop (/home/claude/snobol4corpus was self-referential) — re-cloned
+- BACKEND-NET.md updated with DLL architecture documentation
+
+**Next session N-202 start:**
+```bash
+cd /home/claude/snobol4x
+git config user.name "LCherryholmes" && git config user.email "lcherryh@yahoo.com"
+git log --oneline -3   # expect 8bae0fe N-201
+apt-get install -y libgc-dev nasm mono-complete && make -C src
+# corpus: git clone https://TOKEN_SEE_LON@github.com/snobol4ever/snobol4corpus /home/claude/snobol4corpus
+CORPUS=/home/claude/snobol4corpus/crosscheck
+STOP_ON_FAIL=0 bash test/crosscheck/run_crosscheck.sh        # 106/106
+bash test/crosscheck/run_crosscheck_asm.sh                   # 26/26
+STOP_ON_FAIL=0 bash test/crosscheck/run_crosscheck_net_rung.sh \
+    $CORPUS/hello $CORPUS/output $CORPUS/assign $CORPUS/control_new \
+    $CORPUS/keywords $CORPUS/patterns   # 51/58 baseline
+# Sprint N-R4: capture/ and strings/ rungs
+STOP_ON_FAIL=0 bash test/crosscheck/run_crosscheck_net_rung.sh $CORPUS/capture $CORPUS/strings
+```
