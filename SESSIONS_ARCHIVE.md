@@ -8492,3 +8492,69 @@ CORPUS=/home/claude/snobol4corpus/crosscheck
 STOP_ON_FAIL=0 bash test/crosscheck/run_crosscheck_asm_rung.sh $CORPUS/strings   # baseline for rung8
 # Sprint A-RUNG8: rung8/ REPLACE/SIZE/DUPL 3/3 PASS → M-ASM-RUNG8
 ```
+
+## Session J-204 — JVM backend J-R4 partial: functions/ 8/8, data/ 3/6
+
+**Date:** 2026-03-19
+**Branch:** main · **HEAD at end:** `c2e7a0e`
+**Sprint:** `jvm-backend` J-R4
+
+### What happened
+
+Cloned snobol4corpus. Ran functions+data rung: 2/14 PASS at start.
+
+**Three root-cause bugs found and fixed:**
+
+**Bug 1 — Function bodies emitted twice in main().**
+The main walk emitted all statements including function bodies. Body stmts between
+entry label and end_label generated `goto L_RETURN` in main, which is undefined (Jasmin
+error). Fix: skip loop in `jvm_emit()` detects fn entry/end labels and skips body stmts.
+Body stmts are only emitted by `jvm_emit_fn_method()`.
+
+**Bug 2 — Arithmetic scratch locals collide with fn save slots.**
+Arithmetic emitter hardcodes `dstore 2`/`lstore 4`. Inside fn methods, save slots
+start at `save_base = nargs`, so `astore 2` (saved return-var) was clobbered by
+`dstore 2`. Fix: `jvm_arith_local_base` module variable (default 2 for main).
+`jvm_emit_fn_method` sets it to `(save_fnret+1)` rounded up to even before body emit,
+restores to 2 after. All five arithmetic `loc_d = 2, loc_l = 4` sites updated.
+
+**Bug 3 — Case 2 expression-only statements ignoring :S/:F.**
+`LT(J,5) :S(LOOP)` was emitting: eval LT → pop → unconditional `goto L_LOOP`.
+:S was taken regardless of success/failure. Fix: Case 2 now checks null/non-null
+and properly routes to :S on success, :F on failure, with fall-through when no goto.
+Also switched :F path to use `jvm_emit_goto()` (not raw `JI("goto", "L_FRETURN")`)
+so RETURN/FRETURN labels inside fn bodies are intercepted as Jfn0_return/Jfn0_freturn.
+
+**Results after fixes:** 11/14 functions+data PASS.
+- functions/ 083–090: 8/8 PASS (DEFINE, RETURN, FRETURN, two-arg, locals, recursive fib,
+  in-pattern, entry-label)
+- data/ 091 ARRAY, 092 array-loop, 093 TABLE: PASS
+- data/ 094 DATA-define-access, 095 DATA-field-set, 096 DATA-datatype: FAIL
+
+### Remaining 3 DATA failures (J-205 work)
+
+1. `sno_data_get_field` VerifyError — stack height inconsistency in emitted bytecode.
+   `dup/ifnull Ldgt_null` path has mismatched stack depths. Fix helper emitter.
+2. DATA constructor calls (`complex(3,-2)`) not recognised — treated as unknown user fn,
+   returns "". Fix: in E_FNC, check `jvm_find_data_type(fname)`; create HashMap via
+   `sno_array_new`, store field values, store `__type__` key.
+3. Field accessor/setter (`real(X)`, `imag(X)`, `x(P)=99`) not implemented.
+4. `DATATYPE(N)` for DATA instances should return type name, not "STRING".
+
+### State at handoff
+- snobol4x pushed: `c2e7a0e`
+- 11/14 functions+data PASS. Pre-existing xfails unchanged (expr_eval, 053_pat_alt_commit).
+- M-JVM-R4 not yet fired (needs 14/14).
+
+### Next session start (J-205)
+```bash
+cd /home/claude/snobol4x
+git config user.name "LCherryholmes" && git config user.email "lcherryh@yahoo.com"
+git remote set-url origin https://TOKEN_SEE_LON@github.com/snobol4ever/snobol4x
+git pull && apt-get install -y libgc-dev nasm default-jdk && make -C src
+git log --oneline -3   # verify HEAD = c2e7a0e
+CORPUS=/home/claude/snobol4corpus/crosscheck
+bash test/crosscheck/run_crosscheck_jvm_rung.sh $CORPUS/functions $CORPUS/data 2>&1
+# 11/14 expected. Fix DATA 094/095/096 per gaps listed above.
+# Start with sno_data_get_field VerifyError (stack imbalance in helper emitter).
+```

@@ -10,40 +10,42 @@ JVM/Clojure backend: SNOBOL4 → JVM bytecode via multi-stage pipeline.
 ## NOW
 
 **Sprint:** `jvm-backend` J-R4 — corpus ladder rungs 10–11: functions/ data/ → M-JVM-R4
-**HEAD:** `842eb95` J-203
-**Milestone:** M-JVM-R1 ✅ J-202 · M-JVM-R2 ✅ J-203 · M-JVM-R3 ✅ J-203
+**HEAD:** `c2e7a0e` J-204
+**Milestone:** M-JVM-R1 ✅ J-202 · M-JVM-R2 ✅ J-203 · M-JVM-R3 ✅ J-203 · M-JVM-R4 ❌ (11/14)
 
-**J-203 — M-JVM-R2 + M-JVM-R3:**
-- M-JVM-R2: rungs 5–7 confirmed 26/28 (pre-existing: expr_eval, 053_pat_alt_commit)
-- M-JVM-R3: rungs 8–9 21/21 PASS (7 skipped: xfail)
-- Builtins added: SUBSTR REPLACE TRIM REVERSE LPAD RPAD INTEGER DATATYPE LGT/LLT/LGE/LLE/LEQ/LNE
-- Keywords: &UCASE &LCASE &STNO (per-stmt increment) &ALPHABET (clinit loop bug fixed)
-- xfail: word1/2/3/4/wordcount/cross — pattern-valued variables require runtime pattern repr
+**J-204 — functions/ 8/8 PASS, data/ 3/6 PASS:**
+- Three fixes: fn-body skip in main walk, jvm_arith_local_base, Case 2 :S/:F routing
+- functions/ 083–090: all 8 PASS (DEFINE/RETURN/FRETURN/recursion/entry-label/pattern)
+- data/ 091–093: PASS (ARRAY/TABLE). 094–096: FAIL — DATA constructor/field bug
+- Pre-existing xfails: expr_eval, 053_pat_alt_commit (unchanged)
 - Artifact: artifacts/jvm/hello_prog.j updated
 
-**⚠ CRITICAL NEXT ACTION — Session J-204 (JVM):**
+**⚠ CRITICAL NEXT ACTION — Session J-205 (JVM):**
 
-Sprint J-R4 — rungs 10–11 (functions/ data/) → M-JVM-R4
+Sprint J-R4 continued — fix DATA tests 094/095/096 → M-JVM-R4
 
 ```bash
 cd /home/claude/snobol4x
 git config user.name "LCherryholmes" && git config user.email "lcherryh@yahoo.com"
 git remote set-url origin https://TOKEN_SEE_LON@github.com/snobol4ever/snobol4x
-git log --oneline -3   # verify HEAD = 842eb95
-apt-get install -y libgc-dev nasm default-jdk && make -C src
+git pull && apt-get install -y libgc-dev nasm default-jdk && make -C src
+git log --oneline -3   # verify HEAD = c2e7a0e
 CORPUS=/home/claude/snobol4corpus/crosscheck
-bash test/crosscheck/run_crosscheck_jvm_rung.sh \
-  $CORPUS/functions $CORPUS/data 2>&1 | tail -5
-# Diagnose failures; implement DEFINE/RETURN/FRETURN for functions/,
-# ARRAY/TABLE/DATA for data/
+bash test/crosscheck/run_crosscheck_jvm_rung.sh $CORPUS/functions $CORPUS/data 2>&1
+# Expected: 11/14 — fix 3 remaining DATA failures
 ```
 
-### Known gaps for J-R4
-- **DEFINE/RETURN/FRETURN**: user-defined functions — need JVM method per DEFINE block,
-  call sites via invokestatic, RETURN → return, FRETURN → push null + return
-- **ARRAY(n)**: fixed-size string array — HashMap<Integer,String> per variable
-- **TABLE()**: associative array — HashMap<String,String>
-- **DATA(proto)**: user-defined data type — simplest impl: HashMap with type tag
+### Known gaps for J-R4 (remaining — DATA 094/095/096)
+1. `sno_data_get_field` VerifyError — stack height inconsistency. Fix helper emitter
+   in `jvm_emit_runtime_helpers()` around sno_data_get_field (~line 2780 emit_byrd_jvm.c).
+2. DATA constructor calls (`complex(3,-2)`) must be recognised as constructors not user fns.
+   In E_FNC: after checking user fns, check `jvm_find_data_type(fname)` — if found, create
+   HashMap via `sno_array_new`, store each field value keyed by field name plus `__type__`.
+3. Field accessor calls (`real(X)`) — `jvm_find_data_field(fname)` finds the type; emit
+   `sno_data_get_field(instance_id, field_name)`.
+4. Field setter `x(P) = 99` — subject E_FNC(field,[instance]); map to
+   `sno_array_put(instance_id, field_name, value)`.
+5. `DATATYPE(N)` for DATA instances — check `__type__` key; return type name not "STRING".
 - **pattern-valued variables** (xfailed word*/cross/wordcount): deferred to J-R5+
 
 
