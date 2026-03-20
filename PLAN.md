@@ -17,7 +17,7 @@ Session numbers use per-type prefixes (see RULES.md §SESSION NUMBERS): B=backen
 | **TINY backend** | `asm-backend` B-208 — treebank.sno ✅ rewritten Gimpel cons-cell five functions + recursive group(); tested simple/two-sent/nested → next: generate treebank.ref oracle, then M-ASM-RUNG8/9/10/11 → M-ASM-LIBRARY → M-ENG685-CLAWS → M-ENG685-TREEBANK → M-ASM-BEAUTY | `eb088b9` B-208 | M-ENG685-TREEBANK-SNO |
 | **TINY JVM** | `jvm-backend` J-206 — named-pat registry, ARB backtrack, BREAKX; 87/92 PASS; word1/cross/expr_eval remain | `ced764a` J-206 | M-JVM-CROSSCHECK |
 | **TINY NET** | `net-backend` N-203 — n-ary E_CONC/E_OR pattern emit; M-FLAT-NARY milestone; 82/110 NET; next: indirect assign + DEFINE/RETURN/FRETURN → M-NET-R1 | `0872f3d` N-203 | M-NET-R1 |
-| **TINY frontend** | `flat-nary-f209` F-209 — M-FLAT-NARY ✅ unified n-ary EXPR_t; branch pushed; awaiting merge | `6495074` F-209 | merge → M-SC-CORPUS-R2 |
+| **TINY frontend** | `main` F-210 — M-FLAT-NARY ✅ merged to main; sc7_procedure/sc9_multiproc FAIL diagnosed: do_procedure body stmts not appearing in output; next: fix sc_cf.c do_procedure → M-SC-CORPUS-R2 | `6495074` F-210 | M-SC-CORPUS-R2 |
 | **DOTNET** | `net-perf-analysis` — dotnet test + BenchmarkSuite2 re-run | `a029cae` D-156 | M-NET-PERF |
 
 **Invariants (check before any work):**

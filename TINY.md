@@ -11,10 +11,10 @@ snobol4x: multiple frontends, multiple backends.
 
 ## NOW
 
-**Sprint:** `asm-backend` A-RUNG8 — next: M-ASM-RUNG8/9/10/11 → M-ASM-LIBRARY → M-ENG685-CLAWS → M-ENG685-TREEBANK → M-ASM-BEAUTY
-**HEAD:** `6495074` F-209 (branch `flat-nary-f209` — M-FLAT-NARY complete, awaiting merge to main)
-**Milestone:** M-FLAT-NARY ✅ F-209 · M-ASM-RECUR ✅ B-204 · M-ASM-SAMPLES ✅ B-204
-**Milestone order:** merge flat-nary-f209 → M-ASM-RUNG8 → M-ASM-RUNG9 → M-ASM-RUNG10 → M-ASM-RUNG11 → M-ASM-LIBRARY → M-ENG685-CLAWS → M-ENG685-TREEBANK → M-ASM-BEAUTY
+**Sprint:** `sc-corpus-r2` F-210 — fix sc_cf.c do_procedure → M-SC-CORPUS-R2
+**HEAD:** `6495074` F-210 (main — M-FLAT-NARY merged)
+**Milestone:** M-FLAT-NARY ✅ F-209/F-210 merged · M-ASM-RECUR ✅ B-204 · M-ASM-SAMPLES ✅ B-204
+**Milestone order:** M-SC-CORPUS-R2 → M-SC-CORPUS-R3 → M-SC-CORPUS-R4 → M-SC-CORPUS-R5 → M-SC-CORPUS-FULL
 
 **Session F-209 summary — M-FLAT-NARY complete:**
 
@@ -2496,3 +2496,47 @@ STOP_ON_FAIL=0 bash test/crosscheck/run_crosscheck.sh   # 106/106
 
 **Goal:** 106/106 corpus PASS via NET backend. M-NET-CROSSCHECK fires.
 
+
+**Session F-210 summary — M-FLAT-NARY merged; sc_cf.c do_procedure bug diagnosed:**
+
+Merged `flat-nary-f209` → `main` (fast-forward). Build clean. Invariants confirmed:
+100/106 C ✅ · 26/26 ASM ✅. Pushed `origin/main` at `6495074`.
+
+Ran existing SC ASM corpus: 7/10 PASS. Failures: `sc7_procedure`, `sc9_multiproc`,
+`sc10_wordcount`.
+
+**Root cause diagnosed:** `do_procedure` in `src/frontend/snocone/sc_cf.c` calls
+`prog_append(st, ...)` for DEFINE + function label + body + RETURN + END label — but
+none of these appear in the generated C or ASM output. Only the call sites
+(`APPLY_fn("square",...)`) appear. The function body statements are being generated
+but silently dropped. Likely cause: `prog_append` is writing to a sub-Program or the
+statements are being freed/lost before the emit pass.
+
+**⚠ CRITICAL NEXT ACTION — Session F-211 (frontend):**
+
+Fix `do_procedure` in `src/frontend/snocone/sc_cf.c` so function body statements
+appear in output. Target: `sc7_procedure` and `sc9_multiproc` PASS → 9/10 SC corpus
+→ M-SC-CORPUS-R2.
+
+```bash
+cd /home/claude/snobol4x
+git config user.name "LCherryholmes" && git config user.email "lcherryh@yahoo.com"
+git pull --rebase
+apt-get install -y libgc-dev nasm && make -C src
+STOP_ON_FAIL=0 bash test/crosscheck/run_crosscheck.sh        # must be 100/106
+bash test/crosscheck/run_crosscheck_asm.sh                   # must be 26/26
+bash test/frontend/snocone/sc_asm_corpus/run_sc_asm_corpus.sh  # baseline 7/10
+
+# Diagnose do_procedure: add fprintf(stderr,...) after each prog_append in
+# do_procedure to confirm stmts are being appended. Check if sc_driver.c
+# calls sc_cf_compile correctly and uses its Program* output.
+# Then fix and verify:
+bash test/frontend/snocone/sc_asm_corpus/run_sc_asm_corpus.sh  # target 9/10+
+STOP_ON_FAIL=0 bash test/crosscheck/run_crosscheck.sh        # must stay 100/106
+bash test/crosscheck/run_crosscheck_asm.sh                   # must stay 26/26
+INC=/home/claude/snobol4corpus/programs/inc
+BEAUTY=/home/claude/snobol4corpus/programs/beauty/beauty.sno
+./sno2c -asm -I$INC $BEAUTY > artifacts/asm/beauty_prog.s
+nasm -f elf64 -I src/runtime/asm/ artifacts/asm/beauty_prog.s -o /dev/null
+git add -A && git commit -m "F-211: fix do_procedure body emission; sc7+sc9 PASS"
+```

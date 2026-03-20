@@ -8896,3 +8896,17 @@ TINY_REPO=/home/claude/snobol4x NET_CACHE=/tmp/snobol4x_net_cache \
 `JvmFnDef`, `jvm_parse_proto`, `jvm_emit_fn_method`, `sno_vars` HashMap → translate to
 CIL `Dictionary<string,string>`. The JVM uses `invokestatic sno_indr_get/set`; NET equivalent
 is `call string ClassName::net_indr_get(string)` / `call void ClassName::net_indr_set(string,string)`.
+
+## Session F-210 — M-FLAT-NARY merged; do_procedure bug diagnosed
+
+**Branch:** main (merged from flat-nary-f209)
+**HEAD:** 6495074
+**Invariants:** 100/106 C ✅ · 26/26 ASM ✅
+
+- Merged `flat-nary-f209` → `main` fast-forward; pushed origin/main
+- Build clean post-merge
+- SC ASM corpus baseline: 7/10 PASS (sc7_procedure, sc9_multiproc, sc10_wordcount FAIL)
+- Root cause: `do_procedure` in `sc_cf.c` generates DEFINE+body+RETURN stmts via
+  `prog_append` but they never appear in emit output — silently dropped
+- No code changes this session (diagnosis only)
+- Next: F-211 fixes do_procedure → M-SC-CORPUS-R2
