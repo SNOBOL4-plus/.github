@@ -29,71 +29,82 @@ STOP_ON_FAIL=0 bash test/crosscheck/run_crosscheck.sh    # 100/106 (6 pre-existi
 CORPUS=$CORPUS bash test/crosscheck/run_crosscheck_asm.sh # 26/26
 ```
 
-**Sprint B-220 steps — JVM Greek labels (65 sites in emit_byrd_jvm.c):**
+**Sprint B-220 — JVM Greek labels (65 sites in emit_byrd_jvm.c):**
 
-The label naming law: every Byrd port label in generated JVM output must carry a Greek suffix.
-Map old suffix → new suffix:
+Every Byrd port label in generated JVM output must carry a Greek suffix.
 
-| Old pattern | Byrd port | New pattern |
+| Old | Port | New |
 |---|---|---|
-| `Jn%d_lit_ok` | γ (success) | `Jn%d_lit_γ` |
-| `Jn%d_seq_mid` | γ of left = α of right | `Jn%d_seq_γl` |
-| `Jn%d_alt_right` | ω of left = α of right | `Jn%d_alt_β` |
-| `Jn%d_alt_rst` | restore on alt retry | `Jn%d_alt_rst` (keep — internal) |
-| `Jn%d_nam_ok` | γ of inner pat | `Jn%d_nam_γ` |
-| `Jn%d_dol_ok` | γ of inner pat | `Jn%d_dol_γ` |
-| `Jn%d_arb_loop` | β (retry) | `Jn%d_arb_β` |
-| `Jn%d_arb_decr` | β increment | `Jn%d_arb_βinc` |
+| `Jn%d_lit_ok` | γ | `Jn%d_lit_γ` |
+| `Jn%d_seq_mid` | γ→α | `Jn%d_seq_γ` |
+| `Jn%d_alt_right` | β | `Jn%d_alt_β` |
+| `Jn%d_nam_ok` | γ | `Jn%d_nam_γ` |
+| `Jn%d_dol_ok` | γ | `Jn%d_dol_γ` |
+| `Jn%d_arb_loop` | β | `Jn%d_arb_β` |
+| `Jn%d_arb_decr` | β inc | `Jn%d_arb_βinc` |
 | `Jn%d_arb_retry` | β retry | `Jn%d_arb_βr` |
-| `Jn%d_arb_commit` | γ after commit | `Jn%d_arb_γ` |
-| `Jpat%d_success` | statement γ | `Jpat%d_γ` |
-| `Jpat%d_fail` | statement ω | `Jpat%d_ω` |
+| `Jn%d_arb_commit` | γ | `Jn%d_arb_γ` |
+| `Jpat%d_success` | stmt γ | `Jpat%d_γ` |
+| `Jpat%d_fail` | stmt ω | `Jpat%d_ω` |
 | `Jpat%d_retry` | scan β | `Jpat%d_β` |
 | `Jpat%d_tok` / `Jpat%d_tfail` | tree γ/ω | `Jpat%d_tγ` / `Jpat%d_tω` |
 | `Jfn%d_return` / `Jfn%d_freturn` | fn γ/ω | `Jfn%d_γ` / `Jfn%d_ω` |
 
-**Sprint B-221 steps — NET Greek labels (22 sites in emit_byrd_net.c):**
+**Sprint B-221 — NET Greek labels (22 sites in emit_byrd_net.c):**
 
-Same mapping applied to `Nn%d_*` and `Npat%d_*` prefixes:
-- `Nn%d_nam_ok` → `Nn%d_nam_γ`
-- `Nn%d_dol_ok` → `Nn%d_dol_γ`
-- `Nn%d_arb_loop` → `Nn%d_arb_β`
-- `Nn%d_arb_done` → `Nn%d_arb_γ`
-- `Npat%d_tok` → `Npat%d_γ`
-- `Npat%d_fail` → `Npat%d_ω`
-- `Npat%d_retry` → `Npat%d_β`
-- `Nfn%d_return` → `Nfn%d_γ`, `Nfn%d_freturn` → `Nfn%d_ω`
+| Old | Port | New |
+|---|---|---|
+| `Nn%d_nam_ok` | γ | `Nn%d_nam_γ` |
+| `Nn%d_dol_ok` | γ | `Nn%d_dol_γ` |
+| `Nn%d_arb_loop` | β | `Nn%d_arb_β` |
+| `Nn%d_arb_done` | γ | `Nn%d_arb_γ` |
+| `Npat%d_tok` | stmt γ | `Npat%d_γ` |
+| `Npat%d_fail` | stmt ω | `Npat%d_ω` |
+| `Npat%d_retry` | scan β | `Npat%d_β` |
+| `Nfn%d_return` / `Nfn%d_freturn` | fn γ/ω | `Nfn%d_γ` / `Nfn%d_ω` |
 
-**Milestone fires when:** `sno2c -jvm` and `sno2c -net` output contains `_α`/`_γ`/`_ω` Byrd port labels AND invariants hold.
+**Sprint B-222 — Local variable alignment across all four emit_pat_node functions:**
 
-**DO NOT mark M-EMITTER-NAMING ✅ until both JVM and NET generate Greek labels.**
+Goal: corresponding locals in corresponding functions have the same names across C/ASM/JVM/NET.
+
+Key divergences found:
+
+| Concept | C | ASM | JVM | NET | Canon |
+|---|---|---|---|---|---|
+| pattern node param | `pat` | `pat` | `pat` | `pat` | `pat` ✅ |
+| subject param | `subj` (string name) | `subj` | `loc_subj` (int slot) | `loc_subj` | `subj` / `loc_subj` by target type ✅ |
+| cursor param | `cursor` (string name) | `cursor` | `loc_cursor` | `loc_cursor` | `cursor` / `loc_cursor` by target type ✅ |
+| subject len param | `subj_len` | `subj_len_sym` | `loc_len` | `loc_len` | `subj_len` / `loc_len` — ASM uses `subj_len_sym`, needs rename |
+| capture slot allocator | (depth-based) | — | `p_cap_local` | `p_next_int` / `p_next_str` | `p_cap_local` — NET needs rename |
+| uid in node | `u` (local) | `uid` | `uid` | `uid` | `uid` ✅ JVM/NET; C uses `u` — rename to `uid` |
+| literal string | varies | `s` | `s` | `s` | `s` ✅ |
+| literal length | varies | `slen` | `slen` | `slen` | `slen` ✅ |
+| label buffers | `alpha_lbl`, `beta_lbl` | `alpha`, `beta` | `lbl_ok` etc | `lbl_ok` etc | use Greek: `lbl_α`, `lbl_β`, `lbl_γ`, `lbl_ω` |
+
+parse_proto locals — C and JVM already match (`i`, `buf`, `j`, `k`). ✅
+
+collect_fndefs locals:
+- JVM uses `pbuf`, `sname`, `tbuf`, `ti`, `pi`, `fb` — NET uses `pbuf`, `proto`, `el`, `gl`
+- Canon: `pbuf`, `proto`, `entry_lbl`, `end_lbl` across all
+
+emit_stmt param:
+- C: `(STMT_t *s, const char *fn)` — `fn` = current function name
+- ASM: `(STMT_t *stmt)` — uses global `cur_fn`
+- JVM: `(STMT_t *s, int stmt_idx)` — `stmt_idx` = uid for label generation
+- NET: `(STMT_t *s, const char *next_lbl)` — `next_lbl` = fallthrough label
+- These differ because targets differ. Canon param name: `s` for stmt ptr ✅ (ASM uses `stmt` — rename).
+
+**DO NOT mark M-EMITTER-NAMING ✅ until B-220 + B-221 + B-222 all complete.**
 
 ---
 
 ## Last Session Summary
 
-**Session B-219 — M-EMITTER-NAMING complete: C backend merged into emit_byrd_c.c:**
-- Merged `emit.c` + `emit_byrd.c` into single `emit_byrd_c.c` — now peers with `emit_byrd_asm.c`, `emit_byrd_jvm.c`, `emit_byrd_net.c`.
-- All four backends now in one file each with canonical names: `var_register()`, `collect_vars()`, `collect_fndefs()`, `next_uid()`, `escape_string()`, `emit_stmt()`, `emit_pat_node()`, `NamedPat`, `FnDef`, `DataType`, `vars[]`, `nvar`.
-- Removed all `byrd_emit_*` / `byrd_cond_*` externs — now static internals.
-- `B()` aliased to `C()` for pattern emitter heritage; `ARG_MAX` aliased to `FN_ARGMAX`.
-- Clean build. 100/106 C (6 pre-existing, unchanged) + 26/26 ASM hold. HEAD `5999162`.
-
-
-## Last Two Session Summaries
-
-**Session B-216 — M-EMITTER-NAMING source naming complete across all four backends:**
-- Full prefix strip: all `asm_`, `jvm_`, `net_`, `byrd_` private prefixes removed from all four emitter files. Only extern-visible entry points (`asm_emit`, `jvm_emit`, `net_emit`, `byrd_emit_*`) retain prefixes.
-- Concept-class rename pass: `current_fn→cur_fn`, `out_col→col`, `MAX_BSS→MAX_VARS`, `JVM/NET_NAMED_PAT_MAX→NAMED_PAT_MAX`, all name-buffer constants→`NAME_LEN`, `ucall_uid→call_uid`, `extra_bss→extra_slots`, `ucall_bss_slots→call_slots`, `prog_strs→str_table/StrEntry`, `prog_flts→flt_table/FltEntry`, `prog_labels→label_table`, `MAX_PROG_*→MAX_*`, `ASM_NAMED_MAXPARAMS→MAX_PARAMS`.
-- Duplicate `safe_name` definition removed (dead code from rename).
-- 106/106 C + 26/26 ASM held throughout. HEAD `646e7dd`.
-- M-EMITTER-NAMING remains ⚠ WIP: generated output Greek port labels not yet done.
-
-**Session B-215 — Segfault fixed; C backend renamed; M-EMITTER-NAMING still ❌:**
-- Segfault root cause: triple-push bug in cap-var tree-walk (`emit_byrd_asm.c` ~line 4004) — unguarded `e->children[0]` on leaf nodes. Fix: removed redundant explicit pushes, kept n-ary loop only.
-- All three artifacts (beauty/roman/wordcount) regenerated and assemble clean. Committed `6f96ff7`.
-- C backend rename complete: `snoc_emit→c_emit`, `sym_table→vars`, `sym_count→nvar`, `E()→C()`. Committed `fd09e01`.
-- **Audit at session end revealed M-EMITTER-NAMING is NOT complete**: ASM/NET/JVM static internals still carry per-backend prefixes. PLAN.md corrected.
+**Session B-219 — M-EMITTER-NAMING: C backend merged, Greek labels still needed:**
+- Merged `emit.c` + `emit_byrd.c` into `emit_byrd_c.c` — all four backends now one file each.
+- Canonical source names in place across all four: `var_register()`, `collect_vars()`, `collect_fndefs()`, `next_uid()`, `escape_string()`, `emit_stmt()`, `emit_pat_node()`, `NamedPat`, `FnDef`, `DataType`.
+- M-EMITTER-NAMING remains ⚠ WIP: JVM/NET generated labels need α/β/γ/ω (B-220/B-221); local var alignment needed (B-222).
+- 100/106 C (6 pre-existing) + 26/26 ASM. HEAD `5999162`.
 
 ## Active Milestones (next 5)
 
