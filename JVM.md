@@ -13,48 +13,43 @@ JVM/Clojure backend: SNOBOL4 → JVM bytecode via multi-stage pipeline.
 **HEAD:** `29a8f59` J-209
 **Milestone:** M-JVM-R1 ✅ J-202 · M-JVM-R2 ✅ J-203 · M-JVM-R3 ✅ J-203 · M-JVM-R4 ✅ J-205 · **M-JVM-CROSSCHECK ✅ J-208**
 
-**J-209 — M-JVM-SAMPLES in progress — root cause found, partial fix committed (`29a8f59`):**
-- `jvm_emit_goto` now routes `RETURN`/`FRETURN`/`NRETURN` to `L_END` when `jvm_cur_fn==NULL`
-- Two direct `L_%s` bypass sites in pattern-fail block fixed (~lines 2633/2644)
-- **Four bypass sites remain**: lines ~2116 (stmt_fail_label), ~2264 (OUTPUT :F), ~2320 (INPUT :F), ~2359 (VAR=expr :F)
-- Invariants held: 102/106 C (4 pre-existing) · 26/26 ASM · 89/92 JVM active
+**J-209 — ALL 6 L_%s bypass sites fixed — roman.sno assembly clean — run result pending:**
+- Commit `29a8f59`: `jvm_emit_goto` routes RETURN/FRETURN/NRETURN→L_END in main; 2 pattern-fail bypasses fixed
+- Commit `50950aa`: remaining 4 bypasses fixed (stmt_fail_label, OUTPUT :F, INPUT :F, VAR=expr :F) + forward decl
+- Roman.class generated cleanly by jasmin. Run result was pending at handoff.
+- **CONFLICT WARNING**: B-214 renamed `jvm_emit_stmt→emit_stmt`, `jvm_vars→vars`, `jvm_out→out` etc. in working tree on `asm-backend` — NOT YET committed. When B-215 commits that rename, it will conflict with J-209 fixes on `main`. B-215 must merge both.
+- Invariants: 102/106 C (4 pre-existing) · 26/26 ASM · 89/92 JVM active
 
 **⚠ CRITICAL NEXT ACTION — Session J-210 (JVM):**
 
-Sprint J-S1 continued — fix 4 remaining `L_%s` bypass sites → roman.sno PASS → wordcount.sno PASS → M-JVM-SAMPLES
+Sprint J-S1 — verify roman.sno PASS → wordcount.sno → M-JVM-SAMPLES
 
 ```bash
 cd /home/claude/snobol4x
 git config user.name "LCherryholmes" && git config user.email "lcherryh@yahoo.com"
 git remote set-url origin https://TOKEN_SEE_LON@github.com/snobol4ever/snobol4x
 git pull && apt-get install -y libgc-dev nasm default-jdk && make -C src
-CORPUS=/home/claude/snobol4corpus/crosscheck
-CORPUS=$CORPUS STOP_ON_FAIL=0 bash test/crosscheck/run_crosscheck.sh 2>&1 | tail -2   # 102/106
+CORPUS=/home/claude/snobol4x/../snobol4corpus/crosscheck
+STOP_ON_FAIL=0 CORPUS=$CORPUS bash test/crosscheck/run_crosscheck.sh 2>&1 | tail -2   # 106/106
 CORPUS=$CORPUS bash test/crosscheck/run_crosscheck_asm.sh 2>&1 | tail -2               # 26/26
 bash test/crosscheck/run_crosscheck_jvm_rung.sh \
   $CORPUS/hello $CORPUS/output $CORPUS/assign $CORPUS/arith \
   $CORPUS/control $CORPUS/patterns $CORPUS/capture \
   $CORPUS/strings $CORPUS/keywords $CORPUS/functions $CORPUS/data 2>&1 | tail -2
-# Expected: 89 passed, 1 failed (expr_eval), 2 skipped
-```
+# Expected: 89 passed, 1 failed, 2 skipped
 
-**Remaining fixes — all in `src/backend/jvm/emit_byrd_jvm.c`:**
-Replace every `snprintf(flbl,"L_%s",s->go->onfailure); JI("goto",flbl)` with `jvm_emit_goto(s->go->onfailure)`:
-1. Line ~2116: `snprintf(jvm_cur_stmt_fail_label,...,"L_%s",onfailure)` — store raw label, emit via `jvm_emit_goto` at each use site (lines ~2236, ~2447)
-2. Line ~2264: OUTPUT :F path
-3. Line ~2320: INPUT assignment :F path
-4. Line ~2359: VAR=expr null-check :F path
-
-After all four fixed, roman.sno must assemble and run:
-```bash
+# Test roman.sno:
 JASMIN=src/backend/jvm/jasmin.jar
 TMPD=$(mktemp -d)
-./sno2c -jvm /home/claude/snobol4corpus/benchmarks/roman.sno > $TMPD/roman.j
-java -jar $JASMIN $TMPD/roman.j -d $TMPD/ 2>&1 | grep -v "^Generated\|Picked"
-echo "1 2 3 4 5 10 14 40 90 1999" | tr ' ' '\n' | java -cp $TMPD Roman 2>/dev/null
-diff <(echo "1 2 3 4 5 10 14 40 90 1999" | tr ' ' '\n' | java -cp $TMPD Roman 2>/dev/null) \
-     /home/claude/snobol4corpus/benchmarks/roman.ref
+./sno2c -jvm /home/claude/snobol4x/../snobol4corpus/benchmarks/roman.sno > $TMPD/roman.j
+java -jar $JASMIN $TMPD/roman.j -d $TMPD/ 2>&1 | grep -iv "generated\|picked"
+printf "1\n2\n3\n4\n5\n10\n14\n40\n90\n1999\n" | java -cp $TMPD Roman 2>/dev/null | grep -v Picked
+diff <(printf "1\n2\n3\n4\n5\n10\n14\n40\n90\n1999\n" | java -cp $TMPD Roman 2>/dev/null | grep -v Picked) \
+     /home/claude/snobol4x/../snobol4corpus/benchmarks/roman.ref
+# If PASS → wordcount.sno → update artifacts/jvm/ → M-JVM-SAMPLES
 ```
+
+**NOTE for J-210**: If B-215 has merged asm-backend (with naming rename) into main by the time J-210 starts, the `emit_byrd_jvm.c` will have renamed symbols. Re-verify that the goto fix logic is still present after merge — search for `goto L_END` and `jvm_emit_goto` (or `emit_goto` if renamed).
 
 **J-204 — functions/ 8/8 PASS, data/ 3/6 PASS:**
 - Three fixes: fn-body skip in main walk, jvm_arith_local_base, Case 2 :S/:F routing

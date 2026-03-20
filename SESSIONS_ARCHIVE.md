@@ -9253,3 +9253,20 @@ git push origin asm-backend
 - Verify 106/106 C + 26/26 ASM → M-EMITTER-NAMING fires
 
 **Invariants at handoff:** 106/106 C · 26/26 ASM (working tree, not committed)
+
+## Session J-209 (continued) — all 6 bypass sites fixed; roman.sno assembly clean
+
+**State at handoff:** `50950aa` on `main` · Sprint J-S1 · roman.sno run result pending
+
+**What happened (second half of J-209):**
+- Committed `50950aa`: fixed remaining 4 `L_%s` bypass sites in `emit_byrd_jvm.c`:
+  - `jvm_cur_stmt_fail_label` now stores raw SNOBOL4 label (not `L_`-prefixed)
+  - Both `JI("goto", jvm_cur_stmt_fail_label)` use sites replaced with `jvm_emit_goto()`
+  - OUTPUT :F, INPUT assignment :F, VAR=expr :F paths all fixed
+  - Added forward declaration for `jvm_emit_goto` (needed by expr emitter at line 447)
+- `grep '"L_%s"' emit_byrd_jvm.c` confirms only 2 legitimate uses remain (label definition + jvm_emit_goto interior)
+- roman.j assembles cleanly (Roman.class generated). Run result pending at handoff.
+- Discovered B-214 renamed JVM symbols (jvm_emit_stmt→emit_stmt etc.) on asm-backend working tree — NOT YET committed. Will conflict with J-209 on main when B-215 commits. B-215 must merge both.
+- .github rebased onto B-214 commit (239f421) cleanly.
+
+**Next session J-210:** verify roman.sno diff==empty → wordcount.sno → artifacts/jvm/ update → M-JVM-SAMPLES ✅
