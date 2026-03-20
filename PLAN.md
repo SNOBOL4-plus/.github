@@ -18,11 +18,11 @@ Session numbers use per-type prefixes (see RULES.md §SESSION NUMBERS): B=backen
 | **TINY JVM** | `jvm-backend` J-209 — M-JVM-SAMPLES: all 6 L_%s bypass sites fixed (`50950aa`); B-214 naming rename (jvm_emit_stmt→emit_stmt etc.) NOT YET committed on asm-backend conflicts with J-209 fixes — B-215 must merge both; roman.sno assembly clean, run result pending | `50950aa` J-209 | M-JVM-SAMPLES |
 | **TINY NET** | `net-backend` N-205 — INPUT/ARB/KW fixes: INPUT reads stdin, &ANCHOR wired, E_NAM/E_DOL OUTPUT capture, ARB min-first WIP (SEQ-ARB omega bug); 74/82 pass; next: fix ARB backtrack omega wiring in SEQ → word1-4/cross PASS → M-NET-R1 | `a30365b` N-205 | M-NET-R1 |
 | **TINY frontend** | `main` F-210 — M-FLAT-NARY ✅ merged to main; sc7_procedure/sc9_multiproc FAIL diagnosed: do_procedure body stmts not appearing in output; next: fix sc_cf.c do_procedure → M-SC-CORPUS-R2 | `6495074` F-210 | M-SC-CORPUS-R2 |
-| **DOTNET** | `net-perf-analysis` — dotnet test + BenchmarkSuite2 re-run | `a029cae` D-156 | M-NET-PERF |
+| **DOTNET** | `net-polish` D-160 — PosPattern/RPosPattern Clone() swap fixed; confirm 106/106 | `8a713cb` D-160 | M-NET-CORPUS-RUNGS |
 
 **Invariants (check before any work):**
 - TINY: `100/106` C crosscheck (6 pre-existing) · `26/26` ASM crosscheck
-- DOTNET: `dotnet test` → 1869/1872 before any dotnet work
+- DOTNET: `dotnet test` → 1873/1876 before any dotnet work
 
 **Read the active L2 docs: [TINY.md](TINY.md) · [JVM.md](JVM.md) · [DOTNET.md](DOTNET.md)**
 
@@ -206,7 +206,7 @@ Sprint detail lives in the active platform L2 doc (TINY.md / JVM.md / DOTNET.md)
 | **M-NET-VB** | VB.NET fixture + tests: string/long/double returns, null→fail, static, multi-load, UNLOAD | ✅ `234f24a` session142 |
 | **M-NET-XN** | SPITBOL x32 C-ABI parity: xn1st first-call flag, xncbp shutdown callback, xnsave double-fire guard; libsnobol4_rt.so helper shim | ✅ `26e2144` session148 |
 | M-NET-SNOCONE | Snocone self-test: compile snocone.sc, diff oracle | ❌ |
-| **M-NET-PERF** | Performance profiling: hot-path report, ≥1 measurable win landed, regression baseline published | ❌ Sprint `net-perf-analysis` |
+| **M-NET-PERF** | Performance profiling: hot-path report, ≥1 measurable win landed, regression baseline published | ✅ `e8a5fec` D-159 |
 | **M-NET-POLISH** | 106/106 corpus rungs pass, diag1 35/35, benchmark grid published | ❌ see DOTNET.md |
 | M-NET-BOOTSTRAP | snobol4-dotnet compiles itself | ❌ |
 

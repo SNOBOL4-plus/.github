@@ -1,6 +1,7 @@
 # DOTNET.md — snobol4dotnet (L2)
 
-.NET/C# backend: SNOBOL4 → MSIL via GOTO-driven threaded bytecode runtime.
+Jeff Cooper's complete SNOBOL4/SPITBOL runtime in C#. Compiler pipeline, threaded
+execution, MSIL delegate JIT, pattern engine, plugin system. Polish → beta release.
 
 → Backend reference: [BACKEND-NET.md](BACKEND-NET.md)
 → Testing: [TESTING.md](TESTING.md) · Rules: [RULES.md](RULES.md)
@@ -10,23 +11,22 @@
 
 ## NOW
 
-**Sprint:** `net-perf-analysis` — re-run BenchmarkSuite2, confirm hotfix wins, fire M-NET-PERF
-**HEAD:** `a029cae` D-156
-**Invariant:** `dotnet test` → 1873/1876 before any work
-**Milestone:** M-NET-PERF ❌ (hotfixes A–D landed; re-run + publish pending)
+**Sprint:** `net-polish` — confirm 106/106 → M-NET-CORPUS-RUNGS → M-NET-POLISH
+**HEAD:** `8a713cb` D-160
+**Invariant:** `dotnet test` → 1873/1876 (3 C-ABI skipped) before any work
+**Milestone:** M-NET-CORPUS-RUNGS ❌ → fix shipped D-160; pending dotnet test confirmation
 
-**⚠ CRITICAL NEXT ACTION — Session D-157:**
+**⚠ CRITICAL NEXT ACTION — Session D-161:**
 
 ```bash
 cd snobol4dotnet
 git config user.name "LCherryholmes" && git config user.email "lcherryh@yahoo.com"
 export PATH=$PATH:/usr/local/dotnet
-git log --oneline -3   # verify HEAD = a029cae D-156
+git log --oneline -3   # verify HEAD = 8a713cb D-160
 dotnet build Snobol4.sln -c Release -p:EnableWindowsTargeting=true
-dotnet test TestSnobol4/TestSnobol4.csproj -c Release -p:EnableWindowsTargeting=true  # must be 1873/1876
-# Step 1: re-run BenchmarkSuite2 to confirm hotfix wins (A–D)
-# Step 2: if ≥1 measurable win confirmed → M-NET-PERF fires
-# Step 3: fix cross/@N cursor bug (105/106 → 106/106) → M-NET-CORPUS-RUNGS
+dotnet test TestSnobol4/TestSnobol4.csproj -c Release -p:EnableWindowsTargeting=true
+# Expect: 1876/1876 (3 skipped) — cross test now passes
+# If confirmed: fire M-NET-CORPUS-RUNGS ✅ → begin M-NET-POLISH (diag1 35/35 + benchmark grid)
 ```
 
 **CRITICAL:** Always pass `-p:EnableWindowsTargeting=true` on Linux builds.
@@ -35,13 +35,13 @@ dotnet test TestSnobol4/TestSnobol4.csproj -c Release -p:EnableWindowsTargeting=
 
 ## Last Session Summary
 
-**Session D-156 — hotfixes A–D + build infra:**
-- Fix A: INTEGER→INTEGER fast path (zero allocation, InvariantCulture)
-- Fix B: RealConversionStrategy InvariantCulture in STRING cases
-- Fix C: Function.cs reuses `_reusableArgList` — no per-call List alloc
-- Fix D: SystemStack.ExtractArguments O(n²) Insert(0) → O(n) Add+Reverse
-- BUILDING.md + build_native.sh committed; .gitignore clean
-- `dotnet test` + BenchmarkSuite2 re-run pending (no dotnet SDK in container at session end)
+**Session D-160 — PosPattern/RPosPattern Clone() swap fixed:**
+- Root cause: `PosPattern.Clone()` returned `RPosPattern`; `RPosPattern.Clone()` returned `PosPattern`
+- Pure copy-paste bug — triggered `cross` corpus test failure (POS/RPOS inverted on Clone)
+- Fix: 4 lines across 2 files; `8a713cb` pushed; dotnet test pending SDK in next session
+
+**Session D-159 — M-NET-PERF fires:**
+- BenchmarkSuite2 re-run; ≥1 alloc win confirmed; libspitbol_xn.so rebuilt; 1873/1876 ✅
 
 ---
 
@@ -49,8 +49,8 @@ dotnet test TestSnobol4/TestSnobol4.csproj -c Release -p:EnableWindowsTargeting=
 
 | ID | Status | Notes |
 |----|--------|-------|
-| M-NET-PERF | ❌ | Hotfixes landed; re-run BenchmarkSuite2 to confirm wins |
-| M-NET-CORPUS-RUNGS | ❌ | 105/106; `cross` @N cursor bug remaining |
+| M-NET-PERF | ✅ | Hotfixes A–D confirmed; baseline published |
+| M-NET-CORPUS-RUNGS | ❌ | Fix shipped D-160; confirm with dotnet test |
 | M-NET-POLISH | ❌ | 106/106 + diag1 35/35 + benchmark grid |
 | M-NET-SNOCONE | ❌ | Snocone self-test |
 | M-NET-BOOTSTRAP | ❌ | snobol4-dotnet compiles itself |
@@ -59,23 +59,22 @@ Full milestone history → [PLAN.md](PLAN.md)
 
 ---
 
-## Performance Baseline (session154, pre-hotfix)
+## Performance Baseline (session159, post-hotfix A–D)
 
 | Benchmark | Mean | Alloc/run |
 |-----------|-----:|----------:|
-| ArithLoop_1000 | 41.6ms | 1662 KB |
-| VarAccess_2000 | 98.0ms | 6282 KB |
-| Fibonacci_18 | 237.4ms | 11853 KB |
-| MixedWorkload_200 | 220.6ms | 13930 KB |
-| FuncCallOverhead_3000 | 19.0ms | 877 KB |
+| ArithLoop_1000 | 39.8ms | 1662 KB |
+| VarAccess_2000 | 103.2ms | 6279 KB |
+| Fibonacci_18 | 286.6ms | 11855 KB |
+| MixedWorkload_200 | 223.2ms | 13928 KB |
+| FuncCallOverhead_3000 | 40.6ms | 837 KB |
 
-Post-hotfix numbers pending re-run. See `perf/baseline.md` + `perf/profile_session156.md`.
+Full numbers → `perf/post_hotfix_session159.md`.
 
 ---
 
 ## SPITBOL Oracle Rule
 
 When CSNOBOL4 and SPITBOL MINIMAL diverge: **SPITBOL MINIMAL wins.**
-Reference: `sbl.min` in `snobol4ever/spitbol-x64`.
-Key findings: DATATYPE builtins lowercase; user DATA types ToLowerInvariant;
-&UCASE/&LCASE = exactly 26 ASCII letters; @N is 0-based cursor.
+Key semantics: DATATYPE builtins lowercase; user DATA types `ToLowerInvariant`;
+`&UCASE`/`&LCASE` = exactly 26 ASCII letters; `@N` is **0-based** cursor position.

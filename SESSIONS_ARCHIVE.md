@@ -9296,3 +9296,30 @@ End-of-session audit revealed M-EMITTER-NAMING was prematurely marked ✅. The C
 - **NET:** net_out→out, net_vars[]→vars[], net_nvar→nvar, NetNamedPat→NamedPat, net_named_pats[]→named_pats[], net_named_pat_register→named_pat_register, net_emit_one_stmt→emit_stmt
 
 PLAN.md NOW row and M-EMITTER-NAMING milestone reverted to ❌. TINY.md corrected.
+## Session D-160 — PosPattern/RPosPattern Clone() swap fixed
+
+**Date:** 2026-03-20
+**Branch:** main (snobol4dotnet)
+**HEAD at close:** `8a713cb`
+
+**Work done:**
+- Diagnosed `cross` corpus failure (105/106): root cause was `PosPattern.Clone()` returning `RPosPattern` and `RPosPattern.Clone()` returning `PosPattern` — a pure copy-paste swap
+- DOTNET.md and BACKEND-NET.md rewritten: removed TINY NET / sno2c / Byrd box content that had leaked in; BACKEND-NET.md now accurately describes Jeff Cooper's C# runtime architecture
+- PLAN.md: M-NET-PERF flipped ✅; DOTNET NOW row updated; invariant corrected to 1873/1876
+- Fix: 4 lines in PosPattern.cs + RPosPattern.cs — each Clone() now returns its own type
+- Commit `8a713cb` pushed to snobol4dotnet main
+
+**State at handoff:**
+- dotnet test pending .NET SDK (unavailable in this container) — expect 1876/1876
+- M-NET-CORPUS-RUNGS ready to fire once dotnet test confirms
+
+**Next session D-161 start:**
+```bash
+cd snobol4dotnet
+git config user.name "LCherryholmes" && git config user.email "lcherryh@yahoo.com"
+export PATH=$PATH:/usr/local/dotnet
+git log --oneline -3   # verify HEAD = 8a713cb D-160
+dotnet build Snobol4.sln -c Release -p:EnableWindowsTargeting=true
+dotnet test TestSnobol4/TestSnobol4.csproj -c Release -p:EnableWindowsTargeting=true
+# Expect 1876/1876 → fire M-NET-CORPUS-RUNGS ✅ → begin M-NET-POLISH
+```
