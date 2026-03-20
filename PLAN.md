@@ -16,7 +16,7 @@ Session numbers use per-type prefixes (see RULES.md §SESSION NUMBERS): B=backen
 |---------|--------|------|----------------|
 | **TINY backend** | `asm-backend` B-207 — claws5.sno ✅ working; treebank.sno nPush/Shift/Reduce debugging in progress (M-ENG685-TREEBANK-SNO) → next: finish treebank.sno → M-ASM-RUNG8/9/10/11 → M-ASM-LIBRARY → M-ENG685-CLAWS → M-ENG685-TREEBANK → M-ASM-BEAUTY | `266c866` B-207 | M-ENG685-TREEBANK-SNO |
 | **TINY JVM** | `jvm-backend` J-R4 complete — 14/14 PASS; next: J-R5 crosscheck 106/106 | `876eb4b` J-205 | M-JVM-CROSSCHECK |
-| **TINY NET** | `net-backend` N-201 — Snobol4Lib/Snobol4Run DLL split; 51/58 NET baseline | `8bae0fe` N-201 | M-NET-CAPTURE |
+| **TINY NET** | `net-backend` N-202 — M-NET-CAPTURE ✅; string builtins; harness; 70/78 NET | `590509b` N-202 | M-NET-R1 |
 | **TINY frontend** | `sc-corpus-ladder` SC-CORPUS-2 — control/ | `23765b1` F-192 | M-SC-CORPUS-R2 |
 | **DOTNET** | `net-perf-analysis` — dotnet test + BenchmarkSuite2 re-run | `a029cae` D-156 | M-NET-PERF |
 
@@ -180,7 +180,7 @@ Sprint detail lives in the active platform L2 doc (TINY.md / JVM.md / DOTNET.md)
 | **M-NET-ASSIGN** | Variable assign + arith correct | ❌ Sprint N-R2 |
 | **M-NET-GOTO** | :S(X)F(Y) branching correct | ❌ Sprint N-R3 |
 | **M-NET-PATTERN** | Byrd boxes in CIL — LIT/SEQ/ALT/ARBNO | ❌ Sprint N-R4 |
-| **M-NET-CAPTURE** | . and $ capture correct | ❌ Sprint N-R5 |
+| **M-NET-CAPTURE** | . and $ capture correct | ✅ `590509b` N-202 |
 | **M-NET-R1** | hello/ output/ assign/ arith/ — Rungs 1–4 PASS | ❌ Sprint N-R1 |
 | **M-NET-R2** | control/ patterns/ capture/ — Rungs 5–7 PASS | ❌ Sprint N-R2 |
 | **M-NET-R3** | strings/ keywords/ — Rungs 8–9 PASS | ❌ Sprint N-R3 |

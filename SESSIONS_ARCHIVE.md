@@ -8699,3 +8699,38 @@ Stack and Counter inlined directly — no -include. Corpus pushed `89b2b72`.
 Remaining open: counter semantics for tag vs children in grp_reduce (tag pushed before nPush, so not counted — needs +1 or restructure). See TINY.md B-207 CRITICAL NEXT ACTION for exact fix path.
 
 **Milestone created:** M-ENG685-TREEBANK-SNO
+
+## Session N-202 — M-NET-CAPTURE + string builtins + SnobolHarness
+
+**HEAD at end:** `590509b` N-202
+**Milestones fired:** M-NET-CAPTURE ✅
+**Invariants:** 106/106 C ✅ · 26/26 ASM ✅ · 70/78 NET ✅
+
+**What happened:**
+- Added SUBSTR/REPLACE/DUPL/TRIM/REVERSE/LPAD/RPAD/INTEGER/REMDR to E_FNC handler
+- Case 4 pattern replacement (X 'pat' = 'repl') — was falling through to no-op; fixed
+- &UCASE/&LCASE keywords now return 26-char alphabet strings (were returning "" stub)
+- LPAD/RPAD arg order fix (width,char were swapped) + conv.u2 for char param
+- SnobolHarness.cs: one mono process runs all tests with 5s per-program timeout
+  eliminates ~400ms per-test mono startup overhead
+- snobol4lib.il: all new helpers added and assemble clean; stloc.5->stloc.s V_5 fix
+- Fixed corpus self-referential symlink (N-201 carry-over note)
+- Remaining failures: 014/015 indirect $, 053/056 pattern deferred, 082 stcount,
+  cross/word* INPUT-loop programs (need file stdin support)
+
+**Next session N-203 start:**
+```bash
+cd /home/claude/snobol4x
+git config user.name "LCherryholmes" && git config user.email "lcherryh@yahoo.com"
+git log --oneline -3   # expect 590509b N-202
+apt-get install -y libgc-dev nasm mono-complete && make -C src
+# corpus: git clone https://TOKEN_SEE_LON@github.com/snobol4ever/snobol4corpus /home/claude/snobol4corpus
+CORPUS=/home/claude/snobol4corpus/crosscheck
+STOP_ON_FAIL=0 bash test/crosscheck/run_crosscheck.sh        # 106/106
+bash test/crosscheck/run_crosscheck_asm.sh                   # 26/26
+for rung in hello output assign control_new keywords patterns capture strings; do
+  echo -n "$rung: " && STOP_ON_FAIL=0 bash test/crosscheck/run_crosscheck_net_rung.sh $CORPUS/$rung 2>/dev/null | tail -1
+done
+# Sprint N-R1: hello/output/assign/arith all PASS -> M-NET-R1
+# Fix: 082 stcount (&STNO read in expr), arith INPUT loops, indirect $
+```
