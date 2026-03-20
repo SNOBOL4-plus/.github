@@ -221,6 +221,45 @@ If not 106/106: fix the regression before touching anything else. Regressions ar
 - If TINY.md NOW and PLAN.md dashboard disagree: PLAN.md wins. Fix TINY.md.
 - This rule exists because B-204 wrote M-ASM-BEAUTY as next sprint, skipping RUNG8/9/10/11 and LIBRARY and ENG685 entirely.
 
+## ⛔ L2 DOC SIZE — replace, never append; hard limit 10 KB
+
+**L2 docs (TINY.md, JVM.md, DOTNET.md) have a hard size limit of 10 KB.**
+
+TINY.md ballooned from ~5 KB to 155 KB because each session *prepended* a new
+"CRITICAL NEXT ACTION" block without deleting the previous one. DOTNET.md hit
+57 KB the same way. This is the failure mode: "update" interpreted as "add to top."
+
+**The rule:** When writing the end-of-session "CRITICAL NEXT ACTION" and summary:
+1. **DELETE** the previous session's "CRITICAL NEXT ACTION" block entirely.
+2. **DELETE** the previous session's summary — or keep at most the last TWO summaries.
+3. **REPLACE** the NOW section — do not prepend to it.
+4. Session history → **SESSIONS_ARCHIVE.md only**. Never accumulate in L2.
+5. Sprint plans for **completed** sprints → delete from L2. They are in SESSIONS_ARCHIVE.
+6. Root cause notes for **fixed** bugs → delete from L2. They are in SESSIONS_ARCHIVE.
+
+**Check before every push:**
+```bash
+wc -c /home/claude/.github/TINY.md      # must be under 10240
+wc -c /home/claude/.github/JVM.md       # must be under 10240
+wc -c /home/claude/.github/DOTNET.md    # must be under 10240
+```
+If any L2 doc exceeds 10 KB: trim it before pushing. No exceptions.
+
+**What belongs in L2:**
+- Current HEAD + branch + session number
+- Current sprint name + 3–5 concrete next steps (the CRITICAL NEXT ACTION block)
+- Last 1–2 session summaries (3–5 lines each) for continuity
+- Active milestone status table (next 5 milestones only)
+- Concurrent session table
+- Pointers to L3 docs
+
+**What does NOT belong in L2:**
+- Completed sprint plans
+- Fixed bug root causes
+- Architecture notes (→ ARCH.md or BACKEND-X64.md)
+- Old CRITICAL NEXT ACTION blocks
+- Session summaries older than 2 sessions (→ SESSIONS_ARCHIVE.md)
+
 ## ⛔ HQ HIERARCHY — edit downstream files, not PLAN.md
 
 **Structural model:**
