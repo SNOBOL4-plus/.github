@@ -8387,3 +8387,43 @@ CORPUS=/home/claude/snobol4corpus/crosscheck
 STOP_ON_FAIL=0 bash test/crosscheck/run_crosscheck_asm_rung.sh $CORPUS/functions  # 8/8
 # Then attempt beauty.sno self-beautify — see TINY.md Session B-205 block
 ```
+
+## Session J-203 (continued) — Sprint J-R4 WIP
+
+**HEAD at end:** `842eb95` J-203
+**Milestones fired this sub-session:** none (WIP commit)
+
+**What happened (continuation):**
+- Diagnosed rung 10–11 failures: 0/14 — all DEFINE/ARRAY/TABLE/DATA
+- Implemented full DEFINE/RETURN/FRETURN infrastructure:
+  - JvmFnDef struct, jvm_fn_table, jvm_collect_functions pre-pass
+  - jvm_emit_fn_method: static JVM method per DEFINE, save/restore arg/local globals
+  - jvm_emit_goto: intercepts RETURN/FRETURN/NRETURN → Jfn%d_return/freturn labels
+  - User fn call in E_FNC via invokestatic sno_userfn_NAME
+- Implemented ARRAY/TABLE/DATA:
+  - sno_array_new/sno_table_new/sno_array_get/sno_array_put runtime helpers
+  - sno_arrays static HashMap (array-id → HashMap)
+  - E_ARY/E_IDX read in jvm_emit_expr
+  - Case 1b write path for E_ARY/E_IDX subscript assignment
+  - sno_data_define/sno_data_get_field/sno_data_get_type helpers
+  - JvmDataType registry (jvm_find_data_type/jvm_find_data_field)
+- Build is clean. Not yet run against rung 10–11.
+
+**TODO for J-204:**
+1. DATA type scanning in jvm_collect_functions
+2. DATA constructor + field accessor in E_FNC
+3. DATA field write lvalue in jvm_emit_stmt
+4. DATATYPE(X) → sno_data_get_type for instances
+5. Run rung 10–11, fix failures → M-JVM-R4
+
+**Next session start:**
+```bash
+cd /home/claude/snobol4x
+git config user.name "LCherryholmes" && git config user.email "lcherryh@yahoo.com"
+git remote set-url origin https://TOKEN_SEE_LON@github.com/snobol4ever/snobol4x
+git log --oneline -3   # expect 842eb95
+apt-get install -y libgc-dev nasm default-jdk && make -C src
+# Symlink: mkdir -p /home/claude/snobol4ever && ln -sf /home/claude/snobol4corpus /home/claude/snobol4ever/snobol4corpus && ln -sf /home/claude/snobol4x /home/claude/snobol4ever/snobol4x
+CORPUS=/home/claude/snobol4corpus/crosscheck
+bash test/crosscheck/run_crosscheck_jvm_rung.sh $CORPUS/functions $CORPUS/data 2>&1 | tail -5
+```

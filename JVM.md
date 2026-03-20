@@ -10,7 +10,7 @@ JVM/Clojure backend: SNOBOL4 → JVM bytecode via multi-stage pipeline.
 ## NOW
 
 **Sprint:** `jvm-backend` J-R4 — corpus ladder rungs 10–11: functions/ data/ → M-JVM-R4
-**HEAD:** `fa293a1` J-203
+**HEAD:** `842eb95` J-203
 **Milestone:** M-JVM-R1 ✅ J-202 · M-JVM-R2 ✅ J-203 · M-JVM-R3 ✅ J-203
 
 **J-203 — M-JVM-R2 + M-JVM-R3:**
@@ -29,7 +29,7 @@ Sprint J-R4 — rungs 10–11 (functions/ data/) → M-JVM-R4
 cd /home/claude/snobol4x
 git config user.name "LCherryholmes" && git config user.email "lcherryh@yahoo.com"
 git remote set-url origin https://TOKEN_SEE_LON@github.com/snobol4ever/snobol4x
-git log --oneline -3   # verify HEAD = fa293a1
+git log --oneline -3   # verify HEAD = 842eb95
 apt-get install -y libgc-dev nasm default-jdk && make -C src
 CORPUS=/home/claude/snobol4corpus/crosscheck
 bash test/crosscheck/run_crosscheck_jvm_rung.sh \
