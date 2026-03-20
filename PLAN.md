@@ -15,7 +15,7 @@ Session numbers use per-type prefixes (see RULES.md §SESSION NUMBERS): B=backen
 | Session | Sprint | HEAD | Next milestone |
 |---------|--------|------|----------------|
 | **TINY backend** | `asm-backend` A-SAMPLES done — M-ASM-RECUR ✅ M-ASM-SAMPLES ✅ → next: M-ASM-RUNG8/9/10/11 → M-ASM-LIBRARY → M-ENG685-CLAWS → M-ENG685-TREEBANK → M-ASM-BEAUTY | `5cab9e3` B-204 | M-ASM-RUNG8 |
-| **TINY JVM** | `jvm-backend` J-R4 — functions/ 8/8 ✅ data/ 3/6; fix DATA 094–096 | `c2e7a0e` J-204 | M-JVM-R4 |
+| **TINY JVM** | `jvm-backend` J-R4 complete — 14/14 PASS; next: J-R5 crosscheck 106/106 | `876eb4b` J-205 | M-JVM-CROSSCHECK |
 | **TINY NET** | `net-backend` N-201 — Snobol4Lib/Snobol4Run DLL split; 51/58 NET baseline | `8bae0fe` N-201 | M-NET-CAPTURE |
 | **TINY frontend** | `sc-corpus-ladder` SC-CORPUS-2 — control/ | `23765b1` F-192 | M-SC-CORPUS-R2 |
 | **DOTNET** | `net-perf-analysis` — dotnet test + BenchmarkSuite2 re-run | `a029cae` D-156 | M-NET-PERF |
@@ -165,7 +165,7 @@ Sprint detail lives in the active platform L2 doc (TINY.md / JVM.md / DOTNET.md)
 | **M-JVM-R1** | hello/ output/ assign/ arith/ — Rungs 1–4 PASS | ✅ `2b1d6a9` J-202 |
 | **M-JVM-R2** | control/ patterns/ capture/ — Rungs 5–7 PASS | ✅ `fa293a1` J-203 |
 | **M-JVM-R3** | strings/ keywords/ — Rungs 8–9 PASS | ✅ `fa293a1` J-203 |
-| **M-JVM-R4** | functions/ data/ — Rungs 10–11 PASS | ❌ Sprint J-R4 |
+| **M-JVM-R4** | functions/ data/ — Rungs 10–11 PASS | ✅ `876eb4b` J-205 |
 | **M-JVM-CROSSCHECK** | 106/106 corpus PASS via JVM backend | ❌ Sprint J-R5 |
 | **M-JVM-SAMPLES** | roman.sno + wordcount.sno PASS | ❌ Sprint J-S1 |
 | **M-JVM-BEAUTY** | beauty.sno self-beautifies via JVM backend | ❌ Sprint J10 |

@@ -10,8 +10,8 @@ JVM/Clojure backend: SNOBOL4 → JVM bytecode via multi-stage pipeline.
 ## NOW
 
 **Sprint:** `jvm-backend` J-R4 — corpus ladder rungs 10–11: functions/ data/ → M-JVM-R4
-**HEAD:** `c2e7a0e` J-204
-**Milestone:** M-JVM-R1 ✅ J-202 · M-JVM-R2 ✅ J-203 · M-JVM-R3 ✅ J-203 · M-JVM-R4 ❌ (11/14)
+**HEAD:** `876eb4b` J-205
+**Milestone:** M-JVM-R1 ✅ J-202 · M-JVM-R2 ✅ J-203 · M-JVM-R3 ✅ J-203 · M-JVM-R4 ✅ J-205
 
 **J-204 — functions/ 8/8 PASS, data/ 3/6 PASS:**
 - Three fixes: fn-body skip in main walk, jvm_arith_local_base, Case 2 :S/:F routing

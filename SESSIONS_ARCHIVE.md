@@ -8597,3 +8597,63 @@ git pull
 # Fix leaf spacing. Generate .ref oracle for both programs.
 # Then: git add -A && git commit && git push   (RULES.md §PUSH — do this first)
 # Then: move to M-ASM-RUNG8 in snobol4x```
+
+## Session J-205 — M-JVM-R4 COMPLETE: 14/14 functions+data PASS
+
+**Date:** 2026-03-19
+**Branch:** main · **HEAD at end:** `876eb4b`
+**Sprint:** `jvm-backend` J-R4 → **M-JVM-R4 fires**
+
+### What happened
+
+Continued from J-204 (11/14). Fixed remaining 3 DATA failures (094/095/096).
+
+**Bug 1 — sno_data_get_field/sno_data_get_type VerifyError (stack imbalance).**
+The `dup/ifnull` pattern left the inner HashMap stranded on the operand stack in
+the success path, causing inconsistent stack heights the JVM verifier rejected.
+Fix: store inner HashMap in a local (`astore_2`/`astore_1`) and load from there.
+All branch paths then have a consistent stack depth of 0 at merge points.
+
+**Bug 2 — DATA types not collected at compile time.**
+`jvm_collect_functions` only scanned for DEFINE stmts. DATA(proto) stmts were
+never processed, so `jvm_data_types[]` was always empty — constructor and field
+accessor calls fell through to the "unrecognised fn → return ''" stub.
+Fix: added DATA collection loop in `jvm_collect_functions`.
+
+**Bug 3 — DATA constructor calls not recognised.**
+After collecting types, added `jvm_find_data_type(fname)` check in E_FNC emitter.
+On match: `sno_array_new("0")` creates HashMap, fields stored via `sno_array_put`,
+`__type__` key stored with type name, instance id returned.
+
+**Bug 4 — Field accessors/setters not implemented.**
+Accessor: `jvm_find_data_field(fname)` check in E_FNC → `sno_data_get_field(id, field)`.
+Setter: new Case 1c in `jvm_emit_stmt` — E_FNC subject matching a DATA field
+routes to `sno_array_put(instance_id, field_name, value)`.
+
+**Bug 5 — DATATYPE() returned "STRING" for DATA instances.**
+New `sno_datatype_ext` helper: checks `sno_arrays` for `__type__` key first;
+if found returns user type name, else delegates to plain `sno_datatype`.
+Stack-safe (uses locals only, no operand stack at branch merge points).
+
+### Results
+- 14/14 functions+data PASS. **M-JVM-R4 fires.**
+- Pre-existing xfails unchanged (expr_eval, 053_pat_alt_commit).
+
+### State at handoff
+- snobol4x pushed: `876eb4b`
+- M-JVM-R4 ✅ fired in PLAN.md
+
+### Next session start (J-206)
+```bash
+cd /home/claude/snobol4x
+git config user.name "LCherryholmes" && git config user.email "lcherryh@yahoo.com"
+git remote set-url origin https://TOKEN_SEE_LON@github.com/snobol4ever/snobol4x
+git pull && apt-get install -y libgc-dev nasm default-jdk && make -C src
+git log --oneline -3   # verify HEAD = 876eb4b
+CORPUS=/home/claude/snobol4corpus/crosscheck
+# Sprint J-R5: full crosscheck 106/106 → M-JVM-CROSSCHECK
+STOP_ON_FAIL=0 bash test/crosscheck/run_crosscheck_jvm_rung.sh \
+  $CORPUS/hello $CORPUS/output $CORPUS/assign $CORPUS/arith \
+  $CORPUS/control $CORPUS/control_new $CORPUS/patterns $CORPUS/capture \
+  $CORPUS/strings $CORPUS/keywords $CORPUS/functions $CORPUS/data 2>&1 | tail -5
+```
