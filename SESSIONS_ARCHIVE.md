@@ -8463,3 +8463,32 @@ STOP_ON_FAIL=0 bash test/crosscheck/run_crosscheck_net_rung.sh \
 # Sprint N-R4: capture/ and strings/ rungs
 STOP_ON_FAIL=0 bash test/crosscheck/run_crosscheck_net_rung.sh $CORPUS/capture $CORPUS/strings
 ```
+
+## Session B-205 — HQ housekeeping: milestone order fix
+
+**What happened:**
+- No code changes to snobol4x this session.
+- Discovered TINY.md NOW section incorrectly listed M-ASM-BEAUTY as next sprint (B-204 had jumped ahead, skipping RUNG8/9/10/11, LIBRARY, ENG685).
+- Fixed TINY.md NOW section to show correct order: M-ASM-RUNG8 → RUNG9 → RUNG10 → RUNG11 → LIBRARY → ENG685-CLAWS → ENG685-TREEBANK → BEAUTY.
+- Added `⛔ MILESTONE ORDER` rule to RULES.md: TINY.md sprint must always match next ❌ in PLAN.md dashboard, in sequence.
+- Fixed PLAN.md TINY backend HEAD from `266c866` to `5cab9e3` (correct B-204 hash).
+
+**State at handoff:**
+- snobol4x HEAD: `8bae0fe` N-201 (main — last B-session commit is `5cab9e3` B-204)
+- 106/106 C ✅ · 26/26 ASM ✅ (verified this session)
+- Next milestone: M-ASM-RUNG8
+
+**Next session start (B-206):**
+```bash
+cd /home/claude/snobol4x
+git config user.name "LCherryholmes" && git config user.email "lcherryh@yahoo.com"
+git log --oneline -3   # verify last B-session commit is 5cab9e3 B-204
+apt-get install -y libgc-dev nasm && make -C src
+mkdir -p /home/snobol4corpus && ln -sf /home/claude/snobol4corpus/crosscheck /home/snobol4corpus/crosscheck
+gcc -c src/runtime/asm/snobol4_asm_harness.c -o src/runtime/asm/snobol4_asm_harness.o
+STOP_ON_FAIL=0 bash test/crosscheck/run_crosscheck.sh        # must be 106/106
+bash test/crosscheck/run_crosscheck_asm.sh                   # must be 26/26
+CORPUS=/home/claude/snobol4corpus/crosscheck
+STOP_ON_FAIL=0 bash test/crosscheck/run_crosscheck_asm_rung.sh $CORPUS/strings   # baseline for rung8
+# Sprint A-RUNG8: rung8/ REPLACE/SIZE/DUPL 3/3 PASS → M-ASM-RUNG8
+```
