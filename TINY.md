@@ -11,13 +11,14 @@ snobol4x: multiple frontends, multiple backends.
 
 ## NOW
 
-**Sprint:** `asm-backend` A-BEAUTY — M-ASM-BEAUTY: beauty.sno self-beautifies via ASM backend
-**HEAD:** `266c866` B-204
+**Sprint:** `asm-backend` A-RUNG8 — M-ASM-RUNG8: rung8/ REPLACE/SIZE/DUPL 3/3 PASS via ASM backend
+**HEAD:** `8bae0fe` B-204 (after N-201/J-203 commits by other sessions)
 **Milestone:** M-ASM-RECUR ✅ B-204 · M-ASM-SAMPLES ✅ B-204
+**Milestone order:** M-ASM-RUNG8 → M-ASM-RUNG9 → M-ASM-RUNG10 → M-ASM-RUNG11 → M-ASM-LIBRARY → M-ENG685-CLAWS → M-ENG685-TREEBANK → M-ASM-BEAUTY
 
-**Session B-205 (backend) — M-ASM-BEAUTY: beauty.sno compiles and self-beautifies**
+**Session B-205 (backend) — M-ASM-RUNG8: rung8/ REPLACE/SIZE/DUPL assertion harness 3/3 PASS**
 
-**HEAD:** `266c866` B-204
+**HEAD:** `8bae0fe` (latest main — verify with `git log --oneline -3`)
 **Status:** 106/106 C ✅ · 26/26 ASM ✅ · 8/8 functions ✅ · roman.sno ✅ · wordcount.sno ✅
 **Session B-204 summary — M-ASM-RECUR + M-ASM-SAMPLES fire:**
 
