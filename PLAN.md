@@ -14,7 +14,7 @@ Session numbers use per-type prefixes (see RULES.md §SESSION NUMBERS): B=backen
 
 | Session | Sprint | HEAD | Next milestone |
 |---------|--------|------|----------------|
-| **TINY backend** | `asm-backend` B-214 — M-EMITTER-NAMING. 106/106 C restored (E_IDX/E_INDR flat-tree fixes + emit_assign_target rewritten to use build_expr like other backends). Naming audit next. → next: naming audit → M-EMITTER-NAMING | `7d7f9e8` B-213 | M-EMITTER-NAMING |
+| **TINY backend** | `asm-backend` B-215 — M-EMITTER-NAMING. Option B prefix strip done on ASM+NET+JVM (106/106 C + 26/26 ASM hold). beauty_prog.s artifact diverged — fix before commit. Then C backend rename (emit.c+emit_byrd.c→emit_byrd_c.c, snoc_emit→c_emit, E()→C(), sym_table→vars) → M-EMITTER-NAMING | `7d7f9e8` B-213 | M-EMITTER-NAMING |
 | **TINY JVM** | `jvm-backend` J-209 — M-JVM-SAMPLES in progress; root cause found (`goto L_RETURN` from main body + 4 L_%s bypass sites); 2 of 6 sites fixed; 89/92 active PASS; next: fix 4 remaining sites → roman+wordcount PASS | `29a8f59` J-209 | M-JVM-SAMPLES |
 | **TINY NET** | `net-backend` N-205 — INPUT/ARB/KW fixes: INPUT reads stdin, &ANCHOR wired, E_NAM/E_DOL OUTPUT capture, ARB min-first WIP (SEQ-ARB omega bug); 74/82 pass; next: fix ARB backtrack omega wiring in SEQ → word1-4/cross PASS → M-NET-R1 | `a30365b` N-205 | M-NET-R1 |
 | **TINY frontend** | `main` F-210 — M-FLAT-NARY ✅ merged to main; sc7_procedure/sc9_multiproc FAIL diagnosed: do_procedure body stmts not appearing in output; next: fix sc_cf.c do_procedure → M-SC-CORPUS-R2 | `6495074` F-210 | M-SC-CORPUS-R2 |

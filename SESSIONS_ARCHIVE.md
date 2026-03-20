@@ -9193,3 +9193,63 @@ bash test/crosscheck/run_crosscheck_asm.sh               # must be 26/26
 Fix 4 remaining `L_%s` bypass sites in `emit_byrd_jvm.c` (~lines 2116, 2264, 2320, 2359) → roman.sno PASS → wordcount.sno PASS → M-JVM-SAMPLES ✅
 
 **Next session start:** See CRITICAL NEXT ACTION in JVM.md
+
+## Session B-214 — M-EMITTER-NAMING: Option B prefix strip on ASM, NET, JVM
+
+**State at handoff:** `7d7f9e8` on `asm-backend` · Sprint B-214 · M-EMITTER-NAMING in progress  
+**Working tree:** ASM + NET + JVM renamed, NOT YET COMMITTED. beauty_prog.s artifact diverged — needs diagnosis before commit.
+
+**What happened:**
+- Full naming audit across all 4 backends — complete correlation table built
+- Decision: Option B — drop per-backend prefix from all `static` internal names (file scope handles collision). Identical names across all 4 files enables instant cross-backend correlation.
+- Naming map established: `vars[]`/`nvar`/`var_register()`, `named_pats[]`/`named_pat_count`/`named_pat_register()`/`named_pat_lookup()`, `named_pat_reset()`, `uid()`, `emit_pat_node()`, `emit_stmt()`, `emit_expr()`, `scan_named_patterns()`, `emit_header()`, `emit_footer()`, `out` (FILE*), `classname`, `find_fn()`, `fn_table[]`/`fn_count`. Type names: `NamedPat`, `FnDef`, `DataType`. Constants: `NAMED_PAT_MAX`, `NAMED_NAMELEN`, `FN_MAX`, `ARG_MAX`.
+- Public entry points KEPT with prefix: `asm_emit`, `jvm_emit`, `net_emit` (cross file-boundary).
+- **ASM** (`emit_byrd_asm.c`): all renames applied. `bss_slots→vars`, `bss_count→nvar`, `bss_add→var_register`, `bss_emit→vars_emit`, `asm_named→named_pats`, `asm_named_count→named_pat_count`, `asm_named_reset→named_pat_reset`, `asm_named_register→named_pat_register`, `asm_named_lookup→named_pat_lookup`, `asm_named_lookup_fn→named_pat_lookup_fn`, `asm_uid→uid` (local var collision fixed: `int uid=uid()` → `int u=uid()`), `emit_asm_node→emit_pat_node`, `asm_emit_body→emit_stmt`, `asm_emit_program→emit_program`, `asm_scan_named_patterns→scan_named_patterns`, `emit_asm_named_ref→emit_named_ref`, `emit_asm_named_def→emit_named_def`, `asm_out→out`, `asm_safe_name→safe_name`, etc.
+- **NET** (`emit_byrd_net.c`): all renames applied. `NetNamedPat→NamedPat`, `NetFnDef→FnDef`, `net_vars→vars`, `net_nvar→nvar`, `net_var_register→var_register`, `net_named_pats→named_pats`, `net_emit_one_stmt→emit_stmt`, `net_emit_expr→emit_expr`, `net_emit_pat_node→emit_pat_node`, `net_out→out`, `net_classname→classname`, etc.
+- **JVM** (`emit_byrd_jvm.c`): all renames applied. `JvmNamedPat→NamedPat`, `JvmFnDef→FnDef`, `JvmDataType→DataType`, `jvm_vars→vars`, `jvm_nvar→nvar`, `jvm_var_register→var_register`, `jvm_named_pats→named_pats`, `jvm_emit_stmt→emit_stmt`, `jvm_emit_expr→emit_expr`, `jvm_emit_pat_node→emit_pat_node`, `jvm_out→out`, `jvm_classname→classname`, `jvm_find_fn→find_fn`, etc. Removed self-referential `#define` aliases.
+- **106/106 C ✅ · 26/26 ASM ✅** after all three renames.
+- **BLOCKER:** `beauty_prog.s` artifact diverged from HEAD. New artifact missing `.bss` entries for named pattern return slots (`P_ppStop_ret_γ`, `P_ppArgs_ret_γ`, etc.). Root cause not yet diagnosed — likely the Python `uid`→`u` local rename script over-replaced something in a function that feeds `named_pat_register` or `.bss` slot emission. Diagnosis was at `emit_named_ref` (line 1765) when context ran out.
+
+**Next session B-215 — CRITICAL NEXT ACTIONS:**
+```bash
+cd /home/claude/snobol4x
+git config user.name "LCherryholmes" && git config user.email "lcherryh@yahoo.com"
+git pull --rebase origin asm-backend
+apt-get install -y libgc-dev nasm && make -C src
+gcc -c src/runtime/asm/snobol4_asm_harness.c -o src/runtime/asm/snobol4_asm_harness.o
+STOP_ON_FAIL=0 bash test/crosscheck/run_crosscheck.sh    # must be 106/106
+bash test/crosscheck/run_crosscheck_asm.sh               # must be 26/26
+```
+
+**Diagnose beauty_prog.s divergence:**
+```bash
+# Regenerate and diff against committed artifact
+INC=/home/claude/snobol4corpus/lib
+./sno2c -asm -I$INC /home/claude/snobol4corpus/programs/beauty/beauty.sno > /tmp/new_beauty.s
+diff artifacts/asm/beauty_prog.s /tmp/new_beauty.s | head -40
+# Look for missing ret_γ / ret_ω .bss slots
+# Suspect: Python uid→u rename over-replaced something in scan_named_patterns
+# or named_pat_register path. Check:
+grep -n "ret_γ\|ret_ω\|np->ret_gamma\|np->ret_omega" src/backend/x64/emit_byrd_asm.c | head -20
+# If over-replacement confirmed, surgical fix then re-verify 26/26 + 106/106
+```
+
+**After fix — commit all three backends together:**
+```bash
+git add src/backend/x64/emit_byrd_asm.c \
+        src/backend/net/emit_byrd_net.c \
+        src/backend/jvm/emit_byrd_jvm.c \
+        artifacts/asm/beauty_prog.s
+git commit -m "B-215: M-EMITTER-NAMING — Option B prefix strip: ASM+NET+JVM internal names unified"
+git push origin asm-backend
+```
+
+**After commit — C backend (biggest change):**
+- Merge `src/backend/c/emit.c` + `src/backend/c/emit_byrd.c` → `src/backend/c/emit_byrd_c.c`
+- Rename `snoc_emit→c_emit`, `E()→C()`, `sym_table→vars`, `sym_count→nvar`
+- All `byrd_*` → unprefixed internal names matching the other three backends
+- Update `src/driver/main.c` includes and call site
+- Update `src/Makefile`
+- Verify 106/106 C + 26/26 ASM → M-EMITTER-NAMING fires
+
+**Invariants at handoff:** 106/106 C · 26/26 ASM (working tree, not committed)

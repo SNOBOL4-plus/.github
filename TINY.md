@@ -12,35 +12,51 @@ snobol4x: multiple frontends, multiple backends.
 
 ## NOW
 
-**Sprint:** `asm-backend` B-214 — M-EMITTER-NAMING: naming audit (step 2)
-**HEAD:** `7d7f9e8` B-213
-**Milestone:** M-EMITTER-NAMING ❌ — 106/106 C ✅ restored; naming audit not yet started
-**Invariants:** 106/106 C · 26/26 ASM
+**Sprint:** `asm-backend` B-215 — M-EMITTER-NAMING: fix beauty_prog.s → commit ASM+NET+JVM → C backend rename
+**HEAD:** `7d7f9e8` B-213 (working tree has ASM+NET+JVM renamed, NOT YET COMMITTED)
+**Milestone:** M-EMITTER-NAMING ❌ — Option B rename done on ASM/NET/JVM; beauty_prog.s artifact diverged (blocker); C backend rename pending
+**Invariants:** 106/106 C · 26/26 ASM (working tree)
 
-**⚠ CRITICAL NEXT ACTION — Session B-214:**
+**⚠ CRITICAL NEXT ACTION — Session B-215:**
 
 ```bash
 cd /home/claude/snobol4x
 git config user.name "LCherryholmes" && git config user.email "lcherryh@yahoo.com"
 git pull --rebase origin asm-backend
 apt-get install -y libgc-dev nasm && make -C src
-git clone https://github.com/snobol4ever/snobol4corpus ../snobol4corpus 2>/dev/null || true
 gcc -c src/runtime/asm/snobol4_asm_harness.c -o src/runtime/asm/snobol4_asm_harness.o
 STOP_ON_FAIL=0 bash test/crosscheck/run_crosscheck.sh   # must be 106/106
 bash test/crosscheck/run_crosscheck_asm.sh               # must be 26/26
 
-# Naming audit — compare across all 4 emitters:
-#   - Entry points: c_emit? / asm_emit? / jvm_emit ✓ / net_emit ✓
-#   - Variable registries: jvm_var_register/net_var_register — C/ASM equivalent?
-#   - Named-pat registries: jvm_named_pat_register/net_named_pat_register — C/ASM equiv?
-#   - UID functions: asm_uid/jvm_pat_node_uid/net_pat_uid_early — normalize to *_uid()
-#   - Output macros: A()/J()/N()/B() — document or rename
-# → 106/106 C + 26/26 ASM hold → M-EMITTER-NAMING fires
+# STEP 1 — Diagnose beauty_prog.s divergence (missing ret_γ/ret_ω .bss slots):
+INC=/home/claude/snobol4corpus/lib
+./sno2c -asm -I$INC /home/claude/snobol4corpus/programs/beauty/beauty.sno > /tmp/new_beauty.s
+diff artifacts/asm/beauty_prog.s /tmp/new_beauty.s | head -40
+# Suspect: Python uid→u rename over-replaced in scan/register path
+# Check: grep -n "ret_γ\|ret_ω\|np->ret_gamma\|np->ret_omega" src/backend/x64/emit_byrd_asm.c
+
+# STEP 2 — After fix, commit all three backends:
+# git add src/backend/x64/emit_byrd_asm.c src/backend/net/emit_byrd_net.c \
+#          src/backend/jvm/emit_byrd_jvm.c artifacts/asm/beauty_prog.s
+# git commit -m "B-215: M-EMITTER-NAMING — Option B prefix strip: ASM+NET+JVM unified"
+# git push origin asm-backend
+
+# STEP 3 — C backend rename (see SESSIONS_ARCHIVE.md B-214 for full plan):
+# Merge emit.c + emit_byrd.c → emit_byrd_c.c
+# snoc_emit→c_emit, E()→C(), sym_table→vars, sym_count→nvar, byrd_*→unprefixed
+# Update driver/main.c + Makefile → 106/106 + 26/26 → M-EMITTER-NAMING fires
 ```
 
 ---
 
 ## Last Two Session Summaries
+
+**Session B-214 — M-EMITTER-NAMING Option B: ASM+NET+JVM prefix strip complete; beauty_prog.s diverged:**
+- Full naming audit across all 4 backends. Decision: Option B — drop per-backend prefix from all `static` internal names; file scope handles collision; identical names enable instant cross-backend correlation.
+- ASM: `bss_slots→vars`, `bss_count→nvar`, `bss_add→var_register`, `asm_named→named_pats`, `asm_uid→uid`, `emit_asm_node→emit_pat_node`, `asm_emit_body→emit_stmt`, `asm_out→out`, etc.
+- NET: `NetNamedPat→NamedPat`, `NetFnDef→FnDef`, `net_vars→vars`, `net_emit_one_stmt→emit_stmt`, `net_out→out`, etc.
+- JVM: `JvmNamedPat→NamedPat`, `JvmFnDef→FnDef`, `JvmDataType→DataType`, `jvm_vars→vars`, `jvm_emit_stmt→emit_stmt`, `jvm_out→out`, removed self-referential `#define` aliases.
+- 106/106 C + 26/26 ASM hold. NOT YET COMMITTED — beauty_prog.s artifact diverged (missing ret_γ/ret_ω .bss slots for named patterns). Root cause: Python uid→u rename script over-replaced. Needs diagnosis before commit.
 
 **Session B-213 — 106/106 C restored; E_IDX/E_INDR flat-tree fixes; scripts relative paths:**
 - Root cause: emit_cnode.c E_IDX included children[0] (array) in subscript keys AND as first arg — so keys[0] was the array descriptor not the index. Fixed: children[0]=array, children[1..]=subscripts.
