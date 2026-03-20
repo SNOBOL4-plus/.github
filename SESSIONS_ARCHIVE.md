@@ -9323,3 +9323,20 @@ dotnet build Snobol4.sln -c Release -p:EnableWindowsTargeting=true
 dotnet test TestSnobol4/TestSnobol4.csproj -c Release -p:EnableWindowsTargeting=true
 # Expect 1876/1876 → fire M-NET-CORPUS-RUNGS ✅ → begin M-NET-POLISH
 ```
+
+## Session B-216 — M-EMITTER-NAMING complete; full prefix strip across ASM/JVM/NET
+
+**Sprint:** `asm-backend`
+**HEAD:** `52baf6e`
+**Milestone fired:** M-EMITTER-NAMING ✅
+
+**Work done:**
+- B-215 had renamed C backend only; ASM/JVM/NET static internals still carried per-backend prefixes
+- Renamed all shared-concept internals across emit_byrd_asm.c, emit_byrd_jvm.c, emit_byrd_net.c:
+  - `vars[]`, `nvar`, `var_register()`, `named_pats[]`, `named_pat_count`, `named_pat_register()`, `named_pat_lookup()`, `NamedPat`, `FnDef`, `DataType`, `emit_pat_node()`, `emit_stmt()`, `out` (FILE*), `uid_ctr`, `next_uid()`, `classname`, `fn_table`, `fn_count`, `cur_fn`, `find_fn()`, `emit_expr()`, `emit_goto()`, `scan_named_patterns()`, `parse_proto()`, `flatten_str()`, `emit_header()`, `emit_main_open/close()`, `emit_fn_method()`, `emit_footer()`, `emit_body/program()`, `expand_name()`, `safe_name()`, `str_var*`, `extra_bss`, `prescan_ucall()`, and all `need_*_helper` flags
+- Only prefixed names retained: `asm_emit`, `jvm_emit`, `net_emit` (public entry points, intentional per spec) and `asm_body_mode` (extern-visible)
+- `uid` naming: function renamed `next_uid()` to avoid collision with local variable `uid`; local variable correctly holds the result of calling it
+- Artifacts regenerated: `artifacts/asm/beauty_prog.s` — nasm clean
+- Invariants held throughout: 106/106 C · 26/26 ASM
+
+**Commits:** `b8570ce` (first pass) → `52baf6e` (complete strip, no prefix on any private static)
