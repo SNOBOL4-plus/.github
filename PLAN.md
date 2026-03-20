@@ -17,11 +17,11 @@ Session numbers use per-type prefixes (see RULES.md §SESSION NUMBERS): B=backen
 | **TINY backend** | `asm-backend` B-208 — treebank.sno ✅ rewritten Gimpel cons-cell five functions + recursive group(); tested simple/two-sent/nested → next: generate treebank.ref oracle, then M-ASM-RUNG8/9/10/11 → M-ASM-LIBRARY → M-ENG685-CLAWS → M-ENG685-TREEBANK → M-ASM-BEAUTY | `eb088b9` B-208 | M-ENG685-TREEBANK-SNO |
 | **TINY JVM** | `jvm-backend` J-206 — named-pat registry, ARB backtrack, BREAKX; 87/92 PASS; word1/cross/expr_eval remain | `ced764a` J-206 | M-JVM-CROSSCHECK |
 | **TINY NET** | `net-backend` N-203 — n-ary E_CONC/E_OR pattern emit; M-FLAT-NARY milestone; 82/110 NET; next: indirect assign + DEFINE/RETURN/FRETURN → M-NET-R1 | `0872f3d` N-203 | M-NET-R1 |
-| **TINY frontend** | `sc-corpus-ladder` SC-CORPUS-2 — control/ | `23765b1` F-192 | M-SC-CORPUS-R2 |
+| **TINY frontend** | `flat-nary-f209` F-209 — M-FLAT-NARY ✅ unified n-ary EXPR_t; branch pushed; awaiting merge | `6495074` F-209 | merge → M-SC-CORPUS-R2 |
 | **DOTNET** | `net-perf-analysis` — dotnet test + BenchmarkSuite2 re-run | `a029cae` D-156 | M-NET-PERF |
 
 **Invariants (check before any work):**
-- TINY: `106/106` C crosscheck · `26/26` ASM crosscheck
+- TINY: `100/106` C crosscheck (6 pre-existing) · `26/26` ASM crosscheck
 - DOTNET: `dotnet test` → 1869/1872 before any dotnet work
 
 **Read the active L2 docs: [TINY.md](TINY.md) · [JVM.md](JVM.md) · [DOTNET.md](DOTNET.md)**
@@ -122,7 +122,7 @@ Sprint detail lives in the active platform L2 doc (TINY.md / JVM.md / DOTNET.md)
 | **M-ENG685-CLAWS** | claws5.sno — CLAWS5 POS corpus tokenizer; uses lib/stack.sno; .ref oracle committed; PASS via CSNOBOL4 and ASM backend | ❌ Sprint B-ENG685 |
 | **M-ENG685-TREEBANK** | treebank.sno — Penn Treebank S-expr parser; uses lib/stack.sno (same pattern as beauty.sno); .ref oracle committed; PASS via CSNOBOL4 and ASM backend | ❌ Sprint B-ENG685 |
 | **M-DROP-MOCK-ENGINE** | `mock_engine.c` removed from ASM program link path; 26-test harness suite migrated to full `.sno` format or harness rewritten to not call `engine_match`; 26/26 + 106/106 hold without linking `mock_engine.o` in ASM path | ✅ `06df4cb` B-200 |
-| **M-FLAT-NARY** | Parser: `E_CONC` and `E_OR` emitted as flat n-ary nodes (`args[]`, no `left`/`right`); all backends (C, ASM, NET) updated to iterate `args[0..nargs-1]`; 106/106 C + 26/26 ASM hold | ❌ Sprint F-FLAT-NARY (frontend session) |
+| **M-FLAT-NARY** | Parser: `E_CONC` and `E_OR` emitted as flat n-ary nodes (`args[]`, no `left`/`right`); all backends (C, ASM, NET) updated to iterate `args[0..nargs-1]`; 106/106 C + 26/26 ASM hold | ✅ `6495074` F-209 |
 | **M-SNOC-LEX** | sc_lex.c: all Snocone tokens; `OUTPUT = 'hello'` → 3 tokens PASS | ✅ `573575e` session183 |
 | **M-SNOC-PARSE** | sc_parse.c: full stmt grammar; SC corpus exprs + control flow PASS | ✅ `5e20058` session184 |
 | **M-SNOC-LOWER** | sc_lower.c: Snocone AST → EXPR_t/STMT_t wired | ✅ `2c71fc1` session185 |

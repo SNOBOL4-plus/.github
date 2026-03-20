@@ -12,9 +12,47 @@ snobol4x: multiple frontends, multiple backends.
 ## NOW
 
 **Sprint:** `asm-backend` A-RUNG8 — next: M-ASM-RUNG8/9/10/11 → M-ASM-LIBRARY → M-ENG685-CLAWS → M-ENG685-TREEBANK → M-ASM-BEAUTY
-**HEAD:** `266c866` B-204 (snobol4x unchanged B-208)
-**Milestone:** M-ASM-RECUR ✅ B-204 · M-ASM-SAMPLES ✅ B-204
-**Milestone order:** M-ASM-RUNG8 → M-ASM-RUNG9 → M-ASM-RUNG10 → M-ASM-RUNG11 → M-ASM-LIBRARY → M-ENG685-CLAWS → M-ENG685-TREEBANK → M-ASM-BEAUTY
+**HEAD:** `6495074` F-209 (branch `flat-nary-f209` — M-FLAT-NARY complete, awaiting merge to main)
+**Milestone:** M-FLAT-NARY ✅ F-209 · M-ASM-RECUR ✅ B-204 · M-ASM-SAMPLES ✅ B-204
+**Milestone order:** merge flat-nary-f209 → M-ASM-RUNG8 → M-ASM-RUNG9 → M-ASM-RUNG10 → M-ASM-RUNG11 → M-ASM-LIBRARY → M-ENG685-CLAWS → M-ENG685-TREEBANK → M-ASM-BEAUTY
+
+**Session F-209 summary — M-FLAT-NARY complete:**
+
+Unified `EXPR_t` to n-ary `children[]`/`nchildren` — all nodes use the same storage.
+`left`/`right`/`args`/`nargs` fields removed; replaced by `expr_left()`/`expr_right()`/
+`expr_arg()`/`expr_nargs()` NULL-safe accessor macros and `expr_add_child()` builder.
+
+Key changes:
+- `sno2c.h`: new struct + `expr_binary()`, `expr_unary()`, `expr_add_child()`
+- `parse.c`: E_CONC/E_OR flat n-ary; E_FNC/E_IDX args are children[]
+- `sc_lower.c`, `sc_cf.c`: updated builders
+- All backends: traversal functions use `for(i=0;i<nchildren;i++)` loops
+- E_CONC/E_OR emitters fold n>2 children via heap-allocated binary chain
+- `emit_cnode.c`: E_CONC/E_OR left-fold all children
+- `emit_byrd_asm.c`: WALK_EXPR macro fixed; value-context n-ary preamble
+
+**Invariants after F-209:** 100/106 C crosscheck ✅ · 26/26 ASM crosscheck ✅
+(6 pre-existing C failures unchanged)
+
+**⚠ CRITICAL NEXT ACTION — Session B-209 (backend):**
+
+Merge `flat-nary-f209` into main, then resume M-ASM-RUNG8.
+
+```bash
+cd /home/claude/snobol4x
+git config user.name "LCherryholmes" && git config user.email "lcherryh@yahoo.com"
+git checkout main
+git pull --rebase
+git merge flat-nary-f209
+git push origin main
+# Then resume rung8:
+apt-get install -y libgc-dev nasm && make -C src
+mkdir -p /home/snobol4corpus && ln -sf /home/claude/snobol4corpus/crosscheck /home/snobol4corpus/crosscheck
+STOP_ON_FAIL=0 bash test/crosscheck/run_crosscheck.sh        # 100/106
+bash test/crosscheck/run_crosscheck_asm.sh                   # 26/26
+CORPUS=/home/claude/snobol4corpus/crosscheck
+STOP_ON_FAIL=0 bash test/crosscheck/run_crosscheck_asm_rung.sh $CORPUS/rung8
+```
 
 **Session B-208 summary — treebank.sno completely rewritten:**
 
