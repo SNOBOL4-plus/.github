@@ -12,8 +12,53 @@ snobol4x: multiple frontends, multiple backends.
 ## NOW
 
 **Sprint:** `asm-backend` A-RUNG8 — next: M-ASM-RUNG8/9/10/11 → M-ASM-LIBRARY → M-ENG685-CLAWS → M-ENG685-TREEBANK → M-ASM-BEAUTY
-**HEAD:** `266c866` B-204 (snobol4x unchanged B-205)**Milestone:** M-ASM-RECUR ✅ B-204 · M-ASM-SAMPLES ✅ B-204
+**HEAD:** `266c866` B-204 (snobol4x unchanged B-208)
+**Milestone:** M-ASM-RECUR ✅ B-204 · M-ASM-SAMPLES ✅ B-204
 **Milestone order:** M-ASM-RUNG8 → M-ASM-RUNG9 → M-ASM-RUNG10 → M-ASM-RUNG11 → M-ASM-LIBRARY → M-ENG685-CLAWS → M-ENG685-TREEBANK → M-ASM-BEAUTY
+
+**Session B-208 summary — treebank.sno completely rewritten:**
+
+Replaced the wrong Stack+Counter approach with five clean functions over a single
+`DATA('cell(hd,tl)')` Gimpel cons-cell type, matching json.sno's LIFO+reverse idiom:
+
+- `do_push_list(v)` — start new inner list headed by v: `stk = cell(cell(v,), stk)`
+- `do_push_item(v)` — prepend v LIFO: `hd(stk) = cell(v, hd(stk))`
+- `do_pop_list()` — reverse LIFO chain → ARRAY, prepend array onto parent inner list
+- `do_pop_final(v)` — reverse LIFO chain → ARRAY, assign to `$v`
+
+`group()` is a recursive DEFINE'd function with locals `(tag, wrd)` giving each
+recursive invocation its own bindings — the SNOBOL4 equivalent of Python `λ` closures.
+The `epsilon . *fn()` idiom requires NRETURN/.dummy and works for non-recursive cases,
+but `tag`/`wrd` globals are clobbered by recursion since patterns have no local scope.
+A DEFINE function with locals is the correct solution.
+
+Outer sentence loop is an explicit labeled goto loop (not ARBNO) to prevent side-effect
+corruption from failed ARBNO backtrack iterations.
+
+Tested on CSNOBOL4: `(NP (DT the) (NN dog))`, two sentences, deeply nested `(S ...)` —
+all produce correct indented S-expression output. Corpus HEAD: `ae6ad8a`.
+
+**⚠ CRITICAL NEXT ACTION — Session B-209 (backend):**
+
+Generate treebank.ref oracle from VBGinTASA.dat, commit, then M-ASM-RUNG8.
+
+```bash
+cd /home/claude/snobol4corpus
+git config user.name "LCherryholmes" && git config user.email "lcherryh@yahoo.com"
+git pull
+SNO=/home/claude/snobol4-2.3.3/snobol4
+PROGS=/home/claude/snobol4corpus/programs/lon/sno
+$SNO $PROGS/treebank.sno < VBGinTASA.dat > $PROGS/treebank.ref
+git add -A && git commit -m "B-209: treebank.ref oracle" && git push
+cd /home/claude/snobol4x
+git config user.name "LCherryholmes" && git config user.email "lcherryh@yahoo.com"
+git pull --rebase
+apt-get install -y libgc-dev nasm && make -C src
+CORPUS=/home/claude/snobol4corpus/crosscheck
+STOP_ON_FAIL=0 bash test/crosscheck/run_crosscheck.sh        # 106/106
+bash test/crosscheck/run_crosscheck_asm.sh                   # 26/26
+STOP_ON_FAIL=0 bash test/crosscheck/run_crosscheck_asm_rung.sh $CORPUS/rung8
+```
 
 **Session B-207 summary — claws5.sno ✅ done; treebank.sno Shift/Reduce debugging:**
 
