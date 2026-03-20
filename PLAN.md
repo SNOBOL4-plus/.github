@@ -14,7 +14,7 @@ Session numbers use per-type prefixes (see RULES.md §SESSION NUMBERS): B=backen
 
 | Session | Sprint | HEAD | Next milestone |
 |---------|--------|------|----------------|
-| **TINY backend** | `asm-backend` B-206 — claws5.sno + treebank.sno rewritten as true ARBNO patterns (Python 99% mirror); corpus pushed 89b2b72 → next: .ref oracles → M-ASM-RUNG8/9/10/11 → M-ASM-LIBRARY → M-ENG685-CLAWS → M-ENG685-TREEBANK → M-ASM-BEAUTY | `266c866` B-206 | M-ASM-RUNG8 |
+| **TINY backend** | `asm-backend` B-207 — claws5.sno ✅ working; treebank.sno nPush/Shift/Reduce debugging in progress (M-ENG685-TREEBANK-SNO) → next: finish treebank.sno → M-ASM-RUNG8/9/10/11 → M-ASM-LIBRARY → M-ENG685-CLAWS → M-ENG685-TREEBANK → M-ASM-BEAUTY | `266c866` B-207 | M-ENG685-TREEBANK-SNO |
 | **TINY JVM** | `jvm-backend` J-R4 complete — 14/14 PASS; next: J-R5 crosscheck 106/106 | `876eb4b` J-205 | M-JVM-CROSSCHECK |
 | **TINY NET** | `net-backend` N-201 — Snobol4Lib/Snobol4Run DLL split; 51/58 NET baseline | `8bae0fe` N-201 | M-NET-CAPTURE |
 | **TINY frontend** | `sc-corpus-ladder` SC-CORPUS-2 — control/ | `23765b1` F-192 | M-SC-CORPUS-R2 |
@@ -118,6 +118,7 @@ Sprint detail lives in the active platform L2 doc (TINY.md / JVM.md / DOTNET.md)
 | **M-ASM-RUNG10** | rung10/ — DEFINE/recursion/locals/NRETURN/FRETURN/APPLY 9/9 PASS via ASM backend | ❌ Sprint A-RUNG10 |
 | **M-ASM-RUNG11** | rung11/ — ARRAY/TABLE/DATA types 7/7 PASS via ASM backend | ❌ Sprint A-RUNG11 |
 | **M-ASM-LIBRARY** | library/ crosscheck tests PASS via ASM backend; -include resolved correctly | ❌ Sprint A-LIBRARY |
+| **M-ENG685-TREEBANK-SNO** | treebank.sno correct via CSNOBOL4: nPush/nInc/nPop + Shift/Reduce + group self-ref via *group; POS(0)/RPOS(0) anchored; prints indented tree; .ref oracle committed | ❌ Sprint B-ENG685-SNO |
 | **M-ENG685-CLAWS** | claws5.sno — CLAWS5 POS corpus tokenizer; uses lib/stack.sno; .ref oracle committed; PASS via CSNOBOL4 and ASM backend | ❌ Sprint B-ENG685 |
 | **M-ENG685-TREEBANK** | treebank.sno — Penn Treebank S-expr parser; uses lib/stack.sno (same pattern as beauty.sno); .ref oracle committed; PASS via CSNOBOL4 and ASM backend | ❌ Sprint B-ENG685 |
 | **M-DROP-MOCK-ENGINE** | `mock_engine.c` removed from ASM program link path; 26-test harness suite migrated to full `.sno` format or harness rewritten to not call `engine_match`; 26/26 + 106/106 hold without linking `mock_engine.o` in ASM path | ✅ `06df4cb` B-200 |

@@ -8679,3 +8679,23 @@ Stack and Counter inlined directly — no -include. Corpus pushed `89b2b72`.
 1. Generate .ref oracles for claws5.sno + treebank.sno using CSNOBOL4
 2. Commit oracles to snobol4corpus
 3. Run M-ASM-RUNG8 (rung8/ REPLACE/SIZE/DUPL — 3 tests, 0/3 currently)
+
+---
+
+## B-207 (backend) — claws5.sno ✅; treebank.sno nPush/Shift/Reduce debugging
+
+**snobol4x HEAD:** `266c866` B-204 (unchanged)
+**snobol4corpus HEAD:** `89b2b72` (unchanged this session)
+
+**claws5.sno — COMPLETE.** `$` instead of `.` for immediate capture of `num`/`wrd`/`tag` inside ARBNO. Tested working on synthetic CLAWS5 input.
+
+**treebank.sno — IN PROGRESS.** Five root causes diagnosed:
+1. `shift_` needs `$ thx` not `. thx` for immediate capture
+2. `Shift()` needs `DIFFER(v) :F(ShiftNull)` null guard
+3. `Reduce()` body: `GT(n,0) :F(R_zero)` separate from array creation
+4. `reduce()` must use concrete named NRETURN functions (`grp_reduce` etc.) not EVAL
+5. Multi-statement lines cause Error 8 — every assignment on its own line
+
+Remaining open: counter semantics for tag vs children in grp_reduce (tag pushed before nPush, so not counted — needs +1 or restructure). See TINY.md B-207 CRITICAL NEXT ACTION for exact fix path.
+
+**Milestone created:** M-ENG685-TREEBANK-SNO

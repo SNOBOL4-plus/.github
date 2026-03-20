@@ -15,6 +15,103 @@ snobol4x: multiple frontends, multiple backends.
 **HEAD:** `266c866` B-204 (snobol4x unchanged B-205)**Milestone:** M-ASM-RECUR ✅ B-204 · M-ASM-SAMPLES ✅ B-204
 **Milestone order:** M-ASM-RUNG8 → M-ASM-RUNG9 → M-ASM-RUNG10 → M-ASM-RUNG11 → M-ASM-LIBRARY → M-ENG685-CLAWS → M-ENG685-TREEBANK → M-ASM-BEAUTY
 
+**Session B-207 summary — claws5.sno ✅ done; treebank.sno Shift/Reduce debugging:**
+
+**claws5.sno — COMPLETE.** Key fix: use `$` (immediate) not `.` (conditional) for `num`/`wrd`/`tag`
+captures so side-effect functions `*do_new_sent()` / `*do_add_tok()` see the captured values
+during the ARBNO match. Tested on synthetic input: correct sentno TAB wrd TAB tag output.
+Corpus HEAD: `89b2b72`.
+
+**treebank.sno — IN PROGRESS.** Rewrote using beauty.sno machinery: nPush/nInc/nPop +
+Shift/Reduce + Stack + Counter + tree DATA. Key findings from debugging session:
+
+1. **`$` not `.` for thx capture in shift_:** `shift_` must use `EVAL("*p $ thx . *Shift('t',thx)")` —
+   `.` is conditional (defers until overall match), `$` is immediate. Shift() fires during match
+   via `*Shift(...)` in the concatenated pattern.
+
+2. **Shift() needs null guard:** `DIFFER(v) :F(ShiftNull)` before `v POS(0) (SPAN(SPCNL)|'') =`.
+   Without it: Error 4 "Null string in illegal context" when v arrives empty.
+
+3. **Reduce() body: `GT(n,0) :F(R_zero)` not `GE(n,1) ARRAY(...)`:** The old `c = GE(n,1) ARRAY('1:' n)`
+   concatenates the GE return value with the ARRAY — Error 4. Guard and array creation must be
+   separate statements.
+
+4. **`reduce()` semantic function must NOT use EVAL:** `EVAL("epsilon . *Reduce(t,n)")` calls
+   Reduce at PATTERN BUILD TIME, not match time. Instead define concrete NRETURN functions:
+   `grp_reduce()`, `root_reduce()`, `bank_reduce()` — each calls `Reduce('X', TopCounter())`
+   and returns via NRETURN. Use `epsilon . *grp_reduce()` in the pattern.
+
+5. **Multi-statement lines cause Error 8:** `NL = CHAR(10) SPC = ' ' SPCNL = SPC NL` on one
+   line → Error 8 "Variable not present". Every assignment must be on its own line.
+
+6. **Outer ARBNO counter structure:** `Reduce(ROOT,0)` fires before any groups are parsed —
+   the `nPush()` before `ARBNO(*group)` needs to shift the 'ROOT' tag first (like group does
+   for its tag), OR count must include the tag. Review: in group, `shift('word','tag')` shifts
+   the tag token, THEN `nPush()` starts counting children — so nTop()=0 when no children,
+   which is correct for a leaf node. For ROOT: `nPush()` then `ARBNO(*group)` — each *group
+   match fires grp_reduce which pushes one tree onto the value stack AND increments the counter.
+   But grp_reduce calls Reduce which POPS from the value stack — so after ARBNO, there is
+   exactly ONE tree on the stack (the last reduced group). The nTop() counter is tracking
+   how many groups were seen. This logic needs to be verified step by step on the simplest
+   non-empty tree `(NP dog)`.
+
+**⚠ CRITICAL NEXT ACTION — Session B-208 (backend):**
+
+```bash
+cd /home/claude/snobol4corpus
+git config user.name "LCherryholmes" && git config user.email "lcherryh@yahoo.com"
+git pull
+SNO=/home/claude/snobol4-2.3.3/snobol4  # already built
+
+# The working test scaffold is in /tmp/t_reduce3.sno (with the multi-line fix applied).
+# Start from there — it gets to Reduce(ROOT,0) before failing at statement 105.
+# Statement 105 is a continuation line in the group pattern — likely another multi-line issue.
+# Fix approach:
+#   a) Each pattern line must stand alone — no implicit continuation except with +
+#   b) Verify counter semantics: after ARBNO(*group) over (NP dog), nTop() should = 1
+#   c) The group pattern uses shift('word','tag') then nPush() — tag is shifted BEFORE
+#      the counter level opens. So tag is on the value stack, counter starts at 0.
+#      Each child (word or nested group) calls nInc() and shifts/reduces one tree.
+#      grp_reduce() calls Reduce('grp', nTop()) — pops nTop() children plus the tag.
+#      BUT: the tag was pushed before nPush(), so it is NOT counted. Reduce pops nTop()
+#      items — those are the children. Then we need to also pop the tag separately
+#      and build the node. This means grp_reduce() should be:
+#
+#   grp_reduce     n   = TopCounter()
+#                  c   = GT(n,0) ARRAY('1:' n)          -- children (if any)
+#                  ...pop n items into c...
+#                  tag_node = Pop()                      -- pop the tag tree
+#                  r   = tree(t(tag_node),, n, c)
+#                  Push(r)
+#                  grp_reduce = .dummy                   :(NRETURN)
+#
+#   OR: shift tag with nInc() so it IS counted:
+#   group = '(' nInc() shift('word','tag') nPush() ARBNO(...) grp_reduce() nPop() ')'
+#   -- but then grp_reduce pops nTop() which includes the tag as child[1].
+#   That's the simpler approach: tag is always child[1], words/groups are 2..n.
+#
+# Simplest correct design matching Python:
+#   push_list(tag) = nPush() then push tag onto value stack separately
+#   push_item(v)   = nInc() then push item onto value stack
+#   pop_list()     = Reduce('grp', nTop()+1) nPop()   -- +1 for the tag itself
+
+# Quick test once fixed:
+echo ' (NP (DT the) (NN dog)) ' | $SNO programs/lon/sno/treebank.sno
+# Expected:
+# (NP
+#   (DT
+#     the
+#   )
+#   (NN
+#     dog
+#   )
+# )
+
+# Once passing: generate oracle
+echo ' (NP (DT the) (NN dog)) ' | $SNO programs/lon/sno/treebank.sno > /tmp/treebank_test.ref
+# Then run against VBGinTASA.dat and commit oracle.
+```
+
 **Session B-206 summary — claws5.sno + treebank.sno rewritten as true ARBNO patterns:**
 
 Both programs completely rewritten. Old versions used imperative consume-loops and recursive
