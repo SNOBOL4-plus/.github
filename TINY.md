@@ -12,12 +12,12 @@ snobol4x: multiple frontends, multiple backends.
 
 ## NOW
 
-**Sprint:** `asm-backend` B-220 — M-EMITTER-NAMING: Greek port labels in JVM and NET generated output
-**HEAD:** `5999162` B-219
-**Milestone:** M-EMITTER-NAMING ⚠ WIP
+**Sprint:** `asm-backend` B-223 — M-ASM-RUNG8
+**HEAD:** `69b52b8` B-222
+**Milestone:** M-ASM-RUNG8 ❌
 **Invariants:** 100/106 C (6 pre-existing) · 26/26 ASM
 
-**⚠ CRITICAL NEXT ACTION — Session B-220:**
+**⚠ CRITICAL NEXT ACTION — Session B-223:**
 
 ```bash
 cd /home/claude/snobol4x
@@ -27,6 +27,11 @@ apt-get install -y libgc-dev nasm && make -C src
 CORPUS=/home/claude/snobol4corpus/crosscheck
 STOP_ON_FAIL=0 bash test/crosscheck/run_crosscheck.sh    # 100/106 (6 pre-existing)
 CORPUS=$CORPUS bash test/crosscheck/run_crosscheck_asm.sh # 26/26
+
+# Sprint M-ASM-RUNG8: rung8/ — REPLACE/SIZE/DUPL 3/3 PASS via ASM backend
+ls /home/claude/snobol4corpus/crosscheck/strings/
+CORPUS=$CORPUS bash test/crosscheck/run_crosscheck_asm_rung.sh \
+  /home/claude/snobol4corpus/crosscheck/strings rung8
 ```
 
 **Sprint B-220 — JVM Greek labels (65 sites in emit_byrd_jvm.c):**
@@ -102,11 +107,11 @@ Goal: same concept = same name in all four backends. Names should be readable En
 
 ## Last Session Summary
 
-**Session B-219 — M-EMITTER-NAMING: C backend merged, Greek labels still needed:**
-- Merged `emit.c` + `emit_byrd.c` into `emit_byrd_c.c` — all four backends now one file each.
-- Canonical source names in place across all four: `var_register()`, `collect_vars()`, `collect_fndefs()`, `next_uid()`, `escape_string()`, `emit_stmt()`, `emit_pat_node()`, `NamedPat`, `FnDef`, `DataType`.
-- M-EMITTER-NAMING remains ⚠ WIP: JVM/NET generated labels need α/β/γ/ω (B-220/B-221); local var alignment needed (B-222).
-- 100/106 C (6 pre-existing) + 26/26 ASM. HEAD `5999162`.
+**Session B-220/B-221/B-222 — M-EMITTER-NAMING ✅ complete:**
+- B-220: JVM generated labels now use α/β/γ/ω — `Jn%d_lit_γ`, `Jpat%d_β`, `Jfn%d_ω` etc (65 sites).
+- B-221: NET generated labels now use α/β/γ/ω — `Nn%d_nam_γ`, `Npat%d_β`, `Nfn%d_ω` etc (22 sites).
+- B-222: Local variable alignment across all four backends — `cursor_before`, `subj_len`, `cursor`, `cap_slot`, `gamma_lbl`, `retry_lbl`, `success_lbl`, `fail_lbl`, `entry_lbl`, `end_lbl`, `mid_lbl`, `right_lbl` etc. ASM `subj_len_sym→subj_len_label` (symbol string) + `subj_len` (int), `stmt→s` in emit_stmt.
+- 100/106 C (6 pre-existing) + 26/26 ASM hold. HEAD `69b52b8`.
 
 ## Active Milestones (next 5)
 
