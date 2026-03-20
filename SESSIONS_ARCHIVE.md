@@ -9468,3 +9468,28 @@ STOP_ON_FAIL=0 bash test/crosscheck/run_crosscheck.sh    # 100/106
 CORPUS=$CORPUS bash test/crosscheck/run_crosscheck_asm.sh # 26/26
 # Sprint: M-ASM-RUNG8 — rung8/ REPLACE/SIZE/DUPL 3/3 PASS via ASM
 ```
+
+## Session B-223 handoff — M-EMITTER-NAMING closed, artifacts clean
+
+**Branch:** asm-backend | **HEAD at close:** `be4a978`
+
+**What happened this session:**
+- Verified M-EMITTER-NAMING completion: C backend uses same EXPR_t/STMT_t input tree as all three other backends. CNode (emit_cnode.c) is a C-only output formatter, not a second program IR — appropriate.
+- Confirmed JVM/NET segfaults on pattern input are pre-existing (not regressions from B-220/B-221/B-222).
+- Artifact check: beauty/roman/wordcount .s files verified, hello_prog.j artifact removed (was stale), committed `be4a978`.
+- 100/106 C (6 pre-existing) + 26/26 ASM hold.
+
+**State at handoff:** M-EMITTER-NAMING ✅. Next sprint: M-ASM-RUNG8.
+
+**Next session start block (B-223):**
+```bash
+cd /home/claude/snobol4x
+git config user.name "LCherryholmes" && git config user.email "lcherryh@yahoo.com"
+git pull --rebase origin asm-backend
+apt-get install -y libgc-dev nasm && make -C src
+CORPUS=/home/claude/snobol4corpus/crosscheck
+STOP_ON_FAIL=0 bash test/crosscheck/run_crosscheck.sh    # 100/106
+CORPUS=$CORPUS bash test/crosscheck/run_crosscheck_asm.sh # 26/26
+# Sprint M-ASM-RUNG8: rung8/ REPLACE/SIZE/DUPL 3/3 PASS via ASM
+ls /home/claude/snobol4corpus/crosscheck/strings/
+```

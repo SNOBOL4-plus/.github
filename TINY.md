@@ -13,7 +13,7 @@ snobol4x: multiple frontends, multiple backends.
 ## NOW
 
 **Sprint:** `asm-backend` B-223 — M-ASM-RUNG8
-**HEAD:** `69b52b8` B-222
+**HEAD:** `be4a978` B-222
 **Milestone:** M-ASM-RUNG8 ❌
 **Invariants:** 100/106 C (6 pre-existing) · 26/26 ASM
 
