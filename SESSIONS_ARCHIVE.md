@@ -1,5 +1,18 @@
 > Org renamed SNOBOL4-plus → snobol4ever, repos renamed March 2026. Historical entries use old names.
 
+## B-237 (2026-03-21) — M-MONITOR-IPC-TIMEOUT ✅
+
+**Branch:** asm-backend · **Commit:** `c6a6544`
+
+**Work done:**
+- monitor_collect.py: parallel FIFO reader, per-participant watchdog, --ready-fd-path
+- run_monitor.sh: zero-race startup (ready.fifo handshake), parallel launch, kill on exit
+- inject_traces.py: &STLIMIT = 5000000 backstop
+- Verified: hello PASS; loop TIMEOUT [jvm] [net] — last event shown precisely
+
+**Milestone fired:** M-MONITOR-IPC-TIMEOUT
+
+
 ## B-236 (2026-03-21) — M-MONITOR-IPC-5WAY ✅
 
 **Branch:** asm-backend · **Commit:** `064bb59`

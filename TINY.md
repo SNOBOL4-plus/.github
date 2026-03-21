@@ -12,9 +12,9 @@ snobol4x: multiple frontends, multiple backends.
 
 ## NOW
 
-**Sprint:** `monitor-ipc` — M-MONITOR-IPC-TIMEOUT: per-participant watchdog + 4demo next
-**HEAD:** `064bb59` B-236 (asm-backend) · x64: `4fcb0e1` B-233
-**Milestone:** M-MONITOR-IPC-TIMEOUT (next to fire)
+**Sprint:** `monitor-4demo` — roman + wordcount + treebank through all 5 participants
+**HEAD:** `c6a6544` B-237 (asm-backend) · x64: `4fcb0e1` B-233
+**Milestone:** M-MONITOR-4DEMO (next to fire)
 **Invariants:** 97/106 ASM corpus (9 known failures: 022, 055, 064, cross, word1-4, wordcount)
 
 **⚠ CRITICAL NEXT ACTION — Session B-236:**
@@ -68,6 +68,14 @@ bash test/monitor/run_monitor.sh /tmp/hello_monitor.sno
 
 ## Last Session Summary
 
+**Session B-237 (2026-03-21) — M-MONITOR-IPC-TIMEOUT fires:**
+- `monitor_collect.py`: select()-based watchdog; per-participant TIMEOUT on silence > T s
+- `run_monitor.sh`: zero-race startup via ready.fifo named-pipe handshake (no sleeps);
+  parallel launch of all 5; explicit kill after collector exits
+- `inject_traces.py`: added &STLIMIT = 5000000 as backstop
+- Verified: hello PASS [asm/jvm/net]; loop TIMEOUT [jvm/net] last event = start
+- M-MONITOR-IPC-TIMEOUT fires ✅ `c6a6544`
+
 **Session B-236 (2026-03-21) — M-MONITOR-IPC-5WAY fires: NET emitter + normalize fixes:**
 - **NET emitter restored**: replaced asm-backend stub with full N-209 emitter; applied 6
   monitor patches (sno_monitor_out field, .cctor FIFO open, net_monitor_write helper,
@@ -109,7 +117,7 @@ bash test/monitor/run_monitor.sh /tmp/hello_monitor.sno
 | M-MONITOR-IPC-CSN | CSNOBOL4 trace via FIFO; hello PASS | ✅ `6eebdc3` B-229 |
 | **M-X64-S1–S4 + M-X64-FULL** | SPITBOL confirmed monitor participant | ✅ `4fcb0e1` B-233 |
 | **M-MONITOR-IPC-5WAY** | all 5 via FIFO; hello PASS all 5 | ✅ `064bb59` B-236 |
-| M-MONITOR-IPC-TIMEOUT | watchdog: FIFO silence → kill + report | ❌ |
+| M-MONITOR-IPC-TIMEOUT | watchdog: FIFO silence → kill + report | ✅ `c6a6544` B-237 |
 | M-MONITOR-4DEMO | roman+wordcount+treebank all 5 | ❌ |
 
 ## Concurrent Sessions
