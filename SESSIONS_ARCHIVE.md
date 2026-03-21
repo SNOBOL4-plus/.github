@@ -10193,3 +10193,11 @@ make bootsbl
 **State at handoff:** asm-backend HEAD `6eebdc3` unchanged. HQ updated, pushed.
 
 **Next session start block:** See TINY.md §CRITICAL NEXT ACTION.
+
+## Session B-230 addendum — Invariant enhanced to 97/106 ASM corpus (2026-03-21)
+
+- Discovered `run_crosscheck_asm.sh` (26 tests, patterns/capture only) was the invariant — too narrow
+- `run_crosscheck_asm_corpus.sh` (106 tests, all rungs) is the real measure; currently 97/106
+- 9 known failures documented: 022 (concat slot aliasing), 055 (same), 064 (L_unk_ undef label),
+  cross/word1-4/wordcount (runtime issues) — not regressions, pre-existing
+- Invariant updated everywhere: PLAN.md, TINY.md, MONITOR.md, RULES.md → 97/106 ASM corpus

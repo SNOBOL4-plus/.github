@@ -417,7 +417,7 @@ integration bugs only. Fix until all four diffs are empty.
 
 ## Invariants During Monitor Work
 
-- `26/26` ASM crosscheck — never regress
+- `97/106` ASM corpus crosscheck — never regress below 97
 - Monitor fixes never introduce new crosscheck failures
 - If they do: fix the regression before continuing
 

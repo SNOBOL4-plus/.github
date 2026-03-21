@@ -215,12 +215,12 @@ md5sum $LAST /tmp/beauty_tramp_candidate.c
 ```
 artifacts/README.md must record: session N, date, md5, line count, compile status, active bug.
 
-## ⛔ TEST INVARIANT — 26/26 ASM before any work
+## ⛔ TEST INVARIANT — 97/106 ASM corpus before any work
 
 ```bash
-CORPUS=$CORPUS bash test/crosscheck/run_crosscheck_asm.sh
+CORPUS=$CORPUS bash test/crosscheck/run_crosscheck_asm_corpus.sh
 ```
-If not 26/26: fix the regression before touching anything else.
+9 known failures (022, 055, 064, cross, word1-4, wordcount) — do not regress below 97.
 
 ## ⛔ SHARED RUNTIME INVARIANT — NET crosscheck when touching src/runtime/snobol4/
 

@@ -23,7 +23,7 @@ Session numbers use per-type prefixes (see RULES.md §SESSION NUMBERS): B=backen
 | **DOTNET** | `net-polish` D-163 — clean slate | `8feb139` D-163 | TBD |
 
 **Invariants (check before any work):**
-- TINY: `26/26` ASM crosscheck
+- TINY: `97/106` ASM corpus (`run_crosscheck_asm_corpus.sh`) · 9 known failures: 022, 055, 064, cross, word1-4, wordcount
 - DOTNET: `dotnet test` → 1873/1876 before any dotnet work
 
 **Read the active L2 docs: [TINY.md](TINY.md) · [JVM.md](JVM.md) · [DOTNET.md](DOTNET.md)**

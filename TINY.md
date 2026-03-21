@@ -15,7 +15,7 @@ snobol4x: multiple frontends, multiple backends.
 **Sprint:** `monitor-ipc` — wire 5-way FIFO IPC; SPITBOL + JVM + NET participants
 **HEAD:** `6eebdc3` B-229 (asm-backend)
 **Milestone:** M-MONITOR-IPC-5WAY (next to fire)
-**Invariants:** 26/26 ASM
+**Invariants:** 97/106 ASM corpus (9 known failures: 022, 055, 064, cross, word1-4, wordcount)
 
 **⚠ CRITICAL NEXT ACTION — Session B-230:**
 
@@ -25,7 +25,7 @@ git config user.name "LCherryholmes" && git config user.email "lcherryh@yahoo.co
 git checkout asm-backend && git pull --rebase origin asm-backend
 
 export CORPUS=/home/claude/snobol4corpus/crosscheck
-CORPUS=$CORPUS bash test/crosscheck/run_crosscheck_asm.sh               # 26/26
+CORPUS=$CORPUS bash test/crosscheck/run_crosscheck_asm_corpus.sh  # 97/106
 
 # Goal: M-MONITOR-IPC-5WAY
 # Step 1: check if spitbol binary available; if not, build from /home/claude/spitbol-x64/
