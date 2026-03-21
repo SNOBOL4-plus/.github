@@ -295,7 +295,7 @@ All four fire → GRIDS.md is publication-ready for community presentation.
 |----|------|---------|--------|
 | **M-README-PROFILE-DRAFT** | profile/README.md rewritten: correct attributions (Byrd/Proebsting/Emmer/Budne/Koenig), updated test counts, softened benchmark claims, community tone, beauty.sno/compiler.sno bootstrap gates explicit | snobol4ever/.github | ✅ `88e8f17` F-211 |
 | **M-README-PROFILE-VERIFIED** | profile/README.md verified against all repo READMEs and source; every number, claim, and attribution confirmed correct | snobol4ever/.github | ❌ |
-| **M-README-JVM-DRAFT** | snobol4jvm README written: architecture, pipeline stages, performance numbers, corpus status, build instructions | snobol4jvm | ❌ |
+| **M-README-JVM-DRAFT** | snobol4jvm README written: architecture, pipeline stages, performance numbers, corpus status, build instructions | snobol4jvm | ✅ `e4626cb` |
 | **M-README-JVM-VERIFIED** | snobol4jvm README verified against Clojure source; every claim confirmed | snobol4jvm | ❌ |
 | **M-README-X-DRAFT** | snobol4x README updated: 15×3 frontend/backend matrix, corpus status per backend, build instructions, Byrd Box explanation | snobol4x | ❌ |
 | **M-README-X-VERIFIED** | snobol4x README verified against C source; every claim confirmed | snobol4x | ❌ |
