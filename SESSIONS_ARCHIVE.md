@@ -10892,3 +10892,18 @@ git diff asm-backend..origin/net-backend -- src/runtime/snobol4/snobol4.c
 git diff asm-backend..origin/jvm-backend -- test/monitor/run_monitor.sh
 # Then merge, resolve, check invariants, PR main
 ```
+
+## Session B-240 (2026-03-21) — M-T2-EMIT-SPLIT structural work
+
+- Cloned snobol4ever/.github, snobol4x (asm-t2), snobol4corpus, snobol4harness
+- Built CSNOBOL4 2.3.3 and sno2c from source
+- Implemented M-T2-EMIT-SPLIT: BoxDataCtx registry, bref()/bref2(), box_ctx_begin/end
+- var_register routes to per-box DATA when box_ctx_idx >= 0
+- emit_named_def is_fn: push rbp bridge removed; lea r12,[rel box_DATA_template] at alpha
+- Pass 2: ret_gamma/ret_omega in both box DATA and .bss
+- emit_t2_reloc_tables: emits box_SAFE_data_template DATA sections
+- Body-mode fix: box DATA vars flushed to .bss after dry-run
+- Trigger tests PASS: null.sno, hello.sno, roman.sno
+- Corpus: 80/106 (3 new regressions: 053_pat_alt_commit, triplet, expr_eval)
+- Committed 9968688, pushed asm-t2
+- **B-241 MUST FIX regressions before M-T2-EMIT-SPLIT fully fires**
