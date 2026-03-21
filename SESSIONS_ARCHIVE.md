@@ -9967,3 +9967,39 @@ bash test/crosscheck/run_crosscheck_asm_rung.sh $CORPUS/rung10          # 4/9 WI
 - Lon defines new milestones from scratch
 - Read  for candidate milestones to resurrect
 - No sprint work until new plan is committed to PLAN.md
+
+## Session (strategize-2, 2026-03-21) — Five-way monitor plan + milestones
+
+**Date:** 2026-03-21
+**Work done:**
+- Read PLAN.md, MONITOR.md, RULES.md, TESTING.md, FRONTEND-SNOBOL4.md, HARNESS.md, trace.clj
+- Surveyed all three backend branches: asm-backend B-226, jvm-backend J-212, net-backend N-209
+- Confirmed demo programs: roman, wordcount, treebank, claws5, beauty in demo/ on asm-backend
+- Defined five-way sync-step monitor architecture: CSNOBOL4 + SPITBOL + ASM + JVM + NET
+- Named "trace-points" (observe, never stop execution) vs "ignore-points" (suppress known diffs like tty02/tty05, DATATYPE case difference)
+- Defined M-BEAUTIFY-BOOTSTRAP: beauty.sno reads itself, oracle = compiled = input, fixed point
+- Rewrote MONITOR.md (L3): five participants, consensus rule, trace/ignore-point config model, infrastructure layout (snobol4x/test/monitor/ first, harness later), four sprints M1-M4
+- Added to PLAN.md dashboard: M-MONITOR-SCAFFOLD, M-MONITOR-5WAY, M-MONITOR-4DEMO, M-BEAUTIFY-BOOTSTRAP, M-MONITOR-GUI (dream)
+- Updated TINY.md: Sprint monitor-scaffold, CRITICAL NEXT ACTION for B-227
+- No code changes this session. Strategy and planning only.
+
+**State at handoff:**
+- PLAN.md: 4 active milestones + 1 dream milestone committed ✅
+- MONITOR.md: fully rewritten with five-way plan ✅
+- TINY.md: Sprint monitor-scaffold, B-227 next action ✅
+- snobol4x: no changes (strategy session) — invariants last known 100/106 C · 26/26 ASM
+- All .github changes pushed to origin/main ✅
+
+**Next session start block (B-227):**
+```bash
+cd /home/claude/snobol4x
+git config user.name "LCherryholmes" && git config user.email "lcherryh@yahoo.com"
+git checkout asm-backend && git pull --rebase origin asm-backend
+export CORPUS=/home/claude/snobol4corpus/crosscheck
+STOP_ON_FAIL=0 CORPUS=$CORPUS bash test/crosscheck/run_crosscheck.sh   # must be 100/106
+CORPUS=$CORPUS bash test/crosscheck/run_crosscheck_asm.sh               # must be 26/26
+apt-get install -y libgc-dev && make -C src/sno2c
+mkdir -p test/monitor
+# Write tracepoints.conf, inject_traces.py, run_monitor.sh per MONITOR.md Sprint M1
+# Target: run_monitor.sh on crosscheck/hello/001_output_string_literal.sno exits 0
+```
