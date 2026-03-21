@@ -180,9 +180,16 @@ Sprint detail lives in the active platform L2 doc (TINY.md / JVM.md / DOTNET.md)
 | **M-NET-PERF** | Performance profiling: hot-path report, ≥1 measurable win | ✅ `e8a5fec` D-159 |
 | **M-NET-SPITBOL-SWITCHES** | All SPITBOL CLI switches; 26 unit tests PASS | ✅ `8feb139` D-163 |
 
-### New Milestones
+### New Milestones — Five-Way Monitor + Beautify Bootstrap
 
-*(To be defined. Lon will describe the fresh plan next session.)*
+Sprint detail and runner design → [MONITOR.md](MONITOR.md)
+
+| ID | Trigger | Repo | Status |
+|----|---------|------|--------|
+| **M-MONITOR-SCAFFOLD** | `snobol4x/test/monitor/` exists: `inject_traces.py` + `run_monitor.sh` + `run_monitor_suite.sh` + `tracepoints.conf`; single test runs end-to-end against CSNOBOL4 oracle only | snobol4x | ❌ |
+| **M-MONITOR-5WAY** | All 5 participants wired: CSNOBOL4 + SPITBOL + ASM + JVM + NET each produce a trace stream for one test; streams captured and diffed | snobol4x | ❌ |
+| **M-MONITOR-4DEMO** | 4 working demo programs (roman, wordcount, treebank, claws5) produce identical trace streams across all 5 participants; monitor proves itself on known-good programs | snobol4x | ❌ |
+| **M-BEAUTIFY-BOOTSTRAP** | `beauty.sno` reads `beauty.sno`, all 3 compiled backends produce output byte-for-byte identical to CSNOBOL4 oracle AND identical to `beauty.sno` input; fixed point reached | snobol4x | ❌ |
 
 ---
 
