@@ -63,11 +63,11 @@ bash test/crosscheck/run_crosscheck_asm_rung.sh $CORPUS/rung10           # 4/9 P
 
 | ID | Status | Notes |
 |----|--------|-------|
-| M-NET-BEAUTY | ❌ | beauty.sno self-beautifies via NET backend — next NET sprint |
-| M-ASM-RUNG10 | ❌ | DEFINE/recursion/locals/NRETURN/FRETURN/APPLY 9/9 — B-223 |
-| M-ASM-RUNG11 | ❌ | ARRAY/TABLE/DATA 7/7 — gates on RUNG10 |
+| M-NET-INDR | ❌ | harness 210_indirect_ref FAIL — Dictionary/stsfld desync from N-209 fix — next NET sprint |
+| M-NET-BEAUTY | ❌ | Gates on M-NET-INDR |
+| M-ASM-RUNG10 | ❌ | 4/9 WIP — NRETURN/EVAL/ARG/LOCAL remaining — B-226 |
+| M-ASM-RUNG11 | ❌ | Gates on RUNG10 |
 | M-SC-CORPUS-R2 | ❌ | do_procedure body emission fix (sc_cf.c) — F-210 |
-| M-JVM-BEAUTY | ❌ | beauty.sno self-beautifies via JVM backend — J-210 |
 
 Full milestone history → [PLAN.md](PLAN.md)
 
@@ -77,10 +77,10 @@ Full milestone history → [PLAN.md](PLAN.md)
 
 | Session | Branch | Focus |
 |---------|--------|-------|
-| B-223 | `asm-backend` | M-ASM-RUNG10 |
+| B-226 | `asm-backend` | M-ASM-RUNG10 (4/9 → 9/9) |
 | F-210 | `main` | M-SC-CORPUS-R2 |
 | J-210 | `jvm-backend` | M-JVM-BEAUTY |
-| N-209 | `net-backend` | M-NET-BEAUTY — next sprint |
+| N-210 | `net-backend` | M-NET-INDR — fix Dictionary/stsfld desync |
 | D-162 | `net-spitbol-switches` | M-NET-SPITBOL-SWITCHES |
 
 Per RULES.md: `git pull --rebase` before every push. Update only your row in PLAN.md NOW table.

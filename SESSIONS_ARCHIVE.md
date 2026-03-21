@@ -9824,3 +9824,33 @@ bash test/crosscheck/run_crosscheck_jvm_rung.sh \
 # Then investigate VerifyError in sno_userfn_ss: grep sno_userfn_ss beauty.j | head -50
 # Check .limit locals and istore/astore type conflicts around register 7
 ```
+
+## Session N-209 EMERGENCY HANDOFF — harness regression found
+
+**Discovered after M-NET-SAMPLES commit:** harness crosscheck (`snobol4harness/crosscheck/crosscheck.sh --engine tiny_net`) reveals **110 PASS, 1 FAIL**: `rung2/210_indirect_ref`.
+
+**Root cause:** N-209 direct-stsfld fix bypasses `net_indr_set` for all variable writes in function prologue/epilogue. `net_indr_get` (used by `$varname` indirect read, E_INDR) reads from the Dictionary — which is now never updated for named variables. Dictionary and static fields are out of sync.
+
+**Fix for N-210 (M-NET-INDR):**
+Two options:
+1. **(Preferred)** In `net_indr_get`: after Dictionary miss, fall back to reflection `GetField` on the static field — reads the ground truth. One-method fix, no emitter changes.
+2. After every `stsfld` for a named var, also call `net_indr_set` to sync Dictionary — doubles the writes.
+
+Option 1 is cleaner: Dictionary becomes a write-through cache, reflection is the fallback. The `net_indr_set` reflection write path in `net_emit_expr E_INDR` assignment side is still needed for truly dynamic names.
+
+**State at handoff:** `net-backend` HEAD `2c417d7`. 110/110 crosscheck. 110/111 harness (1 fail). New milestone M-NET-INDR in PLAN.md gates M-NET-BEAUTY.
+
+**Next session N-210 start:**
+```bash
+cd /home/claude/snobol4x && git checkout net-backend && git pull
+git config user.name "LCherryholmes" && git config user.email "lcherryh@yahoo.com"
+apt-get install -y libgc-dev nasm mono-complete m4 && make -C src
+# Confirm baseline
+bash test/crosscheck/run_crosscheck_net.sh            # 110/110
+cd /home/claude/snobol4harness
+CORPUS=/home/claude/snobol4corpus/crosscheck TINY_REPO=/home/claude/snobol4x \
+  bash crosscheck/crosscheck.sh --engine tiny_net 2>&1 | sed 's/\x1b\[[0-9;]*m//g' | grep -E "PASS|FAIL"
+# Expect: 110 PASS, 1 FAIL (210_indirect_ref)
+# Fix: edit src/runtime/net/snobol4lib.il — net_indr_get: add reflection fallback after Dictionary miss
+# OR edit emit_byrd_net.c net_emit_header net_indr_get method body
+```
