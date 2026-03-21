@@ -15,7 +15,7 @@ Session numbers use per-type prefixes (see RULES.md §SESSION NUMBERS): B=backen
 | Session | Sprint | HEAD | Next milestone |
 |---------|--------|------|----------------|
 | **TINY backend** | `asm-backend` B-223 — M-ASM-RUNG8 ✅ DONE: DESCR_t slen, BSTRVAL, binary REPLACE/SIZE fix; 3/3 rung8 PASS | `1d0a983` B-223 | M-ASM-RUNG10 |
-| **TINY JVM** | `jvm-backend` J-210 — M-JVM-SAMPLES ✅: fixed VAR=expr :S/:F routing bug (goto before vnfail label); roman.sno PASS + wordcount.sno PASS; artifacts/jvm/samples/ committed | `13245e2` J-210 | M-JVM-BEAUTY |
+| **TINY JVM** | `jvm-backend` J-211 — M-JVM-BEAUTY WIP: jvm_expand_label + findRefs scope fix + computed goto dispatch; 1 Jasmin error remains (cross-scope :F(error) from fn to main label) | `628bd0d` J-211 | M-JVM-BEAUTY |
 | **TINY NET** | `net-backend` N-206 — 102/110: SEQ-ARB omega fix; deferred NAM(ARB) capture (word1–4 ✅); sno_div integer/sno_pow; E_EXPOP/E_INDR/E_ATP/BREAKX/FRETURN fix; 8 remain: cross/@N, 091–096 ARRAY/TABLE/DATA, 100 roman; next: ARRAY/TABLE/DATA runtime + E_IDX → M-NET-CROSSCHECK | `02d1f9b` N-206 | M-NET-CROSSCHECK |
 | **TINY frontend** | `main` F-210 — M-FLAT-NARY ✅ merged to main; sc7_procedure/sc9_multiproc FAIL diagnosed: do_procedure body stmts not appearing in output; next: fix sc_cf.c do_procedure → M-SC-CORPUS-R2 | `6495074` F-210 | M-SC-CORPUS-R2 |
 | **DOTNET** | `net-spitbol-switches` D-162 — 11 new SPITBOL switches: -d -e -g -i -m -p -s -t -y -z -N=file; k/m suffix parser; ApplyStartupOptions wires -e/-m; 26 tests authored; commit pending dotnet build | `0d4b2ee` D-161 | M-NET-SPITBOL-SWITCHES |

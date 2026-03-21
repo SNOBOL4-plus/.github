@@ -9627,3 +9627,44 @@ bash test/crosscheck/run_crosscheck_jvm_rung.sh \
   $CORPUS/strings $CORPUS/keywords $CORPUS/functions $CORPUS/data 2>&1 | tail -2
 # Expected: 89/92 — then proceed to M-JVM-BEAUTY (beauty.sno via JVM backend)
 ```
+
+## Session J-211 — M-JVM-BEAUTY WIP: label sanitizer + findRefs + computed goto
+
+**Branch:** `main`
+**HEAD at handoff:** `628bd0d`
+**Date:** 2026-03-20
+
+**What happened:**
+Three fixes toward beauty.sno compiling via JVM backend:
+
+1. `jvm_expand_label()`: sanitize SNOBOL4 labels with $, :, ', <>, =, (, ) for Jasmin.
+   Same table as asm_expand_name. Eliminated 26 Jasmin syntax errors → 1 remaining.
+
+2. DEFINE end_label fallback: when DEFINE has no goto, use next stmt's goto as end_label.
+   Fixes beauty.sno findRefs — DEFINE('findRefs(x)n,v') + Refs = :(findRefsEnd) on next line.
+
+3. Computed goto ($COMPUTED:expr): if-chain dispatch over in-scope labels via sno_str_eq.
+   sno_str_eq static helper added. jvm_cur_prog module global wired.
+   No-match fallback: Jfn%d_freturn in functions, L_END in main.
+
+**Remaining error:** `L_error` — main-level label targeted by :F(error) from inside `pp`
+function body. Cross-scope goto from fn method to main label. Fix: in jvm_emit_goto,
+after expanding label, if inside a fn and label not found in fn scope, emit
+`goto Jfn%d_freturn` instead. See J-212 CRITICAL NEXT ACTION in JVM.md.
+
+**Invariants:** 102/106 C (4 pre-existing) · 89/92 JVM (expr_eval + word1-4 xfail, unchanged)
+
+**Next session start (J-212):**
+```bash
+cd /home/claude/snobol4x
+git config user.name "LCherryholmes" && git config user.email "lcherryh@yahoo.com"
+git remote set-url origin https://TOKEN_SEE_LON@github.com/snobol4ever/snobol4x
+git pull && apt-get install -y libgc-dev nasm default-jdk && make -C src
+CORPUS=/home/claude/snobol4corpus/crosscheck
+STOP_ON_FAIL=0 CORPUS=$CORPUS bash test/crosscheck/run_crosscheck.sh 2>&1 | tail -2
+bash test/crosscheck/run_crosscheck_jvm_rung.sh \
+  $CORPUS/hello $CORPUS/output $CORPUS/assign $CORPUS/arith \
+  $CORPUS/control $CORPUS/patterns $CORPUS/capture \
+  $CORPUS/strings $CORPUS/keywords $CORPUS/functions $CORPUS/data 2>&1 | tail -2
+# Then: implement cross-scope goto fix per JVM.md CRITICAL NEXT ACTION
+```
