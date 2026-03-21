@@ -67,13 +67,15 @@ boilerplate at call sites. The mechanism *is* the architecture — α allocates 
 (that IS the save), γ/ω discards it (that IS the restore). Byrd boxes running forward and
 backward ARE save and restore.
 
-**Why not now:** Technique 2 requires the compiler to emit relocation tables so the copied
-CODE can patch its own relative jumps and DATA refs. That needs a self-aware compiler —
-i.e. M-BOOTSTRAP. Until then, the C stack is used as a cheap per-invocation DATA allocator
-(see Near-Term Bridge below).
+**2026-03-21 PIVOT — M-BOOTSTRAP prerequisite removed.**
+`emit_byrd_asm.c` already knows every box's full structure at compile time.
+It emits relocation tables as NASM data sections directly — no self-hosting needed.
+Implementation begins post M-MERGE-3WAY. The C-stack bridge (Near-Term Bridge below)
+is superseded by T2 once M-T2-FULL fires.
 
-**Milestone:** M-BOOTSTRAP → implement Technique 2 in `emit_byrd_asm.c`.
-**Documented in full:** BACKEND-X64.md.
+**Milestone chain:** M-T2-RUNTIME → M-T2-RELOC → M-T2-EMIT-TABLE → M-T2-EMIT-SPLIT →
+M-T2-INVOKE → M-T2-RECUR → M-T2-CORPUS → M-T2-JVM → M-T2-NET → M-T2-FULL.
+**Documented in full:** BACKEND-X64.md §Technique 2.
 
 ---
 

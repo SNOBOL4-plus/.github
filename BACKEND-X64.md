@@ -43,9 +43,14 @@ runtime. The initial compile builds them statically. All run at full speed.
 
 | Phase | What | Gate |
 |-------|------|------|
-| **Now** | Near-term bridge: per-invocation C stack frames | M-ASM-RECUR |
-| **Next** | roman.sno + wordcount.sno PASS | M-ASM-SAMPLES |
-| **Future** | Technique 2: mmap+memcpy+relocate | M-BOOTSTRAP |
+| **Done** | Near-term bridge: per-invocation C stack frames | M-ASM-RECUR ✅ |
+| **Done** | roman.sno + wordcount.sno PASS | M-ASM-SAMPLES ✅ |
+| **PIVOT** | Technique 2: mmap+memcpy+relocate — **implement now, no self-hosting required** | M-T2-FULL |
+
+**Key insight (2026-03-21 session B-238):** Technique 2 does NOT require a self-hosting
+compiler. `emit_byrd_asm.c` already knows the full structure of every box it generates.
+It can emit relocation tables at compile time as NASM data sections. No M-BOOTSTRAP
+prerequisite. Implement directly now, post M-MERGE-3WAY.
 
 ---
 
@@ -109,7 +114,24 @@ DATA: UNPROTECTED (RW). One copy per live invocation.
 Reclamation: LIFO discipline — discard `new_data` on γ/ω return. No GC needed.
 ~20 lines of runtime. No heap. No explicit save/restore. No stack.
 
-**Gates on:** M-BOOTSTRAP (need self-hosting sno2c to emit relocation tables).
+**No longer gates on M-BOOTSTRAP.** `emit_byrd_asm.c` knows every box's structure at
+compile time and emits relocation tables as NASM data sections directly.
+See milestone chain M-T2-RUNTIME → M-T2-FULL in PLAN.md.
+
+### Milestone chain (implement in order)
+
+| ID | Deliverable |
+|----|-------------|
+| M-T2-RUNTIME | `t2_alloc/free/mprotect` runtime functions; unit test |
+| M-T2-RELOC   | `t2_relocate(text,len,delta,table,n)` patches jumps+DATA refs; unit test |
+| M-T2-EMIT-TABLE | emitter writes per-box relocation tables as NASM data |
+| M-T2-EMIT-SPLIT | emitter splits TEXT+DATA sections; `r12` = DATA-block ptr; all locals `[r12+offset]` |
+| M-T2-INVOKE  | emitter generates T2 call-sites (`t2_alloc`+`memcpy`+`relocate`+`jmp`); γ/ω emit `t2_free` |
+| M-T2-RECUR   | recursive functions correct; stack-frame bridge removed |
+| M-T2-CORPUS  | 106/106 corpus — 9 known failures fixed by construction |
+| M-T2-JVM     | JVM backend T2-correct (heap allocation already natural) |
+| M-T2-NET     | NET backend T2-correct (CLR heap) |
+| M-T2-FULL    | all three backends clean; `v-post-t2` tag; MONITOR resumes |
 
 
 ---
