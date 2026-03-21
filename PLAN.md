@@ -189,7 +189,7 @@ Sprint detail and runner design → [MONITOR.md](MONITOR.md)
 | **M-MONITOR-SCAFFOLD** | `test/monitor/` exists: `inject_traces.py` + `run_monitor.sh` + `tracepoints.conf`; CSNOBOL4 + ASM; single test passes | snobol4x | ✅ `19e26ca` B-227 |
 | **M-MONITOR-IPC-SO** | `monitor_ipc.c` → `monitor_ipc.so`; MON_OPEN/MON_SEND/MON_CLOSE; CSNOBOL4 LOAD() confirmed; no stderr output | snobol4x | ✅ `8bf1c0c` B-229 |
 | **M-MONITOR-IPC-CSN** | `inject_traces.py` emits LOAD+MON_OPEN preamble; MONCALL/MONRET/MONVAL call MON_SEND(); CSNOBOL4 trace arrives on FIFO; hello PASS | snobol4x | ✅ `6eebdc3` B-229 |
-| **M-X64-S1** | snobol4ever/x64: `syslinux.c` compiles clean — `callef`/`loadef`/`nextef`/`unldef` all use `xndta[]` not missing `struct ef` fields; `mword` = `long` throughout; `make bootsbl` succeeds | snobol4ever/x64 | ❌ |
+| **M-X64-S1** | snobol4ever/x64: `syslinux.c` compiles clean — `callef`/`loadef`/`nextef`/`unldef` all use `xndta[]` not missing `struct ef` fields; `mword` = `long` throughout; `make bootsbl` succeeds | snobol4ever/x64 | ✅ `88ff40f` B-231 |
 | **M-X64-S2** | `LOAD('spl_add(INTEGER,INTEGER)INTEGER','libspl.so')` works end-to-end; `spl_add(3,4)` returns `7`; uses snobol4dotnet `SpitbolCLib` test fixture | snobol4ever/x64 | ❌ |
 | **M-X64-S3** | `UNLOAD('spl_add')` cleans up; reload after unload succeeds; double-unload is safe; matches snobol4dotnet `LoadSpecTests` lifecycle cases | snobol4ever/x64 | ❌ |
 | **M-X64-S4** | SNOLIB env var search works; error conditions 139/140/141 correct; `monitor_ipc.so` LOAD confirmed end-to-end in SPITBOL | snobol4ever/x64 | ❌ |

@@ -10252,3 +10252,41 @@ make bootsbl 2>&1 | grep "error:" | grep -v "Wno-"
 # Oracle: snobol4dotnet/TestSnobol4/Function/FunctionControl/LoadSpecTests.cs
 # Full sprint plan: BACKEND-X64.md §M-X64-FULL
 ```
+
+## Session B-231 (2026-03-21) — M-X64-S1 ✅ + M-X64-S2 diagnostic
+
+**Repos touched:** snobol4ever/x64, .github
+
+### M-X64-S1 FIRED — `88ff40f`
+
+All compile errors in x64/osint/ fixed (20+ errors → EXIT 0):
+- `mword`/`muword` = `long` in `port.h` + `extern32.h` (was `int`, 32-bit legacy)
+- `MINIMAL_ALLOC/ALOCS/ALOST/BLKLN` uppercase aliases in `osint.h`
+- `TYPET`, `B_EFC` uppercase aliases in `osint.h`
+- `MINFRAME=0`, `ARGPUSHSIZE=0`, `SA(n)` x64 ABI constants in `port.h`
+- `<stdint.h>` for `uintptr_t`
+- `callef`/`loadef` `word`→`mword` in `sproto.h`
+- `static initsels` implicit-int fixed
+- `MP_OFF` 2-arg call fixed in `sysex.c`
+- `typet:` label added to `bootstrap/sbl.asm` (declared global, never labelled)
+- `pushregs`/`popregs` aliases + `callextfun` trampoline added to `int.asm`
+- New `osint/syslinux_float.c`: f_2_i, i_2_f, f_add/sub/mul/div/neg
+
+### M-X64-S2 diagnostic — `feb521b` (WIP)
+
+LOAD() path fully traced:
+- `zysld` → `loadDll` → `dlopen ./libspl.so` succeeds (handle valid)
+- `-rdynamic` required on bootsbl link (dlopen needs parent symbols)
+- SPITBOL folds function names to lowercase → `spl_add` not `SPL_ADD`
+- `libspl.c`/`libspl.so` written with `spl_add`/`spl_strlen`
+- `callef` entered (efb valid, nargs=2, efcod=valid xnblk ptr at raw[4])
+- Segfault root cause: `MINSAVE()`→`pushregs()`→`save_regs` corrupts `reg_pc`
+  (syscall_init already ran; save_regs re-saves and overwrites reg_pc)
+- `sysld.c` + `sysex.c`: added missing `<stdio.h>`
+
+### State at handoff
+
+x64 HEAD: `feb521b` on `main`
+Next: B-232 replaces `callef` with x64 direct implementation → M-X64-S2 fires
+Full next-action block in TINY.md NOW.
+

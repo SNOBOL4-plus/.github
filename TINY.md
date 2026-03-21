@@ -13,40 +13,55 @@ snobol4x: multiple frontends, multiple backends.
 ## NOW
 
 **Sprint:** `monitor-ipc` — wire 5-way FIFO IPC; SPITBOL + JVM + NET participants
-**HEAD:** `6eebdc3` B-229 (asm-backend)
-**Milestone:** M-X64-S1 (next to fire)
+**HEAD:** `6eebdc3` B-229 (asm-backend) · x64: `feb521b` B-231
+**Milestone:** M-X64-S2 (next to fire)
 **Invariants:** 97/106 ASM corpus (9 known failures: 022, 055, 064, cross, word1-4, wordcount)
 
-**⚠ CRITICAL NEXT ACTION — Session B-231:**
+**⚠ CRITICAL NEXT ACTION — Session B-232:**
 
 ```bash
-# Repo: snobol4ever/x64  (NOT snobol4x)
+# Repo: snobol4ever/x64
 cd /home/claude/x64
 git config user.name "LCherryholmes" && git config user.email "lcherryh@yahoo.com"
 git pull --rebase origin main
 
-# Goal: M-X64-S1 — syslinux.c compiles clean; make bootsbl succeeds
-# Context: syslinux.c callef/loadef/nextef/unldef use missing struct ef fields
-#   xnhand → xndta[0], xnpfn → xndta[1] (already fixed in B-230)
-#   Remaining errors: MINIMAL_ALOST/ALOCS/ALLOC macros, TYPET, MINFRAME, ARGPUSHSIZE
-#   mword declared as int in port.h but used as long — fix to long/word
-# Step 1: audit all compile errors from: make bootsbl 2>&1 | grep error:
-# Step 2: fix each macro/type mismatch in syslinux.c and port.h
-# Step 3: make bootsbl succeeds → M-X64-S1 fires
-# Step 4: write minimal SpitbolCLib (spl_add/spl_strlen) — matches snobol4dotnet fixture
-# Step 5: LOAD('spl_add(INTEGER,INTEGER)INTEGER','libspl.so') → spl_add(3,4)=7 → M-X64-S2
-# Tests: snobol4dotnet/TestSnobol4/Function/FunctionControl/LoadSpecTests.cs as oracle
-# Full sprint design → BACKEND-X64.md §M-X64-FULL
+# M-X64-S2: replace callef() in osint/syslinux.c with x64 direct implementation
+# Root cause confirmed (B-231): MINSAVE()→pushregs()→save_regs corrupts reg_pc
+# efb->efcod verified at offset 32 (raw dump: raw[4]=valid xnblk ptr)
+# pfn at xnblk+24 (xndta[1])
+#
+# Step 1: Replace callef (lines ~104-277 of syslinux.c) with:
+#   pnode = efb->efcod  (offset 32)
+#   pfn = pnode->xnu.xndta[1]  (offset 24)
+#   build struct descr cargs[nargs] from icblk.val (offset 8) on sp[]
+#     sp layout: sp[nargs-1-i] = arg i (last-pushed = sp[0])
+#   rc = pfn(&retval, nargs, cargs)
+#   if rc==FALSE return 0 (FAIL)
+#   pack retval.a.i into tscblk as icblk{typ=b_icl,val=retval.a.i}
+#   return (union block*)&tscblk
+#
+# Step 2: make bootsbl CFLAGS="... -rdynamic"
+# Step 3: ./bootsbl test_spl_add.sno → expect "PASS: spl_add(3,4) = 7"
+# Step 4: M-X64-S2 fires → proceed to M-X64-S3 (UNLOAD lifecycle)
+#
+# Key verified facts from B-231 diagnostics:
+#   struct icblk: { word typ(8); long val(8) } — val at offset 8
+#   struct descr: { union{long i;double f} a; char f; uint v } — size 16
+#   Integer type code v=2 (conint from equ.h)
+#   tscblk is valid scratch block for return value
+#   libspl.so compiled, spl_add/spl_strlen use lowercase names (SPITBOL folds)
+#   -rdynamic required on bootsbl link for dlopen to resolve symbols
 ```
 
 ## Last Session Summary
 
-**Session B-229 (2026-03-21) — M-MONITOR-IPC-SO + M-MONITOR-IPC-CSN:**
-- Built monitor_ipc.c/.so: MON_OPEN/MON_SEND/MON_CLOSE, lret_t ABI
-- Empirically verified CSNOBOL4 string layout: BCDFLD=64, block hdr[0].v=length
-- Fixed HOST(4,...) for env var reads; fixed MON_IPC_='1' string vs integer bug
-- CSNOBOL4+ASM both write trace via named FIFOs; hello/multi/assign PASS
-- Pushed `8bf1c0c` (IPC-SO) + `6eebdc3` (IPC-CSN) to asm-backend
+**Session B-231 (2026-03-21) — M-X64-S1 ✅ + M-X64-S2 diagnostic:**
+- M-X64-S1 fired (88ff40f): all compile errors fixed, make bootsbl EXIT 0
+- M-X64-S2 diagnostic: LOAD()→zysld→loadDll→dlopen succeeds; callef entered
+- Segfault root cause: MINSAVE()→pushregs()→save_regs corrupts reg_pc
+- efb layout verified from raw dump: efcod at offset 32, valid xnblk ptr
+- libspl.c/libspl.so written; sysld.c/sysex.c got missing stdio.h
+- Pushed feb521b WIP
 
 ## Active Milestones
 
