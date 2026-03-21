@@ -10740,3 +10740,31 @@ lein bench 2>&1   # or equivalent
 
 **Lesson:** When writing VERIFIED READMEs, always diff against the DRAFT and confirm
 no sections were lost. The DRAFT may contain source-verified details not in HQ docs.
+
+## Session README-7 (2026-03-21) — snobol4python + snobol4csharp READMEs corrected
+
+**What happened:**
+- Audited snobol4python and snobol4csharp against git history — both had major content loss
+- snobol4python (174→189 lines, should have been ~200): lost the real Python API —
+  Greek-letter operators (σ/ε/ζ/Λ/Φ/α/ω/ρ/π/Σ/Π/Θ/θ/φ/λ), NSPAN, SEARCH/MATCH/FULLMATCH,
+  runtime backend switching (use_c/use_pure/current_backend/C_AVAILABLE),
+  SNOBOL4_BACKEND env var, full version history, sno4py build instructions,
+  GLOBALS(globals()) usage pattern, Stage 8 shift-reduce table with nPush/nInc/nPop
+- snobol4csharp (323→206 lines, lost 117): lost entire real C# API —
+  actual source layout with file names, setup/build instructions, dotnet-script runner,
+  full primitives tables (NSPAN/MARB/MARBNO/Δ/δ), conditional vs immediate capture
+  operators (% vs *) with precedence note, cursor capture (Θ/θ), predicate/action (Λ/λ),
+  regex bridge with named groups, parse-tree construction with working code example,
+  Trace API, Engine entry points with Slice type
+- Fix: restored both originals as base; appended new context sections
+  (snobol4ever relationship, Byrd Box model, acknowledgments) to each
+- snobol4python: `8669c58` — original API + snobol4ever/Byrd Box/license sections
+- snobol4csharp: `1f668f5` — original full API + snobol4ever/acknowledgments/license sections
+- Updated PLAN.md commit hashes for both milestones
+
+**Confirmed lesson (second instance):**
+The DRAFT READMEs contained working API documentation written by the authors — real
+function names, real operators, real code examples — that HQ docs do not contain.
+VERIFIED passes must always diff against DRAFT and confirm no API content was lost.
+The rule for next session: git show HEAD~1:README.md | wc -l vs wc -l README.md —
+if current is shorter, investigate before declaring done.

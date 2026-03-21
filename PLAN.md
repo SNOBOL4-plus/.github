@@ -302,8 +302,8 @@ All four fire → GRIDS.md is publication-ready for community presentation.
 | **M-README-X-VERIFIED** | snobol4x README verified against C source; every claim confirmed | snobol4x | ✅ `5837806` README session |
 | **M-README-DOTNET-DRAFT** | snobol4dotnet README: backup Jeff's original as README.jeff.md; new README written with current numbers and structure | snobol4dotnet | ✅ `aeac61e` |
 | **M-README-DOTNET-VERIFIED** | snobol4dotnet README verified against C# source; coordinated with Jeff Cooper | snobol4dotnet | ✅ `e8b22cb` README-2 |
-| **M-README-PYTHON-DRAFT** | snobol4python README light polish: verify version, test counts, backend description | snobol4python | ✅ `0990cae` README-4 |
-| **M-README-CSHARP-DRAFT** | snobol4csharp README light polish: already solid; verify test counts and status | snobol4csharp | ✅ `00846d3` README-4 |
+| **M-README-PYTHON-DRAFT** | snobol4python README light polish: verify version, test counts, backend description | snobol4python | ✅ `8669c58` README-4 |
+| **M-README-CSHARP-DRAFT** | snobol4csharp README light polish: already solid; verify test counts and status | snobol4csharp | ✅ `1f668f5` README-4 |
 
 ### README session plan
 
