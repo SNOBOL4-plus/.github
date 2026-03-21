@@ -9,20 +9,18 @@ JVM/Clojure backend: SNOBOL4 → JVM bytecode via multi-stage pipeline.
 
 ## NOW
 
-**Sprint:** `jvm-backend` J-212 — M-JVM-BEAUTY continued: fix cross-scope goto (out-of-fn label → freturn)
-**HEAD:** `d4012e0` J-211
-**Milestone:** M-JVM-SAMPLES ✅ J-210 · M-JVM-BEAUTY ❌ (1 Jasmin error remaining)
+**Sprint:** `jvm-backend` J-213 — M-JVM-BEAUTY: beauty.j assembles clean ✅; next: beauty runtime (VerifyError in sno_userfn_ss)
+**HEAD:** `b67d0b1` J-212
+**Milestone:** M-JVM-BEAUTY ✅ Jasmin clean · Next: M-JVM-EVAL
 
-**J-211 — M-JVM-BEAUTY WIP — 3 fixes, 1 error remaining:**
-- Fix 1: `jvm_expand_label()` — sanitize `$:\'<>=()` in SNOBOL4 labels for Jasmin. 26 errors → 1.
-- Fix 2: DEFINE `end_label` fallback — when DEFINE has no goto, use next stmt's goto. Fixes `findRefs` scope in beauty.sno.
-- Fix 3: Computed goto dispatch (`$COMPUTED:expr`) — if-chain over in-scope labels via `sno_str_eq`. `jvm_cur_prog` wired.
-- **Remaining:** `L_error` — main-level label referenced via `:F(error)` from inside `pp` function body. Cross-scope goto to main label from function method → route to `Jfn%d_freturn`.
-- Invariants: 102/106 C · 89/92 JVM (unchanged)
+**J-212 — M-JVM-BEAUTY DONE:**
+- Fix: cross-scope goto in `jvm_emit_goto()` — if target label not in current fn body range, route to `Jfn%d_freturn`
+- `beauty.j` now assembles with 0 errors (was: "L_error has not been added to the code")
+- Invariants: 102/106 C · 89/92 JVM (unchanged) · JVM artifacts unchanged
 
-**⚠ CRITICAL NEXT ACTION — Session J-212 (JVM):**
+**⚠ CRITICAL NEXT ACTION — Session J-213 (JVM):**
 
-Sprint J10 continued — fix cross-scope goto → M-JVM-BEAUTY
+M-JVM-BEAUTY Jasmin fired. Remaining: beauty runtime — VerifyError in sno_userfn_ss.
 
 ```bash
 cd /home/claude/snobol4x
@@ -37,46 +35,21 @@ bash test/crosscheck/run_crosscheck_jvm_rung.sh \
   $CORPUS/strings $CORPUS/keywords $CORPUS/functions $CORPUS/data 2>&1 | tail -2
 # Expected: 89/92
 
-# Reproduce the beauty.j error:
+# Confirm beauty.j still assembles clean:
 INC=/home/claude/snobol4corpus/programs/inc
 BEAUTY=/home/claude/snobol4corpus/programs/beauty/beauty.sno
 TMPD=/tmp/beauty_jvm && mkdir -p $TMPD
 ./sno2c -jvm -I$INC $BEAUTY > $TMPD/beauty.j
 java -jar src/backend/jvm/jasmin.jar $TMPD/beauty.j -d $TMPD/ 2>&1 | grep -iv "generated\|picked"
-# Expected: "L_error has not been added to the code" (1 error)
+# Expected: (no errors)
 
-# Fix: in jvm_emit_goto, after expanding label, check if it is a main-level label
-# being jumped to from inside a function. If so, route to Jfn%d_freturn instead.
-# Location: end of jvm_emit_goto(), just before the final JI("goto", glbl) call.
-# Logic:
-#   if (jvm_cur_fn) {
-#       /* check if 'safe' label exists in current fn scope */
-#       int found_in_fn = 0;
-#       const char *entry = jvm_cur_fn->entry_label ? jvm_cur_fn->entry_label : jvm_cur_fn->name;
-#       int in_body = 0;
-#       for (STMT_t *t = jvm_cur_prog->head; t; t = t->next) {
-#           if (t->label && strcasecmp(t->label, entry)==0) in_body=1;
-#           if (in_body && jvm_cur_fn->end_label && t->label &&
-#               strcasecmp(t->label, jvm_cur_fn->end_label)==0) break;
-#           if (in_body && t->label) {
-#               char ts[128]; jvm_expand_label(t->label, ts, sizeof ts);
-#               if (strcmp(ts, safe)==0) { found_in_fn=1; break; }
-#           }
-#       }
-#       if (!found_in_fn) {
-#           /* out-of-scope: SNOBOL4 semantics = FRETURN */
-#           int fn_idx = (int)(jvm_cur_fn - jvm_fn_table_fwd);
-#           char lbl[64]; snprintf(lbl, sizeof lbl, "Jfn%d_freturn", fn_idx);
-#           J("    goto %s\n", lbl); return;
-#       }
-#   }
-#   JI("goto", glbl);   <- existing line
+# Next issue: VerifyError "Register 7 contains wrong type" in sno_userfn_ss
+# Investigate: grep sno_userfn_ss beauty.j — check .limit locals, istore/astore conflicts
 ```
 
 After any `emit_byrd_jvm.c` change, run the mandatory artifact check:
 ```bash
 bash test/crosscheck/jvm_artifact_check.sh
-# exits nonzero if artifacts changed → add staged files to your commit
 ```
 
 **J-204 — functions/ 8/8 PASS, data/ 3/6 PASS:**

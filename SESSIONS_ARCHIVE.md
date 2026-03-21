@@ -9791,4 +9791,36 @@ CORPUS=$CORPUS bash test/crosscheck/run_crosscheck_asm.sh                # 26/26
 bash test/crosscheck/run_crosscheck_asm_rung.sh $CORPUS/rung10           # 4/9
 # Fix order: 1013 (resolve_special_goto NRETURN→gamma) → 1017 (PROG_INIT DEFINE_fn per fn) → 1016 (EVAL_fn DT_P branch)
 # HEAD: 284d6cc B-225
+## Session J-212 — M-JVM-BEAUTY: cross-scope goto fix; beauty.j assembles clean
+
+**Branch:** `jvm-backend` · **HEAD:** `b67d0b1`
+**Date:** 2026-03-20
+
+**What happened:**
+- Reproduced Jasmin error: `L_error has not been added to the code` (line 20325 of beauty.j)
+- Root cause: `:F(error)` inside function `pp` references main-level label `L_error`, which doesn't exist in the `sno_userfn_pp()` JVM method. SNOBOL4 semantics: out-of-scope goto = FRETURN.
+- Fix in `jvm_emit_goto()`: before emitting `goto L_<label>`, walk program stmts to check if target label falls within current function body range (`entry_label`→`end_label`). If not found → emit `goto Jfn%d_freturn`.
+- `beauty.j` now assembles with 0 errors. M-JVM-BEAUTY milestone fired (Jasmin criterion met).
+- Invariants held: 102/106 C · 89/92 JVM · JVM artifacts unchanged.
+
+**State at handoff:**
+- Remaining: `VerifyError: Register 7 contains wrong type` in `sno_userfn_ss` when running `Beauty.class` — stack-height/type issue in the ss function method, separate from the cross-scope fix.
+- snobol4x committed `b67d0b1` — needs push (token required).
+- .github docs updated: JVM.md NOW block, PLAN.md NOW table + M-JVM-BEAUTY ✅ — needs push.
+
+**Next session start block (J-213):**
+```bash
+cd /home/claude/snobol4x
+git config user.name "LCherryholmes" && git config user.email "lcherryh@yahoo.com"
+git remote set-url origin https://TOKEN_SEE_LON@github.com/snobol4ever/snobol4x
+git pull && apt-get install -y libgc-dev nasm default-jdk && make -C src
+CORPUS=/home/claude/snobol4corpus/crosscheck
+STOP_ON_FAIL=0 CORPUS=$CORPUS bash test/crosscheck/run_crosscheck.sh 2>&1 | tail -2   # 102/106
+bash test/crosscheck/run_crosscheck_jvm_rung.sh \
+  $CORPUS/hello $CORPUS/output $CORPUS/assign $CORPUS/arith \
+  $CORPUS/control $CORPUS/patterns $CORPUS/capture \
+  $CORPUS/strings $CORPUS/keywords $CORPUS/functions $CORPUS/data 2>&1 | tail -2
+# Expected: 89/92
+# Then investigate VerifyError in sno_userfn_ss: grep sno_userfn_ss beauty.j | head -50
+# Check .limit locals and istore/astore type conflicts around register 7
 ```

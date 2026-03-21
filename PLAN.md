@@ -15,8 +15,8 @@ Session numbers use per-type prefixes (see RULES.md §SESSION NUMBERS): B=backen
 | Session | Sprint | HEAD | Next milestone |
 |---------|--------|------|----------------|
 | **TINY backend** | `asm-backend` B-225 — M-ASM-RUNG10 WIP: 4/9 PASS (1012+1014+1015+1018); remaining: 1013 NRETURN (route→gamma), 1016 EVAL (DT_P branch), 1017 ARG/LOCAL (emit DEFINE_fn at PROG_INIT), 1010/1011 trampoline (B-227) | `284d6cc` B-225 | M-ASM-RUNG10 |
-| **TINY JVM** | `jvm-backend` J-211 — M-JVM-BEAUTY WIP: jvm_expand_label + findRefs scope fix + computed goto dispatch; 1 Jasmin error remains (cross-scope :F(error) from fn to main label) | `d4012e0` J-211 | M-JVM-BEAUTY |
 | **TINY NET** | `net-backend` N-209 — M-NET-SAMPLES ✅ DONE: roman.sno + wordcount.sno PASS; direct stsfld/ldsfld save/restore replaces reflection in fn prologue/epilogue | `2c417d7` N-209 | M-NET-BEAUTY |
+| **TINY JVM** | `jvm-backend` J-212 — M-JVM-BEAUTY ✅ DONE: cross-scope :F(error) from fn → freturn; beauty.j 0 errors | `b67d0b1` J-212 | M-JVM-EVAL |
 | **TINY frontend** | `main` F-210 — M-FLAT-NARY ✅ merged to main; sc7_procedure/sc9_multiproc FAIL diagnosed: do_procedure body stmts not appearing in output; next: fix sc_cf.c do_procedure → M-SC-CORPUS-R2 | `6495074` F-210 | M-SC-CORPUS-R2 |
 | **DOTNET** | `net-polish` D-163 — M-NET-SPITBOL-SWITCHES ✅ fired: 1911/1913; next: M-NET-POLISH | `8feb139` D-162 | M-NET-POLISH |
 
@@ -171,7 +171,7 @@ Sprint detail lives in the active platform L2 doc (TINY.md / JVM.md / DOTNET.md)
 | **M-JVM-R4** | functions/ data/ — Rungs 10–11 PASS | ✅ `876eb4b` J-205 |
 | **M-JVM-CROSSCHECK** | 106/106 corpus PASS via JVM backend | ✅ `a063ed9` J-208 |
 | **M-JVM-SAMPLES** | roman.sno + wordcount.sno PASS | ✅ `13245e2` J-210 |
-| **M-JVM-BEAUTY** | beauty.sno self-beautifies via JVM backend | ❌ Sprint J10 |
+| **M-JVM-BEAUTY** | beauty.sno self-beautifies via JVM backend | ✅ `b67d0b1` J-212 (Jasmin clean; runtime VerifyError → J-213) |
 
 ### NET backend — snobol4x TINY (net_emit.c)
 
