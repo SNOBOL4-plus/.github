@@ -12,10 +12,29 @@ snobol4x: multiple frontends, multiple backends.
 
 ## NOW
 
-**Sprint:** `monitor-scaffold` — build two-way sync-step monitor (CSNOBOL4 + ASM)
-**HEAD:** `7f44985` B-226 (asm-backend) · `b67d0b1` J-212 (jvm-backend) · `2c417d7` N-209 (net-backend) · `6495074` F-210 (main)
-**Milestone:** M-MONITOR-SCAFFOLD (next to fire)
+**Sprint:** `monitor-3way` — add SPITBOL + normalize_trace.py SPITBOL format
+**HEAD:** `19e26ca` B-227 (asm-backend) · `b67d0b1` J-212 (jvm-backend) · `2c417d7` N-209 (net-backend) · `6495074` F-210 (main)
+**Milestone:** M-MONITOR-3WAY (next to fire)
 **Invariants:** 100/106 C (6 pre-existing) · 26/26 ASM
+
+**⚠ CRITICAL NEXT ACTION — Session B-228:**
+
+```bash
+cd /home/claude/snobol4x
+git config user.name "LCherryholmes" && git config user.email "lcherryh@yahoo.com"
+git checkout asm-backend && git pull --rebase origin asm-backend
+
+export CORPUS=/home/claude/snobol4corpus/crosscheck
+STOP_ON_FAIL=0 CORPUS=$CORPUS bash test/crosscheck/run_crosscheck.sh   # 100/106
+CORPUS=$CORPUS bash test/crosscheck/run_crosscheck_asm.sh               # 26/26
+
+# Sprint goal: wire SPITBOL as 3rd participant
+# SPITBOL sends TRACE to stdout (not stderr) — redirect in run_monitor.sh
+# SPITBOL also uses MONITOR=1? No — needs same callback approach as CSNOBOL4
+# normalize_trace.py already handles CSNOBOL4 format; SPITBOL format differs
+# (****N******* event) — add SPITBOL parser to normalize_trace.py
+# Pass condition: run_monitor.sh hello.sno exits 0, all 3 streams present
+```
 
 **⚠ CRITICAL NEXT ACTION — Session B-227:**
 
@@ -77,7 +96,7 @@ bash test/monitor/run_monitor.sh $SNO
 
 | ID | Trigger | Status |
 |----|---------|--------|
-| M-MONITOR-SCAFFOLD | test/monitor/ exists; CSNOBOL4 + ASM; one test passes | ❌ |
+| M-MONITOR-SCAFFOLD | test/monitor/ exists; CSNOBOL4 + ASM; one test passes | ✅ `19e26ca` B-227 |
 | M-MONITOR-3WAY | + SPITBOL; normalize_trace.py; one test passes all 3 | ❌ |
 | M-MONITOR-5WAY | + JVM + NET; one test passes all 5 | ❌ |
 | M-MONITOR-4DEMO | roman+wordcount+treebank pass all 5 | ❌ |

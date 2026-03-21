@@ -186,7 +186,7 @@ Sprint detail and runner design → [MONITOR.md](MONITOR.md)
 
 | ID | Trigger | Repo | Status |
 |----|---------|------|--------|
-| **M-MONITOR-SCAFFOLD** | `snobol4x/test/monitor/` exists: `inject_traces.py` + `run_monitor.sh` + `tracepoints.conf`; CSNOBOL4 + ASM; single test passes | snobol4x | ❌ |
+| **M-MONITOR-SCAFFOLD** | `snobol4x/test/monitor/` exists: `inject_traces.py` + `run_monitor.sh` + `tracepoints.conf`; CSNOBOL4 + ASM; single test passes | snobol4x | ✅ `19e26ca` B-227 |
 | **M-MONITOR-3WAY** | CSNOBOL4 + SPITBOL + ASM wired; `normalize_trace.py` handles SPITBOL format; one test passes all 3 | snobol4x | ❌ |
 | **M-MONITOR-5WAY** | All 5 participants: CSNOBOL4 + SPITBOL + ASM + JVM + NET; one test passes all 5 | snobol4x | ❌ |
 | **M-MONITOR-4DEMO** | roman + wordcount + treebank pass all 5 participants; claws5 divergence count documented | snobol4x | ❌ |

@@ -10040,3 +10040,39 @@ mkdir -p test/monitor
 # Target: run_monitor.sh on crosscheck/hello/001_output_string_literal.sno exits 0
 # Two participants only: CSNOBOL4 + ASM
 ```
+
+## Session B-227 — M-MONITOR-SCAFFOLD
+
+**Date:** 2026-03-21
+**Work done:**
+- Built CSNOBOL4 2.3.3 from source (xsnobol4 → /usr/local/bin/snobol4)
+- Confirmed invariants: 100/106 C · 26/26 ASM
+- Discovered CSNOBOL4 TRACE goes to **stdout** (interleaved with OUTPUT) — solved with
+  MONCALL/MONRET/MONVAL SNOBOL4 callbacks that write to TERMINAL (stderr)
+- Discovered TERMINAL not implemented in ASM runtime — added to NV_SET_fn in snobol4.c
+- Architecture decision: ASM backend uses existing MONITOR=1/comm_var telemetry
+  (VAR name "value" + STNO N to stderr) rather than TRACE() injection; CSNOBOL4 uses
+  injected callbacks; normalize_trace.py bridges both formats
+- Wrote all four monitor files:
+  - tracepoints.conf: regex INCLUDE/EXCLUDE/IGNORE, four trace kinds
+  - inject_traces.py: scans DEFINE+LHS, injects preamble + TRACE registrations
+  - normalize_trace.py: dual-format parser (callback + comm_var), ignore rules
+  - run_monitor.sh: CSNOBOL4 instrumented / ASM MONITOR=1 / normalize / diff
+- Tested: 8 corpus tests PASS (hello, empty_string, assign×3, concat×3)
+- Committed: snobol4x asm-backend 19e26ca
+- M-MONITOR-SCAFFOLD fires ✅
+
+**Invariants at handoff:** 100/106 C · 26/26 ASM
+
+**Next session B-228:**
+```bash
+cd /home/claude/snobol4x
+git config user.name "LCherryholmes" && git config user.email "lcherryh@yahoo.com"
+git checkout asm-backend && git pull --rebase origin asm-backend
+export CORPUS=/home/claude/snobol4corpus/crosscheck
+STOP_ON_FAIL=0 CORPUS=$CORPUS bash test/crosscheck/run_crosscheck.sh   # 100/106
+CORPUS=$CORPUS bash test/crosscheck/run_crosscheck_asm.sh               # 26/26
+# Sprint: monitor-3way — wire SPITBOL as 3rd participant
+# Goal: run_monitor.sh hello.sno exits 0 with all 3 streams present and matching
+# Read TESTING.md oracle table for SPITBOL TRACE format differences
+```
