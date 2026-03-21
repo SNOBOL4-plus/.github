@@ -11,7 +11,8 @@ blocked the push. History had to be rewritten. **Never again.**
 On 2026-03-16 the token was reconstructed and displayed in plain text in chat. Same exposure risk. **Never again.**
 On 2026-03-18 the token was written repeatedly in chat handoff summaries. **Never again.**
 
-- Token lives in Lon's memory only. Provided at session start. Used in shell only, never on disk.
+- Token is provided once by Lon in the opening prompt of each session. Used in shell as needed throughout. Never on disk.
+- **Never ask Lon for the token.** It was given at session start. If it wasn't, wait — do not prompt.
 - **Never reconstruct, quote, echo, or display the token in chat** — not even to confirm format. Acknowledge receipt silently and move on.
 - **Never include a "Token: ..." line in handoff summaries, next-session start blocks, or any chat output.** Ever. For any reason.
 - Write `TOKEN=TOKEN_SEE_LON` as placeholder in any file that references it.
