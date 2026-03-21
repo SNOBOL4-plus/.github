@@ -9668,3 +9668,73 @@ bash test/crosscheck/run_crosscheck_jvm_rung.sh \
   $CORPUS/strings $CORPUS/keywords $CORPUS/functions $CORPUS/data 2>&1 | tail -2
 # Then: implement cross-scope goto fix per JVM.md CRITICAL NEXT ACTION
 ```
+## Session N-208 — M-NET-CROSSCHECK: 110/110 NET backend
+
+**Branch:** `net-backend` · **Commit:** `fbca6aa`
+**Date:** 2026-03-20
+
+### What happened
+- Diagnosed 105/110 failure: runtime DLLs (`snobol4lib.dll`, `snobol4run.dll`) not present in `NET_CACHE` — every test silently failing with `FileNotFoundException`. Built DLLs from `src/runtime/net/*.il`, added to repo, patched harness adapter to auto-copy.
+- Fixed `E_ATP` (`@VAR`) varname bug: emitter read `pat->sval` (always NULL) instead of `expr_left(pat)->sval`. Also added `E_ATP` to `scan_expr_vars` so `@VAR` variables get `.field` declarations.
+- Fixed goal-directed `E_CONC`: predicate functions (DIFFER/GT/IDENT/etc.) inside a concatenation RHS now short-circuit to statement fail label on failure, maintaining CIL stack balance (pop accumulated strings before branching). Added `net_expr_can_fail()` helper restricted to predicate functions only — pattern constructors must not trigger short-circuit.
+- Generated local skip label for assignment statements with no `:F` so DIFFER-in-concat can abort cleanly.
+- 110/110 crosscheck confirmed. Harness adapter patched.
+
+### State at handoff
+- `snobol4x` `net-backend`: HEAD `fbca6aa` N-208 — 110/110 ✅
+- `snobol4harness` `main`: HEAD `eced661` — adapter patched
+- M-NET-CROSSCHECK ✅ fired
+
+### Next session start (N-209)
+```bash
+cd /home/claude/snobol4x
+git config user.name "LCherryholmes" && git config user.email "lcherryh@yahoo.com"
+git checkout net-backend && git pull
+git log --oneline -3   # verify HEAD = fbca6aa N-208
+# Invariant: 110/110
+mkdir -p /tmp/snobol4x_net_cache
+CORPUS=/home/claude/snobol4corpus/crosscheck bash test/crosscheck/run_crosscheck_net.sh 2>&1 | tail -3
+# Sprint: M-NET-SAMPLES — roman.sno + wordcount.sno PASS via NET backend
+INC=/home/claude/snobol4corpus/programs/inc
+ROMAN=/home/claude/snobol4corpus/benchmarks/roman.sno
+WORDCOUNT=/home/claude/snobol4corpus/crosscheck/strings/wordcount.sno
+./sno2c -net -I$INC $ROMAN > /tmp/roman_net.il && ilasm /tmp/roman_net.il /output:/tmp/snobol4x_net_cache/roman_net.exe >/dev/null 2>&1
+echo "XIV" | mono /tmp/snobol4x_net_cache/roman_net.exe
+## Session D-163 — M-NET-SPITBOL-SWITCHES confirmed
+
+**Date:** 2026-03-20
+**Branch:** main
+**HEAD at start:** `8feb139` D-162
+**HEAD at end:** `8feb139` D-162 (no new code — D-162 already committed; this session confirms and closes)
+
+**What happened:**
+- D-162 code was already committed to main at session start
+- Installed .NET 10 SDK at `/usr/local/dotnet10` (repo targets net10.0; .NET 8 insufficient)
+- `dotnet build Snobol4.sln -c Release -p:EnableWindowsTargeting=true` → 0 errors, 8 warnings (pre-existing)
+- `dotnet test TestSnobol4/TestSnobol4.csproj -c Release -p:EnableWindowsTargeting=true` → **1911/1913 (2 skipped)**
+- All 26 SpitbolSwitchTests PASS — M-NET-SPITBOL-SWITCHES ✅ fired
+- PLAN.md: DOTNET row updated, M-NET-SPITBOL-SWITCHES → ✅
+- DOTNET.md: NOW → net-polish sprint, D-164 next action, session summaries trimmed
+
+**State at handoff:**
+- `dotnet test` → 1911/1913; invariant for D-164
+- Next sprint: `net-polish` — corpus 106/106 + diag1 35/35 + benchmark grid → M-NET-POLISH
+- .NET 10 SDK: `/usr/local/dotnet10` (export PATH=/usr/local/dotnet10:$PATH)
+
+**Next session start block (D-164):**
+```bash
+cd /home/claude/snobol4dotnet
+git config user.name "LCherryholmes" && git config user.email "lcherryh@yahoo.com"
+export PATH=/usr/local/dotnet10:$PATH
+git log --oneline -3   # expect 8feb139 D-162
+dotnet test TestSnobol4/TestSnobol4.csproj -c Release -p:EnableWindowsTargeting=true
+# expect 1911/1913 — then begin net-polish
+```
+
+## Session D-163 (continued) — warning fixes
+
+- CS0114: `ExternalVar.Equals(Var?)` → added `override` keyword
+- CS8602: `Load.cs` foreach loop — null-guard `original` with `if (original is null) continue`
+- CS8602: `ExtXnblkTests.cs` — same null-guard pattern + `!` null-forgiving on three `FunctionTable[fnKey]!.Handler(...)` invocations
+- Build: 0 errors, 0 warnings; `dotnet test` → 1911/1913 invariant holds
+- Committed `dbdcba7` D-163
