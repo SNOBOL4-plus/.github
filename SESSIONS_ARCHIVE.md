@@ -10589,3 +10589,31 @@ git config user.name "LCherryholmes" && git config user.email "lcherryh@yahoo.co
 1. `sno2c -net` segfault on `asm-backend` — working emitter on `origin/net-backend` (2c417d7 N-209); cherry-pick + reapply B-235 monitor additions
 2. JVM trace empty — verify `MONITOR_FIFO` env var reaches JVM `java` process in run_monitor.sh Step 7
 3. Oracle IGNORE rule needed: CSNOBOL4 emits `VALUE OUTPUT = hello` (uppercase), SPITBOL emits `VALUE output = hello` (lowercase) — add `IGNORE OUTPUT .*` to `tracepoints.conf`
+
+## Session README-4 (2026-03-21) — M-README-JVM-VERIFIED ✅ · M-README-PYTHON-DRAFT ✅ · M-README-CSHARP-DRAFT ✅
+
+**Repos touched:** snobol4jvm · snobol4python · snobol4csharp · snobol4ever/.github
+
+**What happened:**
+- Cloned snobol4ever/.github fresh; scanned all HQ docs (PLAN.md, STATUS.md, ARCH.md, BACKEND-JVM.md, JVM.md, MISC.md, MONITOR.md, SESSIONS_ARCHIVE.md, profile/README.md)
+- Wrote snobol4jvm README from scratch: full four-stage pipeline architecture, exact benchmark grid from STATUS.md, sprint history table (220→1896 tests), beauty.sno achievement (commit `b67d0b1` J-212, cross-scope GOTO fix), JCON lineage, development story, five-way monitor section
+- Wrote snobol4python README: dual backend (C extension + pure Python), full primitive vocabulary, shift-reduce parser stack, snobol4artifact relationship, v0.5.0, PyPI badge
+- Wrote snobol4csharp README: 263/0 tests, all 8 test suites (including 23,531-word Porter Stemmer), regex bridge, ζ operator, Chomsky hierarchy table, Jeffrey Cooper authorship
+- Pushed all three repos; updated PLAN.md NOW row + milestone dashboard
+
+**Commits:**
+- snobol4jvm: `08d5752` main
+- snobol4python: `0990cae` main
+- snobol4csharp: `00846d3` main
+
+**State at handoff:**
+- All README milestones complete except M-README-PROFILE-FINAL (blocked on M-GRID-* runs)
+- Next README work: M-README-PROFILE-FINAL after grids fire
+
+**Next session start (M-README-PROFILE-FINAL — after grids):**
+```bash
+# Prerequisites: M-GRID-BENCH, M-GRID-CORPUS, M-GRID-COMPAT, M-GRID-REFERENCE all fired
+# Then: update profile/README.md with verified numbers from all repo READMEs + grid runs
+# Commit to snobol4ever/.github profile/README.md
+# Post to groups.io SNOBOL4 + SPITBOL lists
+```
