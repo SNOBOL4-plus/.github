@@ -363,7 +363,29 @@ rm -f $TMP.*; exit $FAIL
 **Goal:** Validate harness on known-good programs. Four working demos pass
 all 5 participants with zero unexpected divergences.
 
-**Programs** (from `snobol4x/demo/` on `asm-backend` branch):
+**Fires:** M-MONITOR-4DEMO
+
+---
+
+### Sprint M3b — monitor-corpus9
+
+**Goal:** Use the 5-way monitor to diagnose and fix the 9 known ASM corpus failures.
+The monitor does the work — run each failing test through all 5 participants, read
+the first diverging trace line, fix the emitter, rerun. No bisecting needed.
+
+**The 9 targets:**
+- `022_concat_multipart` — concat slot aliasing (first literal clobbered)
+- `055_pat_concat_seq` — same root cause
+- `064_capture_conditional` — `L_unk_` undefined label emitted
+- `cross`, `word1`, `word2`, `word3`, `word4`, `wordcount` — runtime issues (@ capture, REPLACE, INPUT loop)
+
+**Protocol per test:**
+1. `run_monitor.sh crosscheck/<dir>/<test>.sno` — read first FAIL line
+2. Both oracles agree → ASM is wrong; other backends specify the fix
+3. Fix `emit_byrd_asm.c`, rerun, confirm PASS
+4. ASM corpus count climbs toward 106/106
+
+**Fires:** M-MONITOR-CORPUS9 when ASM corpus reaches 106/106
 - `roman.sno` — works on all 3 backends
 - `wordcount.sno` — works on all 3 backends
 - `treebank.sno` — works on all 3 backends
