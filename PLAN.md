@@ -190,6 +190,7 @@ Sprint detail and runner design → [MONITOR.md](MONITOR.md)
 | **M-MONITOR-IPC-SO** | `monitor_ipc.c` → `monitor_ipc.so`; MON_OPEN/MON_SEND/MON_CLOSE; CSNOBOL4 LOAD() confirmed; no stderr output | snobol4x | ❌ |
 | **M-MONITOR-IPC-CSN** | `inject_traces.py` emits LOAD+MON_OPEN preamble; MONCALL/MONRET/MONVAL call MON_SEND(); CSNOBOL4 trace arrives on FIFO; hello PASS | snobol4x | ❌ |
 | **M-MONITOR-IPC-5WAY** | all 5 participants (CSNOBOL4+SPITBOL+ASM+JVM+NET) write trace to per-participant FIFO; `run_monitor.sh` parallel launch + collector; hello PASS all 5; zero stderr/stdout blending | snobol4x | ❌ |
+| **M-MONITOR-IPC-TIMEOUT** | `monitor_collect.py` per-participant watchdog: FIFO silence > T seconds → TIMEOUT report with last trace event + participant kill; infinite loop detected automatically | snobol4x | ❌ |
 | **M-MONITOR-4DEMO** | roman + wordcount + treebank pass all 5 participants; claws5 divergence count documented | snobol4x | ❌ |
 | **M-BEAUTY-GLOBAL** | global.sno driver passes ASM via monitor | snobol4x | ❌ |
 | **M-BEAUTY-IS** | is.sno driver passes | snobol4x | ❌ |

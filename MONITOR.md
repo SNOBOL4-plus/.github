@@ -85,24 +85,90 @@ MONVAL  MON_SEND('VALUE',  MONN ' = ' CONVERT(VALUE(MONN),'STRING')) :(RETURN)
 Change: open `getenv("MONITOR_FIFO")` at init time; write there instead.
 Same atomic write, zero stderr pollution.
 
+### Timeout = Infinite Loop Detection
+
+**The key insight:** Between any two TRACE callbacks, a correct participant emits its next
+event promptly. A FIFO that goes **silent for longer than T seconds** between events means
+exactly one thing: that participant is in an infinite loop (or deadlocked). No bisecting
+needed — we already know *which* participant and *which* trace event was last seen before it
+hung.
+
+`monitor_collect.py` uses `select()`/`poll()` with a configurable timeout (default 10s)
+on all open FIFO file descriptors simultaneously:
+
+```python
+INTER_EVENT_TIMEOUT = 10   # seconds; configurable via --timeout
+
+ready = select.select(open_fifos, [], [], INTER_EVENT_TIMEOUT)
+if not ready[0]:
+    # silence on ALL remaining FIFOs → global timeout → kill all
+    kill_all_participants()
+else:
+    for fd in ready[0]:
+        line = fd.readline()
+        if line == '':          # EOF = participant exited cleanly
+            close_fifo(fd)
+        else:
+            record_event(fd, line)
+            # per-participant watchdog: reset this participant's timer
+```
+
+Per-participant watchdog: each participant has its own `last_event_time`. After any `select()`
+returns, any participant whose `last_event_time` is more than T seconds ago is declared hung:
+
+```python
+now = time.monotonic()
+for p in participants:
+    if p.alive and (now - p.last_event_time) > INTER_EVENT_TIMEOUT:
+        print(f"TIMEOUT [{p.name}] — last event: {p.last_event!r}")
+        print(f"  → infinite loop or deadlock at this trace point")
+        p.kill()
+        p.alive = False
+```
+
+**What the operator sees:**
+```
+PASS [csn] hello
+PASS [spl] hello
+TIMEOUT [asm] — last event: 'VALUE X = 3'
+  → infinite loop or deadlock at this trace point
+PASS [jvm] hello
+PASS [net] hello
+```
+
+The two agreeing participants (csn + spl = oracles) immediately specify where the loop is.
+The last trace event before silence is the exact statement where the ASM backend diverged
+into non-termination. No `&STLIMIT` needed. No binary search. The monitor *is* the debugger.
+
+**Note on `&STLIMIT`:** Still useful as a hard backstop *inside* the SNOBOL4 program to
+prevent truly runaway programs from filling the FIFO. Set `&STLIMIT = 5000000` in
+`tracepoints.conf` preamble. If hit, CSNOBOL4/SPITBOL emit an error to stderr (clean,
+not the trace FIFO) and exit — the FIFO closes, the collector sees EOF, marks that
+participant done. Belt and suspenders.
+
 ### run_monitor.sh — parallel launch
 
 ```bash
 mkfifo $TMP/mon_{csn,spl,asm,jvm,net}.fifo
-# start collector: reads all 5 FIFOs → 5 .norm files
-python3 monitor_collect.py $TMP/mon_*.fifo &
+# start collector: reads all 5 FIFOs → 5 .norm files; kills hung participants
+python3 monitor_collect.py --timeout 10 \
+    --pids csn:$CSN_PID,spl:$SPL_PID,asm:$ASM_PID,jvm:$JVM_PID,net:$NET_PID \
+    $TMP/mon_csn.fifo $TMP/mon_spl.fifo $TMP/mon_asm.fifo \
+    $TMP/mon_jvm.fifo $TMP/mon_net.fifo &
+COLLECTOR=$!
 
 MONITOR_FIFO=$TMP/mon_csn.fifo MONITOR_SO=./monitor_ipc.so \
-    snobol4 ... $TMP/instr.sno &
+    snobol4 ... $TMP/instr.sno & CSN_PID=$!
 MONITOR_FIFO=$TMP/mon_spl.fifo MONITOR_SO=./monitor_ipc.so \
-    spitbol  ... $TMP/instr.sno &
-MONITOR_FIFO=$TMP/mon_asm.fifo ./snobol4-asm $SNO &
-MONITOR_FIFO=$TMP/mon_jvm.fifo ./snobol4-jvm $SNO &
-MONITOR_FIFO=$TMP/mon_net.fifo ./snobol4-net $SNO &
-wait
+    spitbol  ... $TMP/instr.sno & SPL_PID=$!
+MONITOR_FIFO=$TMP/mon_asm.fifo ./snobol4-asm $SNO & ASM_PID=$!
+MONITOR_FIFO=$TMP/mon_jvm.fifo ./snobol4-jvm $SNO & JVM_PID=$!
+MONITOR_FIFO=$TMP/mon_net.fifo ./snobol4-net $SNO & NET_PID=$!
+wait $COLLECTOR
 ```
 
-All 5 run in parallel. No sequential dependency. No stream blending. Ever.
+All 5 run in parallel. No sequential dependency. No stream blending. Hung participants
+are killed automatically with a precise last-seen trace event as the bug marker.
 
 ---
 

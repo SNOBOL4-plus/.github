@@ -63,6 +63,7 @@ CORPUS=$CORPUS bash test/crosscheck/run_crosscheck_asm.sh               # 26/26
 | M-MONITOR-IPC-SO | monitor_ipc.so built; MON_OPEN/MON_SEND/MON_CLOSE work; CSNOBOL4 LOAD() confirmed | ❌ |
 | M-MONITOR-IPC-CSN | inject_traces.py emits LOAD/MON_OPEN preamble; CSNOBOL4 trace via FIFO; hello PASS | ❌ |
 | M-MONITOR-IPC-5WAY | all 5 participants via FIFO; hello PASS all 5; no stderr/stdout blending | ❌ |
+| M-MONITOR-IPC-TIMEOUT | monitor_collect.py watchdog: FIFO silence > T sec → kill + report last trace event | ❌ |
 | M-MONITOR-4DEMO | roman+wordcount+treebank pass all 5 | ❌ |
 | M-BEAUTY-GLOBAL | global.sno driver passes | ❌ |
 | M-BEAUTY-IS … M-BEAUTY-TRACE | 18 more subsystem drivers | ❌ |
