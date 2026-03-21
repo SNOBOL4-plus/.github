@@ -10722,3 +10722,21 @@ lein bench 2>&1   # or equivalent
 - File map: match.clj · primitives.clj · patterns.clj · grammar.clj · emitter.clj
            operators.clj · runtime.clj · jvm_codegen.clj · transpiler.clj · vm.clj
 - Design laws: 10 immutable laws in BACKEND-JVM.md — read before touching match.clj
+
+## Session README-6 addendum (2026-03-21) — snobol4jvm README corrected
+
+**What happened:**
+- Discovered M-README-JVM-VERIFIED (`08d5752`) had silently dropped two valued sections
+  present in the M-README-JVM-DRAFT (`e4626cb`):
+  (1) Worm corpus / micro-worm / Cooper suite / bootstrap test descriptions
+  (2) Full project structure (functions.clj / env.clj / trace.clj / generator.clj /
+      snocone_emitter.clj) with per-file descriptions
+  Also lost: match.clj frame vector diagram, Stack VM opcode table, transpiler
+  code example, Gregg Townsend credit (JCON co-author)
+- Fix: restored draft (`e4626cb`) as base; merged in new sections from README-4
+  (beauty.sno achievement with correct commit + root cause, five-way monitor section)
+- Pushed corrected README: `0ee1143` — 391 lines, all sections present
+- Updated PLAN.md: M-README-JVM-VERIFIED hash corrected to `0ee1143`
+
+**Lesson:** When writing VERIFIED READMEs, always diff against the DRAFT and confirm
+no sections were lost. The DRAFT may contain source-verified details not in HQ docs.
