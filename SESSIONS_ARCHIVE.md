@@ -10797,3 +10797,60 @@ function names, real operators, real code examples — that HQ docs do not conta
 VERIFIED passes must always diff against DRAFT and confirm no API content was lost.
 The rule for next session: git show HEAD~1:README.md | wc -l vs wc -l README.md —
 if current is shorter, investigate before declaring done.
+
+## Session B-238 — 2026-03-21 — PIVOT: Technique 2 + 3-way merge strategy
+
+**Branch:** .github main  
+**Commit:** `e760c8e`  
+**Files changed:** PLAN.md · TINY.md · ARCH.md · BACKEND-X64.md
+
+### What happened
+
+Planning session. Two major architectural decisions recorded:
+
+**1. M-MERGE-3WAY strategy designed.**
+Three parallel branches (`asm-backend` B-237, `jvm-backend` J-212, `net-backend` N-209)
+diverged during concurrent development. Merge protocol: staged via `merge-staging` branch,
+asm-backend as base, jvm merged first then net, invariant checks after each merge
+(97→106/106 ASM corpus, 110/110 NET, JVM corpus), then PR into main, then `v-post-merge`
+tag, then fan-out to three fresh per-backend branches.
+
+**2. M-BOOTSTRAP prerequisite removed from Technique 2.**
+Key insight: `emit_byrd_asm.c` already knows every box's full structure at compile time.
+It can emit relocation tables as NASM data sections directly — no self-hosting required.
+The "Why not now" blocker in ARCH.md was wrong. Technique 2 (mmap+memcpy+relocate,
+stackless Byrd boxes, per-invocation DATA blocks) can be implemented now, post-merge.
+This replaces the entire class of per-bug ASM fixes with a single architectural fix.
+The 9 known corpus failures (022, 055, 064, cross, word1-4, wordcount) are all
+stack-corruption / shared-locals bugs that T2 fixes by construction.
+
+**Milestone chain added to PLAN.md:**
+M-MERGE-3WAY → M-T2-RUNTIME → M-T2-RELOC → M-T2-EMIT-TABLE → M-T2-EMIT-SPLIT →
+M-T2-INVOKE → M-T2-RECUR → M-T2-CORPUS → M-T2-JVM → M-T2-NET → M-T2-FULL
+
+After M-T2-FULL: MONITOR sprint resumes on clean ground. No more per-bug patches.
+M-MONITOR-CORPUS9 may be superseded entirely by M-T2-CORPUS.
+
+**Tools installed this session (container state):**
+CSNOBOL4 2.3.3 built from tarball, SPITBOL bootsbl built from x64, mono/ilasm, nasm,
+libgc-dev, m4. Precheck: 28/30 (2 cosmetic ASM null script bugs, not compiler bugs).
+
+### State at handoff
+
+- snobol4x `asm-backend` HEAD: `c6a6544` B-237 (unchanged — no code this session)
+- .github HEAD: `e760c8e` B-238
+- Next milestone to fire: M-MONITOR-4DEMO (still needed before merge)
+- Next session: B-239 — run roman/wordcount/treebank through 5-way monitor
+
+### Next session start block
+
+```bash
+cd /home/claude/snobol4x && git checkout asm-backend
+git config user.name "LCherryholmes" && git config user.email "lcherryh@yahoo.com"
+git pull --rebase origin asm-backend   # expect c6a6544 B-237
+export PATH=$PATH:/usr/local/bin:/home/claude/x64
+export INC=/home/claude/snobol4corpus/programs/inc
+export PROG=/home/claude/snobol4corpus/programs
+bash test/monitor/precheck.sh
+bash test/monitor/run_monitor.sh $PROG/roman/roman.sno
+```
