@@ -14,7 +14,7 @@ Session numbers use per-type prefixes (see RULES.md §SESSION NUMBERS): B=backen
 
 | Session | Sprint | HEAD | Next milestone |
 |---------|--------|------|----------------|
-| **TINY backend** | `asm-backend` B-223 — M-ASM-RUNG8 ✅ DONE: DESCR_t slen, BSTRVAL, binary REPLACE/SIZE fix; 3/3 rung8 PASS | `1d0a983` B-223 | M-ASM-RUNG10 |
+| **TINY backend** | `asm-backend` B-225 — M-ASM-RUNG10 WIP: 4/9 PASS (1012+1014+1015+1018); remaining: 1013 NRETURN (route→gamma), 1016 EVAL (DT_P branch), 1017 ARG/LOCAL (emit DEFINE_fn at PROG_INIT), 1010/1011 trampoline (B-227) | `284d6cc` B-225 | M-ASM-RUNG10 |
 | **TINY JVM** | `jvm-backend` J-211 — M-JVM-BEAUTY WIP: jvm_expand_label + findRefs scope fix + computed goto dispatch; 1 Jasmin error remains (cross-scope :F(error) from fn to main label) | `d4012e0` J-211 | M-JVM-BEAUTY |
 | **TINY NET** | `net-backend` N-209 — M-NET-SAMPLES ✅ DONE: roman.sno + wordcount.sno PASS; direct stsfld/ldsfld save/restore replaces reflection in fn prologue/epilogue | `2c417d7` N-209 | M-NET-BEAUTY |
 | **TINY frontend** | `main` F-210 — M-FLAT-NARY ✅ merged to main; sc7_procedure/sc9_multiproc FAIL diagnosed: do_procedure body stmts not appearing in output; next: fix sc_cf.c do_procedure → M-SC-CORPUS-R2 | `6495074` F-210 | M-SC-CORPUS-R2 |

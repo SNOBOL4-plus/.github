@@ -9763,3 +9763,32 @@ INC=/home/claude/snobol4corpus/programs/inc
 BEAUTY=/home/claude/snobol4corpus/programs/beauty/beauty.sno
 ./sno2c -net -I$INC $BEAUTY > /tmp/beauty.il
 ```
+
+## Session B-225 — M-ASM-RUNG10 WIP (4/9, diagnosis + ARG/LOCAL foundation)
+
+**Date:** 2026-03-20
+**Branch:** asm-backend
+**HEAD at handoff:** `284d6cc`
+**Invariants:** 100/106 C · 26/26 ASM ✅
+
+### What happened
+- Cloned all repos, confirmed invariants, read all 5 failing rung10 test cases.
+- Diagnosed root causes: 1013 (NRETURN→omega should be →gamma), 1016 (EVAL_fn ignores DT_P), 1017 (_b_ARG/_b_LOCAL missing + DEFINE_fn not emitted at PROG_INIT), 1010/1011 (APPLY_fn fn==NULL trampoline gap).
+- Added `_b_ARG` and `_b_LOCAL` implementations to `snobol4.c` after FNCBLK_t with forward decls; registered both. Builds clean, invariants hold. Pushed `284d6cc`.
+- Studied Proebsting Byrd Box paper — confirms four-port model underpins all emitters.
+- Deferred 1010/1011 trampoline to B-227.
+
+### Next session start (B-226)
+```bash
+cd /home/claude/snobol4x
+git config user.name "LCherryholmes" && git config user.email "lcherryh@yahoo.com"
+git pull --rebase origin asm-backend
+apt-get install -y libgc-dev nasm && make -C src
+cd src/runtime/asm && gcc -g -O0 -c snobol4_asm_harness.c -o snobol4_asm_harness.o && cd /home/claude/snobol4x
+CORPUS=/home/claude/snobol4corpus/crosscheck
+STOP_ON_FAIL=0 CORPUS=$CORPUS bash test/crosscheck/run_crosscheck.sh    # 100/106
+CORPUS=$CORPUS bash test/crosscheck/run_crosscheck_asm.sh                # 26/26
+bash test/crosscheck/run_crosscheck_asm_rung.sh $CORPUS/rung10           # 4/9
+# Fix order: 1013 (resolve_special_goto NRETURN→gamma) → 1017 (PROG_INIT DEFINE_fn per fn) → 1016 (EVAL_fn DT_P branch)
+# HEAD: 284d6cc B-225
+```
