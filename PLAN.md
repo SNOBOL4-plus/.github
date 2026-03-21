@@ -21,7 +21,7 @@ Session numbers use per-type prefixes (see RULES.md §SESSION NUMBERS): B=backen
 | **TINY JVM** | `jvm-backend` J-212 — clean slate | `b67d0b1` J-212 | TBD |
 | **TINY frontend** | `main` F-210 — clean slate | `6495074` F-210 | TBD |
 | **DOTNET** | `net-polish` D-163 — clean slate | `8feb139` D-163 | TBD |
-| **README** | `main` — M-README-CSHARP-DRAFT ✅ | `00846d3` snobol4csharp | M-README-PROFILE-FINAL (grids required first) |
+| **README** | `main` — M-README-CSHARP-DRAFT ✅ | `00846d3` snobol4csharp | M-README-DEEP-SCAN (next) |
 
 **Invariants (check before any work):**
 - TINY: `97/106` ASM corpus (`run_crosscheck_asm_corpus.sh`) · 9 known failures: 022, 055, 064, cross, word1-4, wordcount
@@ -330,11 +330,60 @@ If GitHub does not resolve the relative link correctly, move GRIDS.md to
 
 ---
 
+## Deep Scan + Benchmark Milestone
+
+**M-README-PROFILE-FINAL is on hold** pending M-README-DEEP-SCAN and the M-GRID-* harness runs.
+
+M-README-DEEP-SCAN is the prerequisite: a dedicated session per repo that goes deeper than previous README verification passes — scanning every source file, header, comment, and doc string, and running the benchmark suite for that repo to produce verified, community-reproducible numbers.
+
+| ID | Repo | Trigger | Status |
+|----|------|---------|--------|
+| **M-DEEP-SCAN-JVM** | snobol4jvm | Full source scan: every `.clj` file, all docstrings, grammar rules, emitter logic, test names; benchmark suite run (`lein bench` or equivalent); all README claims re-verified or corrected against actual source | snobol4jvm | ❌ |
+| **M-DEEP-SCAN-X** | snobol4x | Full source scan: all `.c`/`.h` files in frontend/ ir/ backend/ driver/ runtime/; all comments and doc blocks; benchmark suite run (crosscheck + perf harness); ASM/JVM/NET corpus numbers re-verified | snobol4x | ❌ |
+| **M-DEEP-SCAN-DOTNET** | snobol4dotnet | Full source scan: all `.cs` files, XML doc comments, test names; benchmark suite run (`dotnet run --project benchmarks`); MSIL emitter steps verified; coordinate with Jeff Cooper | snobol4dotnet | ❌ |
+| **M-DEEP-SCAN-PYTHON** | snobol4python | Full source scan: all `.py` and `.c` extension files, docstrings, test names; benchmark run (C extension vs pure-Python timing); v0.5.0 API surface verified | snobol4python | ❌ |
+| **M-DEEP-SCAN-CSHARP** | snobol4csharp | Full source scan: all `.cs` files, XML doc comments, test names; benchmark run (pattern match timing on Porter/Treebank/CLAWS5 corpora); delegate-capture API surface verified | snobol4csharp | ❌ |
+| **M-README-DEEP-SCAN** | all | All five M-DEEP-SCAN-* milestones fired; every README in the org reflects actual source — line counts, function names, benchmark numbers, known gaps — not summaries from HQ docs | all repos | ❌ |
+
+### What each M-DEEP-SCAN-* session does
+
+Each is a dedicated session (one repo per session — source scanning fills the context window):
+
+1. Clone the repo fresh
+2. Walk **every source file** — not just entry points:
+   - All `.clj` / `.c` / `.h` / `.cs` / `.py` files
+   - All inline comments, docstrings, and XML doc blocks
+   - All test file names and test group names
+   - All benchmark harness files and their programs
+3. Run the benchmark suite and record actual numbers with machine spec (CPU, RAM, OS, date)
+4. Run the test suite and confirm counts match README
+5. Correct any README claim that doesn't match source
+6. Add a **source line count table** (per file, from `wc -l`) — makes the scope of each component concrete
+7. Add a **benchmark table** with actual measured numbers, build flags, and machine spec
+8. Commit, push, fire the milestone
+
+### Dependency chain
+
+```
+M-DEEP-SCAN-JVM    ┐
+M-DEEP-SCAN-X      │
+M-DEEP-SCAN-DOTNET ├──→  M-README-DEEP-SCAN  ──→  M-README-PROFILE-FINAL
+M-DEEP-SCAN-PYTHON │
+M-DEEP-SCAN-CSHARP ┘
+```
+
+M-README-DEEP-SCAN fires when all five individual scans are done.
+M-README-PROFILE-FINAL fires after M-README-DEEP-SCAN AND all M-GRID-* milestones.
+
+---
+
 ## Final Integration Milestone — Profile README v2
+
+> **ON HOLD** — blocked on M-README-DEEP-SCAN + M-GRID-* harness runs. Do not attempt until both chains complete.
 
 | ID | Trigger | Status |
 |----|---------|--------|
-| **M-README-PROFILE-FINAL** | profile/README.md updated a second time, after all of the following have fired: M-README-JVM-VERIFIED, M-README-X-VERIFIED, M-README-DOTNET-VERIFIED, M-README-PYTHON-DRAFT, M-README-CSHARP-DRAFT, M-GRID-BENCH, M-GRID-CORPUS, M-GRID-COMPAT, M-GRID-REFERENCE. At that point every number, every claim, every repo description, every benchmark figure, and every feature statement in the profile README is backed by verified source-scanned repo READMEs and actual harness runs. This is the version that goes to the SNOBOL4/SPITBOL community on groups.io and to the broader world. | ❌ |
+| **M-README-PROFILE-FINAL** | profile/README.md updated a second time, after all of the following have fired: M-README-DEEP-SCAN, M-GRID-BENCH, M-GRID-CORPUS, M-GRID-COMPAT, M-GRID-REFERENCE. At that point every number, every claim, every repo description, every benchmark figure, and every feature statement in the profile README is backed by deep-scanned repo READMEs and actual harness runs. This is the version that goes to the SNOBOL4/SPITBOL community on groups.io and to the broader world. | ❌ |
 
 ### What M-README-PROFILE-FINAL incorporates
 
@@ -351,23 +400,25 @@ If GitHub does not resolve the relative link correctly, move GRIDS.md to
 ### Dependency chain (complete picture)
 
 ```
-clone repos → scan source → verify READMEs
+clone repos → deep source scan → benchmarks → verified READMEs
      │
-     ├─ M-README-JVM-VERIFIED
-     ├─ M-README-X-VERIFIED
-     ├─ M-README-DOTNET-VERIFIED      ← coordinate with Jeff Cooper
-     ├─ M-README-PYTHON-DRAFT
-     └─ M-README-CSHARP-DRAFT
+     ├─ M-DEEP-SCAN-JVM
+     ├─ M-DEEP-SCAN-X
+     ├─ M-DEEP-SCAN-DOTNET        ← coordinate with Jeff Cooper
+     ├─ M-DEEP-SCAN-PYTHON
+     └─ M-DEEP-SCAN-CSHARP
                 │
                 ▼
-     run harness → fill grids
-     │
-     ├─ M-GRID-CORPUS
-     ├─ M-GRID-BENCH
-     ├─ M-GRID-COMPAT
-     └─ M-GRID-REFERENCE
+     M-README-DEEP-SCAN  ←  all five scans complete
                 │
-                ▼
+                │    run harness → fill grids
+                │    │
+                │    ├─ M-GRID-CORPUS
+                │    ├─ M-GRID-BENCH
+                │    ├─ M-GRID-COMPAT
+                │    └─ M-GRID-REFERENCE
+                │         │
+                └──────────▼
      M-README-PROFILE-FINAL  ←  the version that goes public
                 │
                 ▼

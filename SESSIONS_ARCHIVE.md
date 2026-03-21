@@ -10617,3 +10617,20 @@ git config user.name "LCherryholmes" && git config user.email "lcherryh@yahoo.co
 # Commit to snobol4ever/.github profile/README.md
 # Post to groups.io SNOBOL4 + SPITBOL lists
 ```
+
+## Session README-5 (2026-03-21) — M-README-DEEP-SCAN milestone added
+
+**Repo:** snobol4ever/.github · **Branch:** main
+
+**What happened:**
+- M-README-PROFILE-FINAL placed on hold — blocked pending deep source scan + M-GRID-* harness runs
+- New milestone chain added: M-DEEP-SCAN-JVM / X / DOTNET / PYTHON / CSHARP → M-README-DEEP-SCAN
+- Each M-DEEP-SCAN-* session: clone repo, walk every source file (all .clj/.c/.h/.cs/.py), read all comments/docstrings/doc blocks, run benchmark suite with machine spec, run test suite, add source line count table, add verified benchmark table, correct any README claims, commit
+- M-README-DEEP-SCAN fires when all five individual scans complete
+- M-README-PROFILE-FINAL dependency chain updated: now requires M-README-DEEP-SCAN + all M-GRID-* milestones
+- NOW row updated: next milestone = M-README-DEEP-SCAN
+- PLAN.md dependency chain diagram rewritten to reflect new structure
+
+**State at handoff:**
+- HQ HEAD: to be committed this session
+- Next README session: M-DEEP-SCAN-JVM (one repo per session — start with snobol4jvm)
