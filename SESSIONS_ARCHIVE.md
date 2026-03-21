@@ -9499,3 +9499,34 @@ CORPUS=/home/claude/snobol4corpus/crosscheck HARNESS_REPO=/home/claude/snobol4ha
 # snobol4lib.il: sno_array_new/get/set backed by static Dictionary<string,List<string>>
 # emit_byrd_net.c: E_IDX lvalue+rvalue; ARRAY/TABLE/DATA in E_FNC
 ```
+
+## Session B-223 — M-ASM-RUNG8: binary string REPLACE/SIZE fix
+
+**Branch:** asm-backend  **HEAD before:** `be4a978` B-222  **HEAD after:** `1d0a983` B-223
+
+**What happened:**
+- Diagnosed M-ASM-RUNG8 failure: `810_replace` test 2 failed because `&ALPHABET` is a 256-byte binary string with NUL at index 0. NUL-terminated `char*` representation truncated it to length 0, breaking `REPLACE_fn` (strlen(from)=0 → no translation table) and `_b_SIZE` (pointer-identity hack broke for derived strings).
+- Fix: added `uint32_t slen` to `DESCR_t` in the existing 4-byte padding (struct stays 16 bytes, zero ABI change). Added `BSTRVAL(s,len)` macro and `descr_slen()` inline helper.
+- `NV_SET_fn("ALPHABET")` now uses `BSTRVAL(alphabet, 256)`.
+- `_b_SIZE`: uses `slen` field for binary strings; falls back to `VARVAL_fn`+`strlen` for normal strings (preserves int→string conversion path).
+- `REPLACE_fn`: uses `descr_slen()` for all three arg lengths; `binary_mode` flag (from/to/subject has slen>0) preserves NUL bytes in output for positional alignment — critical for `replace(&alphabet,'xy','ab')` use-case.
+- 811_size and 812_dupl: regressed mid-session (segfault from descr_slen on non-string types) then fixed by making _b_SIZE explicit.
+- Final: 810_replace 3/3, 811_size 3/3, 812_dupl 3/3 PASS. M-ASM-RUNG8 ✅.
+- Invariants: 100/106 C (6 pre-existing) · 26/26 ASM hold.
+
+**State at handoff:** Clean. snobol4x pushed. HQ pushed.
+
+**Next session B-224 start block:**
+```bash
+cd /home/claude/snobol4x
+git config user.name "LCherryholmes" && git config user.email "lcherryh@yahoo.com"
+git checkout asm-backend && git pull --rebase origin asm-backend
+apt-get install -y libgc-dev nasm m4
+# CSNOBOL4: upload snobol4-2_3_3_tar.gz, then: tar xzf ... && cd snobol4-2.3.3 && ./configure && make && make install
+make -C src
+CORPUS=/home/claude/snobol4corpus/crosscheck
+STOP_ON_FAIL=0 CORPUS=$CORPUS bash test/crosscheck/run_crosscheck.sh    # 100/106
+RT=src/runtime && gcc -O0 -g -c "$RT/asm/snobol4_asm_harness.c" -I"$RT/snobol4" -I"$RT" -I"src/frontend/snobol4" -w -o "$RT/asm/snobol4_asm_harness.o"
+CORPUS=$CORPUS bash test/crosscheck/run_crosscheck_asm.sh                # 26/26
+bash test/crosscheck/run_crosscheck_asm_rung.sh $CORPUS/rung10           # Sprint: M-ASM-RUNG10
+```
