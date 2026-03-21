@@ -117,6 +117,8 @@ Sprint detail lives in the active platform L2 doc (TINY.md / JVM.md / DOTNET.md)
 | **M-ASM-R11** | data/ — ARRAY/TABLE/DATA PASS | ✅ session198 |
 | **M-ASM-RECUR** | Recursive SNOBOL4 functions correct via ASM backend — roman.sno segfault fixed; each function invocation gets its own frame (push rbp/mov rbp,rsp/sub rsp,56 at α; add rsp,56/pop rbp at γ/ω); call sites use .bss uid slots not stack pushes; 26/26 + 106/106 hold | ✅ `266c866` B-204 |
 | **M-ASM-SAMPLES** | roman.sno and wordcount.sno pass via ASM backend; artifacts/asm/roman.s and artifacts/asm/wordcount.s committed and assembling clean | ✅ `266c866` B-204 |
+| **M-ASM-TREEBANK** | treebank.sno correct output via ASM backend; artifacts/asm/samples/treebank.s assembles clean and diff vs CSNOBOL4 oracle empty | ❌ treebank.s assembles clean (B-226); runtime correctness not yet verified |
+| **M-ASM-CLAWS5** | claws5.sno correct output via ASM backend; artifacts/asm/samples/claws5.s assembles clean and diff vs CSNOBOL4 oracle empty | ❌ claws5.s ~95% — 3 undefined beta labels (NRETURN fns); gates on NRETURN fix (M-ASM-RUNG10) |
 | **M-ASM-RUNG8** | rung8/ — REPLACE/SIZE/DUPL assertion harness 3/3 PASS via ASM backend | ✅ `1d0a983` B-223 |
 | **M-ASM-RUNG9** | rung9/ — CONVERT/DATATYPE/INTEGER/LGT/numeric predicates 5/5 PASS via ASM backend | ✅ `3133497` B-210 |
 | **M-ASM-RUNG10** | rung10/ — DEFINE/recursion/locals/NRETURN/FRETURN/APPLY 9/9 PASS via ASM backend | ❌ Sprint A-RUNG10 |
@@ -176,6 +178,9 @@ Sprint detail lives in the active platform L2 doc (TINY.md / JVM.md / DOTNET.md)
 | **M-JVM-CROSSCHECK** | 106/106 corpus PASS via JVM backend | ✅ `a063ed9` J-208 |
 | **M-JVM-SAMPLES** | roman.sno + wordcount.sno PASS | ✅ `13245e2` J-210 |
 | **M-JVM-BEAUTY** | beauty.sno self-beautifies via JVM backend | ✅ `b67d0b1` J-212 (Jasmin clean; runtime VerifyError → J-213) |
+| **M-JVM-ROMAN** | roman.sno correct output via JVM backend | ❌ Jasmin error: L_RETURN label not added — RETURN routing bug in emit_byrd_jvm.c |
+| **M-JVM-TREEBANK** | treebank.sno correct output via JVM backend | ❌ Jasmin error: L_FRETURN label not added — FRETURN routing bug in emit_byrd_jvm.c |
+| **M-JVM-CLAWS5** | claws5.sno correct output via JVM backend | ❌ Jasmin error: L_StackEnd (included label) not defined — include/label scope bug |
 
 ### NET backend — snobol4x TINY (net_emit.c)
 
@@ -195,6 +200,8 @@ Sprint detail lives in the active platform L2 doc (TINY.md / JVM.md / DOTNET.md)
 | **M-NET-SAMPLES** | roman.sno + wordcount.sno PASS | ✅ `2c417d7` N-209 |
 | **M-NET-INDR** | harness 111/111 — fix `$varname` indirect read: `net_indr_get` reads Dictionary but N-209 direct-stsfld fix bypasses Dictionary write; `net_indr_set` must be called alongside `stsfld` for all variable writes, OR `net_indr_get` must fall back to `ldsfld` via reflection — rung2/210_indirect_ref PASS | ❌ Sprint N-210 |
 | **M-NET-BEAUTY** | beauty.sno self-beautifies via NET backend | ❌ Gates on M-NET-INDR |
+| **M-NET-TREEBANK** | treebank.sno correct output via NET backend | ❌ Not yet tested — gates on M-NET-INDR (NRETURN functions in treebank) |
+| **M-NET-CLAWS5** | claws5.sno correct output via NET backend | ❌ Not yet tested — gates on M-NET-INDR (NRETURN functions in claws5) |
 
 ### DOTNET (snobol4dotnet)
 
