@@ -16,7 +16,7 @@ Session numbers use per-type prefixes (see RULES.md §SESSION NUMBERS): B=backen
 |---------|--------|------|----------------|
 | **TINY backend** | `asm-backend` B-223 — M-ASM-RUNG8 ✅ DONE: DESCR_t slen, BSTRVAL, binary REPLACE/SIZE fix; 3/3 rung8 PASS | `1d0a983` B-223 | M-ASM-RUNG10 |
 | **TINY JVM** | `jvm-backend` J-211 — M-JVM-BEAUTY WIP: jvm_expand_label + findRefs scope fix + computed goto dispatch; 1 Jasmin error remains (cross-scope :F(error) from fn to main label) | `d4012e0` J-211 | M-JVM-BEAUTY |
-| **TINY NET** | `net-backend` N-208 — M-NET-CROSSCHECK ✅ DONE: 110/110; E_ATP varname fix; goal-directed E_CONC; runtime DLLs in repo; harness adapter patched | `fbca6aa` N-208 | M-NET-SAMPLES |
+| **TINY NET** | `net-backend` N-209 — M-NET-SAMPLES ✅ DONE: roman.sno + wordcount.sno PASS; direct stsfld/ldsfld save/restore replaces reflection in fn prologue/epilogue | `2c417d7` N-209 | M-NET-BEAUTY |
 | **TINY frontend** | `main` F-210 — M-FLAT-NARY ✅ merged to main; sc7_procedure/sc9_multiproc FAIL diagnosed: do_procedure body stmts not appearing in output; next: fix sc_cf.c do_procedure → M-SC-CORPUS-R2 | `6495074` F-210 | M-SC-CORPUS-R2 |
 | **DOTNET** | `net-polish` D-163 — M-NET-SPITBOL-SWITCHES ✅ fired: 1911/1913; next: M-NET-POLISH | `8feb139` D-162 | M-NET-POLISH |
 
@@ -188,7 +188,7 @@ Sprint detail lives in the active platform L2 doc (TINY.md / JVM.md / DOTNET.md)
 | **M-NET-R3** | strings/ keywords/ — Rungs 8–9 PASS | ✅ `02d1f9b` N-206 |
 | **M-NET-R4** | functions/ data/ — Rungs 10–11 PASS | ❌ Sprint N-R4 — 8 remain: ARRAY/TABLE/DATA + roman |
 | **M-NET-CROSSCHECK** | 110/110 corpus PASS via NET backend | ✅ `fbca6aa` N-208 |
-| **M-NET-SAMPLES** | roman.sno + wordcount.sno PASS | ❌ Sprint N-S1 |
+| **M-NET-SAMPLES** | roman.sno + wordcount.sno PASS | ✅ `2c417d7` N-209 |
 | **M-NET-BEAUTY** | beauty.sno self-beautifies via NET backend | ❌ Sprint N-10 |
 
 ### DOTNET (snobol4dotnet)

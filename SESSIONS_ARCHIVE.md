@@ -9738,3 +9738,28 @@ dotnet test TestSnobol4/TestSnobol4.csproj -c Release -p:EnableWindowsTargeting=
 - CS8602: `ExtXnblkTests.cs` — same null-guard pattern + `!` null-forgiving on three `FunctionTable[fnKey]!.Handler(...)` invocations
 - Build: 0 errors, 0 warnings; `dotnet test` → 1911/1913 invariant holds
 - Committed `dbdcba7` D-163
+
+## Session N-209 — M-NET-SAMPLES ✅
+
+**Branch:** `net-backend` | **HEAD:** `2c417d7`
+
+**What happened:**
+- Diagnosed roman.sno timeout: `net_emit_fn_method` used `net_indr_get`/`net_indr_set` (Dictionary + reflection `SetValue`) to save/restore function args, locals, fn-name on every call. Roman.sno calls ROMAN() 100k times × ~4 recursion levels = ~2.4M reflection calls → 60s timeout.
+- Fix: replaced all save/restore/bind/init in fn prologue/epilogue with direct `ldsfld`/`stsfld` on existing static fields. `net_indr_*` retained only for dynamic `$varname` indirect access.
+- roman.sno: `result: MDCCLXXVI` ✅ | wordcount.sno: `11 words` ✅ | 110/110 crosscheck holds.
+- Committed `artifacts/net/samples/roman.il` + `artifacts/net/samples/wordcount.il`.
+- Also: installed CSNOBOL4 2.3.3 from source as oracle. Updated RULES.md (never ask for token).
+
+**State at handoff:** NET backend 110/110 + roman + wordcount all green. Next: M-NET-BEAUTY.
+
+**Next session start:**
+```bash
+cd /home/claude/snobol4x && git checkout net-backend && git pull
+git config user.name "LCherryholmes" && git config user.email "lcherryh@yahoo.com"
+apt-get install -y libgc-dev nasm mono-complete m4 && make -C src
+bash test/crosscheck/run_crosscheck_net.sh   # expect 110/110
+# Sprint: M-NET-BEAUTY — beauty.sno self-beautifies via NET backend
+INC=/home/claude/snobol4corpus/programs/inc
+BEAUTY=/home/claude/snobol4corpus/programs/beauty/beauty.sno
+./sno2c -net -I$INC $BEAUTY > /tmp/beauty.il
+```

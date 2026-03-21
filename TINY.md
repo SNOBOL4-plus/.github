@@ -107,21 +107,24 @@ Goal: same concept = same name in all four backends. Names should be readable En
 
 ## Last Session Summary
 
+**Session N-209 — M-NET-SAMPLES ✅ complete:**
+- Root cause: `net_emit_fn_method` saved/restored args+locals+fn-name via `net_indr_get`/`net_indr_set` — dictionary + reflection `SetValue` on every call entry/exit. Roman.sno 100k iterations × recursion depth = ~2.4M reflection calls → timeout.
+- Fix: replaced prologue/epilogue save/restore/bind/init with direct `ldsfld`/`stsfld` on existing static fields. `net_indr_*` retained only for dynamic `$varname` indirect access.
+- roman.sno: `result: MDCCLXXVI` ✅. wordcount.sno: `11 words` ✅. 110/110 crosscheck holds.
+- Artifacts: `artifacts/net/samples/roman.il` + `artifacts/net/samples/wordcount.il` committed. HEAD `2c417d7`.
+
 **Session B-223 — M-ASM-RUNG8 ✅ complete:**
-- Root cause: &ALPHABET is a 256-byte binary string with NUL at index 0; NUL-terminated char* representation broke REPLACE/SIZE.
-- Fix: added `uint32_t slen` to DESCR_t padding (struct stays 16 bytes, zero ABI change); `BSTRVAL(s,len)` macro; `descr_slen()` helper.
-- NV_SET_fn("ALPHABET") now uses BSTRVAL(alphabet,256). _b_SIZE uses slen for binary strings. REPLACE_fn uses descr_slen() + binary_mode preserves NUL bytes for positional alignment.
-- 810_replace 3/3, 811_size 3/3, 812_dupl 3/3. Invariants: 100/106 C + 26/26 ASM hold. HEAD `1d0a983`.
+- Fix: `uint32_t slen` in DESCR_t; `BSTRVAL`/`descr_slen()` for binary &ALPHABET. HEAD `1d0a983`.
 
 ## Active Milestones (next 5)
 
 | ID | Status | Notes |
 |----|--------|-------|
-| M-ASM-RUNG11 | ❌ 2/7 | ITEM lvalue emitter fix + PROTOTYPE/VALUE verify — B-212 |
-| M-ASM-LIBRARY | ❌ | Gates on RUNG11 |
-| M-SC-CORPUS-R2 | ❌ | do_procedure body emission fix (sc_cf.c) — F-211 |
-| M-JVM-CROSSCHECK | ❌ | 89/92 (J-208 progress) |
-| M-NET-R1 | ❌ | 74/82 NET — ARB backtrack SEQ-omega bug (N-205 WIP) |
+| M-NET-BEAUTY | ❌ | beauty.sno self-beautifies via NET backend — next NET sprint |
+| M-ASM-RUNG10 | ❌ | DEFINE/recursion/locals/NRETURN/FRETURN/APPLY 9/9 — B-223 |
+| M-ASM-RUNG11 | ❌ | ARRAY/TABLE/DATA 7/7 — gates on RUNG10 |
+| M-SC-CORPUS-R2 | ❌ | do_procedure body emission fix (sc_cf.c) — F-210 |
+| M-JVM-BEAUTY | ❌ | beauty.sno self-beautifies via JVM backend — J-210 |
 
 Full milestone history → [PLAN.md](PLAN.md)
 
@@ -131,10 +134,10 @@ Full milestone history → [PLAN.md](PLAN.md)
 
 | Session | Branch | Focus |
 |---------|--------|-------|
-| B-212 | `asm-backend` | M-ASM-RUNG11 |
+| B-223 | `asm-backend` | M-ASM-RUNG10 |
 | F-210 | `main` | M-SC-CORPUS-R2 |
-| J-208 | `jvm-backend` | M-JVM-CROSSCHECK (89/92) |
-| N-206 | `net-backend` | M-NET-CROSSCHECK — 102/110; ARRAY/TABLE/DATA + roman next |
-| D-156 | `net-perf-analysis` | M-NET-PERF |
+| J-210 | `jvm-backend` | M-JVM-BEAUTY |
+| N-209 | `net-backend` | M-NET-BEAUTY — next sprint |
+| D-162 | `net-spitbol-switches` | M-NET-SPITBOL-SWITCHES |
 
 Per RULES.md: `git pull --rebase` before every push. Update only your row in PLAN.md NOW table.
