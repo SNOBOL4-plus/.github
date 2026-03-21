@@ -12,12 +12,12 @@ snobol4x: multiple frontends, multiple backends.
 
 ## NOW
 
-**Sprint:** `monitor-ipc` — replace stderr/stdout blending with FIFO IPC via LOAD'd C module
+**Sprint:** `monitor-ipc` — build monitor_ipc.so + wire IPC into inject_traces.py
 **HEAD:** `19e26ca` B-227 (asm-backend) · `b67d0b1` J-212 (jvm-backend) · `2c417d7` N-209 (net-backend) · `6495074` F-210 (main)
 **Milestone:** M-MONITOR-IPC-SO (next to fire)
 **Invariants:** 100/106 C (6 pre-existing) · 26/26 ASM
 
-**⚠ CRITICAL NEXT ACTION — Session B-228:**
+**⚠ CRITICAL NEXT ACTION — Session B-229:**
 
 ```bash
 cd /home/claude/snobol4x
@@ -28,21 +28,18 @@ export CORPUS=/home/claude/snobol4corpus/crosscheck
 STOP_ON_FAIL=0 CORPUS=$CORPUS bash test/crosscheck/run_crosscheck.sh   # 100/106
 CORPUS=$CORPUS bash test/crosscheck/run_crosscheck_asm.sh               # 26/26
 
-# IPC design — see MONITOR.md §IPC Architecture
-# Step 1: build test/monitor/monitor_ipc.c → monitor_ipc.so
-#   MON_OPEN(fifo_path)  — opens named FIFO, stores fd in .so global
-#   MON_SEND(kind, body) — writes "KIND body\n" atomically to FIFO fd
-#   MON_CLOSE()          — closes FIFO fd
-#   Compatible ABI for both CSNOBOL4 and SPITBOL LOAD()
-# Step 2: update inject_traces.py — emit LOAD()/MON_OPEN() preamble
-#   MONCALL/MONRET/MONVAL now call MON_SEND() not TERMINAL=
-# Step 3: update run_monitor.sh — mkfifo, set MONITOR_FIFO env var,
-#   launch collector + all participants, wait, diff .norm files
-# Step 4: update ASM runtime comm_var() — write to MONITOR_FIFO path not fd 2
-# Pass: run_monitor.sh hello.sno exits 0; all streams via FIFO, none via stderr
+# Step 1: write test/monitor/monitor_ipc.c
+#   MON_OPEN(STRING)STRING  — open named FIFO O_WRONLY, store fd in .so global
+#   MON_SEND(STRING,STRING)STRING — write "KIND body\n" atomically (< PIPE_BUF)
+#   MON_CLOSE()STRING       — close fd
+#   ABI: lret_t fn(LA_ALIST), headers: load.h snotypes.h macros.h (from CSNOBOL4 src)
+# Step 2: gcc -shared -fPIC monitor_ipc.c -o test/monitor/monitor_ipc.so
+# Step 3: smoke-test: small .sno with LOAD()+MON_OPEN()+MON_SEND() under CSNOBOL4
+# Pass → commit → M-MONITOR-IPC-SO fires
+# Step 4: update inject_traces.py preamble (LOAD+MON_OPEN; callbacks → MON_SEND)
+# Pass hello via FIFO → M-MONITOR-IPC-CSN fires
+# Full design → MONITOR.md §IPC Architecture
 ```
-
-**Full IPC plan → [MONITOR.md](MONITOR.md) §IPC Architecture**
 
 ## Last Session Summary
 

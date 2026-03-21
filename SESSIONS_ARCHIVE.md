@@ -10094,3 +10094,44 @@ CORPUS=$CORPUS bash test/crosscheck/run_crosscheck_asm.sh               # 26/26
 - No code changes this session — strategy + HQ only.
 
 **State at handoff:** All docs updated. Next session B-229 builds monitor_ipc.c → fires M-MONITOR-IPC-SO.
+
+## Session B-228 continued — timeout/liveness insight (2026-03-21)
+
+**What happened (continuation):**
+- Key insight: FIFO silence between trace events = infinite loop detection, not ambiguity
+- monitor_collect.py uses select()/poll() with per-participant watchdog timer (default 10s)
+- FIFO goes silent > T seconds → TIMEOUT report with last trace event + kill participant
+- The two oracle participants still flowing immediately specify the fix
+- &STLIMIT recommended as belt-and-suspenders inside instrumented .sno (hard backstop)
+- Added M-MONITOR-IPC-TIMEOUT to PLAN.md, TINY.md, MONITOR.md §IPC Architecture
+- MONITOR.md now has full timeout/watchdog design with select() pattern and operator output example
+
+**State at handoff:**
+- HQ fully current: PLAN.md · TINY.md · MONITOR.md · SESSIONS_ARCHIVE.md
+- asm-backend HEAD: `19e26ca` B-227 — no code changes this session
+- Next session: **B-229** — build `test/monitor/monitor_ipc.c` → `monitor_ipc.so` → fire M-MONITOR-IPC-SO
+
+**B-229 start block:**
+```bash
+cd /home/claude/snobol4x
+git config user.name "LCherryholmes" && git config user.email "lcherryh@yahoo.com"
+git checkout asm-backend && git pull --rebase origin asm-backend
+
+export CORPUS=/home/claude/snobol4corpus/crosscheck
+STOP_ON_FAIL=0 CORPUS=$CORPUS bash test/crosscheck/run_crosscheck.sh   # must be 100/106
+CORPUS=$CORPUS bash test/crosscheck/run_crosscheck_asm.sh               # must be 26/26
+
+# Sprint: monitor-ipc
+# Step 1: write test/monitor/monitor_ipc.c
+#   - MON_OPEN(STRING)STRING  — open FIFO path, store fd in .so global
+#   - MON_SEND(STRING,STRING)STRING — write "KIND body\n" atomically to FIFO
+#   - MON_CLOSE()STRING       — close FIFO fd
+#   - ABI: lret_t fn(LA_ALIST), RETSTR/RETNULL/RETFAIL, LA_STR_PTR(N)/LA_STR_LEN(N)
+#   - Headers from CSNOBOL4 2.3.3: include/load.h, include/snotypes.h, include/macros.h
+# Step 2: gcc -shared -fPIC monitor_ipc.c -o monitor_ipc.so
+# Step 3: verify CSNOBOL4 can LOAD() it — small test .sno
+# Pass → M-MONITOR-IPC-SO fires
+# Step 4: update inject_traces.py — LOAD+MON_OPEN preamble, MONCALL/MONRET/MONVAL → MON_SEND()
+# Pass → M-MONITOR-IPC-CSN fires
+# Reference: MONITOR.md §IPC Architecture for full design
+```
