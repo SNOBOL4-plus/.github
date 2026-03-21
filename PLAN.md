@@ -18,7 +18,7 @@ Session numbers use per-type prefixes (see RULES.md §SESSION NUMBERS): B=backen
 | **TINY JVM** | `jvm-backend` J-210 — M-JVM-SAMPLES ✅: fixed VAR=expr :S/:F routing bug (goto before vnfail label); roman.sno PASS + wordcount.sno PASS; artifacts/jvm/samples/ committed | `13245e2` J-210 | M-JVM-BEAUTY |
 | **TINY NET** | `net-backend` N-208 — M-NET-CROSSCHECK ✅ DONE: 110/110; E_ATP varname fix; goal-directed E_CONC; runtime DLLs in repo; harness adapter patched | `fbca6aa` N-208 | M-NET-SAMPLES |
 | **TINY frontend** | `main` F-210 — M-FLAT-NARY ✅ merged to main; sc7_procedure/sc9_multiproc FAIL diagnosed: do_procedure body stmts not appearing in output; next: fix sc_cf.c do_procedure → M-SC-CORPUS-R2 | `6495074` F-210 | M-SC-CORPUS-R2 |
-| **DOTNET** | `net-spitbol-switches` D-162 — 11 new SPITBOL switches: -d -e -g -i -m -p -s -t -y -z -N=file; k/m suffix parser; ApplyStartupOptions wires -e/-m; 26 tests authored; commit pending dotnet build | `0d4b2ee` D-161 | M-NET-SPITBOL-SWITCHES |
+| **DOTNET** | `net-polish` D-163 — M-NET-SPITBOL-SWITCHES ✅ fired: 1911/1913; next: M-NET-POLISH | `8feb139` D-162 | M-NET-POLISH |
 
 **Invariants (check before any work):**
 - TINY: `100/106` C crosscheck (6 pre-existing) · `26/26` ASM crosscheck
@@ -208,7 +208,7 @@ Sprint detail lives in the active platform L2 doc (TINY.md / JVM.md / DOTNET.md)
 | M-NET-SNOCONE | Snocone self-test: compile snocone.sc, diff oracle | ❌ |
 | **M-NET-PERF** | Performance profiling: hot-path report, ≥1 measurable win landed, regression baseline published | ✅ `e8a5fec` D-159 |
 | **M-NET-POLISH** | 106/106 corpus rungs pass, diag1 35/35, benchmark grid published | ❌ see DOTNET.md |
-| **M-NET-SPITBOL-SWITCHES** | All SPITBOL CLI switches implemented: -d -e -g -i -m -p -s -t -y -z -N=file; k/m suffix parser; BuilderOptions fields; ApplyStartupOptions wires -e/-m at startup; 26 unit tests in TestSpitbolSwitches PASS; DisplayManual updated | ❌ Sprint `net-spitbol-switches` |
+| **M-NET-SPITBOL-SWITCHES** | All SPITBOL CLI switches implemented: -d -e -g -i -m -p -s -t -y -z -N=file; k/m suffix parser; BuilderOptions fields; ApplyStartupOptions wires -e/-m at startup; 26 unit tests in TestSpitbolSwitches PASS; DisplayManual updated | ✅ `8feb139` D-163 |
 | M-NET-BOOTSTRAP | snobol4-dotnet compiles itself | ❌ |
 
 ### Shared (all products)

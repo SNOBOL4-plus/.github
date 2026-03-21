@@ -11,88 +11,50 @@ execution, MSIL delegate JIT, pattern engine, plugin system. Polish → beta rel
 
 ## NOW
 
-**Sprint:** `net-spitbol-switches` — implement all SPITBOL CLI switches → M-NET-SPITBOL-SWITCHES
-**HEAD:** `0d4b2ee` D-161 (switches code authored D-162, commit pending dotnet build confirmation)
-**Invariant:** `dotnet test` → 1874/1876 (2 skipped) before any work
-**Milestone:** M-NET-SPITBOL-SWITCHES ❌ → code complete D-162; confirm with dotnet test
+**Sprint:** `net-polish` — 106/106 corpus rungs + diag1 35/35 + benchmark grid → M-NET-POLISH
+**HEAD:** `8feb139` D-162
+**Invariant:** `dotnet test` → 1911/1913 (2 skipped) before any work
+**Milestone:** M-NET-SPITBOL-SWITCHES ✅ fired D-163
 
-**⚠ CRITICAL NEXT ACTION — Session D-163:**
+**⚠ CRITICAL NEXT ACTION — Session D-164:**
 
 ```bash
-cd snobol4dotnet
+cd /home/claude/snobol4dotnet
 git config user.name "LCherryholmes" && git config user.email "lcherryh@yahoo.com"
-export PATH=$PATH:/usr/local/dotnet
-git log --oneline -3   # verify HEAD = 0d4b2ee D-161
-dotnet build Snobol4.sln -c Release -p:EnableWindowsTargeting=true
+export PATH=/usr/local/dotnet10:$PATH   # .NET 10 required
+git log --oneline -3   # verify HEAD = 8feb139 D-162
 dotnet test TestSnobol4/TestSnobol4.csproj -c Release -p:EnableWindowsTargeting=true
-# Expect: 1874/1876 + 26 new SpitbolSwitchTests → 1900/1902 → fire M-NET-SPITBOL-SWITCHES ✅
-# Then commit:
-#   git add Snobol4.Common/Builder/BuilderOptions.cs
-#   git add Snobol4.Common/Builder/CommandLine.cs
-#   git add Snobol4.Common/Builder/Builder.cs
-#   git add TestSnobol4/TestCommandLine/TestSpitbolSwitches/SpitbolSwitchTests.cs
-#   git commit -m "D-162: SPITBOL switches — -d -e -g -i -m -p -s -t -y -z -N=file; k/m parser; 26 tests"
-#   git push
+# Expect: 1911/1913 invariant holds
+# Sprint: M-NET-POLISH — run corpus crosscheck, diag1, benchmark grid
+#   CORPUS=/home/claude/snobol4corpus/crosscheck
+#   bash /home/claude/snobol4harness/adapters/dotnet/run_crosscheck_dotnet.sh
 ```
 
-**CRITICAL:** Always pass `-p:EnableWindowsTargeting=true` on Linux builds.
+**CRITICAL:** Always pass `-p:EnableWindowsTargeting=true` on Linux builds. .NET 10 SDK at `/usr/local/dotnet10`.
 
 ---
 
-## Sprint: net-spitbol-switches (D-162)
+## Sprint: net-polish (D-164 — next)
 
-Implement all SPITBOL command-line switches per manual Chapter 13.
+Next sprint: 106/106 corpus crosscheck via harness, diag1 35/35, benchmark grid → M-NET-POLISH.
+See TESTING.md for corpus ladder and HARNESS.md for crosscheck scripts.
 
-### Files changed
+## Completed: net-spitbol-switches (D-162)
 
-| File | What |
-|------|------|
-| `Snobol4.Common/Builder/BuilderOptions.cs` | 11 new properties: `ErrorsToStdout`, `LinesPerPage` (60), `PageWidth` (120), `PrinterListing`, `FormFeedListing`, `HeapMaxBytes` (64m), `HeapIncrementBytes` (128k), `MaxObjectBytes` (4m), `StackSizeBytes` (32k), `WriteSpx`, `ChannelFiles` |
-| `Snobol4.Common/Builder/CommandLine.cs` | Full `ArgumentSwitch` rewrite; `TryParseNumericArg` (k/m suffix); `ExtractStringArg`; channel `-N=file` association; updated `DisplayManual()` with all switches |
-| `Snobol4.Common/Builder/Builder.cs` | `ApplyStartupOptions(Executive)` — wires `-e` (redirect Console.Error→Out) and `-m` (seeds `exec.AmpMaxLength`); called from `BuildMain`, `BuildMainCompileOnly`, `RunDll` |
-| `TestSnobol4/TestCommandLine/TestSpitbolSwitches/SpitbolSwitchTests.cs` | 26 unit tests covering every new switch and edge cases |
 
-### Switch inventory (post D-162)
-
-| Switch | Status | Notes |
-|--------|--------|-------|
-| `-a -b -c -cs -f -F -h -k -l -n -o -r -u -v -w -x -?` | ✅ pre-existing | |
-| `-e` | ✅ D-162 | Console.Error→Console.Out at startup |
-| `-gN` | ✅ D-162 | LinesPerPage, default 60 |
-| `-tN` | ✅ D-162 | PageWidth, default 120 |
-| `-p` | ✅ D-162 | PrinterListing + ShowListing |
-| `-z` | ✅ D-162 | FormFeedListing + ShowListing |
-| `-dN` | ✅ D-162 | HeapMaxBytes (64m default); recorded, .NET GC manages |
-| `-iN` | ✅ D-162 | HeapIncrementBytes (128k default); recorded |
-| `-mN` | ✅ D-162 | MaxObjectBytes → seeds `&MAXLNGTH` at startup |
-| `-sN` | ✅ D-162 | StackSizeBytes (32k default); recorded |
-| `-y` | ✅ D-162 | WriteSpx flag (save file stub; full impl future) |
-| `-N=file` | ✅ D-162 | ChannelFiles dictionary; `:` separator also accepted |
-
-### Sprint steps remaining (D-163)
-1. `dotnet build` → clean
-2. `dotnet test` → 1900/1902 (26 new pass)
-3. Commit + push → M-NET-SPITBOL-SWITCHES ✅
-4. Update PLAN.md dashboard
 
 ---
 
 ## Last Session Summary
 
-**Session D-162 — SPITBOL switches implemented:**
-- Read SPITBOL manual Chapter 13 (command line options, pages 161–165)
-- Identified 11 missing switches vs existing implementation
-- `BuilderOptions.cs`: 11 new properties with SPITBOL defaults
-- `CommandLine.cs`: full rewrite — k/m numeric parser, all switches, channel `-N=file`, updated manual display
-- `Builder.cs`: `ApplyStartupOptions()` wires `-e` and `-m` at Executive creation
-- `SpitbolSwitchTests.cs`: 26 unit tests, all switch/edge cases
-- `PLAN.md`: `M-NET-SPITBOL-SWITCHES` milestone added
-- `DOTNET.md`: sprint documented
+**Session D-163 — M-NET-SPITBOL-SWITCHES confirmed:**
+- Installed .NET 10 SDK (repo targets net10.0)
+- `dotnet build` → 0 errors; `dotnet test` → 1911/1913 (2 skipped) — all 26 SpitbolSwitchTests PASS
+- M-NET-SPITBOL-SWITCHES ✅ fired; PLAN.md + DOTNET.md updated
 
-**Session D-161 — CallFuncIndirect + semicolon fix:**
-- CallFuncIndirect opcode + FunctionIndirect(); perf/post_d161.md benchmark grid; 1874/1876
-- Semicolon separator fix — Lexer case 2 skips label on sub-lines; 1012_func_locals [Ignore] removed
-- README.md cleaned up (removed fabricated term)
+**Session D-162 — SPITBOL switches authored:**
+- 11 new BuilderOptions properties; CommandLine.cs rewrite with k/m suffix parser
+- `ApplyStartupOptions()` wires -e/-m; 26 unit tests in SpitbolSwitchTests.cs
 
 ---
 
@@ -101,10 +63,10 @@ Implement all SPITBOL command-line switches per manual Chapter 13.
 | ID | Status | Notes |
 |----|--------|-------|
 | M-NET-PERF | ✅ | Hotfixes A–D confirmed; baseline published |
-| M-NET-CORPUS-RUNGS | ✅ | D-161 confirmed 1874/1876 |
-| M-NET-SPITBOL-SWITCHES | ❌ | Code complete D-162; confirm dotnet test D-163 |
+| M-NET-SPITBOL-SWITCHES | ✅ | 1911/1913 D-163 |
 | M-NET-POLISH | ❌ | 106/106 + diag1 35/35 + benchmark grid |
 | M-NET-SNOCONE | ❌ | Snocone self-test |
+| M-NET-BOOTSTRAP | ❌ | snobol4-dotnet compiles itself |
 
 Full milestone history → [PLAN.md](PLAN.md)
 

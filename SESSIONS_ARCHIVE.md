@@ -9660,4 +9660,33 @@ ROMAN=/home/claude/snobol4corpus/benchmarks/roman.sno
 WORDCOUNT=/home/claude/snobol4corpus/crosscheck/strings/wordcount.sno
 ./sno2c -net -I$INC $ROMAN > /tmp/roman_net.il && ilasm /tmp/roman_net.il /output:/tmp/snobol4x_net_cache/roman_net.exe >/dev/null 2>&1
 echo "XIV" | mono /tmp/snobol4x_net_cache/roman_net.exe
+## Session D-163 — M-NET-SPITBOL-SWITCHES confirmed
+
+**Date:** 2026-03-20
+**Branch:** main
+**HEAD at start:** `8feb139` D-162
+**HEAD at end:** `8feb139` D-162 (no new code — D-162 already committed; this session confirms and closes)
+
+**What happened:**
+- D-162 code was already committed to main at session start
+- Installed .NET 10 SDK at `/usr/local/dotnet10` (repo targets net10.0; .NET 8 insufficient)
+- `dotnet build Snobol4.sln -c Release -p:EnableWindowsTargeting=true` → 0 errors, 8 warnings (pre-existing)
+- `dotnet test TestSnobol4/TestSnobol4.csproj -c Release -p:EnableWindowsTargeting=true` → **1911/1913 (2 skipped)**
+- All 26 SpitbolSwitchTests PASS — M-NET-SPITBOL-SWITCHES ✅ fired
+- PLAN.md: DOTNET row updated, M-NET-SPITBOL-SWITCHES → ✅
+- DOTNET.md: NOW → net-polish sprint, D-164 next action, session summaries trimmed
+
+**State at handoff:**
+- `dotnet test` → 1911/1913; invariant for D-164
+- Next sprint: `net-polish` — corpus 106/106 + diag1 35/35 + benchmark grid → M-NET-POLISH
+- .NET 10 SDK: `/usr/local/dotnet10` (export PATH=/usr/local/dotnet10:$PATH)
+
+**Next session start block (D-164):**
+```bash
+cd /home/claude/snobol4dotnet
+git config user.name "LCherryholmes" && git config user.email "lcherryh@yahoo.com"
+export PATH=/usr/local/dotnet10:$PATH
+git log --oneline -3   # expect 8feb139 D-162
+dotnet test TestSnobol4/TestSnobol4.csproj -c Release -p:EnableWindowsTargeting=true
+# expect 1911/1913 — then begin net-polish
 ```
