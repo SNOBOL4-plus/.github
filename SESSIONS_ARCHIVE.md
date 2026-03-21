@@ -10135,3 +10135,20 @@ CORPUS=$CORPUS bash test/crosscheck/run_crosscheck_asm.sh               # must b
 # Pass → M-MONITOR-IPC-CSN fires
 # Reference: MONITOR.md §IPC Architecture for full design
 ```
+
+## Session B-229 — monitor-ipc: IPC-SO + IPC-CSN (2026-03-21)
+
+**Fired:** M-MONITOR-IPC-SO (`8bf1c0c`) · M-MONITOR-IPC-CSN (`6eebdc3`)
+
+**Work done:**
+- Built CSNOBOL4 2.3.3 from source (`/home/claude/csnobol4-src/`)
+- Empirically probed CSNOBOL4 descriptor layout: `sizeof(struct descr)=16`, `BCDFLD=64`, string length at `block_hdr[0].v`
+- `monitor_ipc.c`: self-contained ABI (no CSNOBOL4 headers), `MON_OPEN/MON_SEND/MON_CLOSE`, atomic FIFO writes
+- `inject_traces.py`: IPC preamble with `HOST(4,...)` env var reads, `LOAD()` + `MON_OPEN`, callbacks via `MON_SEND`; TERMINAL= fallback; fixed `MON_IPC_='1'` (string not integer)
+- `snobol4.c`: `MONITOR_FIFO` env var opens named FIFO for ASM backend `comm_var`; legacy `MONITOR=1` fallback; added `#include <fcntl.h>`
+- `run_monitor.sh`: both participants write to per-participant named FIFOs; zero stderr blending
+- Verified: hello/multi/assign PASS via IPC; invariants 100/106 C + 26/26 ASM held throughout
+
+**State at handoff:** `6eebdc3` on `asm-backend`. Next: M-MONITOR-IPC-5WAY — add SPITBOL + JVM + NET participants.
+
+**Next session start block:** See TINY.md §CRITICAL NEXT ACTION.
