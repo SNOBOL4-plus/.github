@@ -1,7 +1,7 @@
 # snobol4ever — HQ
 
 SNOBOL4/SPITBOL compilers targeting JVM, .NET, and native C.
-Shared frontends. Multiple backends. Self-hosting goal: sno2c compiles sno2c.
+Shared frontends. Multiple backends.
 **Team:** Lon Jones Cherryholmes (arch, MSIL), Jeffrey Cooper M.D. (DOTNET), Claude Sonnet 4.6 (TINY co-author, third developer).
 
 ---
@@ -12,13 +12,15 @@ Each concurrent session owns exactly one row. Update only your row on every push
 
 Session numbers use per-type prefixes (see RULES.md §SESSION NUMBERS): B=backend, J=JVM, N=NET, F=frontend, D=DOTNET.
 
+**Isolation guarantee:** No session ever works on two same frontends or two same backends. Each session owns one frontend OR one backend. Rebases on common code go smoothly because of this isolation.
+
 | Session | Sprint | HEAD | Next milestone |
 |---------|--------|------|----------------|
-| **TINY backend** | `asm-backend` B-226 — demo/ created (5 programs + data + inc/); JVM segfault fixed (FILE *out shadowing); 7 new milestones (ASM/JVM/NET treebank/claws5/roman); M-ASM-RUNG10 4/9 WIP | `7f44985` B-226 | M-ASM-RUNG10 |
-| **TINY NET** | `net-backend` N-209 — M-NET-SAMPLES ✅ DONE; harness reveals 210_indirect_ref FAIL: Dictionary/stsfld desync from N-209 direct-stsfld fix; M-NET-INDR created | `2c417d7` N-209 | M-NET-INDR |
-| **TINY JVM** | `jvm-backend` J-212 — M-JVM-BEAUTY ✅ DONE: cross-scope :F(error) from fn → freturn; beauty.j 0 errors | `b67d0b1` J-212 | M-JVM-EVAL |
-| **TINY frontend** | `main` F-210 — M-FLAT-NARY ✅ merged to main; sc7_procedure/sc9_multiproc FAIL diagnosed: do_procedure body stmts not appearing in output; next: fix sc_cf.c do_procedure → M-SC-CORPUS-R2 | `6495074` F-210 | M-SC-CORPUS-R2 |
-| **DOTNET** | `net-polish` D-163 — M-NET-SPITBOL-SWITCHES ✅ fired: 1911/1913; next: M-NET-POLISH | `8feb139` D-162 | M-NET-POLISH |
+| **TINY backend** | `asm-backend` B-226 — clean slate | `7f44985` B-226 | TBD |
+| **TINY NET** | `net-backend` N-209 — clean slate | `2c417d7` N-209 | TBD |
+| **TINY JVM** | `jvm-backend` J-212 — clean slate | `b67d0b1` J-212 | TBD |
+| **TINY frontend** | `main` F-210 — clean slate | `6495074` F-210 | TBD |
+| **DOTNET** | `net-polish` D-163 — clean slate | `8feb139` D-163 | TBD |
 
 **Invariants (check before any work):**
 - TINY: `100/106` C crosscheck (6 pre-existing) · `26/26` ASM crosscheck
@@ -34,7 +36,7 @@ Session numbers use per-type prefixes (see RULES.md §SESSION NUMBERS): B=backen
 Every session that changes `emit_byrd_asm.c` or any `.sno` → `.s` path MUST regenerate all tracked artifacts:
 
 | Artifact | Source | Assembles clean? |
-|----------|--------|-----------------|
+|----------|--------|--------------------|
 | `artifacts/asm/beauty_prog.s` | `demo/beauty.sno` | ✅ required |
 | `artifacts/asm/samples/roman.s` | `demo/roman.sno` | ✅ required |
 | `artifacts/asm/samples/wordcount.s` | `demo/wordcount.sno` | ✅ required |
@@ -49,14 +51,7 @@ See RULES.md §ASM ARTIFACTS for the full regeneration script (`INC=demo/inc`).
 
 ## Goals
 
-**Goal 1 — Fill the 4D matrix:**
-Every cell of Product × Frontend × Backend is implemented, tested, and benchmarked.
-
-**Goal 2 — Self-hosting:**
-`sno2c` compiles `sno2c`. The compiler writes itself. Milestone: `M-BOOTSTRAP`.
-
-**Goal 3 — Created Intelligence substrate:**
-The Byrd Box model — one universal pattern engine — runs SNOBOL4, Icon, Prolog, Snocone, and Rebus on JVM, .NET, and native x64. The grammar machine is the AI engine.
+*(Clean slate — new goals TBD. See [HOLD_ARCHIVE.md](HOLD_ARCHIVE.md) for prior goals placed on hold.)*
 
 ---
 
@@ -87,7 +82,9 @@ Matrix:     Feature matrix (correctness) · Benchmark matrix (performance)
 One row per milestone. Milestones fire when their trigger condition is true.
 Sprint detail lives in the active platform L2 doc (TINY.md / JVM.md / DOTNET.md).
 
-### TINY (snobol4x)
+> **All incomplete milestones moved to [HOLD_ARCHIVE.md](HOLD_ARCHIVE.md) on 2026-03-21 — clean slate reset.**
+
+### TINY (snobol4x) — Completed
 
 | ID | Trigger | Status |
 |----|---------|--------|
@@ -105,7 +102,7 @@ Sprint detail lives in the active platform L2 doc (TINY.md / JVM.md / DOTNET.md)
 | **M-ASM-ASSIGN** | $ capture PASS | ✅ session148 |
 | **M-ASM-NAMED** | Named patterns flat labels PASS | ✅ session148 |
 | **M-ASM-CROSSCHECK** | 106/106 via ASM backend | ✅ session151 |
-| **M-ASM-R1** | hello/ + output/ — 12 tests PASS via run_crosscheck_asm_rung.sh | ✅ session188 |
+| **M-ASM-R1** | hello/ + output/ — 12 tests PASS | ✅ session188 |
 | **M-ASM-R2** | assign/ — 8 tests PASS | ✅ session188 |
 | **M-ASM-R3** | concat/ — 6 tests PASS | ✅ session187 |
 | **M-ASM-R4** | arith/ — 2 tests PASS | ✅ session188 |
@@ -116,53 +113,25 @@ Sprint detail lives in the active platform L2 doc (TINY.md / JVM.md / DOTNET.md)
 | **M-ASM-R9** | keywords/ — IDENT/DIFFER/GT/LT/EQ/DATATYPE PASS | ✅ session193 |
 | **M-ASM-R10** | functions/ — DEFINE/RETURN/FRETURN/recursion PASS | ✅ session197 |
 | **M-ASM-R11** | data/ — ARRAY/TABLE/DATA PASS | ✅ session198 |
-| **M-ASM-RECUR** | Recursive SNOBOL4 functions correct via ASM backend — roman.sno segfault fixed; each function invocation gets its own frame (push rbp/mov rbp,rsp/sub rsp,56 at α; add rsp,56/pop rbp at γ/ω); call sites use .bss uid slots not stack pushes; 26/26 + 106/106 hold | ✅ `266c866` B-204 |
-| **M-ASM-SAMPLES** | roman.sno and wordcount.sno pass via ASM backend; artifacts/asm/roman.s and artifacts/asm/wordcount.s committed and assembling clean | ✅ `266c866` B-204 |
-| **M-ASM-TREEBANK** | treebank.sno correct output via ASM backend; artifacts/asm/samples/treebank.s assembles clean and diff vs CSNOBOL4 oracle empty | ❌ treebank.s assembles clean (B-226); runtime correctness not yet verified |
-| **M-ASM-CLAWS5** | claws5.sno correct output via ASM backend; artifacts/asm/samples/claws5.s assembles clean and diff vs CSNOBOL4 oracle empty | ❌ claws5.s ~95% — 3 undefined beta labels (NRETURN fns); gates on NRETURN fix (M-ASM-RUNG10) |
-| **M-ASM-RUNG8** | rung8/ — REPLACE/SIZE/DUPL assertion harness 3/3 PASS via ASM backend | ✅ `1d0a983` B-223 |
-| **M-ASM-RUNG9** | rung9/ — CONVERT/DATATYPE/INTEGER/LGT/numeric predicates 5/5 PASS via ASM backend | ✅ `3133497` B-210 |
-| **M-ASM-RUNG10** | rung10/ — DEFINE/recursion/locals/NRETURN/FRETURN/APPLY 9/9 PASS via ASM backend | ❌ Sprint A-RUNG10 |
-| **M-ASM-RUNG11** | rung11/ — ARRAY/TABLE/DATA types 7/7 PASS via ASM backend | ❌ Sprint A-RUNG11 |
-| **M-ASM-LIBRARY** | library/ crosscheck tests PASS via ASM backend; -include resolved correctly | ❌ Sprint A-LIBRARY |
-| **M-ENG685-TREEBANK-SNO** | treebank.sno correct via CSNOBOL4: nPush/nInc/nPop + Shift/Reduce + group self-ref via *group; POS(0)/RPOS(0) anchored; prints indented tree; .ref oracle committed | ❌ Sprint B-ENG685-SNO — `artifacts/asm/samples/treebank.s` ✅ committed, assembles clean |
-| **M-ENG685-CLAWS** | claws5.sno — CLAWS5 POS corpus tokenizer; uses lib/stack.sno; .ref oracle committed; PASS via CSNOBOL4 and ASM backend | ❌ Sprint B-ENG685 — `artifacts/asm/samples/claws5.s` ⚠️ committed, ~95%: 3 undefined β labels (NRETURN fns) |
-| **M-ENG685-TREEBANK** | treebank.sno — Penn Treebank S-expr parser; uses lib/stack.sno (same pattern as beauty.sno); .ref oracle committed; PASS via CSNOBOL4 and ASM backend | ❌ Sprint B-ENG685 |
-| **M-DROP-MOCK-ENGINE** | `mock_engine.c` removed from ASM program link path; 26-test harness suite migrated to full `.sno` format or harness rewritten to not call `engine_match`; 26/26 + 106/106 hold without linking `mock_engine.o` in ASM path | ✅ `06df4cb` B-200 |
-| **M-FLAT-NARY** | Parser: `E_CONC` and `E_OR` emitted as flat n-ary nodes (`args[]`, no `left`/`right`); ASM+JVM+NET updated; C backend `emit.c` E_INDR/iset children[1]→children[0] bugs remain (6 failures: 014/015 indirect assign, 091/092/093 array/table, 100 roman) — fixed in M-EMITTER-NAMING | ⚠ `6495074` F-209 |
-| **M-EMITTER-NAMING** | All four emitters in one file each; canonical source names throughout; JVM generated labels use α/β/γ/ω (`Jn%d_lit_γ`, `Jpat%d_β`, `Jfn%d_ω` etc); NET generated labels use α/β/γ/ω (`Nn%d_nam_γ`, `Npat%d_β`, `Nfn%d_ω` etc); local vars aligned across all four: `cursor_before`, `subj_len`, `cursor`, `cap_slot`, `gamma_lbl`, `retry_lbl`, `entry_lbl` etc. | ✅ `69b52b8` B-222 |
-| **M-SNOC-LEX** | sc_lex.c: all Snocone tokens; `OUTPUT = 'hello'` → 3 tokens PASS | ✅ `573575e` session183 |
-| **M-SNOC-PARSE** | sc_parse.c: full stmt grammar; SC corpus exprs + control flow PASS | ✅ `5e20058` session184 |
+| **M-ASM-RECUR** | Recursive SNOBOL4 functions correct via ASM backend | ✅ `266c866` B-204 |
+| **M-ASM-SAMPLES** | roman.sno and wordcount.sno pass via ASM backend | ✅ `266c866` B-204 |
+| **M-ASM-RUNG8** | rung8/ — REPLACE/SIZE/DUPL 3/3 PASS | ✅ `1d0a983` B-223 |
+| **M-ASM-RUNG9** | rung9/ — CONVERT/DATATYPE/INTEGER/LGT 5/5 PASS | ✅ `3133497` B-210 |
+| **M-DROP-MOCK-ENGINE** | mock_engine.c removed from ASM link path | ✅ `06df4cb` B-200 |
+| **M-FLAT-NARY** | Parser: E_CONC and E_OR flat n-ary nodes | ⚠ `6495074` F-209 |
+| **M-EMITTER-NAMING** | All four emitters canonical; Greek labels α/β/γ/ω | ✅ `69b52b8` B-222 |
+| **M-SNOC-LEX** | sc_lex.c: all Snocone tokens | ✅ `573575e` session183 |
+| **M-SNOC-PARSE** | sc_parse.c: full stmt grammar | ✅ `5e20058` session184 |
 | **M-SNOC-LOWER** | sc_lower.c: Snocone AST → EXPR_t/STMT_t wired | ✅ `2c71fc1` session185 |
-| **M-SNOC-ASM-HELLO** | `-sc -asm`: `OUTPUT='hello'` → assembles + runs → `hello` | ✅ `9148a77` session187 |
-| **M-SNOC-ASM-CF** | DEFINE calling convention; `double(5)` → 10 via `-sc -asm` | ✅ `0371fad` session188 |
+| **M-SNOC-ASM-HELLO** | `-sc -asm`: OUTPUT='hello' → assembles + runs | ✅ `9148a77` session187 |
+| **M-SNOC-ASM-CF** | DEFINE calling convention via `-sc -asm` | ✅ `0371fad` session188 |
 | **M-SNOC-ASM-CORPUS** | SC corpus 10-rung all PASS via `-sc -asm` | ✅ `d8901b4` session189 |
-| **M-SNOC-ASM-SELF** | snocone.sc compiles itself via `-sc -asm`; diff oracle empty | ❌ Sprint SC6-ASM |
-| **M-SNOC-EMIT** | `-sc` flag in sno2c; `OUTPUT = 'hello'` .sc → C binary PASS | ❌ (deferred — C backend) |
-| **M-SNOC-CORPUS** | SC corpus 10-rung all PASS (C backend) | ❌ Sprint SC4 (deferred) |
-| **M-SNOC-SELF** | snocone.sc compiles itself via C pipeline; diff oracle empty | ❌ Sprint SC5 (deferred) |
-| **M-REORG** | Full repo layout: frontend/ ir/ backend/ driver/ runtime/; binary at snobol4x/sno2c; 106/106 26/26 from new paths | ✅ `f3ca7f2` session181 |
-| **M-ASM-READABLE** | Special-char expansion: asm_expand_name(); _ literal passthrough; uid on collision (M-ASM-READABLE-A). Original spec revised — pure bijection without _ escape destroys readability. | ✅ `e0371fe` session176 |
-| **M-ASM-MACROS** | NASM macro library `snobol4_asm.mac` — every emitted line is `LABEL  MACRO(args)  GOTO`. LIT/SPAN/SEQ/ALT/DOL/SUBJECT/MATCH/REPLACE/GOTO. Three-column .s matches three-column .c. | ❌ Sprint A12 |
-| **M-ASM-IR** | ASM IR phase: AsmNode tree between parse and emit. Same architecture as CNode. Separates tree walk from pretty-print. One IR, two emitters (C + ASM). | ⏸ DEFERRED — ASM and C backends may need different IR shapes. Revisit after both reach feature parity. Premature unification risks blocking ASM progress. |
-| **M-ASM-BEAUTIFUL** | beauty_prog.s as readable as beauty_full.c. Lon reads it and declares it beautiful. | ✅ `7d6add6` session175 |
-| **M-BOOTSTRAP** | sno2c_stage1 output = sno2c_stage2 | ❌ |
+| **M-REORG** | Full repo layout: frontend/ ir/ backend/ driver/ runtime/ | ✅ `f3ca7f2` session181 |
+| **M-ASM-READABLE** | Special-char expansion: asm_expand_name() | ✅ `e0371fe` session176 |
+| **M-ASM-BEAUTIFUL** | beauty_prog.s as readable as beauty_full.c | ✅ `7d6add6` session175 |
 | **M-SC-CORPUS-R1** | hello/output/assign/arith all PASS via `-sc -asm` | ✅ session192 |
-| **M-SC-CORPUS-R2** | control/control_new all PASS via `-sc -asm` | ❌ |
-| **M-SC-CORPUS-R3** | patterns/capture all PASS via `-sc -asm` | ❌ |
-| **M-SC-CORPUS-R4** | strings/ all PASS via `-sc -asm` | ❌ |
-| **M-SC-CORPUS-R5** | keywords/functions/data all PASS via `-sc -asm` | ❌ |
-| **M-SC-CORPUS-FULL** | 106/106 SC equivalent of SNOBOL4 crosscheck | ❌ |
 
-### JVM (snobol4jvm)
-
-| ID | Trigger | Status |
-|----|---------|--------|
-| M-JVM-EVAL | Inline EVAL! — arithmetic no longer calls interpreter | ❌ Sprint `jvm-inline-eval` |
-| M-JVM-SNOCONE | Snocone self-test: compile snocone.sc, diff oracle | ❌ |
-| M-JVM-BOOTSTRAP | snobol4-jvm compiles itself | ❌ |
-
-### JVM backend — snobol4x TINY (emit_byrd_jvm.c)
+### JVM backend — snobol4x TINY — Completed
 
 | ID | Trigger | Status |
 |----|---------|--------|
@@ -178,17 +147,14 @@ Sprint detail lives in the active platform L2 doc (TINY.md / JVM.md / DOTNET.md)
 | **M-JVM-R4** | functions/ data/ — Rungs 10–11 PASS | ✅ `876eb4b` J-205 |
 | **M-JVM-CROSSCHECK** | 106/106 corpus PASS via JVM backend | ✅ `a063ed9` J-208 |
 | **M-JVM-SAMPLES** | roman.sno + wordcount.sno PASS | ✅ `13245e2` J-210 |
-| **M-JVM-BEAUTY** | beauty.sno self-beautifies via JVM backend | ✅ `b67d0b1` J-212 (Jasmin clean; runtime VerifyError → J-213) |
-| **M-JVM-ROMAN** | roman.sno correct output via JVM backend | ❌ Jasmin error: L_RETURN label not added — RETURN routing bug in emit_byrd_jvm.c |
-| **M-JVM-TREEBANK** | treebank.sno correct output via JVM backend | ❌ Jasmin error: L_FRETURN label not added — FRETURN routing bug in emit_byrd_jvm.c |
-| **M-JVM-CLAWS5** | claws5.sno correct output via JVM backend | ❌ Jasmin error: L_StackEnd (included label) not defined — include/label scope bug |
+| **M-JVM-BEAUTY** | beauty.sno self-beautifies via JVM backend | ✅ `b67d0b1` J-212 |
 
-### NET backend — snobol4x TINY (net_emit.c)
+### NET backend — snobol4x TINY — Completed
 
 | ID | Trigger | Status |
 |----|---------|--------|
-| **M-NET-HELLO** | `sno2c -net null.sno > null.il && ilasm null.il && mono null.exe` → exit 0 | ✅ session195 |
-| **M-NET-LIT** | `OUTPUT = 'hello'` → `hello` via NET backend | ✅ `efc3772` N-197 |
+| **M-NET-HELLO** | sno2c -net null.sno → exit 0 | ✅ session195 |
+| **M-NET-LIT** | OUTPUT = 'hello' → hello via NET backend | ✅ `efc3772` N-197 |
 | **M-NET-ASSIGN** | Variable assign + arith correct | ✅ `02d1f9b` N-206 |
 | **M-NET-GOTO** | :S(X)F(Y) branching correct | ✅ `02d1f9b` N-206 |
 | **M-NET-PATTERN** | Byrd boxes in CIL — LIT/SEQ/ALT/ARBNO | ✅ `02d1f9b` N-206 |
@@ -196,40 +162,27 @@ Sprint detail lives in the active platform L2 doc (TINY.md / JVM.md / DOTNET.md)
 | **M-NET-R1** | hello/ output/ assign/ arith/ — Rungs 1–4 PASS | ✅ `02d1f9b` N-206 |
 | **M-NET-R2** | control/ patterns/ capture/ — Rungs 5–7 PASS | ✅ `02d1f9b` N-206 |
 | **M-NET-R3** | strings/ keywords/ — Rungs 8–9 PASS | ✅ `02d1f9b` N-206 |
-| **M-NET-R4** | functions/ data/ — Rungs 10–11 PASS | ❌ Sprint N-R4 — 8 remain: ARRAY/TABLE/DATA + roman |
 | **M-NET-CROSSCHECK** | 110/110 corpus PASS via NET backend | ✅ `fbca6aa` N-208 |
 | **M-NET-SAMPLES** | roman.sno + wordcount.sno PASS | ✅ `2c417d7` N-209 |
-| **M-NET-INDR** | harness 111/111 — fix `$varname` indirect read: `net_indr_get` reads Dictionary but N-209 direct-stsfld fix bypasses Dictionary write; `net_indr_set` must be called alongside `stsfld` for all variable writes, OR `net_indr_get` must fall back to `ldsfld` via reflection — rung2/210_indirect_ref PASS | ❌ Sprint N-210 |
-| **M-NET-BEAUTY** | beauty.sno self-beautifies via NET backend | ❌ Gates on M-NET-INDR |
-| **M-NET-TREEBANK** | treebank.sno correct output via NET backend | ❌ Not yet tested — gates on M-NET-INDR (NRETURN functions in treebank) |
-| **M-NET-CLAWS5** | claws5.sno correct output via NET backend | ❌ Not yet tested — gates on M-NET-INDR (NRETURN functions in claws5) |
 
-### DOTNET (snobol4dotnet)
+### DOTNET (snobol4dotnet) — Completed
 
 | ID | Trigger | Status |
 |----|---------|--------|
-| **M-NET-CORPUS-GAPS** | 12 corpus [Ignore] tests pass — PROTOTYPE/FRETURN/VALUE/EVAL | ✅ `e21e944` session131 — 11/12; 1012 semicolons separate gap |
+| **M-NET-CORPUS-GAPS** | 12 corpus [Ignore] tests pass | ✅ `e21e944` session131 |
 | M-NET-DELEGATES | Instruction[] → pure Func<Executive,int>[] dispatch | ✅ `baeaa52` |
-| **M-NET-LOAD-SPITBOL** | LOAD/UNLOAD spec-compliant: prototype string, UNLOAD(fname), type coercion, SNOLIB, Error 202 | ✅ `21dceac` |
-| **M-NET-SAVE-DLL** | `-w file.sno` → `file.dll` (threaded assembly); `snobol4 file.dll` runs it; RunDll() updated | ❌ Sprint `net-save-dll` |
-| **M-NET-LOAD-DOTNET** | Full .NET extension layer: auto-prototype via reflection, multi-function assemblies, async/cancellation, IExternalLibrary fast path, any IL language (F#/VB/C++) | ✅ `1e9ad33` session140 |
-| **M-NET-EXT-NOCONV** | SPITBOL noconv pass-through: ARRAY/TABLE/PDBLK passed unconverted; C block struct mirror in libsnobol4_rt.h; IExternalLibrary traversal API | ❌ Sprint `net-ext-noconv` |
-| **M-NET-EXT-XNBLK** | XNBLK opaque persistent state: C function allocates/returns state block; xndta[] private storage; .NET per-entry Dictionary equivalent | ✅ `b821d4d` session145 |
-| **M-NET-EXT-CREATE** | Foreign creates SNO objects: libsnobol4_rt alloc helpers for C-ABI; .NET IExternalLibrary already capable — C-side tests | ✅ `6dfae0e` session145 |
-| **M-NET-VB** | VB.NET fixture + tests: string/long/double returns, null→fail, static, multi-load, UNLOAD | ✅ `234f24a` session142 |
-| **M-NET-XN** | SPITBOL x32 C-ABI parity: xn1st first-call flag, xncbp shutdown callback, xnsave double-fire guard; libsnobol4_rt.so helper shim | ✅ `26e2144` session148 |
-| M-NET-SNOCONE | Snocone self-test: compile snocone.sc, diff oracle | ❌ |
-| **M-NET-PERF** | Performance profiling: hot-path report, ≥1 measurable win landed, regression baseline published | ✅ `e8a5fec` D-159 |
-| **M-NET-POLISH** | 106/106 corpus rungs pass, diag1 35/35, benchmark grid published | ❌ see DOTNET.md |
-| **M-NET-SPITBOL-SWITCHES** | All SPITBOL CLI switches implemented: -d -e -g -i -m -p -s -t -y -z -N=file; k/m suffix parser; BuilderOptions fields; ApplyStartupOptions wires -e/-m at startup; 26 unit tests in TestSpitbolSwitches PASS; DisplayManual updated | ✅ `8feb139` D-163 |
-| M-NET-BOOTSTRAP | snobol4-dotnet compiles itself | ❌ |
+| **M-NET-LOAD-SPITBOL** | LOAD/UNLOAD spec-compliant | ✅ `21dceac` |
+| **M-NET-LOAD-DOTNET** | Full .NET extension layer | ✅ `1e9ad33` session140 |
+| **M-NET-EXT-XNBLK** | XNBLK opaque persistent state | ✅ `b821d4d` session145 |
+| **M-NET-EXT-CREATE** | Foreign creates SNO objects | ✅ `6dfae0e` session145 |
+| **M-NET-VB** | VB.NET fixture + tests | ✅ `234f24a` session142 |
+| **M-NET-XN** | SPITBOL x32 C-ABI parity | ✅ `26e2144` session148 |
+| **M-NET-PERF** | Performance profiling: hot-path report, ≥1 measurable win | ✅ `e8a5fec` D-159 |
+| **M-NET-SPITBOL-SWITCHES** | All SPITBOL CLI switches; 26 unit tests PASS | ✅ `8feb139` D-163 |
 
-### Shared (all products)
+### New Milestones
 
-| ID | Trigger | Status |
-|----|---------|--------|
-| M-FEATURE-MATRIX | Feature × product grid 100% green | ❌ |
-| M-BENCHMARK-MATRIX | Benchmark × product grid published | ❌ |
+*(To be defined. Lon will describe the fresh plan next session.)*
 
 ---
 
@@ -259,6 +212,7 @@ Sprint detail lives in the active platform L2 doc (TINY.md / JVM.md / DOTNET.md)
 | [PATCHES.md](PATCHES.md) | Runtime patch audit trail |
 | [MISC.md](MISC.md) | Background, story, JCON reference |
 | [SESSIONS_ARCHIVE.md](SESSIONS_ARCHIVE.md) | Full session history — append-only |
+| [HOLD_ARCHIVE.md](HOLD_ARCHIVE.md) | Milestones on hold — not deleted, awaiting new plan |
 
 ---
 
