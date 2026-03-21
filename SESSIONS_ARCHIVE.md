@@ -1,5 +1,35 @@
 > Org renamed SNOBOL4-plus → snobol4ever, repos renamed March 2026. Historical entries use old names.
 
+## Session B-232 (2026-03-21) — M-X64-S2 ✅
+
+**Repo:** snobol4ever/x64 · **Branch:** main · **Commit:** `145773e`
+
+**What happened:**
+- M-X64-S2 fired: `spl_add(3,4) = 7` PASS end-to-end via LOAD()
+- True root cause found (B-231 diagnosis was partially wrong):
+  `callextfun` in `int.asm` called `pfn(efb, sp, nargs, nbytes)` — completely wrong args.
+  `pfn` wrote its return value into `efb`, corrupting SPITBOL memory. Not a MINSAVE bug.
+- `callextfun` rewritten as clean SysV AMD64 trampoline with correct new signature:
+  `callextfun(pfn, retval*, nargs, cargs*)` — shuffles rdi/rsi/rdx/rcx then `call r10`
+- `callef` in `syslinux.c` rewritten: `struct ldescr` marshalling loop, `MINSAVE`/`callextfun`/`MINRESTORE`
+- `MINSAVE` retained — required for re-entrant MINIMAL() callbacks from C back into SPITBOL
+- `test_spl_add.sno`: `IDENT(RESULT,'7')` → `EQ(RESULT,7)` (integer comparison, not string)
+- SPITBOL docs (spitbol-docs-master) consulted: confirmed MINSAVE/callback architecture is correct per spec
+
+**State at handoff:**
+- x64 HEAD: `145773e` B-232
+- M-X64-S3 is next: UNLOAD lifecycle; reload after unload; double-unload safe
+
+**Next session start (B-233):**
+```bash
+cd /home/claude/x64
+git config user.name "LCherryholmes" && git config user.email "lcherryh@yahoo.com"
+git pull --rebase origin main
+# M-X64-S3: implement UNLOAD lifecycle in syslinux.c
+# Test: unload spl_add, reload, call again; double-unload safe
+# Oracle: snobol4dotnet LoadSpecTests lifecycle cases
+```
+
 # SESSION_LOG.md — SNOBOL4-plus Full Session History
 
 > **Append-only.** Every session gets one entry at the bottom.

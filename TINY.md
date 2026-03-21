@@ -13,8 +13,8 @@ snobol4x: multiple frontends, multiple backends.
 ## NOW
 
 **Sprint:** `monitor-ipc` — wire 5-way FIFO IPC; SPITBOL + JVM + NET participants
-**HEAD:** `6eebdc3` B-229 (asm-backend) · x64: `feb521b` B-231
-**Milestone:** M-X64-S2 (next to fire)
+**HEAD:** `6eebdc3` B-229 (asm-backend) · x64: `145773e` B-232
+**Milestone:** M-X64-S3 (next to fire)
 **Invariants:** 97/106 ASM corpus (9 known failures: 022, 055, 064, cross, word1-4, wordcount)
 
 **⚠ CRITICAL NEXT ACTION — Session B-232:**
@@ -55,13 +55,13 @@ git pull --rebase origin main
 
 ## Last Session Summary
 
-**Session B-231 (2026-03-21) — M-X64-S1 ✅ + M-X64-S2 diagnostic:**
-- M-X64-S1 fired (88ff40f): all compile errors fixed, make bootsbl EXIT 0
-- M-X64-S2 diagnostic: LOAD()→zysld→loadDll→dlopen succeeds; callef entered
-- Segfault root cause: MINSAVE()→pushregs()→save_regs corrupts reg_pc
-- efb layout verified from raw dump: efcod at offset 32, valid xnblk ptr
-- libspl.c/libspl.so written; sysld.c/sysex.c got missing stdio.h
-- Pushed feb521b WIP
+**Session B-232 (2026-03-21) — M-X64-S2 ✅:**
+- M-X64-S2 fired (145773e): spl_add(3,4)=7 PASS end-to-end
+- Root cause: callextfun in int.asm passed wrong args to pfn (efb,sp,nargs,nbytes instead of retval,nargs,cargs)
+- Fix: callextfun rewritten as clean SysV AMD64 trampoline; callef rewritten with struct ldescr marshalling + MINSAVE/MINRESTORE
+- MINSAVE retained — required for callback re-entrancy into SPITBOL runtime
+- test_spl_add.sno: IDENT->EQ for type-correct integer comparison
+- Pushed 145773e
 
 ## Active Milestones
 
@@ -69,8 +69,8 @@ git pull --rebase origin main
 |----|---------|--------|
 | M-MONITOR-IPC-SO | monitor_ipc.so built; MON_OPEN/MON_SEND/MON_CLOSE; CSNOBOL4 LOAD() confirmed | ✅ `8bf1c0c` B-229 |
 | M-MONITOR-IPC-CSN | inject_traces.py IPC preamble; CSNOBOL4 trace via FIFO; hello PASS | ✅ `6eebdc3` B-229 |
-| **M-X64-S1** | syslinux.c compiles clean; `make bootsbl` succeeds | ❌ |
-| **M-X64-S2** | LOAD end-to-end; spl_add(3,4)=7 | ❌ |
+| **M-X64-S1** | syslinux.c compiles clean; `make bootsbl` succeeds | ✅ `88ff40f` B-231 |
+| **M-X64-S2** | LOAD end-to-end; spl_add(3,4)=7 | ✅ `145773e` B-232 |
 | **M-X64-S3** | UNLOAD lifecycle; reload; double-unload safe | ❌ |
 | **M-X64-S4** | SNOLIB; errors 139/140/141; monitor_ipc.so in SPITBOL | ❌ |
 | **M-X64-FULL** | S1–S4 done; SPITBOL = monitor participant | ❌ |
