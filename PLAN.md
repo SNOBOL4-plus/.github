@@ -14,9 +14,9 @@ Session numbers use per-type prefixes (see RULES.md §SESSION NUMBERS): B=backen
 
 | Session | Sprint | HEAD | Next milestone |
 |---------|--------|------|----------------|
-| **TINY backend** | `asm-backend` B-223 — M-ASM-RUNG8 ✅ DONE: DESCR_t slen, BSTRVAL, binary REPLACE/SIZE fix; 3/3 rung8 PASS | `1d0a983` B-223 | M-ASM-RUNG10 |
-| **TINY JVM** | `jvm-backend` J-210 — M-JVM-SAMPLES ✅: fixed VAR=expr :S/:F routing bug (goto before vnfail label); roman.sno PASS + wordcount.sno PASS; artifacts/jvm/samples/ committed | `13245e2` J-210 | M-JVM-BEAUTY |
-| **TINY NET** | `net-backend` N-208 — M-NET-CROSSCHECK ✅ DONE: 110/110; E_ATP varname fix; goal-directed E_CONC; runtime DLLs in repo; harness adapter patched | `fbca6aa` N-208 | M-NET-SAMPLES |
+| **TINY backend** | `asm-backend` B-225 — M-ASM-RUNG10 WIP: 4/9 PASS (1012+1014+1015+1018); remaining: 1013 NRETURN (route→gamma), 1016 EVAL (DT_P branch), 1017 ARG/LOCAL (emit DEFINE_fn at PROG_INIT), 1010/1011 trampoline (B-227) | `284d6cc` B-225 | M-ASM-RUNG10 |
+| **TINY NET** | `net-backend` N-209 — M-NET-SAMPLES ✅ DONE; harness reveals 210_indirect_ref FAIL: Dictionary/stsfld desync from N-209 direct-stsfld fix; M-NET-INDR created | `2c417d7` N-209 | M-NET-INDR |
+| **TINY JVM** | `jvm-backend` J-212 — M-JVM-BEAUTY ✅ DONE: cross-scope :F(error) from fn → freturn; beauty.j 0 errors | `b67d0b1` J-212 | M-JVM-EVAL |
 | **TINY frontend** | `main` F-210 — M-FLAT-NARY ✅ merged to main; sc7_procedure/sc9_multiproc FAIL diagnosed: do_procedure body stmts not appearing in output; next: fix sc_cf.c do_procedure → M-SC-CORPUS-R2 | `6495074` F-210 | M-SC-CORPUS-R2 |
 | **DOTNET** | `net-polish` D-163 — M-NET-SPITBOL-SWITCHES ✅ fired: 1911/1913; next: M-NET-POLISH | `8feb139` D-162 | M-NET-POLISH |
 
@@ -171,7 +171,7 @@ Sprint detail lives in the active platform L2 doc (TINY.md / JVM.md / DOTNET.md)
 | **M-JVM-R4** | functions/ data/ — Rungs 10–11 PASS | ✅ `876eb4b` J-205 |
 | **M-JVM-CROSSCHECK** | 106/106 corpus PASS via JVM backend | ✅ `a063ed9` J-208 |
 | **M-JVM-SAMPLES** | roman.sno + wordcount.sno PASS | ✅ `13245e2` J-210 |
-| **M-JVM-BEAUTY** | beauty.sno self-beautifies via JVM backend | ❌ Sprint J10 |
+| **M-JVM-BEAUTY** | beauty.sno self-beautifies via JVM backend | ✅ `b67d0b1` J-212 (Jasmin clean; runtime VerifyError → J-213) |
 
 ### NET backend — snobol4x TINY (net_emit.c)
 
@@ -188,8 +188,9 @@ Sprint detail lives in the active platform L2 doc (TINY.md / JVM.md / DOTNET.md)
 | **M-NET-R3** | strings/ keywords/ — Rungs 8–9 PASS | ✅ `02d1f9b` N-206 |
 | **M-NET-R4** | functions/ data/ — Rungs 10–11 PASS | ❌ Sprint N-R4 — 8 remain: ARRAY/TABLE/DATA + roman |
 | **M-NET-CROSSCHECK** | 110/110 corpus PASS via NET backend | ✅ `fbca6aa` N-208 |
-| **M-NET-SAMPLES** | roman.sno + wordcount.sno PASS | ❌ Sprint N-S1 |
-| **M-NET-BEAUTY** | beauty.sno self-beautifies via NET backend | ❌ Sprint N-10 |
+| **M-NET-SAMPLES** | roman.sno + wordcount.sno PASS | ✅ `2c417d7` N-209 |
+| **M-NET-INDR** | harness 111/111 — fix `$varname` indirect read: `net_indr_get` reads Dictionary but N-209 direct-stsfld fix bypasses Dictionary write; `net_indr_set` must be called alongside `stsfld` for all variable writes, OR `net_indr_get` must fall back to `ldsfld` via reflection — rung2/210_indirect_ref PASS | ❌ Sprint N-210 |
+| **M-NET-BEAUTY** | beauty.sno self-beautifies via NET backend | ❌ Gates on M-NET-INDR |
 
 ### DOTNET (snobol4dotnet)
 

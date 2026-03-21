@@ -11,7 +11,8 @@ blocked the push. History had to be rewritten. **Never again.**
 On 2026-03-16 the token was reconstructed and displayed in plain text in chat. Same exposure risk. **Never again.**
 On 2026-03-18 the token was written repeatedly in chat handoff summaries. **Never again.**
 
-- Token lives in Lon's memory only. Provided at session start. Used in shell only, never on disk.
+- Token is provided once by Lon in the opening prompt of each session. Used in shell as needed throughout. Never on disk.
+- **Never ask Lon for the token.** It was given at session start. If it wasn't, wait — do not prompt.
 - **Never reconstruct, quote, echo, or display the token in chat** — not even to confirm format. Acknowledge receipt silently and move on.
 - **Never include a "Token: ..." line in handoff summaries, next-session start blocks, or any chat output.** Ever. For any reason.
 - Write `TOKEN=TOKEN_SEE_LON` as placeholder in any file that references it.
@@ -163,32 +164,27 @@ git diff --cached --quiet || git commit -m "sessionN: artifacts/net — hello_pr
 
 ## ⛔ ARTIFACTS — JVM canonical samples tracked every session
 
-Every session that changes `emit_byrd_jvm.c` or any `.sno → .j` path MUST regenerate
-the canonical JVM artifacts and check if they changed. **Update only if changed.**
+Every session that changes `emit_byrd_jvm.c` or any `.sno → .j` path MUST run:
 
 ```bash
-cd /home/claude/snobol4x
-NULL_SNO=test/crosscheck/null.sno
-
-./sno2c -jvm $NULL_SNO > /tmp/null_new.j
-
-# Verify assembles (requires jasmin.jar — skip verify until J1)
-mkdir -p artifacts/jvm/samples
-diff -q /tmp/null_new.j artifacts/jvm/hello_prog.j 2>/dev/null \
-    || cp /tmp/null_new.j artifacts/jvm/hello_prog.j
-
-git add artifacts/jvm/
-git diff --cached --quiet || git commit -m "sessionN: artifacts/jvm — hello_prog.j updated"
+bash /home/claude/snobol4x/test/crosscheck/jvm_artifact_check.sh
 ```
 
-**Update beauty_prog.s (every session touching emit_byrd_asm.c or .mac):**
-```bash
-src/sno2c/sno2c -asm -I$INC $BEAUTY > artifacts/asm/beauty_prog.s
-nasm -f elf64 -I src/runtime/asm/ artifacts/asm/beauty_prog.s -o /dev/null
-git add artifacts/asm/beauty_prog.s && git commit -m "sessionN: artifacts — beauty_prog.s updated (reason)"
-```
+This script regenerates all three canonical JVM artifacts, verifies they assemble
+clean, diffs against committed versions, copies and stages any that changed, then
+exits nonzero if anything was updated (forcing you to include the artifacts in
+your commit). It exits 0 only when all artifacts are already current.
 
-**Never create** `foo_sessionN.ext`. Overwrite `foo.ext` and commit.
+**The script IS the rule. Run it. If it exits nonzero: add the staged files to
+your commit before pushing. Never commit emit_byrd_jvm.c changes without running
+this script first.**
+
+Canonical artifacts tracked:
+```
+artifacts/jvm/hello_prog.j          ← null.sno (simplest program)
+artifacts/jvm/samples/roman.j       ← roman.sno benchmark
+artifacts/jvm/samples/wordcount.j   ← wordcount.sno strings test
+```
 
 ## ⛔ ARTIFACTS — Snapshot generated C every session
 
@@ -211,6 +207,28 @@ artifacts/README.md must record: session N, date, md5, line count, compile statu
 STOP_ON_FAIL=0 bash test/crosscheck/run_crosscheck.sh
 ```
 If not 106/106: fix the regression before touching anything else. Regressions are bugs.
+
+## ⛔ SHARED RUNTIME INVARIANT — NET crosscheck when touching src/runtime/snobol4/
+
+The files under `src/runtime/snobol4/` (`snobol4.c`, `snobol4_pattern.c`, etc.) are
+linked by **all four backends** — C, ASM, JVM, and NET. Changes there can silently
+break JVM or NET even when the C and ASM crosschecks pass. This has happened.
+
+**Rule:** Any session that modifies any file under `src/runtime/snobol4/` MUST also
+run the NET crosscheck before pushing:
+
+```bash
+cd /home/claude/snobol4x
+bash test/crosscheck/run_crosscheck_net.sh   # must not regress vs last known NET baseline
+```
+
+If the NET baseline is unknown, record the current count before your change and
+confirm it does not drop after. A drop is a regression — fix it before pushing.
+
+JVM is best-effort (requires jasmin + JVM runtime, may not be present). NET is
+mandatory because `mono`/`ilasm` are available on standard containers.
+
+This rule applies regardless of which session type (B/J/N/F/D) is doing the work.
 
 ## ⛔ MILESTONE ORDER — TINY.md sprint must match PLAN.md dashboard order
 

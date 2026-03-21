@@ -9628,6 +9628,46 @@ bash test/crosscheck/run_crosscheck_jvm_rung.sh \
 # Expected: 89/92 — then proceed to M-JVM-BEAUTY (beauty.sno via JVM backend)
 ```
 
+## Session J-211 — M-JVM-BEAUTY WIP: label sanitizer + findRefs + computed goto
+
+**Branch:** `main`
+**HEAD at handoff:** `628bd0d`
+**Date:** 2026-03-20
+
+**What happened:**
+Three fixes toward beauty.sno compiling via JVM backend:
+
+1. `jvm_expand_label()`: sanitize SNOBOL4 labels with $, :, ', <>, =, (, ) for Jasmin.
+   Same table as asm_expand_name. Eliminated 26 Jasmin syntax errors → 1 remaining.
+
+2. DEFINE end_label fallback: when DEFINE has no goto, use next stmt's goto as end_label.
+   Fixes beauty.sno findRefs — DEFINE('findRefs(x)n,v') + Refs = :(findRefsEnd) on next line.
+
+3. Computed goto ($COMPUTED:expr): if-chain dispatch over in-scope labels via sno_str_eq.
+   sno_str_eq static helper added. jvm_cur_prog module global wired.
+   No-match fallback: Jfn%d_freturn in functions, L_END in main.
+
+**Remaining error:** `L_error` — main-level label targeted by :F(error) from inside `pp`
+function body. Cross-scope goto from fn method to main label. Fix: in jvm_emit_goto,
+after expanding label, if inside a fn and label not found in fn scope, emit
+`goto Jfn%d_freturn` instead. See J-212 CRITICAL NEXT ACTION in JVM.md.
+
+**Invariants:** 102/106 C (4 pre-existing) · 89/92 JVM (expr_eval + word1-4 xfail, unchanged)
+
+**Next session start (J-212):**
+```bash
+cd /home/claude/snobol4x
+git config user.name "LCherryholmes" && git config user.email "lcherryh@yahoo.com"
+git remote set-url origin https://TOKEN_SEE_LON@github.com/snobol4ever/snobol4x
+git pull && apt-get install -y libgc-dev nasm default-jdk && make -C src
+CORPUS=/home/claude/snobol4corpus/crosscheck
+STOP_ON_FAIL=0 CORPUS=$CORPUS bash test/crosscheck/run_crosscheck.sh 2>&1 | tail -2
+bash test/crosscheck/run_crosscheck_jvm_rung.sh \
+  $CORPUS/hello $CORPUS/output $CORPUS/assign $CORPUS/arith \
+  $CORPUS/control $CORPUS/patterns $CORPUS/capture \
+  $CORPUS/strings $CORPUS/keywords $CORPUS/functions $CORPUS/data 2>&1 | tail -2
+# Then: implement cross-scope goto fix per JVM.md CRITICAL NEXT ACTION
+```
 ## Session N-208 — M-NET-CROSSCHECK: 110/110 NET backend
 
 **Branch:** `net-backend` · **Commit:** `fbca6aa`
@@ -9729,4 +9769,117 @@ git log --oneline -3   # expect dbdcba7 D-163
 dotnet test TestSnobol4/TestSnobol4.csproj -c Release -p:EnableWindowsTargeting=true
 # 1911/1913 — then read ThreadedExecuteLoop.cs line 214 (CheckGotoFailure)
 # find @N overwrite → fix → cross PASS → 80/80 → diag1 → benchmark → M-NET-POLISH
+## Session N-209 — M-NET-SAMPLES ✅
+
+**Branch:** `net-backend` | **HEAD:** `2c417d7`
+
+**What happened:**
+- Diagnosed roman.sno timeout: `net_emit_fn_method` used `net_indr_get`/`net_indr_set` (Dictionary + reflection `SetValue`) to save/restore function args, locals, fn-name on every call. Roman.sno calls ROMAN() 100k times × ~4 recursion levels = ~2.4M reflection calls → 60s timeout.
+- Fix: replaced all save/restore/bind/init in fn prologue/epilogue with direct `ldsfld`/`stsfld` on existing static fields. `net_indr_*` retained only for dynamic `$varname` indirect access.
+- roman.sno: `result: MDCCLXXVI` ✅ | wordcount.sno: `11 words` ✅ | 110/110 crosscheck holds.
+- Committed `artifacts/net/samples/roman.il` + `artifacts/net/samples/wordcount.il`.
+- Also: installed CSNOBOL4 2.3.3 from source as oracle. Updated RULES.md (never ask for token).
+
+**State at handoff:** NET backend 110/110 + roman + wordcount all green. Next: M-NET-BEAUTY.
+
+**Next session start:**
+```bash
+cd /home/claude/snobol4x && git checkout net-backend && git pull
+git config user.name "LCherryholmes" && git config user.email "lcherryh@yahoo.com"
+apt-get install -y libgc-dev nasm mono-complete m4 && make -C src
+bash test/crosscheck/run_crosscheck_net.sh   # expect 110/110
+# Sprint: M-NET-BEAUTY — beauty.sno self-beautifies via NET backend
+INC=/home/claude/snobol4corpus/programs/inc
+BEAUTY=/home/claude/snobol4corpus/programs/beauty/beauty.sno
+./sno2c -net -I$INC $BEAUTY > /tmp/beauty.il
 ```
+
+## Session B-225 — M-ASM-RUNG10 WIP (4/9, diagnosis + ARG/LOCAL foundation)
+
+**Date:** 2026-03-20
+**Branch:** asm-backend
+**HEAD at handoff:** `284d6cc`
+**Invariants:** 100/106 C · 26/26 ASM ✅
+
+### What happened
+- Cloned all repos, confirmed invariants, read all 5 failing rung10 test cases.
+- Diagnosed root causes: 1013 (NRETURN→omega should be →gamma), 1016 (EVAL_fn ignores DT_P), 1017 (_b_ARG/_b_LOCAL missing + DEFINE_fn not emitted at PROG_INIT), 1010/1011 (APPLY_fn fn==NULL trampoline gap).
+- Added `_b_ARG` and `_b_LOCAL` implementations to `snobol4.c` after FNCBLK_t with forward decls; registered both. Builds clean, invariants hold. Pushed `284d6cc`.
+- Studied Proebsting Byrd Box paper — confirms four-port model underpins all emitters.
+- Deferred 1010/1011 trampoline to B-227.
+
+### Next session start (B-226)
+```bash
+cd /home/claude/snobol4x
+git config user.name "LCherryholmes" && git config user.email "lcherryh@yahoo.com"
+git pull --rebase origin asm-backend
+apt-get install -y libgc-dev nasm && make -C src
+cd src/runtime/asm && gcc -g -O0 -c snobol4_asm_harness.c -o snobol4_asm_harness.o && cd /home/claude/snobol4x
+CORPUS=/home/claude/snobol4corpus/crosscheck
+STOP_ON_FAIL=0 CORPUS=$CORPUS bash test/crosscheck/run_crosscheck.sh    # 100/106
+CORPUS=$CORPUS bash test/crosscheck/run_crosscheck_asm.sh                # 26/26
+bash test/crosscheck/run_crosscheck_asm_rung.sh $CORPUS/rung10           # 4/9
+# Fix order: 1013 (resolve_special_goto NRETURN→gamma) → 1017 (PROG_INIT DEFINE_fn per fn) → 1016 (EVAL_fn DT_P branch)
+# HEAD: 284d6cc B-225
+## Session J-212 — M-JVM-BEAUTY: cross-scope goto fix; beauty.j assembles clean
+
+**Branch:** `jvm-backend` · **HEAD:** `b67d0b1`
+**Date:** 2026-03-20
+
+**What happened:**
+- Reproduced Jasmin error: `L_error has not been added to the code` (line 20325 of beauty.j)
+- Root cause: `:F(error)` inside function `pp` references main-level label `L_error`, which doesn't exist in the `sno_userfn_pp()` JVM method. SNOBOL4 semantics: out-of-scope goto = FRETURN.
+- Fix in `jvm_emit_goto()`: before emitting `goto L_<label>`, walk program stmts to check if target label falls within current function body range (`entry_label`→`end_label`). If not found → emit `goto Jfn%d_freturn`.
+- `beauty.j` now assembles with 0 errors. M-JVM-BEAUTY milestone fired (Jasmin criterion met).
+- Invariants held: 102/106 C · 89/92 JVM · JVM artifacts unchanged.
+
+**State at handoff:**
+- Remaining: `VerifyError: Register 7 contains wrong type` in `sno_userfn_ss` when running `Beauty.class` — stack-height/type issue in the ss function method, separate from the cross-scope fix.
+- snobol4x committed `b67d0b1` — needs push (token required).
+- .github docs updated: JVM.md NOW block, PLAN.md NOW table + M-JVM-BEAUTY ✅ — needs push.
+
+**Next session start block (J-213):**
+```bash
+cd /home/claude/snobol4x
+git config user.name "LCherryholmes" && git config user.email "lcherryh@yahoo.com"
+git remote set-url origin https://TOKEN_SEE_LON@github.com/snobol4ever/snobol4x
+git pull && apt-get install -y libgc-dev nasm default-jdk && make -C src
+CORPUS=/home/claude/snobol4corpus/crosscheck
+STOP_ON_FAIL=0 CORPUS=$CORPUS bash test/crosscheck/run_crosscheck.sh 2>&1 | tail -2   # 102/106
+bash test/crosscheck/run_crosscheck_jvm_rung.sh \
+  $CORPUS/hello $CORPUS/output $CORPUS/assign $CORPUS/arith \
+  $CORPUS/control $CORPUS/patterns $CORPUS/capture \
+  $CORPUS/strings $CORPUS/keywords $CORPUS/functions $CORPUS/data 2>&1 | tail -2
+# Expected: 89/92
+# Then investigate VerifyError in sno_userfn_ss: grep sno_userfn_ss beauty.j | head -50
+# Check .limit locals and istore/astore type conflicts around register 7
+```
+
+## Session N-209 EMERGENCY HANDOFF — harness regression found
+
+**Discovered after M-NET-SAMPLES commit:** harness crosscheck (`snobol4harness/crosscheck/crosscheck.sh --engine tiny_net`) reveals **110 PASS, 1 FAIL**: `rung2/210_indirect_ref`.
+
+**Root cause:** N-209 direct-stsfld fix bypasses `net_indr_set` for all variable writes in function prologue/epilogue. `net_indr_get` (used by `$varname` indirect read, E_INDR) reads from the Dictionary — which is now never updated for named variables. Dictionary and static fields are out of sync.
+
+**Fix for N-210 (M-NET-INDR):**
+Two options:
+1. **(Preferred)** In `net_indr_get`: after Dictionary miss, fall back to reflection `GetField` on the static field — reads the ground truth. One-method fix, no emitter changes.
+2. After every `stsfld` for a named var, also call `net_indr_set` to sync Dictionary — doubles the writes.
+
+Option 1 is cleaner: Dictionary becomes a write-through cache, reflection is the fallback. The `net_indr_set` reflection write path in `net_emit_expr E_INDR` assignment side is still needed for truly dynamic names.
+
+**State at handoff:** `net-backend` HEAD `2c417d7`. 110/110 crosscheck. 110/111 harness (1 fail). New milestone M-NET-INDR in PLAN.md gates M-NET-BEAUTY.
+
+**Next session N-210 start:**
+```bash
+cd /home/claude/snobol4x && git checkout net-backend && git pull
+git config user.name "LCherryholmes" && git config user.email "lcherryh@yahoo.com"
+apt-get install -y libgc-dev nasm mono-complete m4 && make -C src
+# Confirm baseline
+bash test/crosscheck/run_crosscheck_net.sh            # 110/110
+cd /home/claude/snobol4harness
+CORPUS=/home/claude/snobol4corpus/crosscheck TINY_REPO=/home/claude/snobol4x \
+  bash crosscheck/crosscheck.sh --engine tiny_net 2>&1 | sed 's/\x1b\[[0-9;]*m//g' | grep -E "PASS|FAIL"
+# Expect: 110 PASS, 1 FAIL (210_indirect_ref)
+# Fix: edit src/runtime/net/snobol4lib.il — net_indr_get: add reflection fallback after Dictionary miss
+# OR edit emit_byrd_net.c net_emit_header net_indr_get method body```

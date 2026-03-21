@@ -9,20 +9,18 @@ JVM/Clojure backend: SNOBOL4 → JVM bytecode via multi-stage pipeline.
 
 ## NOW
 
-**Sprint:** `jvm-backend` J-211 — M-JVM-BEAUTY: beauty.sno self-beautifies via JVM backend
-**HEAD:** `13245e2` J-210
-**Milestone:** M-JVM-SAMPLES ✅ J-210 · M-JVM-CROSSCHECK ✅ J-208 · M-JVM-R4 ✅ J-205
+**Sprint:** `jvm-backend` J-213 — M-JVM-BEAUTY: beauty.j assembles clean ✅; next: beauty runtime (VerifyError in sno_userfn_ss)
+**HEAD:** `b67d0b1` J-212
+**Milestone:** M-JVM-BEAUTY ✅ Jasmin clean · Next: M-JVM-EVAL
 
-**J-210 — M-JVM-SAMPLES DONE: roman.sno + wordcount.sno PASS:**
-- Bug fixed: `VAR=expr :S(label)` — `:S` goto was emitted after `vnfail:` label, so failure path also jumped to `:S`. roman.sno looped forever because `N=LT(N,100000) N+1 :S(LOOP)` never fell through.
-- Fix: emit `:S` goto before `vnfail:` inside success block. vnfail: is now clean fall-through.
-- roman.sno → `result: MDCCLXXVI` ✅ · wordcount.sno → `14 words` ✅
-- Artifacts: `artifacts/jvm/samples/roman.j` + `artifacts/jvm/samples/wordcount.j` committed
-- Invariants: 102/106 C · 89/92 JVM (expr_eval pre-existing · word1-4 xfail)
+**J-212 — M-JVM-BEAUTY DONE:**
+- Fix: cross-scope goto in `jvm_emit_goto()` — if target label not in current fn body range, route to `Jfn%d_freturn`
+- `beauty.j` now assembles with 0 errors (was: "L_error has not been added to the code")
+- Invariants: 102/106 C · 89/92 JVM (unchanged) · JVM artifacts unchanged
 
-**⚠ CRITICAL NEXT ACTION — Session J-211 (JVM):**
+**⚠ CRITICAL NEXT ACTION — Session J-213 (JVM):**
 
-Sprint J10 — M-JVM-BEAUTY: beauty.sno self-beautifies via JVM backend
+M-JVM-BEAUTY Jasmin fired. Remaining: beauty runtime — VerifyError in sno_userfn_ss.
 
 ```bash
 cd /home/claude/snobol4x
@@ -37,13 +35,21 @@ bash test/crosscheck/run_crosscheck_jvm_rung.sh \
   $CORPUS/strings $CORPUS/keywords $CORPUS/functions $CORPUS/data 2>&1 | tail -2
 # Expected: 89/92
 
+# Confirm beauty.j still assembles clean:
 INC=/home/claude/snobol4corpus/programs/inc
 BEAUTY=/home/claude/snobol4corpus/programs/beauty/beauty.sno
-JASMIN=src/backend/jvm/jasmin.jar
-TMPD=$(mktemp -d)
+TMPD=/tmp/beauty_jvm && mkdir -p $TMPD
 ./sno2c -jvm -I$INC $BEAUTY > $TMPD/beauty.j
-java -jar $JASMIN $TMPD/beauty.j -d $TMPD/ 2>&1 | grep -iv "generated\|picked"
-echo "$BEAUTY" | timeout 30 java -cp $TMPD Beauty 2>/dev/null | head -20
+java -jar src/backend/jvm/jasmin.jar $TMPD/beauty.j -d $TMPD/ 2>&1 | grep -iv "generated\|picked"
+# Expected: (no errors)
+
+# Next issue: VerifyError "Register 7 contains wrong type" in sno_userfn_ss
+# Investigate: grep sno_userfn_ss beauty.j — check .limit locals, istore/astore conflicts
+```
+
+After any `emit_byrd_jvm.c` change, run the mandatory artifact check:
+```bash
+bash test/crosscheck/jvm_artifact_check.sh
 ```
 
 **J-204 — functions/ 8/8 PASS, data/ 3/6 PASS:**

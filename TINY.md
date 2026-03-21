@@ -12,116 +12,62 @@ snobol4x: multiple frontends, multiple backends.
 
 ## NOW
 
-**Sprint:** `asm-backend` B-223 — M-ASM-RUNG8
-**HEAD:** `be4a978` B-222
-**Milestone:** M-ASM-RUNG8 ❌
+**Sprint:** `asm-backend` B-225 — M-ASM-RUNG10 (4/9 PASS → WIP)
+**HEAD:** `284d6cc` B-225
+**Milestone:** M-ASM-RUNG10 ❌ (4/9: 1012+1014+1015+1018 PASS)
 **Invariants:** 100/106 C (6 pre-existing) · 26/26 ASM
 
-**⚠ CRITICAL NEXT ACTION — Session B-223:**
+**⚠ CRITICAL NEXT ACTION — Session B-226:**
 
 ```bash
 cd /home/claude/snobol4x
 git config user.name "LCherryholmes" && git config user.email "lcherryh@yahoo.com"
 git pull --rebase origin asm-backend
 apt-get install -y libgc-dev nasm && make -C src
+cd src/runtime/asm && gcc -g -O0 -c snobol4_asm_harness.c -o snobol4_asm_harness.o && cd /home/claude/snobol4x
 CORPUS=/home/claude/snobol4corpus/crosscheck
-STOP_ON_FAIL=0 bash test/crosscheck/run_crosscheck.sh    # 100/106 (6 pre-existing)
-CORPUS=$CORPUS bash test/crosscheck/run_crosscheck_asm.sh # 26/26
-
-# Sprint M-ASM-RUNG8: rung8/ — REPLACE/SIZE/DUPL 3/3 PASS via ASM backend
-ls /home/claude/snobol4corpus/crosscheck/strings/
-CORPUS=$CORPUS bash test/crosscheck/run_crosscheck_asm_rung.sh \
-  /home/claude/snobol4corpus/crosscheck/strings rung8
+STOP_ON_FAIL=0 CORPUS=$CORPUS bash test/crosscheck/run_crosscheck.sh    # 100/106
+CORPUS=$CORPUS bash test/crosscheck/run_crosscheck_asm.sh                # 26/26
+bash test/crosscheck/run_crosscheck_asm_rung.sh $CORPUS/rung10           # 4/9 PASS
 ```
 
-**Sprint B-220 — JVM Greek labels (65 sites in emit_byrd_jvm.c):**
+**Remaining 5 failures — known root causes:**
 
-Every Byrd port label in generated JVM output must carry a Greek suffix.
+1. **1013_func_nreturn** — Route NRETURN → `fn_NAME_gamma` (not omega) in `resolve_special_goto` in `emit_byrd_asm.c` (~line 3357). One-line fix: change the NRETURN branch from `fn_NAME_omega` to `fn_NAME_gamma`.
 
-| Old | Port | New |
-|---|---|---|
-| `Jn%d_lit_ok` | γ | `Jn%d_lit_γ` |
-| `Jn%d_seq_mid` | γ→α | `Jn%d_seq_γ` |
-| `Jn%d_alt_right` | β | `Jn%d_alt_β` |
-| `Jn%d_nam_ok` | γ | `Jn%d_nam_γ` |
-| `Jn%d_dol_ok` | γ | `Jn%d_dol_γ` |
-| `Jn%d_arb_loop` | β | `Jn%d_arb_β` |
-| `Jn%d_arb_decr` | β inc | `Jn%d_arb_βinc` |
-| `Jn%d_arb_retry` | β retry | `Jn%d_arb_βr` |
-| `Jn%d_arb_commit` | γ | `Jn%d_arb_γ` |
-| `Jpat%d_success` | stmt γ | `Jpat%d_γ` |
-| `Jpat%d_fail` | stmt ω | `Jpat%d_ω` |
-| `Jpat%d_retry` | scan β | `Jpat%d_β` |
-| `Jpat%d_tok` / `Jpat%d_tfail` | tree γ/ω | `Jpat%d_tγ` / `Jpat%d_tω` |
-| `Jfn%d_return` / `Jfn%d_freturn` | fn γ/ω | `Jfn%d_γ` / `Jfn%d_ω` |
+2. **1017_arg_local** — `_b_ARG`/`_b_LOCAL` are now in snobol4.c and registered (B-225). Still need: in `emit_byrd_asm.c` after `PROG_INIT`, iterate all `named_pats[]` with `is_fn==1` and emit `lea rdi, [rel spec_str] ; xor esi, esi ; call DEFINE_fn` for each. Put spec strings in `.rodata` section.
 
-**Sprint B-221 — NET Greek labels (22 sites in emit_byrd_net.c):**
+3. **1016_eval** — In `snobol4_pattern.c` `EVAL_fn` (~line 1277): add `DT_P` branch before the `DT_S` check. Serialize pattern node to string then call `_ev_expr`, or call `_ev_expr` on a reconstructed source string.
 
-| Old | Port | New |
-|---|---|---|
-| `Nn%d_nam_ok` | γ | `Nn%d_nam_γ` |
-| `Nn%d_dol_ok` | γ | `Nn%d_dol_γ` |
-| `Nn%d_arb_loop` | β | `Nn%d_arb_β` |
-| `Nn%d_arb_done` | γ | `Nn%d_arb_γ` |
-| `Npat%d_tok` | stmt γ | `Npat%d_γ` |
-| `Npat%d_fail` | stmt ω | `Npat%d_ω` |
-| `Npat%d_retry` | scan β | `Npat%d_β` |
-| `Nfn%d_return` / `Nfn%d_freturn` | fn γ/ω | `Nfn%d_γ` / `Nfn%d_ω` |
+4. **1010/1011** — APPLY_fn(fn==NULL) → NULVCL. Deferred to B-227 (trampoline complexity).
 
-**Sprint B-222 — Local variable alignment across all four emit_pat_node functions:**
+**Recommended attack order for B-226:**
+1. Fix 1013 (one-liner in resolve_special_goto)
+2. Fix 1017 (emit DEFINE_fn calls at PROG_INIT)
+3. Fix 1016 (DT_P branch in EVAL_fn)
+4. Defer 1010/1011 to B-227
 
-Goal: same concept = same name in all four backends. Names should be readable English words, not abbreviations. `i`, `j`, `k` are fine for loop counters.
-
-**emit_pat_node parameters — canon names:**
-
-| Concept | C | ASM | JVM | NET | Canon |
-|---|---|---|---|---|---|
-| stmt pointer | `s` | `stmt` | `s` | `s` | `s` — ASM rename `stmt→s` |
-| subject (string name / slot) | `subj` | `subj` | `loc_subj` | `loc_subj` | `subj` (C/ASM pass name; JVM/NET pass slot index — different types, same word) |
-| subject length | `subj_len` | `subj_len_sym` | `loc_len` | `loc_len` | `subj_len` — ASM rename `subj_len_sym→subj_len`; JVM/NET rename `loc_len→subj_len` |
-| cursor | `cursor` | `cursor` | `loc_cursor` | `loc_cursor` | `cursor` — JVM/NET rename `loc_cursor→cursor` |
-| capture slot allocator | (depth) | — | `p_cap_local` | `p_next_int` / `p_next_str` | `cap_slot` — JVM rename `p_cap_local→cap_slot`; NET rename `p_next_int→cap_slot`, drop `p_next_str` |
-
-**emit_pat_node local variables — canon names per node type:**
-
-| Concept | C | JVM | NET | Canon |
-|---|---|---|---|---|
-| literal string value | `s` | `s` | `s` | `s` ✅ |
-| literal string length | `slen` | `slen` | `slen` | `slen` ✅ |
-| uid for this node | `u` (in emit_stmt) / implicit | `uid` | `uid` | `uid` — C rename `u→uid` in emit_stmt |
-| capture-before cursor | — | `loc_before` | `loc_before` | `cursor_before` — both rename `loc_before→cursor_before` |
-| variable name string | `varname` | `varname` | `varname` | `varname` ✅ |
-| escaped name buffer | `nameesc` | `nameesc` | — | `nameesc` ✅ |
-| gamma label buffer | `alpha_lbl` etc (C uses Label type) | `lbl_inner_ok` / `lbl_ok` | `lbl_ok` | `gamma_lbl` — align JVM/NET to descriptive names: `gamma_lbl`, `omega_lbl`, `retry_lbl`, `success_lbl`, `fail_lbl` |
-| alt right-branch label | — | `lbl_try_right` | varies | `right_lbl` |
-| arb loop label | — | `lbl_arb_loop` | `lbl_loop` | `loop_lbl` |
-| arb done label | — | `lbl_arb_done` | `lbl_done` | `done_lbl` |
-| proto buffer | `pbuf` | `pbuf` | `pbuf` | `pbuf` ✅ |
-| proto string | `proto` | `proto` | `proto` | `proto` ✅ |
-| entry label string | `el` | `el` | `el` | `entry_lbl` — all rename `el→entry_lbl` |
-| end label string | from goto | from goto | `gl` | `end_lbl` — NET rename `gl→end_lbl` |
-
-**DO NOT mark M-EMITTER-NAMING ✅ until B-220 + B-221 + B-222 all complete.**
-
----
 
 ## Last Session Summary
 
-**Session B-223 — M-ASM-RUNG8 ✅ complete:**
-- Root cause: &ALPHABET is a 256-byte binary string with NUL at index 0; NUL-terminated char* representation broke REPLACE/SIZE.
-- Fix: added `uint32_t slen` to DESCR_t padding (struct stays 16 bytes, zero ABI change); `BSTRVAL(s,len)` macro; `descr_slen()` helper.
-- NV_SET_fn("ALPHABET") now uses BSTRVAL(alphabet,256). _b_SIZE uses slen for binary strings. REPLACE_fn uses descr_slen() + binary_mode preserves NUL bytes for positional alignment.
-- 810_replace 3/3, 811_size 3/3, 812_dupl 3/3. Invariants: 100/106 C + 26/26 ASM hold. HEAD `1d0a983`.
+**Session B-225 — M-ASM-RUNG10 WIP (4/9, diagnosis + ARG/LOCAL foundation):**
+- Diagnosed all 5 remaining rung10 failures with precise root causes.
+- Added `_b_ARG` / `_b_LOCAL` to `snobol4.c` (after FNCBLK_t, forward decls + registrations). Builds clean. 100/106 C · 26/26 ASM hold.
+- NRETURN: one-line fix in resolve_special_goto (→ gamma not omega).
+- EVAL: DT_P branch needed in EVAL_fn.
+- 1017: also needs DEFINE_fn emit at PROG_INIT in emitter.
+- 1010/1011 deferred to B-227. HEAD `284d6cc`.
+
 
 ## Active Milestones (next 5)
 
 | ID | Status | Notes |
 |----|--------|-------|
-| M-ASM-RUNG11 | ❌ 2/7 | ITEM lvalue emitter fix + PROTOTYPE/VALUE verify — B-212 |
-| M-ASM-LIBRARY | ❌ | Gates on RUNG11 |
-| M-SC-CORPUS-R2 | ❌ | do_procedure body emission fix (sc_cf.c) — F-211 |
-| M-JVM-CROSSCHECK | ❌ | 89/92 (J-208 progress) |
-| M-NET-R1 | ❌ | 74/82 NET — ARB backtrack SEQ-omega bug (N-205 WIP) |
+| M-NET-INDR | ❌ | harness 210_indirect_ref FAIL — Dictionary/stsfld desync from N-209 fix — next NET sprint |
+| M-NET-BEAUTY | ❌ | Gates on M-NET-INDR |
+| M-ASM-RUNG10 | ❌ | 4/9 WIP — NRETURN/EVAL/ARG/LOCAL remaining — B-226 |
+| M-ASM-RUNG11 | ❌ | Gates on RUNG10 |
+| M-SC-CORPUS-R2 | ❌ | do_procedure body emission fix (sc_cf.c) — F-210 |
 
 Full milestone history → [PLAN.md](PLAN.md)
 
@@ -131,10 +77,10 @@ Full milestone history → [PLAN.md](PLAN.md)
 
 | Session | Branch | Focus |
 |---------|--------|-------|
-| B-212 | `asm-backend` | M-ASM-RUNG11 |
+| B-226 | `asm-backend` | M-ASM-RUNG10 (4/9 → 9/9) |
 | F-210 | `main` | M-SC-CORPUS-R2 |
-| J-208 | `jvm-backend` | M-JVM-CROSSCHECK (89/92) |
-| N-206 | `net-backend` | M-NET-CROSSCHECK — 102/110; ARRAY/TABLE/DATA + roman next |
-| D-156 | `net-perf-analysis` | M-NET-PERF |
+| J-210 | `jvm-backend` | M-JVM-BEAUTY |
+| N-210 | `net-backend` | M-NET-INDR — fix Dictionary/stsfld desync |
+| D-162 | `net-spitbol-switches` | M-NET-SPITBOL-SWITCHES |
 
 Per RULES.md: `git pull --rebase` before every push. Update only your row in PLAN.md NOW table.
