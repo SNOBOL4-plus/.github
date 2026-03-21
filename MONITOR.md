@@ -32,7 +32,77 @@ identical to the input. A fixed point.
 - Two backends agree, one diverges → the two agreeing backends specify the fix.
 
 **SPITBOL stream quirk:** SPITBOL sends TRACE to stdout, all others to stderr.
-`run_monitor.sh` redirects per participant before diffing.
+**IPC solution:** All participants use LOAD'd `monitor_ipc.so` — see §IPC Architecture below.
+No stream redirection needed. Each participant writes trace events directly to its own named FIFO.
+
+---
+
+## IPC Architecture — monitor_ipc.so
+
+**The problem with stderr/stdout:** TERMINAL= callbacks write to stderr (CSNOBOL4) or stdout
+(SPITBOL). Runtime panics, error messages, and trace events all land in the same stream.
+Redirect hacks are fragile. Parallel execution is impossible.
+
+**The solution:** A LOAD'd C shared library that writes trace events to a named FIFO (pipe),
+bypassing all stdio streams entirely. One `.so` file, compatible ABI for both CSNOBOL4 and
+SPITBOL (`lret_t fn(LA_ALIST)` — identical dlopen/dlsym convention, verified from source).
+
+### monitor_ipc.c — three functions
+
+```c
+// LOAD("MON_OPEN(STRING)STRING",    "./monitor_ipc.so")
+// LOAD("MON_SEND(STRING,STRING)STRING", "./monitor_ipc.so")
+// LOAD("MON_CLOSE()STRING",         "./monitor_ipc.so")
+
+lret_t MON_OPEN(LA_ALIST)  // arg0 = FIFO path → opens O_WRONLY, stores fd
+lret_t MON_SEND(LA_ALIST)  // arg0 = kind, arg1 = body → write atomic line to FIFO
+lret_t MON_CLOSE(LA_ALIST) // closes FIFO fd
+```
+
+`write()` on a named FIFO is atomic for lines < PIPE_BUF (4096 bytes) — no locking needed
+even with parallel participants, since each participant has its own FIFO.
+
+### inject_traces.py — new preamble
+
+Instead of MONCALL/MONRET/MONVAL writing to `TERMINAL =`, they call `MON_SEND()`:
+
+```snobol4
+        LOAD('MON_OPEN(STRING)STRING',       &MONITOR_SO)
+        LOAD('MON_SEND(STRING,STRING)STRING', &MONITOR_SO)
+        LOAD('MON_CLOSE()STRING',             &MONITOR_SO)
+        MON_OPEN(&MONITOR_FIFO)
+MONCALL MON_SEND('CALL',   MONN)                                  :(RETURN)
+MONRET  MON_SEND('RETURN', MONN ' = ' CONVERT(VALUE(MONN),'STRING')) :(RETURN)
+MONVAL  MON_SEND('VALUE',  MONN ' = ' CONVERT(VALUE(MONN),'STRING')) :(RETURN)
+```
+
+`&MONITOR_FIFO` and `&MONITOR_SO` are set as SNOBOL4 variables by the injector preamble
+(read from env vars `MONITOR_FIFO` and `MONITOR_SO` via `HOST()`).
+
+### ASM/JVM/NET runtime — comm_var() change
+
+`comm_var()` in `snobol4.c` currently writes to `monitor_fd` (fd 2 = stderr).
+Change: open `getenv("MONITOR_FIFO")` at init time; write there instead.
+Same atomic write, zero stderr pollution.
+
+### run_monitor.sh — parallel launch
+
+```bash
+mkfifo $TMP/mon_{csn,spl,asm,jvm,net}.fifo
+# start collector: reads all 5 FIFOs → 5 .norm files
+python3 monitor_collect.py $TMP/mon_*.fifo &
+
+MONITOR_FIFO=$TMP/mon_csn.fifo MONITOR_SO=./monitor_ipc.so \
+    snobol4 ... $TMP/instr.sno &
+MONITOR_FIFO=$TMP/mon_spl.fifo MONITOR_SO=./monitor_ipc.so \
+    spitbol  ... $TMP/instr.sno &
+MONITOR_FIFO=$TMP/mon_asm.fifo ./snobol4-asm $SNO &
+MONITOR_FIFO=$TMP/mon_jvm.fifo ./snobol4-jvm $SNO &
+MONITOR_FIFO=$TMP/mon_net.fifo ./snobol4-net $SNO &
+wait
+```
+
+All 5 run in parallel. No sequential dependency. No stream blending. Ever.
 
 ---
 
@@ -197,35 +267,28 @@ rm -f $TMP.*; exit $FAIL
 
 ## Sprint Plan
 
-### Sprint M1 — monitor-scaffold
+### Sprint M1 — monitor-scaffold ✅ COMPLETE (B-227)
 
-**Goal:** Infrastructure exists. One test runs end-to-end against CSNOBOL4 only.
-
-**Deliverables:**
-- `snobol4x/test/monitor/inject_traces.py`
-- `snobol4x/test/monitor/run_monitor.sh` (CSNOBOL4 only)
-- `snobol4x/test/monitor/tracepoints.conf`
-- One passing test: `crosscheck/hello/001_output_string_literal.sno`
-
-**Pass condition:** `run_monitor.sh` on `001_output_string_literal.sno` exits 0,
-CSNOBOL4 trace stream captured and non-empty.
-**Fires:** M-MONITOR-SCAFFOLD
+2-way CSNOBOL4+ASM via TERMINAL=/comm_var stderr. Infrastructure exists, hello PASS.
+**Fired:** M-MONITOR-SCAFFOLD `19e26ca`
 
 ---
 
-### Sprint M2 — monitor-5way
+### Sprint M2 — monitor-ipc (CURRENT)
 
-**Goal:** All 5 participants wired. SPITBOL + 3 backends alongside CSNOBOL4.
+**Goal:** Replace stderr/stdout blending with named FIFO IPC via LOAD'd C module.
 
 **Deliverables:**
-- `run_monitor.sh` — all 5 participants + stream redirect logic
-- `normalize_trace.py` — SPITBOL format normalization + ignore-points
-- `tracepoints.conf` — initial ignore-points (`&TERMINAL`, `DATATYPE` case)
-- `001_output_string_literal.sno` — all 5 streams captured, diffed, passing
+- `test/monitor/monitor_ipc.c` + `monitor_ipc.so` — MON_OPEN/MON_SEND/MON_CLOSE
+- Updated `inject_traces.py` — LOAD+MON_OPEN preamble; MONCALL/MONRET/MONVAL → MON_SEND()
+- Updated `run_monitor.sh` — mkfifo, parallel launch, collector, diff
+- Updated `snobol4.c` comm_var() — MONITOR_FIFO env var instead of fd 2
+- Pass: hello PASS all 5 participants; no stderr/stdout used for trace
 
-**Pass condition:** `run_monitor.sh` on `001_output_string_literal.sno` exits 0,
-all 5 streams present, no unexpected divergence.
-**Fires:** M-MONITOR-5WAY
+**Sub-milestones in order:**
+1. **M-MONITOR-IPC-SO** — monitor_ipc.so built; CSNOBOL4 LOAD() confirmed
+2. **M-MONITOR-IPC-CSN** — CSNOBOL4 trace via FIFO; hello PASS 1-way IPC
+3. **M-MONITOR-IPC-5WAY** — all 5 participants via FIFO; hello PASS all 5
 
 ---
 

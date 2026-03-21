@@ -16,7 +16,7 @@ Session numbers use per-type prefixes (see RULES.md §SESSION NUMBERS): B=backen
 
 | Session | Sprint | HEAD | Next milestone |
 |---------|--------|------|----------------|
-| **TINY backend** | `asm-backend` B-226 — clean slate | `7f44985` B-226 | TBD |
+| **TINY backend** | `asm-backend` B-228 — monitor-ipc | `19e26ca` B-227 | M-MONITOR-IPC-SO |
 | **TINY NET** | `net-backend` N-209 — clean slate | `2c417d7` N-209 | TBD |
 | **TINY JVM** | `jvm-backend` J-212 — clean slate | `b67d0b1` J-212 | TBD |
 | **TINY frontend** | `main` F-210 — clean slate | `6495074` F-210 | TBD |
@@ -186,9 +186,10 @@ Sprint detail and runner design → [MONITOR.md](MONITOR.md)
 
 | ID | Trigger | Repo | Status |
 |----|---------|------|--------|
-| **M-MONITOR-SCAFFOLD** | `snobol4x/test/monitor/` exists: `inject_traces.py` + `run_monitor.sh` + `tracepoints.conf`; CSNOBOL4 + ASM; single test passes | snobol4x | ✅ `19e26ca` B-227 |
-| **M-MONITOR-3WAY** | CSNOBOL4 + SPITBOL + ASM wired; `normalize_trace.py` handles SPITBOL format; one test passes all 3 | snobol4x | ❌ |
-| **M-MONITOR-5WAY** | All 5 participants: CSNOBOL4 + SPITBOL + ASM + JVM + NET; one test passes all 5 | snobol4x | ❌ |
+| **M-MONITOR-SCAFFOLD** | `test/monitor/` exists: `inject_traces.py` + `run_monitor.sh` + `tracepoints.conf`; CSNOBOL4 + ASM; single test passes | snobol4x | ✅ `19e26ca` B-227 |
+| **M-MONITOR-IPC-SO** | `monitor_ipc.c` → `monitor_ipc.so`; MON_OPEN/MON_SEND/MON_CLOSE; CSNOBOL4 LOAD() confirmed; no stderr output | snobol4x | ❌ |
+| **M-MONITOR-IPC-CSN** | `inject_traces.py` emits LOAD+MON_OPEN preamble; MONCALL/MONRET/MONVAL call MON_SEND(); CSNOBOL4 trace arrives on FIFO; hello PASS | snobol4x | ❌ |
+| **M-MONITOR-IPC-5WAY** | all 5 participants (CSNOBOL4+SPITBOL+ASM+JVM+NET) write trace to per-participant FIFO; `run_monitor.sh` parallel launch + collector; hello PASS all 5; zero stderr/stdout blending | snobol4x | ❌ |
 | **M-MONITOR-4DEMO** | roman + wordcount + treebank pass all 5 participants; claws5 divergence count documented | snobol4x | ❌ |
 | **M-BEAUTY-GLOBAL** | global.sno driver passes ASM via monitor | snobol4x | ❌ |
 | **M-BEAUTY-IS** | is.sno driver passes | snobol4x | ❌ |

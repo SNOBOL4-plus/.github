@@ -10076,3 +10076,21 @@ CORPUS=$CORPUS bash test/crosscheck/run_crosscheck_asm.sh               # 26/26
 # Goal: run_monitor.sh hello.sno exits 0 with all 3 streams present and matching
 # Read TESTING.md oracle table for SPITBOL TRACE format differences
 ```
+
+## Session B-228 — IPC architecture + HQ update (2026-03-21)
+
+**Branch:** `asm-backend` · **Sprint:** `monitor-ipc`
+
+**What happened:**
+- Studied CSNOBOL4 2.3.3 full source (load.h, fork.c, ffi.c, modules/) and SPITBOL x64 source (syslinux.c, sysld.c, osint/)
+- Confirmed: CSNOBOL4 and SPITBOL share identical LOAD() ABI — `lret_t fn(LA_ALIST)`, RETSTR/RETINT/RETFAIL, LA_STR_PTR/LA_STR_LEN; one .so serves both
+- Architecture decision: replace TERMINAL= callbacks + comm_var stderr with named FIFO IPC
+  - monitor_ipc.c: MON_OPEN(fifo_path) / MON_SEND(kind,body) / MON_CLOSE()
+  - inject_traces.py: LOAD+MON_OPEN preamble; MONCALL/MONRET/MONVAL → MON_SEND()
+  - run_monitor.sh: mkfifo per participant, parallel launch, collector, diff
+  - snobol4.c comm_var(): open MONITOR_FIFO env var instead of writing to fd 2
+- Retired M-MONITOR-3WAY / M-MONITOR-5WAY; replaced with M-MONITOR-IPC-SO → IPC-CSN → IPC-5WAY
+- Updated: TINY.md NOW+milestones, PLAN.md NOW table+milestone dashboard, MONITOR.md §IPC Architecture+Sprint M1/M2
+- No code changes this session — strategy + HQ only.
+
+**State at handoff:** All docs updated. Next session B-229 builds monitor_ipc.c → fires M-MONITOR-IPC-SO.
