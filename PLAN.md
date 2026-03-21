@@ -30,17 +30,18 @@ Session numbers use per-type prefixes (see RULES.md §SESSION NUMBERS): B=backen
 
 ## ⛔ ARTIFACT REMINDER — VISIBLE EVERY SESSION
 
-**Every session that changes `emit_byrd_asm.c` or any `.sno` → `.s` path MUST regenerate all tracked artifacts:**
+**All five demo programs and data live in `demo/` — single source of truth.**
+Every session that changes `emit_byrd_asm.c` or any `.sno` → `.s` path MUST regenerate all tracked artifacts:
 
-| Artifact | Assembles clean? |
-|----------|-----------------|
-| `artifacts/asm/beauty_prog.s` | ✅ required |
-| `artifacts/asm/samples/roman.s` | ✅ required |
-| `artifacts/asm/samples/wordcount.s` | ✅ required |
-| `artifacts/asm/samples/treebank.s` | ✅ required |
-| `artifacts/asm/samples/claws5.s` | ⚠️ ~95% — track error count (3 undefined β labels: NRETURN functions) |
+| Artifact | Source | Assembles clean? |
+|----------|--------|-----------------|
+| `artifacts/asm/beauty_prog.s` | `demo/beauty.sno` | ✅ required |
+| `artifacts/asm/samples/roman.s` | `demo/roman.sno` | ✅ required |
+| `artifacts/asm/samples/wordcount.s` | `demo/wordcount.sno` | ✅ required |
+| `artifacts/asm/samples/treebank.s` | `demo/treebank.sno` | ✅ required |
+| `artifacts/asm/samples/claws5.s` | `demo/claws5.sno` | ⚠️ track error count (3 undef β labels) |
 
-See RULES.md §ASM ARTIFACTS for the full regeneration script.
+See RULES.md §ASM ARTIFACTS for the full regeneration script (`INC=demo/inc`).
 
 **One canonical file per artifact. Never create `beauty_prog_sessionN.s`. Git history is the archive.**
 
