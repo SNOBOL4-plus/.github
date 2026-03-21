@@ -9945,3 +9945,25 @@ bash test/crosscheck/run_crosscheck_asm_rung.sh $CORPUS/rung10          # 4/9 WI
 # 3. snobol4_pattern.c EVAL_fn ~1277: add DT_P branch before DT_S check
 # 4. Defer 1010/1011 to B-228
 ```
+
+## Session (orient-2026-03-21) — Clean-slate orientation + HQ update
+
+**Date:** 2026-03-21
+**Work done:**
+- Cloned all repos: snobol4x, snobol4corpus, snobol4harness, snobol4jvm, snobol4dotnet, .github
+- Extracted and surveyed CSNOBOL4 2.3.3 source (snobol4-2_3_3_tar.gz)
+- Read PLAN.md, MONITOR.md, RULES.md, TESTING.md, FRONTEND-SNOBOL4.md, HOLD_ARCHIVE.md, TINY.md, HARNESS.md
+- Confirmed clean-slate: no active milestones, all incomplete work in HOLD_ARCHIVE.md
+- Updated TINY.md: cleared old NOW block, CRITICAL NEXT ACTION, and Active Milestones table — reflects clean slate
+- No code changes. No invariant runs (no work done).
+
+**State at handoff:**
+- PLAN.md NOW table: all rows TBD ✅
+- HOLD_ARCHIVE.md: all on-hold milestones catalogued ✅
+- TINY.md: clean slate NOW block, no active milestones ✅
+- Invariants last known: 100/106 C · 26/26 ASM (from B-226, unchanged)
+
+**Next session start:**
+- Lon defines new milestones from scratch
+- Read HOLD_ARCHIVE.md for candidate milestones to resurrect
+- No sprint work until new plan is committed to PLAN.md
