@@ -9627,3 +9627,37 @@ bash test/crosscheck/run_crosscheck_jvm_rung.sh \
   $CORPUS/strings $CORPUS/keywords $CORPUS/functions $CORPUS/data 2>&1 | tail -2
 # Expected: 89/92 — then proceed to M-JVM-BEAUTY (beauty.sno via JVM backend)
 ```
+
+## Session N-208 — M-NET-CROSSCHECK: 110/110 NET backend
+
+**Branch:** `net-backend` · **Commit:** `fbca6aa`
+**Date:** 2026-03-20
+
+### What happened
+- Diagnosed 105/110 failure: runtime DLLs (`snobol4lib.dll`, `snobol4run.dll`) not present in `NET_CACHE` — every test silently failing with `FileNotFoundException`. Built DLLs from `src/runtime/net/*.il`, added to repo, patched harness adapter to auto-copy.
+- Fixed `E_ATP` (`@VAR`) varname bug: emitter read `pat->sval` (always NULL) instead of `expr_left(pat)->sval`. Also added `E_ATP` to `scan_expr_vars` so `@VAR` variables get `.field` declarations.
+- Fixed goal-directed `E_CONC`: predicate functions (DIFFER/GT/IDENT/etc.) inside a concatenation RHS now short-circuit to statement fail label on failure, maintaining CIL stack balance (pop accumulated strings before branching). Added `net_expr_can_fail()` helper restricted to predicate functions only — pattern constructors must not trigger short-circuit.
+- Generated local skip label for assignment statements with no `:F` so DIFFER-in-concat can abort cleanly.
+- 110/110 crosscheck confirmed. Harness adapter patched.
+
+### State at handoff
+- `snobol4x` `net-backend`: HEAD `fbca6aa` N-208 — 110/110 ✅
+- `snobol4harness` `main`: HEAD `eced661` — adapter patched
+- M-NET-CROSSCHECK ✅ fired
+
+### Next session start (N-209)
+```bash
+cd /home/claude/snobol4x
+git config user.name "LCherryholmes" && git config user.email "lcherryh@yahoo.com"
+git checkout net-backend && git pull
+git log --oneline -3   # verify HEAD = fbca6aa N-208
+# Invariant: 110/110
+mkdir -p /tmp/snobol4x_net_cache
+CORPUS=/home/claude/snobol4corpus/crosscheck bash test/crosscheck/run_crosscheck_net.sh 2>&1 | tail -3
+# Sprint: M-NET-SAMPLES — roman.sno + wordcount.sno PASS via NET backend
+INC=/home/claude/snobol4corpus/programs/inc
+ROMAN=/home/claude/snobol4corpus/benchmarks/roman.sno
+WORDCOUNT=/home/claude/snobol4corpus/crosscheck/strings/wordcount.sno
+./sno2c -net -I$INC $ROMAN > /tmp/roman_net.il && ilasm /tmp/roman_net.il /output:/tmp/snobol4x_net_cache/roman_net.exe >/dev/null 2>&1
+echo "XIV" | mono /tmp/snobol4x_net_cache/roman_net.exe
+```

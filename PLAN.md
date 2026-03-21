@@ -16,7 +16,7 @@ Session numbers use per-type prefixes (see RULES.md §SESSION NUMBERS): B=backen
 |---------|--------|------|----------------|
 | **TINY backend** | `asm-backend` B-223 — M-ASM-RUNG8 ✅ DONE: DESCR_t slen, BSTRVAL, binary REPLACE/SIZE fix; 3/3 rung8 PASS | `1d0a983` B-223 | M-ASM-RUNG10 |
 | **TINY JVM** | `jvm-backend` J-210 — M-JVM-SAMPLES ✅: fixed VAR=expr :S/:F routing bug (goto before vnfail label); roman.sno PASS + wordcount.sno PASS; artifacts/jvm/samples/ committed | `13245e2` J-210 | M-JVM-BEAUTY |
-| **TINY NET** | `net-backend` N-206 — 102/110: SEQ-ARB omega fix; deferred NAM(ARB) capture (word1–4 ✅); sno_div integer/sno_pow; E_EXPOP/E_INDR/E_ATP/BREAKX/FRETURN fix; 8 remain: cross/@N, 091–096 ARRAY/TABLE/DATA, 100 roman; next: ARRAY/TABLE/DATA runtime + E_IDX → M-NET-CROSSCHECK | `02d1f9b` N-206 | M-NET-CROSSCHECK |
+| **TINY NET** | `net-backend` N-208 — M-NET-CROSSCHECK ✅ DONE: 110/110; E_ATP varname fix; goal-directed E_CONC; runtime DLLs in repo; harness adapter patched | `fbca6aa` N-208 | M-NET-SAMPLES |
 | **TINY frontend** | `main` F-210 — M-FLAT-NARY ✅ merged to main; sc7_procedure/sc9_multiproc FAIL diagnosed: do_procedure body stmts not appearing in output; next: fix sc_cf.c do_procedure → M-SC-CORPUS-R2 | `6495074` F-210 | M-SC-CORPUS-R2 |
 | **DOTNET** | `net-spitbol-switches` D-162 — 11 new SPITBOL switches: -d -e -g -i -m -p -s -t -y -z -N=file; k/m suffix parser; ApplyStartupOptions wires -e/-m; 26 tests authored; commit pending dotnet build | `0d4b2ee` D-161 | M-NET-SPITBOL-SWITCHES |
 
@@ -187,7 +187,7 @@ Sprint detail lives in the active platform L2 doc (TINY.md / JVM.md / DOTNET.md)
 | **M-NET-R2** | control/ patterns/ capture/ — Rungs 5–7 PASS | ✅ `02d1f9b` N-206 |
 | **M-NET-R3** | strings/ keywords/ — Rungs 8–9 PASS | ✅ `02d1f9b` N-206 |
 | **M-NET-R4** | functions/ data/ — Rungs 10–11 PASS | ❌ Sprint N-R4 — 8 remain: ARRAY/TABLE/DATA + roman |
-| **M-NET-CROSSCHECK** | 106/106 corpus PASS via NET backend | ❌ Sprint N-R5 |
+| **M-NET-CROSSCHECK** | 110/110 corpus PASS via NET backend | ✅ `fbca6aa` N-208 |
 | **M-NET-SAMPLES** | roman.sno + wordcount.sno PASS | ❌ Sprint N-S1 |
 | **M-NET-BEAUTY** | beauty.sno self-beautifies via NET backend | ❌ Sprint N-10 |
 
