@@ -190,6 +190,7 @@ Sprint detail and runner design → [MONITOR.md](MONITOR.md)
 | **M-MONITOR-5WAY** | All 5 participants wired: CSNOBOL4 + SPITBOL + ASM + JVM + NET each produce a trace stream for one test; streams captured and diffed | snobol4x | ❌ |
 | **M-MONITOR-4DEMO** | 4 working demo programs (roman, wordcount, treebank, claws5) produce identical trace streams across all 5 participants; monitor proves itself on known-good programs | snobol4x | ❌ |
 | **M-BEAUTIFY-BOOTSTRAP** | `beauty.sno` reads `beauty.sno`, all 3 compiled backends produce output byte-for-byte identical to CSNOBOL4 oracle AND identical to `beauty.sno` input; fixed point reached | snobol4x | ❌ |
+| **M-MONITOR-GUI** | 🌙 *Dream milestone* — HTML/React monitor GUI: left pane = source with trace-point annotations; right pane = matrix of trace-point values with one column per participant (CSNOBOL4 · SPITBOL · one backend); rows sync-step in lockstep; diverging cells highlighted; ignore-points shown in muted color; single-backend mode for visual clarity | snobol4x | 💭 |
 
 ---
 
