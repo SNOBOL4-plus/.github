@@ -9593,3 +9593,37 @@ RT=src/runtime && gcc -O0 -g -c "$RT/asm/snobol4_asm_harness.c" -I"$RT/snobol4" 
 CORPUS=$CORPUS bash test/crosscheck/run_crosscheck_asm.sh                # 26/26
 bash test/crosscheck/run_crosscheck_asm_rung.sh $CORPUS/rung10           # Sprint: M-ASM-RUNG10
 ```
+
+## Session J-210 — M-JVM-SAMPLES: roman.sno + wordcount.sno PASS
+
+**Branch:** `main` (jvm-backend work merged to main)
+**HEAD at handoff:** `13245e2`
+**Date:** 2026-03-20
+
+**What happened:**
+- Diagnosed roman.sno hang: `VAR=expr :S(label)` emitter bug in `emit_byrd_jvm.c`.
+  The `:S` goto was emitted *after* `vnfail:` label, so failure path (null RHS from
+  predicate like `LT`) also jumped to `:S`. roman.sno looped forever.
+- Fix: emit `:S` goto inside success block, before `vnfail:` label. Failure falls through.
+- roman.sno → `result: MDCCLXXVI` PASS. wordcount.sno → `14 words` PASS.
+- Artifacts committed: `artifacts/jvm/samples/roman.j`, `artifacts/jvm/samples/wordcount.j`
+- M-JVM-SAMPLES ✅ fired.
+
+**State at handoff:**
+- Invariants: 102/106 C (4 pre-existing) · 89/92 JVM (expr_eval xfail · word1-4 xfail)
+- Token not provided — push pending. Provide token for J-211 to push.
+
+**Next session start (J-211):**
+```bash
+cd /home/claude/snobol4x
+git config user.name "LCherryholmes" && git config user.email "lcherryh@yahoo.com"
+git remote set-url origin https://TOKEN_SEE_LON@github.com/snobol4ever/snobol4x
+git pull && apt-get install -y libgc-dev nasm default-jdk && make -C src
+CORPUS=/home/claude/snobol4corpus/crosscheck
+STOP_ON_FAIL=0 CORPUS=$CORPUS bash test/crosscheck/run_crosscheck.sh 2>&1 | tail -2   # 102/106
+bash test/crosscheck/run_crosscheck_jvm_rung.sh \
+  $CORPUS/hello $CORPUS/output $CORPUS/assign $CORPUS/arith \
+  $CORPUS/control $CORPUS/patterns $CORPUS/capture \
+  $CORPUS/strings $CORPUS/keywords $CORPUS/functions $CORPUS/data 2>&1 | tail -2
+# Expected: 89/92 — then proceed to M-JVM-BEAUTY (beauty.sno via JVM backend)
+```

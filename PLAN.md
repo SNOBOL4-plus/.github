@@ -15,7 +15,7 @@ Session numbers use per-type prefixes (see RULES.md §SESSION NUMBERS): B=backen
 | Session | Sprint | HEAD | Next milestone |
 |---------|--------|------|----------------|
 | **TINY backend** | `asm-backend` B-223 — M-ASM-RUNG8 ✅ DONE: DESCR_t slen, BSTRVAL, binary REPLACE/SIZE fix; 3/3 rung8 PASS | `1d0a983` B-223 | M-ASM-RUNG10 |
-| **TINY JVM** | `jvm-backend` J-209 — M-JVM-SAMPLES: all 6 L_%s bypass sites fixed (`50950aa`); B-214 naming rename (jvm_emit_stmt→emit_stmt etc.) NOT YET committed on asm-backend conflicts with J-209 fixes — B-215 must merge both; roman.sno assembly clean, run result pending | `50950aa` J-209 | M-JVM-SAMPLES |
+| **TINY JVM** | `jvm-backend` J-210 — M-JVM-SAMPLES ✅: fixed VAR=expr :S/:F routing bug (goto before vnfail label); roman.sno PASS + wordcount.sno PASS; artifacts/jvm/samples/ committed | `13245e2` J-210 | M-JVM-BEAUTY |
 | **TINY NET** | `net-backend` N-206 — 102/110: SEQ-ARB omega fix; deferred NAM(ARB) capture (word1–4 ✅); sno_div integer/sno_pow; E_EXPOP/E_INDR/E_ATP/BREAKX/FRETURN fix; 8 remain: cross/@N, 091–096 ARRAY/TABLE/DATA, 100 roman; next: ARRAY/TABLE/DATA runtime + E_IDX → M-NET-CROSSCHECK | `02d1f9b` N-206 | M-NET-CROSSCHECK |
 | **TINY frontend** | `main` F-210 — M-FLAT-NARY ✅ merged to main; sc7_procedure/sc9_multiproc FAIL diagnosed: do_procedure body stmts not appearing in output; next: fix sc_cf.c do_procedure → M-SC-CORPUS-R2 | `6495074` F-210 | M-SC-CORPUS-R2 |
 | **DOTNET** | `net-spitbol-switches` D-162 — 11 new SPITBOL switches: -d -e -g -i -m -p -s -t -y -z -N=file; k/m suffix parser; ApplyStartupOptions wires -e/-m; 26 tests authored; commit pending dotnet build | `0d4b2ee` D-161 | M-NET-SPITBOL-SWITCHES |
@@ -170,7 +170,7 @@ Sprint detail lives in the active platform L2 doc (TINY.md / JVM.md / DOTNET.md)
 | **M-JVM-R3** | strings/ keywords/ — Rungs 8–9 PASS | ✅ `fa293a1` J-203 |
 | **M-JVM-R4** | functions/ data/ — Rungs 10–11 PASS | ✅ `876eb4b` J-205 |
 | **M-JVM-CROSSCHECK** | 106/106 corpus PASS via JVM backend | ✅ `a063ed9` J-208 |
-| **M-JVM-SAMPLES** | roman.sno + wordcount.sno PASS | ❌ Sprint J-S1 |
+| **M-JVM-SAMPLES** | roman.sno + wordcount.sno PASS | ✅ `13245e2` J-210 |
 | **M-JVM-BEAUTY** | beauty.sno self-beautifies via JVM backend | ❌ Sprint J10 |
 
 ### NET backend — snobol4x TINY (net_emit.c)
