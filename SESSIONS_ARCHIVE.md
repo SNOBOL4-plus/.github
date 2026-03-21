@@ -10547,3 +10547,45 @@ git config user.name "LCherryholmes" && git config user.email "lcherryh@yahoo.co
 # 4. Correct any claims that don't match source
 # 5. Commit and push
 ```
+
+---
+
+## B-235 (2026-03-21) — monitor-ipc: NET scaffold + harness fixes; ASM PASS
+
+**Branch:** `asm-backend` **Commit:** `080a834`
+**Sprint:** monitor-ipc **Milestone target:** M-MONITOR-IPC-5WAY
+
+### Work done
+
+**JVM `emit_byrd_jvm.c`:**
+- `Lout_ok_N` OUTPUT fast path: inserted `dup` before `getstatic sno_stdout / swap / println`
+- After println, dup'd val remains on stack → `ldc "OUTPUT"` + `invokestatic sno_monitor_write`
+- Root cause (B-234): OUTPUT fast path bypassed `sno_var_put` entirely; monitor never saw OUTPUT assignments
+
+**NET `emit_byrd_net.c`:**
+- `.field static StreamWriter sno_monitor_out`
+- `.cctor` expanded (maxstack 2→4): reads `MONITOR_FIFO` env var; opens `StreamWriter(path, true)` with `AutoFlush=true`; null if unset
+- `net_monitor_write(string name, string val)`: 5-call Write/WriteLine sequence emitting `VAR name "val"\n`; brfalse guard
+- OUTPUT `=` site: `dup` + `Console.WriteLine` + `stloc V_20` + `net_monitor_write("OUTPUT", val)`
+- VAR `stsfld` site (Case 1): `dup` + `stsfld` + `stloc V_20` + `net_monitor_write(varname, val)`
+
+**`test/monitor/run_monitor.sh`:**
+- `set +e` around all participant launches (SPITBOL segfault was killing harness via pipefail)
+- `timeout 30 cat` on all FIFO collectors (prevents hang if participant dies before writing)
+- `SNO2C_NET` / `SNO2C_JVM` defaults corrected to `$DIR/sno2c`
+
+**Tools installed in container:**
+- CSNOBOL4 2.3.3 — built from uploaded tarball, installed to `/usr/local/bin/snobol4`
+- SPITBOL `bootsbl` — built from `snobol4ever/x64` via `make bootsbl`
+- `mono` + `ilasm` — installed via `apt-get install mono-complete`
+- `nasm` + `libgc-dev` — installed via apt
+
+### Results
+- **ASM: PASS ✓** — 5-way hello run; ASM trace matches oracle
+- **JVM: FAIL** — trace empty; `MONITOR_FIFO` env routing to JVM process needs verification
+- **NET: FAIL** — `sno2c -net` segfaults on `asm-backend` for even trivial programs
+
+### Blockers for B-236
+1. `sno2c -net` segfault on `asm-backend` — working emitter on `origin/net-backend` (2c417d7 N-209); cherry-pick + reapply B-235 monitor additions
+2. JVM trace empty — verify `MONITOR_FIFO` env var reaches JVM `java` process in run_monitor.sh Step 7
+3. Oracle IGNORE rule needed: CSNOBOL4 emits `VALUE OUTPUT = hello` (uppercase), SPITBOL emits `VALUE output = hello` (lowercase) — add `IGNORE OUTPUT .*` to `tracepoints.conf`
