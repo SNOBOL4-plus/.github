@@ -16,7 +16,7 @@ Session numbers use per-type prefixes (see RULES.md §SESSION NUMBERS): B=backen
 
 | Session | Sprint | HEAD | Next milestone |
 |---------|--------|------|----------------|
-| **TINY backend** | `asm-backend` B-237 — monitor-4demo | `c6a6544` B-237 | M-MONITOR-4DEMO |
+| **TINY backend** | `asm-backend` B-237 — t2-impl | `c6a6544` B-237 | M-MERGE-3WAY |
 | **TINY NET** | `net-backend` N-209 — clean slate | `2c417d7` N-209 | TBD |
 | **TINY JVM** | `jvm-backend` J-212 — clean slate | `b67d0b1` J-212 | TBD |
 | **TINY frontend** | `main` F-210 — clean slate | `6495074` F-210 | TBD |
@@ -197,19 +197,19 @@ Sprint detail and runner design → [MONITOR.md](MONITOR.md)
 | **M-X64-FULL** | S1–S4 fired; SPITBOL confirmed 5-way monitor participant | snobol4ever/x64 | ✅ `4fcb0e1` B-233 |
 | **M-MONITOR-IPC-5WAY** | all 5 participants (CSNOBOL4+SPITBOL+ASM+JVM+NET) write trace to per-participant FIFO; `run_monitor.sh` parallel launch + collector; hello PASS all 5; zero stderr/stdout blending | snobol4x | ✅ `064bb59` B-236 |
 | **M-MONITOR-IPC-TIMEOUT** | `monitor_collect.py` per-participant watchdog: FIFO silence > T seconds → TIMEOUT report with last trace event + participant kill; infinite loop detected automatically | snobol4x | ✅ `c6a6544` B-237 |
-| **M-MONITOR-4DEMO** | roman + wordcount + treebank pass all 5 participants; claws5 divergence count documented | snobol4x | ❌ |
-| **M-MONITOR-CORPUS9** | Run the 9 known ASM failures (022, 055, 064, cross, word1-4, wordcount) through the 5-way monitor; first diverging trace line identifies each bug exactly; fixes bring ASM corpus to 106/106 | snobol4x | ❌ |
-| **M-MERGE-3WAY** | `asm-backend` + `jvm-backend` + `net-backend` merged into `main` via staged merge-staging branch; all invariants hold after merge: 106/106 ASM corpus, 110/110 NET corpus, JVM corpus clean; fresh fan-out tags cut (`v-post-merge`); three new per-backend branches created from tag | snobol4x | ❌ |
-| **M-T2-RUNTIME** | `src/runtime/asm/t2_alloc.c` written and tested in isolation: `t2_alloc(size)` → mmap RW page; `t2_free(ptr,size)` → munmap; `t2_mprotect_rx(ptr,size)` + `t2_mprotect_rw(ptr,size)` toggle; unit test passes | snobol4x | ❌ |
-| **M-T2-RELOC** | `src/runtime/asm/t2_reloc.c` written and tested: `t2_relocate(text,len,delta,reloc_table,nreloc)` patches all relative jump offsets and absolute DATA refs in a copied TEXT block; unit test with synthetic relocation table passes | snobol4x | ❌ |
-| **M-T2-EMIT-TABLE** | `emit_byrd_asm.c` emits per-box relocation table as NASM data section: for each box, `box_N_reloc_table` lists (offset, kind) pairs for every relative ref and DATA ref in that box's TEXT; null.sno assembles clean | snobol4x | ❌ |
-| **M-T2-EMIT-SPLIT** | `emit_byrd_asm.c` splits each named box into separate aligned TEXT+DATA sections; `r12` register reserved as DATA-block pointer; all locals accessed as `[r12+offset]` not `[rbp-N]`; null.sno + hello.sno assemble and run | snobol4x | ❌ |
-| **M-T2-INVOKE** | `emit_byrd_asm.c` emits T2 call-sites: on `*X` / DEFINE call, emit `t2_alloc` + `memcpy TEXT` + `t2_relocate` + `memcpy DATA` + `mov r12,new_data` + `jmp new_text_α`; on γ/ω return emit `t2_free`; non-recursive programs still pass corpus rungs 1–9 | snobol4x | ❌ |
-| **M-T2-RECUR** | Recursive SNOBOL4 functions correct under T2: two simultaneous live DATA blocks, one shared CODE block; roman.sno produces correct output; stack-frame bridge (`push rbp`) removed from emitter | snobol4x | ❌ |
-| **M-T2-CORPUS** | Full 106/106 ASM corpus passes under T2 — the 9 known failures (022, 055, 064, cross, word1-4, wordcount) fixed by construction; no manual per-bug patches needed | snobol4x | ❌ |
-| **M-T2-JVM** | JVM backend emits equivalent T2 semantics: per-invocation data objects allocated on JVM heap (already natural); relocation not needed (JVM handles it); 106/106 JVM corpus clean | snobol4x | ❌ |
-| **M-T2-NET** | NET backend emits equivalent T2 semantics: per-invocation objects on CLR heap; 110/110 NET corpus clean | snobol4x | ❌ |
+| **M-MERGE-3WAY** | `asm-backend` + `jvm-backend` + `net-backend` merged into `main` via staged merge-staging branch; all invariants hold after merge; fresh fan-out tags cut (`v-post-merge`); three new per-backend branches from tag | snobol4x | ❌ |
+| **M-T2-RUNTIME** | `src/runtime/asm/t2_alloc.c`: `t2_alloc(size)` → mmap RW; `t2_free(ptr,size)` → munmap; `t2_mprotect_rx/rw` toggle; unit test passes | snobol4x | ❌ |
+| **M-T2-RELOC** | `src/runtime/asm/t2_reloc.c`: `t2_relocate(text,len,delta,table,n)` patches relative jumps + absolute DATA refs; unit test with synthetic table passes | snobol4x | ❌ |
+| **M-T2-EMIT-TABLE** | `emit_byrd_asm.c` emits per-box relocation table as NASM data: `box_N_reloc_table` lists (offset, kind) for every relative ref and DATA ref; null.sno assembles clean | snobol4x | ❌ |
+| **M-T2-EMIT-SPLIT** | `emit_byrd_asm.c` splits each named box into separate aligned TEXT+DATA sections; `r12` reserved as DATA-block pointer; all locals `[r12+offset]` not `[rbp-N]`; null.sno + hello.sno assemble and run | snobol4x | ❌ |
+| **M-T2-INVOKE** | `emit_byrd_asm.c` emits T2 call-sites: `t2_alloc` + `memcpy TEXT` + `t2_relocate` + `memcpy DATA` + `mov r12,new_data` + `jmp new_text_α`; γ/ω emit `t2_free`; corpus rungs 1–9 still pass | snobol4x | ❌ |
+| **M-T2-RECUR** | Recursive SNOBOL4 functions correct under T2: two simultaneous live DATA blocks, one shared CODE; roman.sno correct; stack-frame bridge (`push rbp`) removed | snobol4x | ❌ |
+| **M-T2-CORPUS** | 106/106 ASM corpus under T2 — 9 known failures fixed by construction; no per-bug patches | snobol4x | ❌ |
+| **M-T2-JVM** | JVM backend T2-correct: per-invocation objects on JVM heap (natural); 106/106 JVM corpus clean | snobol4x | ❌ |
+| **M-T2-NET** | NET backend T2-correct: per-invocation objects on CLR heap; 110/110 NET corpus clean | snobol4x | ❌ |
 | **M-T2-FULL** | All three backends T2-correct; `v-post-t2` tag cut; MONITOR sprint resumes from clean base | snobol4x | ❌ |
+| **M-MONITOR-4DEMO** | roman + wordcount + treebank pass all 5 participants; claws5 divergence count documented | snobol4x | ❌ |
+| **M-MONITOR-CORPUS9** | Run remaining corpus failures through 5-way monitor post-T2; first diverging trace line identifies any residual bugs; ASM corpus at 106/106 confirmed | snobol4x | ❌ |
 | **M-BEAUTY-GLOBAL** | global.sno driver passes ASM via monitor | snobol4x | ❌ |
 | **M-BEAUTY-IS** | is.sno driver passes | snobol4x | ❌ |
 | **M-BEAUTY-FENCE** | FENCE.sno driver passes | snobol4x | ❌ |
