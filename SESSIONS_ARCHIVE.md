@@ -10382,3 +10382,46 @@ Added JVM monitor infrastructure to `emit_byrd_jvm.c`:
 1. Fix JVM OUTPUT fast path: add `dup` before `swap+println` so val stays on stack, then `ldc "OUTPUT" + invokestatic sno_monitor_write` after println
 2. Add monitor to NET emitter (`emit_byrd_net.c`)
 3. Run full `bash test/monitor/run_monitor.sh /tmp/hello_monitor.sno` → fire M-MONITOR-IPC-5WAY
+
+## Session F-211b (2026-03-21) — M-README-X-DRAFT ✅
+
+**Repo:** snobol4ever/.github · **Branch:** main
+
+**What happened:**
+- Fresh session: cloned .github, read all major HQ docs (PLAN.md, ARCH.md, STATUS.md, TINY.md, BACKEND-C.md, BACKEND-JVM.md, BACKEND-NET.md, IMPL-SNO2C.md, MONITOR.md, BEAUTY.md, MISC.md, SESSIONS_ARCHIVE.md, RULES.md)
+- Also reviewed uploaded files: Proebsting 1996 paper ("Simple Translation of Goal-Directed Evaluation"), snobol4-2.3.3 tarball, SNOCONE.zip
+- Wrote snobol4x README (M-README-X-DRAFT): Byrd Box code generation strategy, all four backends with corpus counts, five frontends with status, full pipeline diagram, hand-rolled parser story (Bison 20 SR + 139 RR conflicts), annotated C and NASM LIT node code, performance benchmarks vs PCRE2/Bison, Chomsky hierarchy oracle table, optimization history, five-way monitor architecture, what's next (M-BEAUTY chain → bootstrap), samples, full attributions
+- M-README-X-DRAFT ✅ — PLAN.md milestone dashboard updated
+- Output file: snobol4x-README.md (provided to user as download; to be committed to snobol4x repo by Lon)
+- Context window: ~85–90% at handoff
+
+**State at handoff:**
+- .github HEAD: post-pull-rebase (picked up B-233 changes from another session)
+- snobol4x README draft: written, NOT YET committed to snobol4x repo — Lon must do this
+- PLAN.md: M-README-X-DRAFT now ✅ F-211b
+
+**Next session start (F-212 or next README session):**
+```bash
+# Option A — commit the snobol4x README
+cd /home/claude/snobol4x
+git config user.name "LCherryholmes" && git config user.email "lcherryh@yahoo.com"
+git pull --rebase origin main
+# Copy the README draft (from download) to README.md
+git add README.md
+git commit -m "F-211b: M-README-X-DRAFT — snobol4x README written"
+git push
+
+# Option B — next README milestone: M-README-DOTNET-DRAFT
+# Clone snobol4dotnet, scan C# source, coordinate with Jeff Cooper
+
+# Option C — M-README-X-VERIFIED (separate session, clone snobol4x source, verify every claim)
+```
+
+**Remaining README milestones in order:**
+- M-README-X-VERIFIED ❌ (verify snobol4x README against C source)
+- M-README-DOTNET-DRAFT ❌ (coordinate with Jeff Cooper)
+- M-README-DOTNET-VERIFIED ❌
+- M-README-PYTHON-DRAFT ❌
+- M-README-CSHARP-DRAFT ❌
+- M-README-PROFILE-VERIFIED ❌
+- M-README-PROFILE-FINAL ❌ (the gate to groups.io post)
