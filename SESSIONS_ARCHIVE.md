@@ -10180,3 +10180,16 @@ make bootsbl
 # Run: ./bootsbl hello.sbl  — expect: 42
 # On success: M-X64-LOAD fires; open PR to spitbol/x64 referencing issue #35
 ```
+
+## Session B-230 — Drop C crosscheck invariant (2026-03-21)
+
+**Work done:**
+- Removed C crosscheck (`run_crosscheck.sh` 100/106) from all invariant references across HQ
+- Rationale: C backend is left behind; only ASM/JVM/NET backends matter going forward
+- Updated: PLAN.md, TINY.md, MONITOR.md, RULES.md — all now reference 26/26 ASM only
+- Built sno2c + ASM harness on fresh container; confirmed 26/26 ASM invariant holds
+- Sprint continues: M-MONITOR-IPC-5WAY — next step is wiring SPITBOL+JVM+NET participants
+
+**State at handoff:** asm-backend HEAD `6eebdc3` unchanged. HQ updated, pushed.
+
+**Next session start block:** See TINY.md §CRITICAL NEXT ACTION.

@@ -215,12 +215,12 @@ md5sum $LAST /tmp/beauty_tramp_candidate.c
 ```
 artifacts/README.md must record: session N, date, md5, line count, compile status, active bug.
 
-## ⛔ TEST INVARIANT — 106/106 rungs 1–11 before any work
+## ⛔ TEST INVARIANT — 26/26 ASM before any work
 
 ```bash
-STOP_ON_FAIL=0 bash test/crosscheck/run_crosscheck.sh
+CORPUS=$CORPUS bash test/crosscheck/run_crosscheck_asm.sh
 ```
-If not 106/106: fix the regression before touching anything else. Regressions are bugs.
+If not 26/26: fix the regression before touching anything else.
 
 ## ⛔ SHARED RUNTIME INVARIANT — NET crosscheck when touching src/runtime/snobol4/
 
@@ -328,7 +328,7 @@ This rule has no exceptions.
 2. **Read RULES.md** — mandatory every session. Token, identity, artifact, invariant, and chat rules apply immediately.
 3. Read the active platform MD (TINY.md etc.) — get build commands and invariant.
 4. `git log --oneline -3` — verify HEAD matches platform MD. If stale: read SESSIONS_ARCHIVE.md.
-5. Run invariant check. If failing: fix before any other work.
+5. Run invariant check (ASM 26/26). If failing: fix before any other work.
 6. **If sprint is `asm-backend`:** read `artifacts/asm/` to orient — last `.s` file is the prior milestone oracle.
 
 **End:**
