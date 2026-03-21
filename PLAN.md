@@ -51,7 +51,7 @@ See RULES.md §ASM ARTIFACTS for the full regeneration script (`INC=demo/inc`).
 
 ## Goals
 
-*(Clean slate — new goals TBD. See [HOLD_ARCHIVE.md](HOLD_ARCHIVE.md) for prior goals placed on hold.)*
+*(Clean slate — new goals TBD.)*
 
 ---
 
@@ -82,7 +82,7 @@ Matrix:     Feature matrix (correctness) · Benchmark matrix (performance)
 One row per milestone. Milestones fire when their trigger condition is true.
 Sprint detail lives in the active platform L2 doc (TINY.md / JVM.md / DOTNET.md).
 
-> **All incomplete milestones moved to [HOLD_ARCHIVE.md](HOLD_ARCHIVE.md) on 2026-03-21 — clean slate reset.**
+> **Clean slate reset 2026-03-21 — all incomplete milestones archived.**
 
 ### TINY (snobol4x) — Completed
 
@@ -212,7 +212,6 @@ Sprint detail lives in the active platform L2 doc (TINY.md / JVM.md / DOTNET.md)
 | [PATCHES.md](PATCHES.md) | Runtime patch audit trail |
 | [MISC.md](MISC.md) | Background, story, JCON reference |
 | [SESSIONS_ARCHIVE.md](SESSIONS_ARCHIVE.md) | Full session history — append-only |
-| [HOLD_ARCHIVE.md](HOLD_ARCHIVE.md) | Milestones on hold — not deleted, awaiting new plan |
 
 ---
 

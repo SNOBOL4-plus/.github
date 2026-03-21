@@ -14,25 +14,24 @@ snobol4x: multiple frontends, multiple backends.
 
 **Sprint:** clean slate — awaiting new milestone plan from Lon
 **HEAD:** `0c34da0` B-226 (asm-backend) · `b67d0b1` J-212 (jvm-backend) · `2c417d7` N-209 (net-backend) · `6495074` F-210 (main)
-**Milestone:** none — all incomplete milestones archived to [HOLD_ARCHIVE.md](HOLD_ARCHIVE.md) on 2026-03-21
+**Milestone:** none — clean slate as of 2026-03-21
 **Invariants:** 100/106 C (6 pre-existing) · 26/26 ASM
 
 **⚠ CRITICAL NEXT ACTION — Next session:**
 
 Lon will define new milestones. No work until new plan is in place.
-Read HOLD_ARCHIVE.md for the full list of prior on-hold milestones available for resurrection.
 
 ## Last Session Summary
 
 **Session (strategize, 2026-03-21) — orientation + clean-slate confirmation:**
-- Cloned all repos, read PLAN.md, MONITOR.md, RULES.md, TESTING.md, FRONTEND-SNOBOL4.md, HOLD_ARCHIVE.md.
-- Confirmed: no active milestones. All incomplete work is in HOLD_ARCHIVE.md.
+- Cloned all repos, read PLAN.md, MONITOR.md, RULES.md, TESTING.md, FRONTEND-SNOBOL4.md.
+- Confirmed: no active milestones. Clean slate.
 - PLAN.md NOW table already correct (all rows show TBD). TINY.md NOW updated to reflect clean slate.
 - No code changes. No invariant runs needed (no work done).
 
 ## Active Milestones
 
-*(None — clean slate. New milestones to be defined by Lon. See [HOLD_ARCHIVE.md](HOLD_ARCHIVE.md) for archived candidates.)*
+*(None — clean slate. New milestones to be defined by Lon.)*
 
 Full milestone history → [PLAN.md](PLAN.md)
 
