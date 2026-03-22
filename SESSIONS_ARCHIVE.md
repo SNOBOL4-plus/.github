@@ -11149,3 +11149,56 @@ Investigation of the 2 xfails revealed they were both fixable:
 
 Both `.xfail` files removed from snobol4corpus (`ab4b821`).
 106/106 ALL PASS, 0 skipped. M-T2-JVM is truly clean.
+
+## Session README-8 (2026-03-22) — README v2 grid sprint scope locked; python/csharp DEFERRED
+
+**Branch:** `main`
+**HEAD at close:** `4d4b43c`
+
+### What happened
+
+- Cloned `.github`, `snobol4corpus`, `snobol4harness`, `snobol4dotnet`, `snobol4jvm`, `snobol4x`.
+- Read PLAN.md, GRIDS.md, all three engine READMEs, and profile/README.md in full.
+- Defined active scope for README v2 grid sprint: **dotnet + jvm + snobol4x/ASM + profile rollup**.
+- Marked python and csharp out of scope for this sprint:
+  - `M-VOL-PYTHON`, `M-VOL-CSHARP` → ⏸ DEFERRED
+  - `M-FEAT-PYTHON`, `M-FEAT-CSHARP` → ⏸ DEFERRED
+  - `M-DEEP-SCAN-PYTHON`, `M-DEEP-SCAN-CSHARP` → ⏸ DEFERRED
+  - `M-README-V2-PYTHON`, `M-README-V2-CSHARP` → ⏸ DEFERRED
+- Updated PLAN.md NOW table README v2 sprint row with explicit active scope.
+- Updated PLAN.md sprint plan order paragraph.
+- Added DEFERRED notices to snobol4python and snobol4csharp entries in profile/README.md.
+- Committed as `4d4b43c README-5: DEFERRED python/csharp from v2 grid sprint`.
+
+### State at handoff
+
+- `.github` main at `4d4b43c`, **not yet pushed** (token needed).
+- No changes to any engine repo.
+- Active sprint milestones still all ❌ — no README v2 content written yet.
+- Six-column view (SPITBOL · CSNOBOL4 · SNOBOL5 · dotnet · jvm · x/ASM) is the agreed presentation target.
+
+### What next session (README-9) should do
+
+1. `git remote set-url origin https://TOKEN_SEE_LON@github.com/snobol4ever/.github`
+2. `git push` — push the `4d4b43c` commit that is sitting locally.
+3. Begin README v2 content for **snobol4x** (most complete, ASM backend proven):
+   - Fill G-VOLUME table (source scan `wc -l` across `src/`)
+   - Fill G-FEATURE table (from existing README + PLAN milestone history — no new source scan needed)
+   - Commit to `snobol4x` repo.
+   - Fire M-VOL-X, M-FEAT-X.
+4. Then snobol4jvm, snobol4dotnet in subsequent sessions.
+5. Profile README v2 rollup last (M-PROFILE-V2).
+
+### Next session start block (README-9)
+
+```bash
+cd /home/claude
+git clone https://github.com/snobol4ever/.github
+cd .github
+git config user.name "LCherryholmes" && git config user.email "lcherryh@yahoo.com"
+git remote set-url origin https://TOKEN_SEE_LON@github.com/snobol4ever/.github
+git log --oneline -5   # confirm 4d4b43c is NOT present (wasn't pushed) — re-apply if needed
+git pull
+# Push or re-apply the DEFERRED edits from README-8 if not already on remote
+# Then begin snobol4x G-VOLUME source scan
+```
