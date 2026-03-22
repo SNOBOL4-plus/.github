@@ -14,7 +14,13 @@ Session numbers use per-type prefixes (see RULES.md §SESSION NUMBERS): B=backen
 
 **Isolation guarantee:** No session ever works on two same frontends or two same backends. Each session owns one frontend OR one backend. Rebases on common code go smoothly because of this isolation.
 
-**Session trigger key:** "playing with MONITOR" = MONITOR SESSION — work next ❌ M-MONITOR-* milestone in order (includes implementing monitor infrastructure). "playing with fixing bugs from bug reports" = BUG SESSION — fix first ❌ M-MON-BUG-*. Always read PLAN.md first to find next ❌ milestone. See RULES.md §MONITOR SESSION and §BUG SESSION.
+**Session trigger key:** Always read PLAN.md first to find the next ❌ milestone for your session type. See RULES.md for full rules per session type.
+
+| Trigger phrase | Session type | Work target |
+|----------------|-------------|-------------|
+| "playing with MONITOR" | MONITOR SESSION | Next ❌ M-MONITOR-* milestone in order (monitor infrastructure) |
+| "playing with fixing bugs" | BUG SESSION | First ❌ M-MON-BUG-* milestone — one bug only |
+| "playing with README" or "playing with grids" | README SESSION | Next ❌ M-VOL-* then M-FEAT-* then M-README-V2-* in order — run `wc -l`, generate real numbers, fill Grid 7/8 in repo README, commit to that repo |
 
 | Session | Sprint | HEAD | Next milestone |
 |---------|--------|------|----------------|

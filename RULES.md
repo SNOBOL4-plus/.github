@@ -355,6 +355,15 @@ push all → one-line pivot log entry in platform MD.
 
 **MONITOR SESSION** — Lon opens with "playing with MONITOR": work the next ❌ M-MONITOR-* milestone in PLAN.md order. This includes implementing monitor infrastructure (e.g. sync-step barrier protocol). When the monitor is running and producing trace output, the goal is finding and reporting divergences — file M-MON-BUG-* milestones for divergences found. Fixing backend bugs is a separate BUG SESSION triggered by "playing with fixing bugs from bug reports".
 
+**README SESSION** — Lon opens with "playing with README" or "playing with grids" (or similar): work the next ❌ milestone in this order: M-VOL-* → M-FEAT-* → M-README-V2-* → M-PROFILE-V2. Rules:
+1. Work **one repo per session** — source scanning fills the context window fast.
+2. Order: snobol4x first, then snobol4jvm, then snobol4dotnet, then profile rollup.
+3. For M-VOL-*: run `wc -l` across all source dirs, generate the G-VOLUME table (file count · line count · blank-stripped · % total), commit to that repo's README and to Grid 7 in GRIDS.md.
+4. For M-FEAT-*: static analysis only — read source, fill G-FEATURE table with ✅/⚠/🔧/❌, commit to that repo's README and to Grid 8 in GRIDS.md. No runs needed.
+5. For M-README-V2-*: all 10 grids filled and source-verified in that repo's README. Requires M-VOL-* and M-FEAT-* for that repo to have already fired.
+6. For M-PROFILE-V2: pull from all three M-README-V2-* READMEs, roll up into profile/README.md. Last step.
+7. After committing to the repo, update PLAN.md milestone dashboard and push .github.
+
 ## ⛔ FRONTEND/BACKEND SEPARATION — emitter gaps queue via .xfail
 
 The frontend session (snocone) and backend session (ASM emitter) share the same repo
