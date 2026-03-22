@@ -11641,3 +11641,35 @@ bash setup.sh   # confirm 106/106
 - Fill Grid 8 snobol4jvm column + Grid 4 jvm columns in GRIDS.md
 - Commit test/feat/ to snobol4jvm; update snobol4jvm README; fire M-FEAT-JVM in PLAN.md
 - Then proceed to snobol4dotnet (M-FEAT-DOTNET) same way
+
+## Session B-254 (2026-03-22) — Sync-step fixes + M-SNO2C-FOLD scaffold
+
+**Branch:** `main`
+**HEAD at close:** `e3d2bdb`
+
+### What happened
+
+- Built CSNOBOL4 2.3.3 from tarball (user-uploaded); STNO patch applied; smoke test ✅
+- Built SPITBOL x64 from x64 repo; systm.c ms patch; smoke test ✅ (exit 139 sandbox quirk expected)
+- Built sno2c from src/Makefile
+- Fixed JVM `sno_mon_var` VerifyError: `if_icmpeq` pops both operands so ack byte must be stored to local (`istore_2/iload_2`) before compare; stack empty at all paths to `return`
+- Fixed NET `net_mon_init` invalid IL: stray `stsfld` before `newobj` left int on stack, causing `ret` with non-empty stack; removed duplicate stsfld
+- Fixed `monitor_sync.py`: normalize trace name to `.upper()` before comparison — SPITBOL emits lowercase names in TRACE output, CSNOBOL4 emits uppercase
+- Fixed `run_monitor_sync.sh`: dropped `-f` from CSNOBOL4 launch (default is fold-ON; `-f` toggles it OFF)
+- Added `-F`/`-f` switches to `sno2c` (SPITBOL-compatible names); `fold_mode` flag wired; lexer fold deferred → milestone M-SNO2C-FOLD added to PLAN.md
+- Confirmed case policy: all 5 participants run with default fold-ON; source must use uppercase identifiers; monitor normalizes to uppercase for comparison
+- 5-way sync barrier confirmed working: all 5 connect, step together, report divergence correctly
+- Remaining divergence at step 1: ASM emits `VALUE TAB = '\t'` — pre-init constant in `comm_var()` fires before program starts; fix is to gate `comm_var()` against pre-init name list
+- 106/106 ASM corpus ALL PASS ✅ confirmed at handoff
+
+### State at handoff
+
+- `snobol4x` main at `e3d2bdb`, pushed ✅
+- `.github` main at `fe70faf`, pushed ✅
+- 106/106 invariant holds ✅
+- M-MONITOR-SYNC: not yet fired — one known divergence remaining (ASM TAB pre-init)
+- M-SNO2C-FOLD: added to PLAN.md, scaffold committed, implementation deferred
+
+### Next session start (B-255)
+
+Fix `comm_var()` in `src/runtime/snobol4/snobol4.c` — add pre-init name gate (tab, ht, nl, lf, cr, ff, vt, bs, nul, epsilon, fSlash, bSlash, semicolon, UCASE, LCASE). Rebuild, rerun monitor. Cycle until hello PASS all 5 → fire M-MONITOR-SYNC.

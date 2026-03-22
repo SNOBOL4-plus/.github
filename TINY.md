@@ -13,11 +13,11 @@ snobol4x: multiple frontends, multiple backends.
 ## NOW
 
 **Sprint:** `main` — M-MONITOR-SYNC in progress
-**HEAD:** `89fd186` B-252 (main)
+**HEAD:** `e3d2bdb` B-254 (main)
 **Milestone:** M-MONITOR-SYNC — sync-step barrier protocol; hello PASS all 5 sync = fire
 **Invariants:** 106/106 ASM corpus ALL PASS ✅
 
-**⚡ CRITICAL NEXT ACTION — Session B-253 (M-MONITOR-SYNC finish):**
+**⚡ CRITICAL NEXT ACTION — Session B-255 (M-MONITOR-SYNC: cycle through divergences):**
 
 ```bash
 cd /home/claude/snobol4x
@@ -25,33 +25,29 @@ git config user.name "LCherryholmes" && git config user.email "lcherryh@yahoo.co
 git remote set-url origin https://TOKEN_SEE_LON@github.com/snobol4ever/snobol4x.git
 git pull --rebase origin main
 
-# Setup (if fresh container):
+# Setup (if fresh container) — tarball at /mnt/user-data/uploads/snobol4-2_3_3_tar.gz:
 bash setup.sh
-mkdir -p /home/claude/x64
-ln -sf /home/claude/snobol4x64/bin/sbl /home/claude/x64/bootsbl
-cp /home/claude/snobol4x64/monitor_ipc_spitbol.so /home/claude/x64/
+ln -sf /home/claude/snobol4x/sno2c /home/claude/sno2c_net
+cd /home/claude/x64 && make 2>&1 | tail -3
+[ -e /home/claude/x64/bootsbl ] || ln -sf /home/claude/x64/sbl /home/claude/x64/bootsbl
+gcc -shared -fPIC -O2 -Wall -o /home/claude/x64/monitor_ipc_spitbol.so \
+    /home/claude/x64/monitor_ipc_spitbol.c
 gcc -shared -fPIC -O2 -Wall \
-  -o test/monitor/monitor_ipc_sync.so test/monitor/monitor_ipc_sync.c
+    -o test/monitor/monitor_ipc_sync.so test/monitor/monitor_ipc_sync.c
 
-# What's done (B-252):
-#   JVM: sno_mon_ack_fd field + sno_mon_init opens MONITOR_ACK_FIFO
-#        sno_mon_var writes event then reads ack ('G'=continue, other=exit)
-#   NET: net_mon_sw/net_mon_ack static fields + net_mon_init() added
-#        net_mon_var rewritten: static StreamWriter, reads ack after write
-#   run_monitor_sync.sh: participants launched BEFORE controller (deadlock fix)
-#
-# Remaining issue: LOAD of monitor_ipc_sync.so fails with error 142
-#   Symptoms: snobol4 -f instr.sno at line 20 "load function does not exist"
-#   Likely cause: MONITOR_SO env var path not reaching CSNOBOL4 subprocess
-#                 OR snobol4 LOAD() needs absolute path / SNOLIB search
-#   Diagnosis: check HOST(4,'MONITOR_SO') returns correct path in subprocess
-#              try: MONITOR_SO=$(pwd)/test/monitor/monitor_ipc_sync.so
-#   Fix: confirm LOAD works, then test hello PASS all 5 sync → fire M-MONITOR-SYNC
+# State at B-254 handoff:
+#   5-way sync barrier working — all 5 connect and step together
+#   Remaining divergence: ASM emits VALUE TAB='\t' at step 1 (pre-init constant)
+#   Fix needed: gate comm_var() in snobol4.c to skip pre-init constants
+#   (tab, ht, nl, lf, cr, ff, vt, bs, nul, epsilon, fSlash, bSlash, semicolon, UCASE, LCASE)
 
-# Test run:
+# Cycle protocol (repeat until hello PASS all 5):
+# 1. Run monitor:
 INC=/home/claude/snobol4corpus/programs/inc X64_DIR=/home/claude/x64 \
-  MONITOR_TIMEOUT=5 timeout 60 bash test/monitor/run_monitor_sync.sh \
+  MONITOR_TIMEOUT=15 bash test/monitor/run_monitor_sync.sh \
   /home/claude/snobol4corpus/crosscheck/hello/hello.sno
+# 2. Read first DIVERGENCE line → identify which participant + variable
+# 3. Fix → rebuild → repeat
 ```
 
 ## Last Session Summary
