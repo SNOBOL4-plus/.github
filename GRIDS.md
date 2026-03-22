@@ -352,50 +352,50 @@ Warm numbers show steady-state scripting cost.
 > Categories are **logical function**, comparable across all repos regardless of implementation language.
 > Numbers from `wc -l` on checked-out source. Generated artifacts excluded.
 
-### snobol4x
+### snobol4x ✅ M-VOL-X 2026-03-22
 
 | Category | Files | Lines | Blank-stripped | % total |
 |----------|------:|------:|:--------------:|--------:|
-| Parser / lexer | — | — | — | — |
-| Code emitter | — | — | — | — |
-| Pattern engine | — | — | — | — |
-| Runtime / builtins | — | — | — | — |
-| Driver / CLI | — | — | — | — |
-| Extensions / plugins | — | — | — | — |
-| Tests | — | — | — | — |
-| Benchmarks | — | — | — | — |
-| Docs / Markdown | — | — | — | — |
-| **Total** | **—** | **—** | **—** | **100%** |
+| Parser / lexer | 20 | 6,368 | 5,728 | 20.5% |
+| Code emitter | 11 | 17,291 | 15,936 | 55.6% |
+| Pattern engine | 10 | 1,588 | 1,421 | 5.1% |
+| Runtime / builtins | 7 | 4,614 | 4,120 | 14.8% |
+| Driver / CLI | 1 | 140 | 128 | 0.5% |
+| Extensions / plugins | 3 | 1,085 | 969 | 3.5% |
+| Tests | 47 | 6,265 | 5,495 | — |
+| Benchmarks | 12 | 1,603 | 1,541 | — |
+| Docs / Markdown | 2 | 1,080 | 814 | — |
+| **Total (src)** | **54** | **31,090** | **28,306** | **100%** |
 
-### snobol4jvm
-
-| Category | Files | Lines | Blank-stripped | % total |
-|----------|------:|------:|:--------------:|--------:|
-| Parser / lexer | — | — | — | — |
-| Code emitter | — | — | — | — |
-| Pattern engine | — | — | — | — |
-| Runtime / builtins | — | — | — | — |
-| Driver / CLI | — | — | — | — |
-| Extensions / plugins | — | — | — | — |
-| Tests | — | — | — | — |
-| Benchmarks | — | — | — | — |
-| Docs / Markdown | — | — | — | — |
-| **Total** | **—** | **—** | **—** | **100%** |
-
-### snobol4dotnet
+### snobol4jvm ✅ M-VOL-JVM 2026-03-22
 
 | Category | Files | Lines | Blank-stripped | % total |
 |----------|------:|------:|:--------------:|--------:|
-| Parser / lexer | — | — | — | — |
-| Code emitter | — | — | — | — |
-| Pattern engine | — | — | — | — |
-| Runtime / builtins | — | — | — | — |
-| Driver / CLI | — | — | — | — |
-| Extensions / plugins | — | — | — | — |
-| Tests | — | — | — | — |
-| Benchmarks | — | — | — | — |
-| Docs / Markdown | — | — | — | — |
-| **Total** | **—** | **—** | **—** | **100%** |
+| Parser / lexer | 5 | 926 | 847 | 12.8% |
+| Code emitter | 3 | 1,402 | 1,236 | 19.4% |
+| Pattern engine | 5 | 921 | 833 | 12.8% |
+| Runtime / builtins | 7 | 2,140 | 1,999 | 29.6% |
+| Driver / CLI | 2 | 234 | 221 | 3.2% |
+| Extensions / plugins | 2 | 29 | 29 | 0.4% |
+| Tests | 55 | 19,352 | 17,159 | — |
+| Benchmarks | 1 | 152 | 133 | — |
+| Docs / Markdown | 2 | 456 | 353 | — |
+| **Total (src)** | **28** | **7,220** | **6,562** | **100%** |
+
+### snobol4dotnet ✅ M-VOL-DOTNET 2026-03-22
+
+| Category | Files | Lines | Blank-stripped | % total |
+|----------|------:|------:|:--------------:|--------:|
+| Parser / lexer | 8 | 3,681 | 3,206 | 16.6% |
+| Code emitter | 13 | 2,825 | 2,484 | 12.7% |
+| Pattern engine | 33 | 2,260 | 1,701 | 10.2% |
+| Runtime / builtins | 201 | 11,938 | 9,909 | 53.7% |
+| Driver / CLI | 12 | 1,040 | 915 | 4.7% |
+| Extensions / plugins | 7 | 548 | 476 | 2.5% |
+| Tests | 160 | 28,008 | 25,102 | — |
+| Benchmarks | 5 | 474 | 435 | — |
+| Docs / Markdown | 5 | 668 | 471 | — |
+| **Total (src)** | **272** | **22,212** | **18,626** | **100%** |
 
 ## Grid 8 — Feature Completeness (per-repo)
 

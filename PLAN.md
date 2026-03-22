@@ -598,9 +598,9 @@ Rating per row: ✅ complete · ⚠ partial · 🔧 skeleton · ❌ missing · �
 
 | ID | Trigger | Repo | Depends on | Status |
 |----|---------|------|-----------|--------|
-| **M-VOL-X** | G-VOLUME table for snobol4x generated and committed | snobol4x | source scan | ❌ |
-| **M-VOL-JVM** | G-VOLUME table for snobol4jvm generated and committed | snobol4jvm | source scan | ❌ |
-| **M-VOL-DOTNET** | G-VOLUME table for snobol4dotnet generated and committed | snobol4dotnet | source scan | ❌ |
+| **M-VOL-X** | G-VOLUME table for snobol4x generated and committed | snobol4x | source scan | ✅ `07a34d7`+ README SESSION 2026-03-22 |
+| **M-VOL-JVM** | G-VOLUME table for snobol4jvm generated and committed | snobol4jvm | source scan | ✅ README SESSION 2026-03-22 |
+| **M-VOL-DOTNET** | G-VOLUME table for snobol4dotnet generated and committed | snobol4dotnet | source scan | ✅ README SESSION 2026-03-22 |
 | **M-VOL-PYTHON** | G-VOLUME table for snobol4python generated and committed | snobol4python | source scan | ⏸ DEFERRED |
 | **M-VOL-CSHARP** | G-VOLUME table for snobol4csharp generated and committed | snobol4csharp | source scan | ⏸ DEFERRED |
 | **M-FEAT-X** | G-FEATURE table for snobol4x written and committed | snobol4x | M-DEEP-SCAN-X | ❌ |
