@@ -12,83 +12,57 @@ snobol4x: multiple frontends, multiple backends.
 
 ## NOW
 
-**Sprint:** `t2-impl` — Technique 2 dynamic allocation + relocation
-**HEAD:** `06e1bdc` B-239 (asm-t2) · x64: `4fcb0e1` B-233
-**Milestone:** M-MERGE-3WAY ✅ · M-T2-RUNTIME ✅ · M-T2-RELOC ✅ · M-T2-EMIT-TABLE ✅ → **M-T2-EMIT-SPLIT (next)**
-**Invariants:** 97/106 ASM corpus (9 known failures fixed by T2 — no manual patches)
+**Sprint:** `t2-impl` — M-T2-INVOKE
+**HEAD:** `1ceb92f` B-241 (asm-t2)
+**Milestone:** M-MACRO-BOX ✅ → M-T2-INVOKE (next)
+**Invariants:** 96/106 ASM corpus (9 known failures + 053 runtime)
 
-**⚠ CRITICAL NEXT ACTION — Session B-238:**
+**⚡ CRITICAL NEXT ACTION — Session B-242:**
 
 ```bash
-cd /home/claude/snobol4x && git checkout asm-backend
+cd /home/claude/snobol4x && git checkout asm-t2
 git config user.name "LCherryholmes" && git config user.email "lcherryh@yahoo.com"
-git pull --rebase origin asm-backend   # HEAD should be c6a6544 B-237
-
-export PATH=$PATH:/usr/local/bin:/home/claude/x64
+git pull --rebase origin asm-t2   # HEAD should be 1ceb92f B-241
 export INC=/home/claude/snobol4corpus/programs/inc
-export PROG=/home/claude/snobol4corpus/programs
+export CORPUS=/home/claude/snobol4corpus/crosscheck
 
-# PHASE 1: complete M-MONITOR-4DEMO (still needed before merge)
-bash test/monitor/precheck.sh   # expect 28+/30 (ASM null precheck bug is cosmetic)
-bash test/monitor/run_monitor.sh $PROG/roman/roman.sno
-bash test/monitor/run_monitor.sh $PROG/wordcount/wordcount.sno
-bash test/monitor/run_monitor.sh $PROG/treebank/treebank.sno
-bash test/monitor/run_monitor.sh $PROG/claws5/claws5.sno || true  # document count only
-
-# PHASE 2: M-MERGE-3WAY — after M-MONITOR-4DEMO fires
-# See MONITOR.md and chat strategy for the staged merge protocol:
-#   1. git checkout -b merge-staging origin/asm-backend
-#   2. git merge --no-ff jvm-backend  (resolve shared files, run invariants)
-#   3. git merge --no-ff net-backend  (resolve, run invariants)
-#   4. all invariants hold → PR into main → fan out v-post-merge tag
-#   5. new branches: asm-t2, jvm-t2, net-t2 from v-post-merge
-
-# PHASE 3: M-T2-RUNTIME — first T2 milestone after merge
-# Write src/runtime/asm/t2_alloc.c:
-#   t2_alloc(size_t sz) → mmap(NULL,sz,PROT_READ|PROT_WRITE,MAP_PRIVATE|MAP_ANONYMOUS,-1,0)
-#   t2_free(void*p,size_t sz) → munmap(p,sz)
-#   t2_mprotect_rx(void*p,size_t sz) → mprotect(p,sz,PROT_READ|PROT_EXEC)
-#   t2_mprotect_rw(void*p,size_t sz) → mprotect(p,sz,PROT_READ|PROT_WRITE)
-# Write test/t2/test_t2_alloc.c — allocate, write, mprotect_rx, verify read, free
-# Compile: gcc -o /tmp/test_t2 test/t2/test_t2_alloc.c src/runtime/asm/t2_alloc.c
-# Run: /tmp/test_t2 → PASS
+# M-T2-INVOKE: emit T2 call-sites at every named-box invocation
+# For each user-defined function call (α entry of named box):
+#   1. t2_alloc(box_X_data_size)  → rsi = new_data ptr
+#   2. memcpy(new_data, box_X_data_template, box_X_data_size)
+#   3. mov r12, new_data
+#   4. jmp box_X_α  (TEXT still static — no relocation needed yet)
+# γ/ω: emit t2_free(old_r12, box_X_data_size) + restore caller r12 before return jump
+# Acceptance: bash test/crosscheck/run_crosscheck_asm_corpus.sh → 96/106 (invariant holds)
 ```
 
 ## Last Session Summary
 
-**Session B-239 (2026-03-21) — M-MERGE-3WAY fired:**
-- Created merge-staging from asm-backend (c6a6544 B-237)
-- Merged net-backend (N-209): 3 conflicts resolved — took net-backend JVM+NET emitters + crosscheck path fix
-- Merged main (J-212): 1 artifact conflict (hello_prog.j) resolved
-- ASM invariant: 97/106 ✅ · NET invariant: 110/110 ✅
-- Pushed main → 425921a; cut v-post-merge tag; fanned out asm-t2/jvm-t2/net-t2 branches
-- M-MERGE-3WAY ✅
+**Session B-241 (2026-03-21) — M-MACRO-BOX ✅:**
+- bref() fix: 18 emitter call sites patched — saved/cursor_save now resolve to [r12+N] in box context
+- ARBNO macroized: ARBNO_ALPHA/BETA/CHILD_OK/CHILD_FAIL added to snobol4_asm.mac
+- emit_arbno() replaced 35 lines of raw inline asm with 4 macro calls using bref()
+- 96/106 corpus — invariant holds; commit 1ceb92f pushed
 
-**Session B-238 (2026-03-21) — PIVOT: Technique 2 planned; milestones + HQ updated:**
-- Designed 3-way merge strategy (staged, asm-backend base, jvm then net)
-- Identified M-BOOTSTRAP prerequisite as unnecessary — `emit_byrd_asm.c` can emit
-  relocation tables at compile time without self-hosting
-- Added M-MERGE-3WAY + M-T2-RUNTIME through M-T2-FULL milestone chain to PLAN.md
-- Updated BACKEND-X64.md: removed M-BOOTSTRAP gate, added T2 milestone sprint table
-- Updated ARCH.md: replaced "Why not now" blocker with 2026-03-21 PIVOT note
-- Updated TINY.md NOW section: sprint = t2-impl
-- No code changes this session — planning session only
+**Session B-240 (2026-03-21) — M-T2-EMIT-SPLIT ✅ ⚠:**
+- Emitter splits named boxes into TEXT+DATA sections; r12=DATA-block pointer
+- 3 regressions (bare .bss symbol refs) — fixed in B-241
 
 ## Active Milestones
 
 | ID | Status |
 |----|--------|
-| M-MERGE-3WAY   | ✅ `425921a` B-239 |
-| M-T2-RUNTIME   | ✅ `ab2254f` B-239 |
-| M-T2-RELOC     | ✅ `b992be8` B-239 |
-| M-T2-EMIT-TABLE | ✅ `06e1bdc` B-239 |
-| M-T2-EMIT-SPLIT | ❌ next to fire |
+| M-MACRO-BOX     | ✅ `1ceb92f` B-241 |
+| M-T2-INVOKE     | ❌ next |
+| M-T2-RECUR      | ❌ |
+| M-T2-CORPUS     | ❌ |
+| M-T2-FULL       | ❌ |
 
 ## Concurrent Sessions
 
 | Session | Branch | Focus |
 |---------|--------|-------|
-| B-next | `asm-t2` | M-T2-RUNTIME → M-T2-RELOC → M-T2-EMIT-TABLE |
+| B-next | `asm-t2` | M-T2-INVOKE |
 | J-next | `jvm-t2` | TBD |
 | N-next | `net-t2` | TBD |
-| F-next | `main` | TBD |
+| F-next | `main`   | TBD |

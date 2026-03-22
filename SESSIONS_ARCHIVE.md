@@ -10907,3 +10907,29 @@ git diff asm-backend..origin/jvm-backend -- test/monitor/run_monitor.sh
 - Corpus: 80/106 (3 new regressions: 053_pat_alt_commit, triplet, expr_eval)
 - Committed 9968688, pushed asm-t2
 - **B-241 MUST FIX regressions before M-T2-EMIT-SPLIT fully fires**
+
+## Session B-241 — M-MACRO-BOX ✅ (2026-03-21)
+
+**Branch:** asm-t2  **Commit:** 1ceb92f  **HEAD before:** 9968688 B-240
+
+**What happened:**
+- Diagnosed B-240 regressions: M-T2-EMIT-SPLIT moved locals from .bss to [r12+N] DATA block, but macro call sites still passed bare symbol names (e.g. `alt2_cur_save`) which no longer existed as labels
+- Root-cause analysis: macros dereference args with `[%N]` brackets internally, so they need bare refs like `r12+N` — exactly what `bref()` returns
+- Fixed 18 emitter call sites systematically: all `saved` and `cursor_save` args now use `bref()`; Python script patched ALFC lines after the format string close
+- ALT_ALPHA/ALT_OMEGA: explicit bref(cursor_save) calls added
+- Identified ARBNO as only box type without NASM macros (all 4 ports were raw inline asm in emitter)
+- Added ARBNO_ALPHA/BETA/CHILD_OK/CHILD_FAIL macros to snobol4_asm.mac
+- Replaced 35-line emit_arbno() inline body with 4 clean macro calls using bref()
+- Added M-MACRO-BOX milestone to PLAN.md (between M-T2-EMIT-SPLIT and M-T2-INVOKE)
+- Corpus: 96/106 — 9 known failures + 053 runtime; invariant holds
+
+**State at handoff:** M-MACRO-BOX ✅ fired. Next: M-T2-INVOKE (B-242).
+
+**Next session start block:**
+```bash
+cd /home/claude/snobol4x && git checkout asm-t2
+git pull --rebase origin asm-t2   # expect 1ceb92f B-241
+export CORPUS=/home/claude/snobol4corpus/crosscheck
+export INC=/home/claude/snobol4corpus/programs/inc
+bash test/crosscheck/run_crosscheck_asm_corpus.sh   # expect 96/106
+```
