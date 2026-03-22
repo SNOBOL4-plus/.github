@@ -11032,3 +11032,54 @@ bash test/crosscheck/run_crosscheck_asm_corpus.sh   # expect 96/106
 Attempted fix reverted — unconditional advance regressed 26 passing inline pattern tests.
 
 **Note on codename:** "T2 / Technique 2" → renamed to "block-local DATA" / blk_* in B-245.
+
+## Session B-247 (2026-03-22) — M-T2-CORPUS: 106/106 ALL PASS
+
+**Branch:** `asm-t2` · **Commit:** `50a1ad0`
+
+**Milestone fired:** M-T2-CORPUS ✅
+
+**Three bugs fixed:**
+
+**Bug 1 — `scan_start` clobbered by `SET_CAPTURE` in gamma path (`?` stmts):**
+`SET_CAPTURE` expands to `call stmt_set_capture` (C ABI), trashing `rax`.
+The scan_start advance `mov rax,[cursor]; mov [scan_start],rax` was emitted
+*after* the SET_CAPTURE loop, so `scan_start` got garbage → `?` matches never
+advanced position → infinite output (word1-4, cross, wordcount).
+Fix: emit `scan_start` save *before* the SET_CAPTURE loop when `!has_eq`.
+
+**Bug 2 — `:F(END/RETURN/FRETURN)` silently fell through on assignment stmts:**
+All 5 assignment branches computed `fail_target = id_f>=0 ? sfail_lbl : next_lbl`.
+Special gotos (END/RETURN/FRETURN) are not in the label registry (`id_f == -1`),
+so `:F(END)` fell through to the next statement instead of branching to END.
+Fix: check `(id_f>=0 || (tgt_f && is_special_goto(tgt_f)))` at all 5 sites.
+Branches: E_VART/KW, E_DOL/INDR, E_IDX, E_FNC field, E_FNC ITEM.
+
+**Bug 3 — `L_unk_-1` (invalid NASM label) for `:F(END)` on pure-pattern stmts:**
+`label_nasm("END")` returned `L_unk_-1` because END is not in the label registry.
+Fired in the omega scan_fail path for `064_capture_conditional` (`X 'hello' :F(END)`).
+Fix: when `scan_fail_tgt` is a special goto and no trampoline is needed, use
+`L_SNO_END` directly instead of calling `label_nasm()`.
+
+**Harness fix — `run_crosscheck_asm_corpus.sh` blocking on stdin:**
+Tests with `.input` files (word1-4, cross, wordcount) hung waiting for terminal
+input; `timeout` killed them; harness misreported as `[runtime exit 0]` (was actually
+exit 124). Fix: feed `.input` file to stdin when present, `/dev/null` otherwise.
+Matches the C crosscheck harness pattern.
+
+**Artifacts regenerated:** beauty_prog.s, roman.s, wordcount.s, treebank.s, claws5.s
+(claws5: 3 undef β labels unchanged — pre-existing tracked issue).
+
+**Result:** 106/106 ALL PASS (up from 99/106 in B-246).
+
+**Next session B-248:** M-T2-FULL — read BACKEND-X64.md for trigger definition.
+
+```bash
+cd /home/claude/snobol4x && git checkout asm-t2
+git config user.name "LCherryholmes" && git config user.email "lcherryh@yahoo.com"
+git pull --rebase origin asm-t2   # expect 50a1ad0 B-247
+export INC=/home/claude/snobol4corpus/programs/inc
+export CORPUS=/home/claude/snobol4corpus/crosscheck
+bash test/crosscheck/run_crosscheck_asm_corpus.sh   # expect 106/106 ALL PASS
+# Then: cat /home/claude/.github/BACKEND-X64.md for M-T2-FULL definition
+```
