@@ -10959,3 +10959,30 @@ export CORPUS=/home/claude/snobol4corpus/crosscheck
 export INC=/home/claude/snobol4corpus/programs/inc
 bash test/crosscheck/run_crosscheck_asm_corpus.sh   # expect 96/106
 ```
+
+## Session B-244 — M-T2-RECUR ✅ (milestone-fire, no code changes)
+
+**Date:** 2026-03-21
+**Branch:** `asm-t2`
+**Milestone fired:** M-T2-RECUR
+
+**Work done:**
+- Verified recursive SNOBOL4 functions correct under T2 per-invocation DATA blocks
+- `ROMAN('1776')` → `MDCCLXXVI` ✅; `FACT(5)` → `120` ✅
+- Two simultaneous live DATA blocks: inner call gets fresh `r12`, outer `r12` saved on C stack via push/pop protocol at call site
+- `demo/roman.sno` 100k loop times out due to `&STLIMIT` budget, not correctness; 10k iterations <1ms
+- stack-frame bridge (`push rbp`) already removed since B-239
+- Noted "T2 / Technique 2" is a weak codename — real concept is **per-invocation DATA blocks**
+- No code changes; PLAN.md + TINY.md updated
+
+**Invariant:** 96/106 ✅
+
+**Next session B-245:** M-T2-CORPUS — investigate and fix 9 known failures
+
+```bash
+cd /home/claude/snobol4x && git checkout asm-t2
+git pull --rebase origin asm-t2   # expect 1cf8a0a B-244
+export CORPUS=/home/claude/snobol4corpus/crosscheck
+export INC=/home/claude/snobol4corpus/programs/inc
+bash test/crosscheck/run_crosscheck_asm_corpus.sh   # expect 96/106
+```

@@ -16,7 +16,7 @@ Session numbers use per-type prefixes (see RULES.md §SESSION NUMBERS): B=backen
 
 | Session | Sprint | HEAD | Next milestone |
 |---------|--------|------|----------------|
-| **TINY backend** | `asm-t2` B-243 — M-T2-INVOKE complete | `1cf8a0a` B-243 | M-T2-RECUR |
+| **TINY backend** | `asm-t2` B-244 — M-T2-RECUR complete | `1cf8a0a` B-244 | M-T2-CORPUS |
 | **TINY NET** | `net-backend` N-209 — clean slate | `2c417d7` N-209 | TBD |
 | **TINY JVM** | `jvm-backend` J-212 — clean slate | `b67d0b1` J-212 | TBD |
 | **TINY frontend** | `main` F-210 — clean slate | `6495074` F-210 | TBD |
@@ -204,7 +204,7 @@ Sprint detail and runner design → [MONITOR.md](MONITOR.md)
 | **M-T2-EMIT-SPLIT** | `emit_byrd_asm.c` splits each named box into separate aligned TEXT+DATA sections; `r12` reserved as DATA-block pointer; all locals `[r12+offset]` not `[rbp-N]`; null.sno + hello.sno assemble and run | snobol4x | ✅ `9968688` B-240 ⚠ 3 regressions to fix |
 | **M-MACRO-BOX** | Complete macro coverage: every Byrd box type gets one NASM macro per port (α/β/γ/ω); ARBNO fully macroized (currently raw inline asm); all emitter `saved`/`cursor_save` refs use `bref()` — no bare `.bss` symbol names in call sites; 97/106 invariant holds | snobol4x | ✅ `b606884` B-242 |
 | **M-T2-INVOKE** | `emit_byrd_asm.c` emits T2 call-sites: `t2_alloc` + `memcpy TEXT` + `t2_relocate` + `memcpy DATA` + `mov r12,new_data` + `jmp new_text_α`; γ/ω emit `t2_free`; corpus rungs 1–9 still pass | snobol4x | ✅ `1cf8a0a` B-243 |
-| **M-T2-RECUR** | Recursive SNOBOL4 functions correct under T2: two simultaneous live DATA blocks, one shared CODE; roman.sno correct; stack-frame bridge (`push rbp`) removed | snobol4x | ❌ |
+| **M-T2-RECUR** | Recursive SNOBOL4 functions correct under T2: two simultaneous live DATA blocks, one shared CODE; roman.sno correct; stack-frame bridge (`push rbp`) removed | snobol4x | ✅ `1cf8a0a` B-244 |
 | **M-T2-CORPUS** | 106/106 ASM corpus under T2 — 9 known failures fixed by construction; no per-bug patches | snobol4x | ❌ |
 | **M-T2-JVM** | JVM backend T2-correct: per-invocation objects on JVM heap (natural); 106/106 JVM corpus clean | snobol4x | ❌ |
 | **M-T2-NET** | NET backend T2-correct: per-invocation objects on CLR heap; 110/110 NET corpus clean | snobol4x | ❌ |
