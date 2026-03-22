@@ -27,7 +27,7 @@ Session numbers use per-type prefixes (see RULES.md §SESSION NUMBERS): B=backen
 | **TINY backend** | `main` B-257 — emitter fix: FAIL_BR+unconditional-goto (5 sites); treebank.sno fixed (WBRKS pre-build + DATATYPE case); run_monitor_sync.sh fixed (instr.sno for ASM/NET, blk_alloc link); ASM treebank PASS; wordcount shows M-MON-BUG-ASM-WPAT; NET step-0 timeout deferred | `832c236` B-257 | M-MONITOR-4DEMO (next: fix M-MON-BUG-ASM-WPAT) |
 | **TINY NET** | `net-t2` N-248 — M-T2-NET ✅ 110/110 clean | `425921a` N-248 | M-T2-FULL |
 | **TINY JVM** | `jvm-t2` J-213 — M-T2-JVM ✅ 106/106 clean | `8178b5c` J-213 | M-T2-FULL |
-| **TINY frontend** | `main` F-212 — M-PROLOG-EMIT-NODES ✅ clean build | `b8312ed` F-212 | M-PROLOG-HELLO |
+| **TINY frontend** | `main` F-213 — emit_body retry loop; 8/9 corpus PASS; rung05 recursive backtrack needs ASM pivot | `ae253e2` F-213 | M-PROLOG-HELLO (via -asm) |
 | **DOTNET** | `net-polish` D-163 — clean slate | `8feb139` D-163 | TBD |
 | **README** | `main` — M-README-CSHARP-DRAFT ✅ | `00846d3` snobol4csharp | M-README-DEEP-SCAN (next) |
 | **README v2 sprint** | `main` R-2 — PIVOT: snobol4x M-FEAT-X deferred (partial, 12/20 pass); 20 feature test programs written to snobol4x/test/feat/; M-FEAT-* and M-GRID-REFERENCE MERGED (same work — see below); next: M-FEAT-JVM on snobol4jvm | TBD R-2 | M-FEAT-JVM |

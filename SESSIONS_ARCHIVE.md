@@ -11968,3 +11968,91 @@ done
 # The continuation's omega must jump BACK to the for(;;) loop, not to outer omega.
 # This requires per-call retry labels, replacing the flat gamma/omega threading.
 ```
+
+## Session F-213 — emit_body Proebsting retry loop; 8/9 corpus PASS (2026-03-22)
+
+**Branch:** main  **Commit:** `ae253e2` F-213
+**snobol4x HEAD before:** `61fc3e3` F-212  **after:** `ae253e2` F-213
+
+### What happened
+
+- Cloned snobol4x (rule fixed in RULES.md this session — clone first)
+- Confirmed F-212 baseline: 7/9 corpus PASS; rung02 (facts) and rung05 (backtrack) fail
+- Root cause identified: `emit_body` chained goals linearly — user-call fail → outer omega,
+  bypassing retry. Proebsting `E2.fail → E1.resume` wire was missing.
+- Three fixes applied to `prolog_emit.c`:
+  1. **`is_user_call()`** — classifies user-defined vs builtin goals
+  2. **`emit_body` retry loop** — user-calls wrapped in `for(;;)` loop; suffix goals'
+     omega = `retry_lbl` (top of loop), implementing Proebsting E2.fail→E1.resume
+  3. **`,/2` flatten** — conjunction tree flattened to goal array, routed through
+     `emit_body` so user-calls inside get retry wiring
+  4. **Compound uid fix** — `emit_term_val` captures uid before emitting children,
+     preventing `_argsN` name collision in nested compound terms
+- Result: **8/9 corpus PASS** — rung02 (facts/backtracking) now passes
+
+### Remaining failure: rung05 (member/2 recursive backtracking)
+
+`member/2` clause 2 has a recursive body call. `_start` encodes only the top-level
+clause index. When `member` succeeds via clause 1 → recursive call → clause 0,
+it returns `1`. Retrying with `_cs=2` hits a nonexistent clause 2 instead of
+re-entering clause 1's recursive body at `_cs=1`.
+
+**Root cause:** flat `_start = clause_idx` cannot encode mid-clause resume state
+for predicates with user-calls in their bodies.
+
+**Two approaches for F-214:**
+
+Option A — **Switch to x64 ASM backend** (Lon's recommendation). The ASM emitter
+already has Byrd box α/β/γ/ω with proper per-invocation DATA blocks (T2). The C
+backend flat `switch(_start)` is inherently limited. Target: `snobol4x -pl -asm`.
+Read BACKEND-X64.md + the existing `emit_prolog_choice()` stubs in `emit_byrd_asm.c`.
+
+Option B — **Two-field `_start` encoding** for C backend: `_start = clause_idx *
+BASE + body_cs`. Attempted this session but abandoned mid-way — generates broken C.
+The `_body_ret` variable needs to be stored by the retry loop and read by the per-clause
+gamma label. The approach is sound but requires careful emit_choice restructuring.
+
+### Recommendation for F-214
+
+Take Option A. The ASM backend has the right architecture. The C backend fix
+(Option B) is a dead end — the ASM emitter already handles recursive Byrd boxes
+correctly via T2 per-invocation DATA blocks.
+
+### State at handoff
+
+- snobol4x HEAD: `ae253e2` F-213 (main)
+- 8/9 Prolog corpus PASS ✅ (rung01-04, rung06-09)
+- rung05 (recursive backtracking via member/2) ❌ — `_start` encoding limitation
+- sno2c builds clean
+- M-PROLOG-HELLO ❌ still (needs `-pl -asm` end-to-end, not just `-pl -c`)
+- RULES.md updated: clone working repo first (0708eac in .github)
+
+### Next session start (F-214)
+
+```bash
+cd /home/claude/snobol4x   # clone first per RULES.md
+git config user.name "LCherryholmes" && git config user.email "lcherryh@yahoo.com"
+git remote set-url origin https://TOKEN_SEE_LON@github.com/snobol4ever/snobol4x.git
+git pull --rebase origin main
+
+# Build
+make -C src
+
+# Confirm 8/9 baseline
+RT=src/frontend/prolog; TMP=$(mktemp -d); CORPUS=test/frontend/prolog/corpus
+for d in $CORPUS/rung0*/; do
+    pro=$(ls "$d"*.pro 2>/dev/null | head -1); exp=$(ls "$d"*.expected 2>/dev/null | head -1)
+    [ -f "$pro" ] || continue
+    ./sno2c -pl "$pro" > $TMP/out.c 2>/dev/null
+    gcc -Wno-unused-label -Wno-unused-variable -Wno-unused-function \
+        -Wno-implicit-function-declaration -g -O0 -I$RT \
+        $TMP/out.c $RT/prolog_atom.c $RT/prolog_unify.c $RT/prolog_builtin.c \
+        -o $TMP/prog 2>/dev/null && actual=$(timeout 5 $TMP/prog 2>&1) \
+        && [ "$actual" = "$(cat $exp)" ] && echo "PASS $(basename $d)" || echo "FAIL $(basename $d)"
+done
+
+# Option A (recommended): pivot to ASM backend
+# Read BACKEND-X64.md and emit_byrd_asm.c emit_prolog_choice() stubs
+# Target: snobol4x -pl -asm hello.pro → hello.s → nasm → ./a.out prints "hello"
+# This fires M-PROLOG-HELLO
+```
