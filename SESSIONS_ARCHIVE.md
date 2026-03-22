@@ -11603,3 +11603,41 @@ bash setup.sh   # confirm 106/106
 - Fill G-FEATURE table: ✅/⚠/🔧/❌ for all 20 feature rows
 - Commit to snobol4x README and Grid 8 in GRIDS.md
 - Fire M-FEAT-X in PLAN.md, push all
+
+## Session R-2 — README SESSION: feature test technique; pivot to JVM (2026-03-22)
+
+**Trigger:** "playing with README grids/tables" / "playing with grids"
+
+**Work done:**
+
+1. **Discovered correct M-FEAT-* technique** — previous session's next-block said "static source analysis." Wrong. M-FEAT-* requires *running* programs. Correct technique: write one 1–3 line `.sno` per feature, run against CSNOBOL4 oracle first (validate test), then against target engine. Output `PASS`/`FAIL`. Reveals both presence AND correctness, including compat divergences (e.g. DATATYPE case).
+
+2. **Wrote 20 feature test programs** `f01–f20` in `snobol4x/test/feat/`. All validated against CSNOBOL4 2.3.3. Committed to snobol4x `41c22e4`.
+
+3. **Ran all 20 against snobol4x ASM backend — 12/20 pass:**
+   - ✅ f01 core/labels/goto · f02 string ops · f03 numeric · f04 pattern primitives · f07 keywords · f08 DATA/ARRAY/TABLE · f09 functions+recursion · f14 OPSYN · f15 TRACE/DUMP · f16 CLI · f17 INCLUDE · f20 &ALPHABET
+   - ❌ f05 `@` cursor capture (not implemented) · f06 DATATYPE case (returns lowercase) · f10/f11 named I/O channels · f12 UNLOAD · f13 EVAL/CODE · f18 SETEXIT/&ERRLIMIT · f19 REAL as predicate
+
+4. **Merged M-FEAT-* and M-GRID-REFERENCE** — same work, same test programs. When M-FEAT-{repo} fires, fill Grid 8 column AND Grid 4 engine columns simultaneously.
+
+5. **Updated PLAN.md** — pivot snobol4x→JVM, M-FEAT-X deferred with results, technique documented in per-repo checklist, merge noted. Committed `ca6aaf9`.
+
+6. **Pivoted to snobol4jvm** — cloned, built uberjar (`SNOBOL4clojure-0.2.0-standalone.jar`). Ready to run.
+
+7. **Pushes pending** — no token this session. Both commits staged locally, need push with token.
+
+**CSNOBOL4 source** extracted to `/home/claude/snobol4-2.3.3/` — built and working. Use as oracle for all feature tests.
+
+**State at handoff:** M-FEAT-X ⏸ DEFERRED. snobol4jvm cloned + built. PLAN.md updated. All commits local, need push.
+
+**Next session start block (R-3):**
+- Trigger: "playing with README" or "playing with grids"
+- Read PLAN.md — next ❌ is M-FEAT-JVM
+- Need token to push R-2 commits first: `cd /home/claude/snobol4x && git push` then `cd /home/claude/.github && git push`
+- Build CSNOBOL4 oracle: `cd snobol4-2.3.3 && ./configure && make -j4` (or `apt-get install m4` first)
+- Copy test suite: `cp -r snobol4x/test/feat/ snobol4jvm/test/feat/`
+- Runner for JVM: `java -jar snobol4jvm/target/uberjar/SNOBOL4clojure-0.2.0-standalone.jar < f.sno`
+- Run all 20: `for f in snobol4jvm/test/feat/f*.sno; do printf "%-30s %s\n" $(basename $f .sno) "$(java -jar snobol4jvm/target/uberjar/SNOBOL4clojure-0.2.0-standalone.jar < $f 2>/dev/null)"; done`
+- Fill Grid 8 snobol4jvm column + Grid 4 jvm columns in GRIDS.md
+- Commit test/feat/ to snobol4jvm; update snobol4jvm README; fire M-FEAT-JVM in PLAN.md
+- Then proceed to snobol4dotnet (M-FEAT-DOTNET) same way
