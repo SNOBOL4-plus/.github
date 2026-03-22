@@ -30,7 +30,7 @@ Session numbers use per-type prefixes (see RULES.md §SESSION NUMBERS): B=backen
 | **TINY frontend** | `main` F-210 — clean slate | `6495074` F-210 | TBD |
 | **DOTNET** | `net-polish` D-163 — clean slate | `8feb139` D-163 | TBD |
 | **README** | `main` — M-README-CSHARP-DRAFT ✅ | `00846d3` snobol4csharp | M-README-DEEP-SCAN (next) |
-| **README v2 sprint** | `main` — 10 grids defined + Grid 10 (G-KEYWORD standalone) added to GRIDS.md (2026-03-22); active scope: dotnet+jvm+x/ASM+profile; python/csharp DEFERRED | `06e16eb` R-1 | M-FEAT-X |
+| **README v2 sprint** | `main` R-2 — PIVOT: snobol4x M-FEAT-X deferred (partial, 12/20 pass); 20 feature test programs written to snobol4x/test/feat/; M-FEAT-* and M-GRID-REFERENCE MERGED (same work — see below); next: M-FEAT-JVM on snobol4jvm | TBD R-2 | M-FEAT-JVM |
 
 **Invariants (check before any work):**
 - TINY: `106/106` ASM corpus (`run_crosscheck_asm_corpus.sh`) · ALL PASS ✅
@@ -603,8 +603,8 @@ Rating per row: ✅ complete · ⚠ partial · 🔧 skeleton · ❌ missing · �
 | **M-VOL-DOTNET** | G-VOLUME table for snobol4dotnet generated and committed | snobol4dotnet | source scan | ✅ README SESSION 2026-03-22 |
 | **M-VOL-PYTHON** | G-VOLUME table for snobol4python generated and committed | snobol4python | source scan | ⏸ DEFERRED |
 | **M-VOL-CSHARP** | G-VOLUME table for snobol4csharp generated and committed | snobol4csharp | source scan | ⏸ DEFERRED |
-| **M-FEAT-X** | G-FEATURE table for snobol4x written and committed | snobol4x | M-DEEP-SCAN-X | ❌ |
-| **M-FEAT-JVM** | G-FEATURE table for snobol4jvm written and committed | snobol4jvm | M-DEEP-SCAN-JVM | ❌ |
+| **M-FEAT-X** | G-FEATURE table for snobol4x written and committed | snobol4x | M-DEEP-SCAN-X | ⏸ DEFERRED — 20 test programs in test/feat/ committed; 12/20 pass; snobol4x gaps: `@` cursor capture, DATATYPE case, named I/O channels, EVAL/CODE, SETEXIT, REAL predicate — resume after JVM/DOTNET |
+| **M-FEAT-JVM** | G-FEATURE table for snobol4jvm written and committed | snobol4jvm | M-DEEP-SCAN-JVM | ❌ **NEXT** |
 | **M-FEAT-DOTNET** | G-FEATURE table for snobol4dotnet written and committed | snobol4dotnet | M-DEEP-SCAN-DOTNET | ❌ |
 | **M-FEAT-PYTHON** | G-FEATURE table for snobol4python written and committed | snobol4python | M-DEEP-SCAN-PYTHON | ⏸ DEFERRED |
 | **M-FEAT-CSHARP** | G-FEATURE table for snobol4csharp written and committed | snobol4csharp | M-DEEP-SCAN-CSHARP | ⏸ DEFERRED |
@@ -626,13 +626,43 @@ Each repo README gets its own dedicated session (context window fills fast with 
 Order: snobol4x first (most complete, ASM backend proven), then jvm, dotnet (Jeff), then profile README rollup.
 **snobol4python and snobol4csharp are DEFERRED** — their M-VOL, M-FEAT, M-DEEP-SCAN, and M-README-V2 milestones are out of scope for this sprint. Profile README v2 will roll up only the three active engines (dotnet, jvm, x/ASM) plus reference columns (CSNOBOL4, SPITBOL, SNOBOL5).
 
-**Per-repo session checklist:**
-1. Clone repo fresh; read every source file
-2. Run `wc -l` across all source dirs → G-VOLUME table
-3. Run corpus + harness → fill G-CORPUS, G-BENCH, G-STARTUP for that engine's columns
-4. Write G-FEATURE table from source (no runs needed — static analysis)
-5. Note every G-COMPAT divergence found in source comments, TODOs, test failures
-6. Commit new README with all grids; fire M-README-V2-* milestone
+**⚠ M-FEAT-* and M-GRID-REFERENCE are the same work — MERGED**
+
+Both require per-feature verification by running actual programs. M-FEAT-* fills Grid 8 per-repo;
+M-GRID-REFERENCE fills Grid 4 cross-engine. Same test programs drive both. Do them together.
+When M-FEAT-{repo} fires, fill that repo's Grid 8 column AND the corresponding engine columns in Grid 4.
+
+**Feature verification technique — one test per feature (R-2 session discovery 2026-03-22):**
+
+The correct approach for M-FEAT-* is NOT static source analysis (grep for register_fn).
+It is: write one 1-3 line `.sno` program per feature, run it against CSNOBOL4 (oracle) first
+to validate the test, then run it against the target engine. Output `PASS` or `FAIL`.
+This reveals both presence AND correctness (e.g. DATATYPE returns lowercase in snobol4x — a real compat divergence).
+
+Test programs live in `test/feat/` in each repo:
+- `f01_core_labels_goto.sno` … `f20_alphabet_unicode.sno`
+- Each outputs exactly `PASS` or `FAIL` (or `PASS (note)` for partial)
+- CSNOBOL4 oracle must output `PASS` for every test before it's committed
+- Run the full suite: `for f in test/feat/f*.sno; do echo "$f: $(snobol4-asm $f)"; done`
+- Results map directly to Grid 8 rows and Grid 4 cells
+
+snobol4x R-2 results (2026-03-22, 12/20 pass):
+- ✅ f01 core labels/goto, f02 string ops, f03 numeric, f04 pattern primitives
+- ✅ f07 keywords, f08 DATA/ARRAY/TABLE, f09 functions+recursion, f14 OPSYN
+- ✅ f15 TRACE/DUMP, f16 CLI switches, f17 INCLUDE (noop), f20 &ALPHABET/256
+- ❌ f05 `@` cursor capture (not implemented), f06 DATATYPE case (lowercase vs UPPERCASE)
+- ❌ f10/f11 named I/O channels, f12 UNLOAD, f13 EVAL/CODE, f18 SETEXIT, f19 REAL predicate
+
+**Per-repo session checklist (revised):**
+1. Clone repo fresh; build engine
+2. Run `wc -l` across all source dirs → G-VOLUME table (if not already done)
+3. Copy `test/feat/` programs from snobol4x; adapt runner for this engine
+4. Run all 20 against oracle (CSNOBOL4) to confirm tests valid
+5. Run all 20 against target engine; record PASS/FAIL per feature
+6. Fill Grid 8 column for this repo; fill Grid 4 engine columns
+7. Run corpus + harness → fill G-CORPUS, G-BENCH for this engine
+8. Commit test/feat/ + README with all grids; fire M-FEAT-* and partial M-GRID-REFERENCE
+9. Note every G-COMPAT divergence (e.g. DATATYPE case) in Grid 3
 
 **Profile README session (last):**
 1. Pull from all five M-README-V2-* READMEs
