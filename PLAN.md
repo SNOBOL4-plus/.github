@@ -27,7 +27,7 @@ Session numbers use per-type prefixes (see RULES.md §SESSION NUMBERS): B=backen
 | **TINY backend** | `main` B-254 — sync-step fixes: JVM sno_mon_var VerifyError, NET net_mon_init invalid IL, monitor_sync.py name uppercase, drop -f from CSN launch, sno2c -F/-f scaffold; M-SNO2C-FOLD added | `e3d2bdb` B-254 | M-MONITOR-SYNC |
 | **TINY NET** | `net-t2` N-248 — M-T2-NET ✅ 110/110 clean | `425921a` N-248 | M-T2-FULL |
 | **TINY JVM** | `jvm-t2` J-213 — M-T2-JVM ✅ 106/106 clean | `8178b5c` J-213 | M-T2-FULL |
-| **TINY frontend** | `main` F-210 — clean slate | `6495074` F-210 | TBD |
+| **TINY frontend** | `main` F-210 — Prolog frontend sprint begins | `6495074` F-210 | M-PROLOG-TERM |
 | **DOTNET** | `net-polish` D-163 — clean slate | `8feb139` D-163 | TBD |
 | **README** | `main` — M-README-CSHARP-DRAFT ✅ | `00846d3` snobol4csharp | M-README-DEEP-SCAN (next) |
 | **README v2 sprint** | `main` R-2 — PIVOT: snobol4x M-FEAT-X deferred (partial, 12/20 pass); 20 feature test programs written to snobol4x/test/feat/; M-FEAT-* and M-GRID-REFERENCE MERGED (same work — see below); next: M-FEAT-JVM on snobol4jvm | TBD R-2 | M-FEAT-JVM |
@@ -80,7 +80,7 @@ Matrix:     Feature matrix (correctness) · Benchmark matrix (performance)
 | Snocone | — | — | — | — | ⏳ | ⏳ |
 | Rebus | ✅ | — | — | — | — | — |
 | Icon | — | — | — | — | — | — |
-| Prolog | — | — | — | — | — | — |
+| Prolog | ⏳ | ⏳ | — | — | — | — |
 | C#/Clojure | — | — | — | — | — | — |
 
 ✅ done · ⏳ active · — planned
@@ -247,6 +247,57 @@ Sprint detail and runner design → [MONITOR.md](MONITOR.md)
 | **M-BEAUTY-TRACE** | trace.sno driver passes | snobol4x | ❌ |
 | **M-BEAUTIFY-BOOTSTRAP** | All 19 M-BEAUTY-* fire; `beauty.sno` reads itself; all 3 backends = oracle = input; fixed point | snobol4x | ❌ |
 | **M-MONITOR-GUI** | 🌙 *Dream* — HTML/React monitor GUI: source + trace matrix, diverging cells highlighted | snobol4x | 💭 |
+
+---
+
+### Prolog Frontend — snobol4x (F-session)
+
+Design doc → [FRONTEND-PROLOG.md](FRONTEND-PROLOG.md)
+
+**Sprint 1 — Foundation (no codegen)**
+
+| ID | Trigger | Status |
+|----|---------|--------|
+| **M-PROLOG-TERM** | `term.h` + `pl_atom.c` + `pl_unify.c`: TERM_t, atom interning, unify() + trail. Unit test: `unify(f(X,a), f(b,Y))` → X=b, Y=a; trail_unwind restores both. | ❌ |
+| **M-PROLOG-PARSE** | `pl_lex.c` + `pl_parse.c`: tokeniser + recursive-descent parser → ClauseAST. Acceptance: 20-clause `.pl` file parses without error; pretty-print round-trip. | ❌ |
+| **M-PROLOG-LOWER** | `pl_lower.c`: ClauseAST → PL_* IR nodes; variable slot assignment per clause; EnvLayout computed. Acceptance: IR pretty-prints correctly for all 10 corpus rungs. | ❌ |
+
+**Sprint 2 — First emission (x64 ASM backend)**
+
+| ID | Trigger | Status |
+|----|---------|--------|
+| **M-PROLOG-EMIT-NODES** | New `case PL_*` branches in `emit_byrd_asm.c` for all 10 node types. Acceptance: null clause assembles without error. | ❌ |
+| **M-PROLOG-HELLO** | `hello :- write('hello'), nl.` compiles via `-pl -asm` and runs correctly. First end-to-end Prolog program. 4D matrix: Prolog×TINY-C ✅ | ❌ |
+
+**Sprint 3 — Deterministic programs (no backtracking)**
+
+| ID | Trigger | Status |
+|----|---------|--------|
+| **M-PROLOG-R1** | Corpus Rung 1 (hello) + Rung 2 (facts): deterministic lookup, no backtracking. | ❌ |
+| **M-PROLOG-R3** | Corpus Rung 3 (unify): head unification with compound terms. | ❌ |
+| **M-PROLOG-R4** | Corpus Rung 4 (arith): `is/2` + comparison operators. `fibonacci(10,X)` via accumulator. | ❌ |
+
+**Sprint 4 — Backtracking**
+
+| ID | Trigger | Status |
+|----|---------|--------|
+| **M-PROLOG-R5** | Corpus Rung 5 (backtrack): `member/2` correct; multiple solutions on backtracking. β port wiring proven. | ❌ |
+| **M-PROLOG-R6** | Corpus Rung 6 (lists): `append/3`, `length/2`, `reverse/2` all correct. | ❌ |
+| **M-PROLOG-R7** | Corpus Rung 7 (cut): `!` correct; seals β. `member_det/2` deterministic after cut. | ❌ |
+
+**Sprint 5 — Recursion + builtins**
+
+| ID | Trigger | Status |
+|----|---------|--------|
+| **M-PROLOG-R8** | Corpus Rung 8 (recursion): `fibonacci/2`, `factorial/2` via explicit recursion. T2 multi-invocation correct. | ❌ |
+| **M-PROLOG-R9** | Corpus Rung 9 (builtins): `functor/3`, `arg/3`, `=../2`, type tests. | ❌ |
+
+**Sprint 6 — Programs**
+
+| ID | Trigger | Status |
+|----|---------|--------|
+| **M-PROLOG-R10** | Corpus Rung 10: Lon's word-puzzle solver programs run correctly. | ❌ |
+| **M-PROLOG-CORPUS** | Full 10-rung Prolog ladder all PASS. 4D matrix: Prolog×TINY-x64 ✅ | ❌ |
 
 ---
 
