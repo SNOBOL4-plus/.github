@@ -460,3 +460,27 @@ Scripts and their path behavior — always pass CORPUS= when the default is wron
 
 All scripts that support `${CORPUS:-...}` honor `CORPUS=` as an env override.
 All scripts that take explicit dir args (jvm_rung, asm_rung) — pass full paths directly.
+
+## ⛔ FIRST ACTION — Clone the working repo before writing any code
+
+Every session that will touch source code MUST clone the relevant working repo
+as its **first action** — before reading PLAN.md, before writing any code,
+before any analysis.
+
+**The incident that created this rule (2026-03-22, F-213):**
+Session read PLAN.md, saw "next milestone is M-PROLOG-HELLO", and spent the
+entire context window writing prolog_*.c files from scratch — not realizing
+that snobol4x already contained complete F-212 work (prolog_emit.c and all
+supporting files). All generated files were thrown away. Zero progress made.
+
+**The rule:**
+- F-session (frontend): clone snobol4x FIRST
+- B-session (backend): clone snobol4x FIRST
+- J-session (JVM): clone snobol4jvm FIRST
+- N-session (NET): clone snobol4x FIRST
+- D-session (DOTNET): clone snobol4dotnet FIRST
+- R-session (README): clone the target repo FIRST
+
+After cloning, `ls` the relevant source directory to see what already exists
+before writing a single line of code. Never assume a directory is empty.
+**Reading docs does not substitute for reading actual source.**
