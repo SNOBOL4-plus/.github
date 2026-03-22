@@ -212,6 +212,10 @@ Sprint detail and runner design → [MONITOR.md](MONITOR.md)
 | **M-T2-FULL** | All three backends T2-correct; `v-post-t2` tag cut; MONITOR sprint resumes from clean base | snobol4x | ✅ `v-post-t2` N-248 |
 | **M-MONITOR-4DEMO** | roman + wordcount + treebank pass all 5 participants; claws5 divergence count documented | snobol4x | ❌ |
 | **M-MONITOR-CORPUS9** | Run remaining corpus failures through 5-way monitor post-T2; first diverging trace line identifies any residual bugs; ASM corpus at 106/106 confirmed | snobol4x | ✅ `a8d6ca0` B-248 |
+| **M-MON-BUG-NET-TIMEOUT** | net_mon_var: replace open-per-call StreamWriter with static-open pattern (mirrors JVM sno_mon_init/sno_mon_fd); NET participant no longer times out on wordcount/treebank/claws5 | snobol4x | ❌ |
+| **M-MON-BUG-SPL-EMPTY** | SPITBOL trace empty for treebank/claws5: diagnose why monitor_ipc_spitbol.so produces zero events on these programs; SPITBOL participant traces all 5-way demos | snobol4x | ❌ |
+| **M-MON-BUG-ASM-WPAT** | ASM VARVAL_fn: SEQ-of-two-patterns variable stringifies as PATTERNPATTERN instead of PATTERN; fix comm_var type reporting so VALUE WPAT = PATTERN matches oracle | snobol4x | ❌ |
+| **M-MON-BUG-JVM-WPAT** | JVM sno_mon_var: pattern datatype not handled in type-name path, emits empty string; fix so VALUE WPAT = PATTERN matches oracle | snobol4x | ❌ |
 | **M-BEAUTY-GLOBAL** | global.sno driver passes ASM via monitor | snobol4x | ❌ |
 | **M-BEAUTY-IS** | is.sno driver passes | snobol4x | ❌ |
 | **M-BEAUTY-FENCE** | FENCE.sno driver passes | snobol4x | ❌ |

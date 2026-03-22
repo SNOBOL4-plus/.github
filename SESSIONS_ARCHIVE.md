@@ -11421,3 +11421,27 @@ MONITOR_TIMEOUT=30 bash test/monitor/run_monitor.sh \
 # NET: verify or fix static-open if per-call StreamWriter blocks
 # Then treebank + claws5 → fire M-MONITOR-4DEMO
 ```
+
+## Session B-250 (2026-03-22) — M-MONITOR-4DEMO diagnosis; 4 bug milestones filed
+
+**Branch:** `main` · **HEAD at start:** `e2c4fb5` B-249 · **HEAD at end:** `e2c4fb5` (no source commits)
+
+**What happened:**
+- Cloned all repos fresh: .github, snobol4corpus, snobol4harness, x64, snobol4x
+- Read PLAN.md, RULES.md, TINY.md, MONITOR.md per protocol
+- Ran `bash setup.sh` — 106/106 ALL PASS from start, all tools present
+- Ran wordcount, treebank, claws5 through 5-way monitor (`run_monitor.sh`)
+- Diagnosed all failures; confirmed they are backend bugs, not MONITOR infrastructure bugs (except NET timeout)
+- Per protocol: no backend fixes in this session; filed 4 new milestones in PLAN.md
+
+**Bug milestones filed:**
+- **M-MON-BUG-NET-TIMEOUT** — `net_mon_var` opens StreamWriter per-call; FIFO blocks on each open; NET participant always times out. Fix: static-open pattern (mirrors JVM sno_mon_init/sno_mon_fd).
+- **M-MON-BUG-SPL-EMPTY** — SPITBOL produces zero trace events for treebank/claws5. Needs diagnosis in dedicated session.
+- **M-MON-BUG-ASM-WPAT** — ASM: `WPAT = BREAK(WORD) SPAN(WORD)` stringifies as `PATTERNPATTERN`; SEQ node type not handled correctly in comm_var path.
+- **M-MON-BUG-JVM-WPAT** — JVM: `WPAT` emits empty string; pattern datatype not handled in `sno_mon_var` type-name path.
+
+**Oracle divergence noted (not a bug):** CSN reports `WPAT = PATTERN`, SPITBOL reports `WPAT = (undef)` — known semantic divergence, SPITBOL doesn't stringify unmatched patterns.
+
+**State at handoff:** 106/106 ALL PASS. No source changes. PLAN.md + TINY.md + SESSIONS_ARCHIVE updated.
+
+**Next session (B-251):** Fix M-MON-BUG-NET-TIMEOUT — static-open pattern for net_mon_var in emit_byrd_net.c.

@@ -333,37 +333,24 @@ rm -f $TMP.*; exit $FAIL
 
 ## Sprint Plan
 
-### Sprint M1 — monitor-scaffold ✅ COMPLETE (B-227)
+### Sprints M1 + M2 ✅ COMPLETE
 
-2-way CSNOBOL4+ASM via TERMINAL=/comm_var stderr. Infrastructure exists, hello PASS.
-**Fired:** M-MONITOR-SCAFFOLD `19e26ca`
-
----
-
-### Sprint M2 — monitor-ipc (CURRENT)
-
-**Goal:** Replace stderr/stdout blending with named FIFO IPC via LOAD'd C module.
-
-**Deliverables:**
-- `test/monitor/monitor_ipc.c` + `monitor_ipc.so` — MON_OPEN/MON_SEND/MON_CLOSE
-- Updated `inject_traces.py` — LOAD+MON_OPEN preamble; MONCALL/MONRET/MONVAL → MON_SEND()
-- Updated `run_monitor.sh` — mkfifo, parallel launch, collector, diff
-- Updated `snobol4.c` comm_var() — MONITOR_FIFO env var instead of fd 2
-- Pass: hello PASS all 5 participants; no stderr/stdout used for trace
-
-**Sub-milestones in order:**
-1. **M-MONITOR-IPC-SO** — monitor_ipc.so built; CSNOBOL4 LOAD() confirmed
-2. **M-MONITOR-IPC-CSN** — CSNOBOL4 trace via FIFO; hello PASS 1-way IPC
-3. **M-MONITOR-IPC-5WAY** — all 5 participants via FIFO; hello PASS all 5
+M1 (scaffold B-227): 2-way CSN+ASM via comm_var. M2 (IPC B-229–B-236): 5-way FIFO IPC, hello PASS all 5.
+All sub-milestones through M-MONITOR-IPC-5WAY fired. See SESSIONS_ARCHIVE for detail.
 
 ---
 
-### Sprint M3 — monitor-4demo
+### Sprint M3 — monitor-4demo (CURRENT)
 
-**Goal:** Validate harness on known-good programs. Four working demos pass
-all 5 participants with zero unexpected divergences.
+**Goal:** wordcount + treebank + claws5 pass all 5 participants. **Fires:** M-MONITOR-4DEMO
 
-**Fires:** M-MONITOR-4DEMO
+**Blocking bug milestones (one session each, in order):**
+1. **M-MON-BUG-NET-TIMEOUT** — `net_mon_var` opens StreamWriter per-call → FIFO deadlock. Fix: static-open pattern mirroring JVM `sno_mon_init/sno_mon_fd`. Owned by: NET backend session.
+2. **M-MON-BUG-SPL-EMPTY** — SPITBOL trace empty for treebank/claws5. Diagnose `monitor_ipc_spitbol.so` path. Owned by: B-session.
+3. **M-MON-BUG-ASM-WPAT** — ASM: SEQ-of-patterns stringifies as `PATTERNPATTERN`. Fix `comm_var` type path. Owned by: ASM backend session.
+4. **M-MON-BUG-JVM-WPAT** — JVM: pattern DT not handled in `sno_mon_var`, emits empty. Owned by: JVM session.
+
+**After all 4 fire:** re-run wordcount/treebank/claws5 → fire M-MONITOR-4DEMO.
 
 ---
 
