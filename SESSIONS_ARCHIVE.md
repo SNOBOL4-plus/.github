@@ -11815,3 +11815,21 @@ INC=/home/claude/snobol4corpus/programs/inc X64_DIR=/home/claude/x64 \
 
 ### Next
 - **M-PROLOG-PARSE**: `pl_lex.c` + `pl_parse.c` — tokeniser + recursive-descent parser → ClauseAST
+
+## Session F-212 (continued) — M-PROLOG-PARSE + M-PROLOG-LOWER + renames
+
+**Branch:** main  **HEAD:** 90be832
+
+### Work done
+- Renamed all `pl_*` -> `prolog_*` (10 files; all include paths + function prefixes updated; 5/5 + 23/23 still pass)
+- Renamed all `sc_*` -> `snocone_*` (10 files; Makefile + main.c updated; clean build)
+- `prolog_lower.h` + `prolog_lower.c`: two-pass lowerer — groups PlClause by functor/arity into E_CHOICE nodes; Term->EXPR_t: TT_ATOM->E_QLIT, TT_INT->E_ILIT, TT_VAR->E_VART(slot), TT_COMPOUND->E_FNC; =/2->E_UNIFY, ATOM_CUT->E_CUT; EnvLayout.n_vars from max-slot walk
+- `sno2c.h`: 6 new EKind values: E_UNIFY, E_CLAUSE, E_CHOICE, E_CUT, E_TRAIL_MARK, E_TRAIL_UNWIND
+- `prolog_lower_test.c`: 25/25 PASS
+
+### Milestones fired
+- **M-PROLOG-PARSE** ✅ `2f1d73a`
+- **M-PROLOG-LOWER** ✅ `90be832`
+
+### Next
+- **M-PROLOG-EMIT-NODES**: new `case PL_*` branches in `emit_byrd_asm.c`; null clause assembles
