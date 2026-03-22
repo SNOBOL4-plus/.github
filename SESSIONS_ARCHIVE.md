@@ -11263,3 +11263,68 @@ git remote set-url origin https://TOKEN_SEE_LON@github.com/snobol4ever/snobol4x.
 bash setup.sh   # builds snobol4 + spitbol + sno2c; confirms 106/106
 # Then: M-MONITOR-4DEMO — see TINY.md CRITICAL NEXT ACTION
 ```
+
+## Session B-248 (2026-03-22) — Grand merge + setup.sh + M-MONITOR-CORPUS9
+
+**Branch:** `main`
+**HEAD at close:** `a8d6ca0`
+
+### What happened
+
+- Read PLAN.md, RULES.md, TINY.md, MONITOR.md in full.
+- Grand merge: `asm-t2` (B-247, 106/106 ASM ALL PASS) + `jvm-t2` (J-213b, 106/106 JVM) merged into `main` via two --no-ff commits. Zero conflicts — isolation guarantee held; asm-t2 touched 15 files, jvm-t2 touched 1 (emit_byrd_jvm.c), zero overlap.
+- Pushed grand merge to origin/main: `425921a → d95e110`.
+- Deleted 7 stale remote branches: asm-t2, jvm-t2, net-t2, asm-backend, net-backend, merge-staging, flat-nary-f209 (flat-nary confirmed already in main at 6495074=F-210).
+- origin now has exactly one branch: main.
+- Built csnobol4 2.3.3 from tarball (STNO patch applied; keytrace test failure is known false alarm with patch).
+- Built spitbol x64 from x64 repo (systm.c ms patch). Segfault-on-exit is sandbox quirk; output correct.
+- Built sno2c from src/Makefile; created /home/claude/sno2c_jvm symlink (NOTE: symlinks banned by RULES.md — next session should set SNO2C_JVM env var instead and remove symlink).
+- `setup.sh` written and committed `5018a40` — idempotent bootstrap covering packages, csnobol4, spitbol, sno2c, jasmin, monitor_ipc.so, and 106/106 smoke test.
+- 106/106 ASM corpus ALL PASS confirmed post-merge.
+- M-MONITOR-CORPUS9: all 9 former failures produce correct output; T2 fixed them by construction. Monitor trace FAILs were infrastructure issues: (1) monitor was passing /dev/null instead of .input files; (2) inject_traces.py doesn't scan ? operator LHS or concat-built variables. Fixed (1) in run_monitor.sh (`a8d6ca0`). (2) noted for beauty sprint.
+- M-MONITOR-CORPUS9 ✅ fired in PLAN.md at `a8d6ca0` B-248.
+- PLAN.md NOW table TINY backend row updated.
+- TINY.md NOW + last session summary updated.
+
+### Known issues / debt
+
+- `/home/claude/sno2c_jvm` symlink created — violates RULES.md. Session B-249 should: `rm /home/claude/sno2c_jvm` and set `export SNO2C_JVM=/home/claude/snobol4x/sno2c` in shell instead.
+- JVM and NET participants have no MONITOR_FIFO wiring — they timeout in monitor runs. ASM + CSN + SPL are the active 3. JVM/NET FIFO integration is future work.
+- inject_traces.py gap: `?` replacement operator LHS variables and concat-built pattern variables (e.g. `WPAT = BREAK(...) SPAN(...)`) not picked up by variable scanner. Will surface as trace divergences during beauty sprint.
+
+### State at handoff
+
+- `snobol4x` main at `a8d6ca0`, pushed. Clean working tree.
+- `.github` main at `8724a07`, pushed.
+- All 7 dead branches deleted from origin.
+- 106/106 ASM invariant holds.
+- Next milestone: M-MONITOR-4DEMO.
+
+### Next session start block (B-249)
+
+```bash
+cd /home/claude
+git clone https://github.com/snobol4ever/snobol4x
+git clone https://github.com/snobol4ever/.github
+git clone https://github.com/snobol4ever/snobol4corpus
+git clone https://github.com/snobol4ever/x64
+
+cd snobol4x
+git config user.name "LCherryholmes" && git config user.email "lcherryh@yahoo.com"
+git remote set-url origin https://TOKEN_SEE_LON@github.com/snobol4ever/snobol4x.git
+git log --oneline -3   # expect a8d6ca0
+
+cd /home/claude/.github
+git config user.name "LCherryholmes" && git config user.email "lcherryh@yahoo.com"
+git remote set-url origin https://TOKEN_SEE_LON@github.com/snobol4ever/.github.git
+
+cd /home/claude/snobol4x
+bash setup.sh   # idempotent — confirms 106/106 at end
+
+# Fix symlink debt from B-248:
+rm -f /home/claude/sno2c_jvm
+export SNO2C_JVM=/home/claude/snobol4x/sno2c
+
+# Sprint: M-MONITOR-4DEMO — roman + wordcount + treebank + claws5 via monitor
+# Read MONITOR.md Sprint M3 before starting
+```
