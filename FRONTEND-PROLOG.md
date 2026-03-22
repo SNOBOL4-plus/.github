@@ -242,3 +242,76 @@ Rung 8:  recursion   fibonacci/2, factorial/2
 Rung 9:  builtins    functor/3, arg/3, =../2, type tests
 Rung 10: programs    Lon's word-puzzle constraint solvers
 ```
+
+---
+
+## Session F-212 notes (added 2026-03-22)
+
+### Proebsting PDF — key takeaways
+
+"Simple Translation of Goal-Directed Evaluation" (Todd A. Proebsting, 1996).
+Do not re-attach — notes captured here.
+
+The paper's central contribution: every operator in an AST gets four labeled
+code chunks (start/resume/fail/succeed = α/β/ω/γ in our notation).
+The crucial template for conjunction (`plus(E1, E2)`) is:
+
+```
+plus.start   : goto E1.start
+plus.resume  : goto E2.resume        ← β port: retry rightmost first
+E1.fail      : goto plus.fail        ← ω: all exhausted
+E1.succeed   : goto E2.start         ← chain: E1 success starts E2
+E2.fail      : goto E1.resume        ← KEY: E2 fail retries E1 (β port)
+E2.succeed   : plus.value = E1+E2; goto plus.succeed
+```
+
+`E2.fail → E1.resume` is exactly the backtracking wire missing from the
+original emit_body. This is what was fixed in the emit_body rewrite.
+
+The `ifstmt(E1,E2,E3)` template (§4.5) uses an **indirect goto** (`gate`
+variable) set at runtime — this is the right model for Prolog's `;/2`
+disjunction and `->` if-then-else, already implemented in emit_goal.
+
+### What was built in F-212
+
+- `prolog_emit.c` — full C-backend emitter with Byrd box four-port model
+- Rung 1 (hello) confirmed running end-to-end
+- Rungs 2–4 (facts, unify, arith) output correct but rung 2 only printed
+  first solution — backtracking bug identified
+- `emit_body` rewritten with proper β-port retry loop for user calls
+  (Proebsting plus template). Build/test deferred to F-213.
+
+### emit_body fix summary (for F-213)
+
+Old: all goals chained linearly; fail always jumped to outer omega.
+New: `is_user_call()` detects backtrackable goals; `emit_user_call_with_suffix()`
+wraps them with a retry loop:
+
+```c
+call_β:
+    trail_unwind(&_trail, _cm);
+    _cr = pl_f_r(args, &_trail, _cs);
+    if (_cr < 0) goto omega;
+    _cs = _cr + 1;
+// suffix goals here — their omega = call_β (retry)
+```
+
+This is the direct implementation of E2.fail→E1.resume from Proebsting.
+
+### JCON
+
+JCON (Java Icon) was uploaded but NOT read — context was consumed by
+PLAN.md, FRONTEND-PROLOG.md, and prolog_emit.c. Key conceptual note:
+JCON's engine uses full unification + backtracking for Icon goal-directed
+evaluation — same four-port model. If JCON source is ever examined,
+look at how it wires the β port in its conjunction evaluation — likely
+directly analogous to the emit_body fix above.
+
+### Recommendation for F-213
+
+1. `cd snobol4x && make -C src` — rebuild with emit_body fix
+2. Test rungs 1–5: `./sno2c -pl test/.../rungN.pro -o /tmp/t.c && gcc ... && ./a.out`
+3. If rung 5 (backtrack/member) passes, rungs 6–8 likely follow
+4. Consider pivot: instead of C backend, target x64 ASM emitter directly
+   (emit native NASM α/β/γ/ω labels). Read ARCH.md + BACKEND-X64.md.
+   The C path is good for debugging; ASM is what the design spec calls for.
