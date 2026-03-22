@@ -75,4 +75,4 @@ INC=/home/claude/snobol4corpus/programs/inc X64_DIR=/home/claude/x64 \
 | Session | Branch | Focus |
 |---------|--------|-------|
 | B-next | `main` | M-MONITOR-SYNC finish |
-| F-next | `main` | M-PROLOG-TERM — Prolog frontend Sprint 1 |
+| F-212  | `main` | M-PROLOG-TERM — term.h + pl_unify.c + pl_atom.c (Sprint 1) |

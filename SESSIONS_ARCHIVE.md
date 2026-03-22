@@ -11673,3 +11673,66 @@ bash setup.sh   # confirm 106/106
 ### Next session start (B-255)
 
 Fix `comm_var()` in `src/runtime/snobol4/snobol4.c` — add pre-init name gate (tab, ht, nl, lf, cr, ff, vt, bs, nul, epsilon, fSlash, bSlash, semicolon, UCASE, LCASE). Rebuild, rerun monitor. Cycle until hello PASS all 5 → fire M-MONITOR-SYNC.
+
+---
+
+## Session F-211 — Prolog Frontend Design + Corpus Scaffold
+
+**Date:** 2026-03-22
+**Branch:** main
+**Focus:** Tiny-Prolog frontend — full design, milestone plan, corpus scaffold
+
+### What happened
+
+- Read Proebsting "Simple Translation of Goal-Directed Evaluation" paper (attached PDF)
+- Read PLAN.md, ARCH.md, FRONTEND-PROLOG.md (stub), IMPL-SNO2C.md, FRONTEND-ICON.md, TINY.md, RULES.md, BACKEND-X64.md
+- Designed Tiny-Prolog frontend with Lon:
+  - Prolog as first-class IR citizen — no kludge to SNOBOL4 primitives
+  - Option A: unification in runtime (C library), Byrd boxes for clause selection/backtracking
+  - TERM_t: 6 tags (ATOM/VAR/COMPOUND/INT/FLOAT/REF)
+  - EnvLayout: per-clause compile-time variable slot assignment (T2 DATA block)
+  - Trail: push on bind, unwind to mark on ω
+  - Node reuse audit: 6 new EKind values only (E_UNIFY/E_CLAUSE/E_CHOICE/E_CUT/E_TRAIL_MARK/E_TRAIL_UNWIND); E_FNC/E_VART/E_QLIT/E_ILIT/E_ADD etc. reused as-is
+  - Cut maps to FENCE: seals β → ω, no new mechanism
+  - Closed-world negation (!, fail pattern) compiles simpler than \+
+- Received Lon's word-puzzle programs (puzzle_01/02/05/06.pro + puzzles.pro)
+  - Genre: Smullyan/Dell constraint solvers — generate-and-test with differ/N + cut
+  - Features used: all within practical subset; no assert/retract/setof
+  - differ/N is canonical acceptance test for M-PROLOG-R7 (cut)
+  - puzzle_01/02/06 have known correct answers → deterministic acceptance criteria
+- Wrote full FRONTEND-PROLOG.md (replaced stub)
+- Added Prolog milestone dashboard to PLAN.md: 6 sprints, 14 milestones
+- Flipped 4D matrix Prolog row: — → ⏳ for TINY-C and TINY-x64
+- Updated TINY.md F-session row: TBD → M-PROLOG-TERM
+- Committed corpus scaffold to snobol4x: test/frontend/prolog/corpus/ with 10-rung ladder dirs + rung10_programs/ containing all 5 puzzle files
+- snobol4x pushed at `1134998` ✅
+- .github pushed at `6ed6657` ✅
+
+### State at handoff
+
+- `snobol4x` main at `1134998` ✅
+- `.github` main at `6ed6657` ✅
+- 106/106 invariant: not re-verified this session (no snobol4x source touched)
+- FRONTEND-PROLOG.md: complete design doc ✅
+- PLAN.md: Prolog milestones added ✅
+- Corpus: rung10 programs committed ✅
+- No milestones fired this session (design/scaffold only)
+
+### Next session start (F-212)
+
+Sprint 1 — Foundation, no codegen.
+
+```bash
+cd /home/claude/snobol4x
+git config user.name "LCherryholmes" && git config user.email "lcherryh@yahoo.com"
+git remote set-url origin https://TOKEN_SEE_LON@github.com/snobol4ever/snobol4x.git
+git pull --rebase origin main
+```
+
+Target: **M-PROLOG-TERM**
+- Create `src/frontend/prolog/` files: `term.h`, `pl_atom.c`, `pl_unify.c`
+- TERM_t struct, atom interning table, `unify()` + `trail_push/unwind`
+- Unit test: `unify(f(X,a), f(b,Y))` → X=b, Y=a; `trail_unwind` restores both
+- Pure C, no codegen, no new EKind values yet
+- Build: add `src/frontend/prolog/` to Makefile
+- Acceptance: unit test passes, 106/106 corpus still holds
