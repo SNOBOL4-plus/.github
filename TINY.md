@@ -12,29 +12,35 @@ snobol4x: multiple frontends, multiple backends.
 
 ## NOW
 
-**Sprint:** `asm-t2` — M-T2-FULL
-**HEAD:** `50a1ad0` B-247 (asm-t2)
-**Milestone:** M-T2-CORPUS ✅ → M-T2-FULL (next)
-**Invariants:** 106/106 ASM corpus ALL PASS ✅
+**Sprint:** `net-t2` — M-T2-FULL ✅ FIRED
+**HEAD:** `425921a` N-248 (net-t2); tag `v-post-t2`
+**Milestone:** M-T2-NET ✅ → M-T2-FULL ✅ → MONITOR sprint next
+**Invariants:** 106/106 ASM corpus ALL PASS ✅ · 110/110 NET corpus ALL PASS ✅
 
-**⚡ CRITICAL NEXT ACTION — Session B-248:**
+**⚡ CRITICAL NEXT ACTION — Session B-249:**
 
 ```bash
 cd /home/claude/snobol4x && git checkout asm-t2
 git config user.name "LCherryholmes" && git config user.email "lcherryh@yahoo.com"
-git pull --rebase origin asm-t2   # HEAD should be B-247
-export INC=/home/claude/snobol4corpus/programs/inc
-export CORPUS=/home/claude/snobol4corpus/crosscheck
+git pull --rebase origin asm-t2
 
-# Invariant check first:
-bash test/crosscheck/run_crosscheck_asm_corpus.sh   # expect 106/106
-
-# M-T2-FULL trigger: read BACKEND-X64.md for definition
+# All T2 milestones complete. Next sprint: MONITOR.
+# Read MONITOR.md for M-MONITOR-4DEMO definition.
 ```
 
 ## Last Session Summary
 
-**Session B-247 (2026-03-22) — M-T2-CORPUS: 106/106 ALL PASS:**
+**Session N-248 (2026-03-22) — M-T2-NET + M-T2-FULL:**
+- Checked out `net-t2` branch (base: `425921a` M-MERGE-3WAY, N-209).
+- Installed Mono 6.8.0 + ilasm; built `sno2c` clean.
+- Ran `run_crosscheck_net.sh`: **110/110 ALL PASS** including `100_roman_numeral` (recursive).
+- M-T2-NET fires: NET backend T2-correct by CLR stack-frame isolation — no mmap machinery needed.
+- M-T2-FULL fires: all three backends (ASM/JVM/NET) T2-correct; tag `v-post-t2` cut.
+- Updated PLAN.md: M-T2-CORPUS ❌→✅ (was stale), M-T2-NET ✅, M-T2-FULL ✅; NOW table NET row updated.
+- Architecture note recorded: JVM/NET T2-correctness is natural (VM stack frames = per-invocation
+  isolation); ASM required explicit mmap+memcpy+relocate. Stack machines get re-entrancy for free.
+
+
 - Fix 1: `scan_start` advance moved before `SET_CAPTURE` loop in gamma path for `?` stmts.
   `SET_CAPTURE` calls `stmt_set_capture` (C ABI), trashing `rax`; advance was emitted after,
   so `scan_start` got garbage and `?` matches never advanced position → infinite output.
@@ -77,13 +83,14 @@ bash test/crosscheck/run_crosscheck_asm_corpus.sh   # expect 106/106
 | M-T2-INVOKE     | ✅ `1cf8a0a` B-243 |
 | M-T2-RECUR      | ✅ `1cf8a0a` B-244 |
 | M-T2-CORPUS     | ✅ `50a1ad0` B-247 |
-| M-T2-FULL       | ❌ |
+| M-T2-NET        | ✅ `425921a` N-248 |
+| M-T2-FULL       | ✅ `v-post-t2` N-248 |
 
 ## Concurrent Sessions
 
 | Session | Branch | Focus |
 |---------|--------|-------|
-| B-next | `asm-t2` | M-T2-INVOKE |
-| J-next | `jvm-t2` | TBD |
-| N-next | `net-t2` | TBD |
+| B-next | `asm-t2` | M-MONITOR-4DEMO |
+| J-next | `jvm-t2` | M-MONITOR-4DEMO |
+| N-next | `net-t2` | M-MONITOR-4DEMO |
 | F-next | `main`   | TBD |

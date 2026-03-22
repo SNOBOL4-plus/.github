@@ -1,5 +1,22 @@
 > Org renamed SNOBOL4-plus → snobol4ever, repos renamed March 2026. Historical entries use old names.
 
+## N-248 (2026-03-22) — M-T2-NET ✅ + M-T2-FULL ✅
+
+**Branch:** net-t2 · **Commit:** `425921a` (base) + `v-post-t2` tag
+
+**Work done:**
+- Installed Mono 6.8.0 + ilasm in environment; built sno2c clean on net-t2 branch.
+- Ran `run_crosscheck_net.sh`: 110/110 ALL PASS including 100_roman_numeral (recursive).
+- Confirmed CLR stack-frame isolation makes NET backend T2-correct by construction —
+  no mmap/memcpy/relocate needed; every CIL method invocation gets private locals automatically.
+- Fixed stale M-T2-CORPUS ❌ in PLAN.md (was fired by B-247 but not updated there).
+- Updated PLAN.md NOW table NET row; fired M-T2-NET and M-T2-FULL in milestone table.
+- Updated TINY.md NOW, Active Milestones, Concurrent Sessions, Last Session Summary.
+- Architecture note: JVM/NET T2-correctness is natural (VM stack = per-invocation isolation);
+  ASM required explicit mmap+memcpy+relocate machinery. Stack machines get re-entrancy for free.
+
+**Milestones fired:** M-T2-NET · M-T2-FULL
+
 ## B-237 (2026-03-21) — M-MONITOR-IPC-TIMEOUT ✅
 
 **Branch:** asm-backend · **Commit:** `c6a6544`
