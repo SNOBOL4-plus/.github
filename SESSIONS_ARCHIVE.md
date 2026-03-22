@@ -11902,3 +11902,69 @@ Setup: CSNOBOL4 2.3.3 built from tarball, x64 SPITBOL cloned, mono-complete inst
 
 Open with **"playing with MONITOR"** → session B-257.
 First action: manually compile+link+run treebank ASM binary with small input to see if it executes at all outside the monitor. If it runs: the monitor's FIFO handling for treebank is the issue (likely the STDIN_SRC path). If it doesn't run: sno2c -asm output for treebank has a bug.
+
+## Session F-212 — M-PROLOG-EMIT (2026-03-22)
+
+**Commit:** `61fc3e3` (snobol4x main) — awaiting push (token not provided this session)
+
+**What happened:**
+- Wrote `prolog_emit.c` — Byrd-box C emitter implementing Proebsting four-port model
+  (alpha/beta/gamma/omega). Each `E_CHOICE` → resumable `_r(args, Trail*, int _start)` function
+  where `_start` is the clause index. Per-clause gamma labels return their index so callers can retry.
+  Cut (`E_CUT`) sets `_cut=1`; beta checks it and jumps to omega — identical to FENCE semantics.
+  Conjunction `,/2` and disjunction `;/2` emitted as inline goto chains (no recursion).
+- Wrote `prolog_builtin.c/h` — `pl_write`, `pl_writeln`, `pl_functor`, `pl_arg`, `pl_univ`, `pl_read` (stub).
+- Fixed `prolog_lower.c`: recursive variable-slot walk (fixes `n_vars=0` for nested `;`/`,` goals);
+  wildcard `_` keeps slot -1; atom body goals lowered as `E_FNC/0` (fixes `nl`/`true`/`fail` dispatch).
+- Wrote corpus rungs 1–9: `.pro` programs + `.expected` output files.
+- Wired `-pl` flag and `.pl` auto-detect in `driver/main.c`.
+- Updated `src/Makefile` with `FRONTEND_PROLOG` sources and `-I frontend/prolog`.
+
+**Test results at handoff:**
+- Unit tests: 5/5 unify ✅, 23/23 parse ✅, 25/25 lower ✅
+- End-to-end: **7/9 rungs PASS** — rung01 hello, rung03 unify, rung04 arith, rung06 lists,
+  rung07 cut, rung08 recursion, rung09 builtins all PASS.
+- rung02 facts, rung05 backtrack: only first solution returned. Root cause: `fail` in body
+  reaches enclosing predicate's omega, not the `_r` retry loop at the call site. Fix: wrap
+  user-predicate calls in a `for(;;)` retry loop using `_cs` counter and trail rewind.
+
+**State at handoff:**
+- `_r` resumable functions generated correctly, `_start`/`_cs` counter wired at call sites.
+- Missing: the `fail`→retry feedback loop — `fail` in body must loop back to call site with
+  `_cs++` and trail unwind, not fall off to outer omega. This is a ~20-line change in `emit_goal`
+  for the user-predicate case.
+
+**Next session F-213 start block:**
+```bash
+cd /home/claude/snobol4x
+git config user.name "LCherryholmes" && git config user.email "lcherryh@yahoo.com"
+git remote set-url origin https://TOKEN_SEE_LON@github.com/snobol4ever/snobol4x.git
+git pull --rebase origin main
+
+# Verify 7/9 still pass:
+CORPUS=test/frontend/prolog/corpus RT=src/frontend/prolog TMP=$(mktemp -d)
+for rung in 1 2 3 4 5 6 7 8 9; do
+  for d in $CORPUS/rung0${rung}_*/; do
+    pro=$(ls "$d"*.pro 2>/dev/null | head -1); exp=$(ls "$d"*.expected 2>/dev/null | head -1)
+    [ -f "$pro" ] || continue
+    ./sno2c -pl "$pro" > $TMP/out.c 2>/dev/null
+    gcc -Wno-unused-label -Wno-unused-variable -Wno-unused-function \
+        -Wno-implicit-function-declaration -g -O0 -I$RT \
+        $TMP/out.c $RT/prolog_atom.c $RT/prolog_unify.c $RT/prolog_builtin.c \
+        -o $TMP/prog 2>/dev/null && actual=$(timeout 5 $TMP/prog 2>&1) \
+        && [ "$actual" = "$(cat $exp)" ] && echo "PASS $(basename $d)" || echo "FAIL $(basename $d)"
+  done
+done
+
+# Fix: in prolog_emit.c emit_goal E_FNC user-call case, wrap the _r call in a retry loop:
+# The key change — replace the single _r call with a for(;;) loop:
+#   for(;;) {
+#     trail_unwind(&_trail, _cm); reinit _env; _cr = pl_F_N_r(args, &_trail, _cs);
+#     if (_cr < 0) goto omega;
+#     _cs = _cr + 1;
+#     /* run continuation inline; if it reaches here (not fail), break */
+#     goto gamma;  /* success — continuation completed */
+#   }
+# The continuation's omega must jump BACK to the for(;;) loop, not to outer omega.
+# This requires per-call retry labels, replacing the flat gamma/omega threading.
+```
