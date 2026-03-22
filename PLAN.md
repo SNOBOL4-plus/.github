@@ -24,7 +24,7 @@ Session numbers use per-type prefixes (see RULES.md §SESSION NUMBERS): B=backen
 
 | Session | Sprint | HEAD | Next milestone |
 |---------|--------|------|----------------|
-| **TINY backend** | `main` B-255 — M-MONITOR-SYNC ✅ hello PASS all 5 sync; trace-registration set in snobol4.c; TRACE/STOPTR builtins added | `2652a51` B-255 | M-MONITOR-4DEMO |
+| **TINY backend** | `main` B-256 — M-MON-BUG-NET-TIMEOUT ✅ swap→stloc/ldloc; 110/110 NET PASS; wordcount: SPL/JVM WPAT bugs confirmed; treebank ASM/NET step-0 timeout (diagnosis needed) | `f7c4143` B-256 | M-MONITOR-4DEMO |
 | **TINY NET** | `net-t2` N-248 — M-T2-NET ✅ 110/110 clean | `425921a` N-248 | M-T2-FULL |
 | **TINY JVM** | `jvm-t2` J-213 — M-T2-JVM ✅ 106/106 clean | `8178b5c` J-213 | M-T2-FULL |
 | **TINY frontend** | `main` F-212 — M-PROLOG-EMIT-NODES ✅ clean build | `b8312ed` F-212 | M-PROLOG-HELLO |
@@ -222,7 +222,7 @@ Sprint detail and runner design → [MONITOR.md](MONITOR.md)
 | **M-T2-FULL** | All three backends T2-correct; `v-post-t2` tag cut; MONITOR sprint resumes from clean base | snobol4x | ✅ `v-post-t2` N-248 |
 | **M-MONITOR-4DEMO** | roman + wordcount + treebank pass all 5 participants; claws5 divergence count documented | snobol4x | ❌ |
 | **M-MONITOR-CORPUS9** | Run remaining corpus failures through 5-way monitor post-T2; first diverging trace line identifies any residual bugs; ASM corpus at 106/106 confirmed | snobol4x | ✅ `a8d6ca0` B-248 |
-| **M-MON-BUG-NET-TIMEOUT** | net_mon_var: replace open-per-call StreamWriter with static-open pattern (mirrors JVM sno_mon_init/sno_mon_fd); NET participant no longer times out on wordcount/treebank/claws5 | snobol4x | ❌ |
+| **M-MON-BUG-NET-TIMEOUT** | net_mon_var: replace open-per-call StreamWriter with static-open pattern (mirrors JVM sno_mon_init/sno_mon_fd); NET participant no longer times out on wordcount/treebank/claws5 | snobol4x | ✅ `1e9f361` B-256 |
 | **M-MON-BUG-SPL-EMPTY** | SPITBOL trace empty for treebank/claws5: diagnose why monitor_ipc_spitbol.so produces zero events on these programs; SPITBOL participant traces all 5-way demos | snobol4x | ❌ |
 | **M-MON-BUG-ASM-WPAT** | ASM VARVAL_fn: SEQ-of-two-patterns variable stringifies as PATTERNPATTERN instead of PATTERN; fix comm_var type reporting so VALUE WPAT = PATTERN matches oracle | snobol4x | ❌ |
 | **M-MON-BUG-JVM-WPAT** | JVM sno_mon_var: pattern datatype not handled in type-name path, emits empty string; fix so VALUE WPAT = PATTERN matches oracle | snobol4x | ❌ |

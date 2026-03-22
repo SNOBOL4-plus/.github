@@ -11861,3 +11861,44 @@ INC=/home/claude/snobol4corpus/programs/inc X64_DIR=/home/claude/x64 \
   5. Test: `echo ':- initialization(main). main :- write(hello), nl.' | sno2c -pl -asm | nasm ... && ./a.out` prints `hello`
 - Existing tests still all pass (5/5 unify, 23/23 parse, 25/25 lower)
 - sno2c build: zero errors
+
+## Session B-256 — M-MON-BUG-NET-TIMEOUT fix; treebank diagnosis in progress
+
+**Date:** 2026-03-22
+**Branch:** `main`
+**Commits:** `1e9f361` (swap fix), `f7c4143` (INC + treebank.input)
+
+### What happened
+
+Setup: CSNOBOL4 2.3.3 built from tarball, x64 SPITBOL cloned, mono-complete installed, both monitor .so files built. hello PASS all 5 sync confirmed.
+
+**M-MON-BUG-NET-TIMEOUT — ROOT CAUSE AND FIX:**
+- Running wordcount through NET compile revealed: mono's `ilasm` does not support the `swap` opcode.
+- `emit_byrd_net.c` was emitting `dup`+`stsfld`+`ldstr`+`swap`+`call net_mon_var` for every variable assignment — causing ilasm "irrecoverable syntax error" on every real program.
+- Fix: replace `swap` with `stloc V_mon_val` before stsfld, then `ldloc V_mon_val` after ldstr. Added `string V_mon_val` to `.locals init` in `main()` and all function bodies.
+- 110/110 NET corpus PASS after fix. NET now participates in the sync monitor.
+
+**run_monitor_sync.sh INC fix:**
+- treebank.sno uses `-INCLUDE` — sno2c needed `-I"$INC"` flag. Added to all three backend compile calls.
+- `demo/treebank.input` created (1 S-expression line for monitor testing).
+
+**wordcount monitor result:**
+- PASS [csn], PASS [spl partial], PASS [asm], PASS [net] up to step 3
+- DIVERGENCE at step 3: `VALUE WPAT = 'PATTERN'` (oracle) vs `''` (JVM) vs `(undef)` (SPITBOL)
+- Confirms M-MON-BUG-JVM-WPAT and M-MON-BUG-SPL-EMPTY are live
+
+**treebank status:**
+- ASM and NET still timeout at step 0 even after INC fix — diagnosis not completed this session
+
+### State at handoff
+
+- HEAD: `f7c4143` B-256
+- 110/110 NET corpus PASS ✅
+- 106/106 ASM corpus PASS ✅ (unchanged)
+- M-MON-BUG-NET-TIMEOUT ✅ fired
+- M-MONITOR-4DEMO ❌ still blocked on treebank ASM/NET step-0 timeout
+
+### Next session start
+
+Open with **"playing with MONITOR"** → session B-257.
+First action: manually compile+link+run treebank ASM binary with small input to see if it executes at all outside the monitor. If it runs: the monitor's FIFO handling for treebank is the issue (likely the STDIN_SRC path). If it doesn't run: sno2c -asm output for treebank has a bug.
