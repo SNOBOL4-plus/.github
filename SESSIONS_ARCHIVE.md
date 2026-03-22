@@ -12056,3 +12056,44 @@ done
 # Target: snobol4x -pl -asm hello.pro → hello.s → nasm → ./a.out prints "hello"
 # This fires M-PROLOG-HELLO
 ```
+
+## Session B-258 — M-MON-BUG-ASM-WPAT ✅ + run_monitor_3way.sh (2026-03-22)
+
+**Milestone fired:** M-MON-BUG-ASM-WPAT ✅ `a4a27ab`
+
+**Root cause:** `stmt_concat()` in `src/runtime/asm/snobol4_stmt_rt.c` had no
+pattern case. Both `DT_P` operands passed through `VARVAL_fn()` → `"PATTERN"`,
+then string-concatenated → `"PATTERNPATTERN"` for any SEQ pattern (e.g.
+`BREAK(WORD) SPAN(WORD)`). Fix: added `if (a.v == DT_P || b.v == DT_P) return
+pat_cat(pa, pb)` guard, promoting string operands to `pat_lit()`. Mirrors the
+identical guard already present in `snobol4.c`. 106/106 corpus PASS after fix.
+
+**New script:** `test/monitor/run_monitor_3way.sh` — 3-way variant (csn+spl+asm)
+of `run_monitor_sync.sh`. JVM and NET excluded per sprint scope.
+
+**3-way monitor results post-fix:**
+- hello: PASS all 3 ✅
+- wordcount: ASM AGREE with oracle (WPAT=PATTERN) ✅; spl `(undef)` = M-MON-BUG-SPL-EMPTY (deferred)
+- treebank: new divergence step 10 `STK='cell'` vs `'CELL'` → M-MON-BUG-ASM-DATATYPE-CASE filed
+- claws5: spl segfault step-0 (known sandbox artifact)
+
+**Note on DATATYPE compatibility:** Known divergence — ASM runtime stores DATA
+type names as-given (lowercase); CSNOBOL4 uppercases. Tests using DATATYPE()
+results should use `IsSnobol4()`/`IsSpitbol()` from `corpus/inc/is.sno` to
+branch on expected case. Monitor divergence on `STK` value is from
+`VARVAL_fn(DT_DATA)` returning `type->name` verbatim. Fix: uppercase at DATA
+definition time in `_b_DATA()`.
+
+**State at handoff:** HEAD `a4a27ab` B-258 · 106/106 ALL PASS
+**Next session B-259:** M-MON-BUG-ASM-DATATYPE-CASE — uppercase DATA type names
+
+```bash
+cd /home/claude/snobol4x
+git pull --rebase origin main
+bash setup.sh
+gcc -shared -fPIC -O2 -Wall -o test/monitor/monitor_ipc_sync.so test/monitor/monitor_ipc_sync.c
+gcc -shared -fPIC -O2 -Wall -o /home/claude/x64/monitor_ipc_spitbol.so /home/claude/x64/monitor_ipc_spitbol.c
+INC=/home/claude/snobol4corpus/programs/inc X64_DIR=/home/claude/x64 \
+  MONITOR_TIMEOUT=45 bash test/monitor/run_monitor_3way.sh demo/treebank.sno
+grep -n "_b_DATA\|type->name\|DT_DATA" src/runtime/snobol4/snobol4.c | head -15
+```

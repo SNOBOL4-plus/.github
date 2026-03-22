@@ -13,11 +13,11 @@ snobol4x: multiple frontends, multiple backends.
 ## NOW
 
 **Sprint:** `main` — M-MONITOR-4DEMO in progress
-**HEAD:** `832c236` B-257 (main)
-**Milestone:** M-MONITOR-4DEMO — next blocker: M-MON-BUG-ASM-WPAT (PATTERNPATTERN vs PATTERN)
+**HEAD:** `a4a27ab` B-258 (main)
+**Milestone:** M-MON-BUG-ASM-WPAT ✅ — next: M-MON-BUG-ASM-DATATYPE-CASE
 **Invariants:** 106/106 ASM corpus ALL PASS ✅ · 110/110 NET corpus ALL PASS ✅
 
-**⚡ CRITICAL NEXT ACTION — Session B-258 (M-MON-BUG-ASM-WPAT: fix PATTERNPATTERN stringification):**
+**⚡ CRITICAL NEXT ACTION — Session B-259 (M-MON-BUG-ASM-DATATYPE-CASE):**
 
 ```bash
 cd /home/claude/snobol4x
@@ -27,27 +27,26 @@ git pull --rebase origin main
 
 # Setup (if fresh container):
 bash setup.sh
-apt-get install -y mono-complete
 gcc -shared -fPIC -O2 -Wall -o test/monitor/monitor_ipc_sync.so test/monitor/monitor_ipc_sync.c
 gcc -shared -fPIC -O2 -Wall -o /home/claude/x64/monitor_ipc_spitbol.so /home/claude/x64/monitor_ipc_spitbol.c
 
-# Confirm hello still PASS all 5:
+# Confirm hello 3-way PASS:
 INC=/home/claude/snobol4corpus/programs/inc X64_DIR=/home/claude/x64 \
-  MONITOR_TIMEOUT=15 bash test/monitor/run_monitor_sync.sh \
+  MONITOR_TIMEOUT=15 bash test/monitor/run_monitor_3way.sh \
   /home/claude/snobol4corpus/crosscheck/hello/hello.sno
 
-# Run wordcount monitor — diverges at step 3 WPAT:
+# Run treebank 3-way — diverges at step 10: STK='cell' vs 'CELL'
 INC=/home/claude/snobol4corpus/programs/inc X64_DIR=/home/claude/x64 \
-  MONITOR_TIMEOUT=30 bash test/monitor/run_monitor_sync.sh demo/wordcount.sno
+  MONITOR_TIMEOUT=45 bash test/monitor/run_monitor_3way.sh demo/treebank.sno
 
-# The ASM WPAT bug: VALUE WPAT = 'PATTERNPATTERN' instead of 'PATTERN'
-# Fix location: comm_var() in src/runtime/snobol4/snobol4.c
-# When val.type == DT_PATTERN, stringification calls CONVERT($var,'STRING')
-# which walks the pattern tree and concatenates child type names instead of
-# returning the single string 'PATTERN'.
-# Fix: in comm_var(), detect DT_PATTERN type and return literal "PATTERN"
-# rather than calling the general string conversion path.
-grep -n "DT_PATTERN\|comm_var\|PATTERN" src/runtime/snobol4/snobol4.c | head -20
+# Bug: VARVAL_fn(DT_DATA) returns v.u->type->name verbatim (lowercase 'cell').
+# CSNOBOL4 uppercases DATA type names at definition time.
+# NOTE: DATATYPE compatibility is a KNOWN divergence (see is.sno in corpus/inc).
+# Tests using DATATYPE() results should use IsSnobol4()/IsSpitbol() to branch.
+# For the monitor: the raw variable value of STK (a cell object) stringifies
+# via VARVAL_fn → type->name. Fix: uppercase type->name at DATA() definition
+# time in _b_DATA() in snobol4.c.
+grep -n "_b_DATA\|type->name\|DT_DATA" src/runtime/snobol4/snobol4.c | head -15
 ```
 
 ## Last Session Summary
@@ -89,7 +88,8 @@ grep -n "DT_PATTERN\|comm_var\|PATTERN" src/runtime/snobol4/snobol4.c | head -20
 | M-MON-BUG-NET-TIMEOUT | ✅ `1e9f361` B-256 |
 | M-MONITOR-4DEMO    | ❌ **NEXT** — fix treebank ASM/NET step-0 timeout; then all 5 PASS on wordcount+treebank+claws5 |
 | M-MON-BUG-SPL-EMPTY   | ❌ |
-| M-MON-BUG-ASM-WPAT    | ❌ |
+| M-MON-BUG-ASM-WPAT    | ✅ `a4a27ab` B-258 |
+| M-MON-BUG-ASM-DATATYPE-CASE | ❌ **NEXT** |
 | M-MON-BUG-JVM-WPAT    | ❌ |
 
 ## Concurrent Sessions

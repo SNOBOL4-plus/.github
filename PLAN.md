@@ -24,7 +24,7 @@ Session numbers use per-type prefixes (see RULES.md §SESSION NUMBERS): B=backen
 
 | Session | Sprint | HEAD | Next milestone |
 |---------|--------|------|----------------|
-| **TINY backend** | `main` B-257 — emitter fix: FAIL_BR+unconditional-goto (5 sites); treebank.sno fixed (WBRKS pre-build + DATATYPE case); run_monitor_sync.sh fixed (instr.sno for ASM/NET, blk_alloc link); ASM treebank PASS; wordcount shows M-MON-BUG-ASM-WPAT; NET step-0 timeout deferred | `832c236` B-257 | M-MONITOR-4DEMO (next: fix M-MON-BUG-ASM-WPAT) |
+| **TINY backend** | `main` B-258 — M-MON-BUG-ASM-WPAT ✅: stmt_concat pattern SEQ fix (pat_cat); run_monitor_3way.sh (csn+spl+asm); wordcount ASM AGREE; treebank diverges step 10 STK='cell' vs 'CELL' → new M-MON-BUG-ASM-DATATYPE-CASE | `a4a27ab` B-258 | M-MON-BUG-ASM-DATATYPE-CASE |
 | **TINY NET** | `net-t2` N-248 — M-T2-NET ✅ 110/110 clean | `425921a` N-248 | M-T2-FULL |
 | **TINY JVM** | `jvm-t2` J-213 — M-T2-JVM ✅ 106/106 clean | `8178b5c` J-213 | M-T2-FULL |
 | **TINY frontend** | `main` F-213 — emit_body retry loop; 8/9 corpus PASS; rung05 recursive backtrack needs ASM pivot | `ae253e2` F-213 | M-PROLOG-HELLO (via -asm) |
@@ -224,7 +224,8 @@ Sprint detail and runner design → [MONITOR.md](MONITOR.md)
 | **M-MONITOR-CORPUS9** | Run remaining corpus failures through 5-way monitor post-T2; first diverging trace line identifies any residual bugs; ASM corpus at 106/106 confirmed | snobol4x | ✅ `a8d6ca0` B-248 |
 | **M-MON-BUG-NET-TIMEOUT** | net_mon_var: replace open-per-call StreamWriter with static-open pattern (mirrors JVM sno_mon_init/sno_mon_fd); NET participant no longer times out on wordcount/treebank/claws5 | snobol4x | ✅ `1e9f361` B-256 |
 | **M-MON-BUG-SPL-EMPTY** | SPITBOL trace empty for treebank/claws5: diagnose why monitor_ipc_spitbol.so produces zero events on these programs; SPITBOL participant traces all 5-way demos | snobol4x | ❌ |
-| **M-MON-BUG-ASM-WPAT** | ASM VARVAL_fn: SEQ-of-two-patterns variable stringifies as PATTERNPATTERN instead of PATTERN; fix comm_var type reporting so VALUE WPAT = PATTERN matches oracle | snobol4x | ❌ |
+| **M-MON-BUG-ASM-WPAT** | ASM VARVAL_fn: SEQ-of-two-patterns variable stringifies as PATTERNPATTERN instead of PATTERN; fix comm_var type reporting so VALUE WPAT = PATTERN matches oracle | snobol4x | ✅ `a4a27ab` B-258 |
+| **M-MON-BUG-ASM-DATATYPE-CASE** | ASM DATA type name returned lowercase (e.g. 'cell') instead of uppercase ('CELL'); treebank diverges at step 10 STK='cell' vs oracle 'CELL'; fix datatype() or DATA constructor to uppercase type names | snobol4x | ❌ |
 | **M-MON-BUG-JVM-WPAT** | JVM sno_mon_var: pattern datatype not handled in type-name path, emits empty string; fix so VALUE WPAT = PATTERN matches oracle | snobol4x | ❌ |
 | **M-BEAUTY-GLOBAL** | global.sno driver passes ASM via monitor | snobol4x | ❌ |
 | **M-BEAUTY-IS** | is.sno driver passes | snobol4x | ❌ |
