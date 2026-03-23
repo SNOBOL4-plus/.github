@@ -12969,8 +12969,9 @@ and no skip-mark guard is needed.
 
 ---
 
-## Session R-3 (2026-03-23) — PLAN.md README/Grid sprint sections archived
+## Session F-225 (2026-03-23) — PLAN.md README/Grid sprint sections archived
 
+Housekeeping during F-session (Prolog frontend). Mislabeled R-3 in commit — correct session number is F-225.
 Moved from PLAN.md to here to keep L1 doc small.
 All milestone *status* rows remain in PLAN.md Milestone Dashboard.
 Narrative, session plans, grid taxonomy, and dependency chains moved here.
