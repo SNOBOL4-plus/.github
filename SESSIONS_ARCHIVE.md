@@ -12136,3 +12136,88 @@ Repo: snobol4x
 Milestone: M-BEAUTY-GLOBAL
 Action: write test/beauty/global/driver.sno, generate driver.ref, run 3-way monitor, fix+loop until PASS
 ```
+
+## Session B-261 (2026-03-22) — M-BEAUTY-GLOBAL ✅ M-BEAUTY-FENCE ✅ M-BEAUTY-IO ✅ + SPITBOL segfault fixed
+
+**Branch:** main · **HEAD:** `a862b01` B-261 · **Trigger:** "playing with beauty"
+
+**Work done:**
+
+### M-BEAUTY-GLOBAL ✅ (`7e925fd`)
+Two bugs in `src/frontend/snobol4/lex.c`:
+
+1. **`-INCLUDE` was a no-op.** `join_file()` silently dropped all `-INCLUDE` directives ("library functions in mock_includes.c"). The ASM backend needs real SNOBOL4 source inlined. Fix: call `open_include(iname, fname, out)` recursively.
+
+2. **`;*` inline comments treated as multi-stmt separators.** `global.sno` uses `stmt ;* comment` end-of-line syntax. The FLUSH macro's semicolon-split pushed `* null character` as a second SnoLine → parse errors on every `&ALPHABET` line. Fix: in semicolon-split loop, if `next_src` after `;` starts with `*` or is empty, treat as end-of-statement (set `next_len = -1`).
+
+Root cause hunt exposed two frontend implementations: `sno.l`/`sno.y` (flex/bison, unused) and `lex.c`/`parse.c` (active). The bug was in `lex.c`.
+
+Result: 19 SET_CAPTURE emitted, 0 parse errors. Monitor: PASS (21 steps).
+
+### SPITBOL segfault-on-exit fixed (`2d4554a` in snobol4ever/x64)
+`nextef()` in `osint/syslinux.c` called `MINIMAL(BLKLN)` with `SET_WA(type)` — passing the block-type integer (e.g. `0x20`) in register `wa` (rcx). `blkln` does `movzx xl, byte[xl-1]` treating `wa` as a block pointer — read from address `0x1F` (unmapped) → SIGSEGV. Fix: `SET_WA(scanp)` (block pointer) + `blksize==0` guard against infinite scan.
+
+### M-BEAUTY-FENCE ✅ (`822c58f`)
+User functions (`is_fn=1`) emitted `P_NAME_α` and `fn_γ/fn_ω` but never `P_NAME_β`. Call sites reference β for backtrack → unresolved symbol → NASM error → no binary → monitor timeout at step 0. Fix: emit `beta_lbl` as standalone stub after `fn_ω`, routing to `ret_omega` (functions cannot backtrack — β = immediate failure). Initial placement between `alpha_lbl` and `FN_α_INIT` caused 9 corpus regressions; correct placement is after `fn_ω`.
+
+### M-BEAUTY-IO ✅ (`a862b01`)
+Trivial — io.sno loads cleanly (OPSYN remapping guarded by IsSnobol4()), OUTPUT still works. PASS on first run (3 steps).
+
+### Compatibility policy finalised
+- snobol4x implements all SPITBOL extensions (builtins + CLI switches identical)
+- Semantic edge cases follow CSNOBOL4 (e.g. DATATYPE() returns UPPERCASE)
+- CSNOBOL4 is monitor oracle[0]
+- M-BEAUTY-IS deferred: `.NAME`/`NAME` semantics require DT_N name-type; fix post-bootstrap
+
+**Milestones fired:** M-BEAUTY-GLOBAL ✅ · M-BEAUTY-FENCE ✅ · M-BEAUTY-IO ✅ · SPITBOL segfault ✅
+
+**Invariant at handoff:** 106/106 ASM corpus ALL PASS
+
+**Active milestone table at handoff:**
+```
+M-BEAUTY-GLOBAL   ✅ 7e925fd B-261
+M-BEAUTY-IS       ⏸ DEFERRED — .NAME/NAME semantics, post-bootstrap
+M-BEAUTY-FENCE    ✅ 822c58f B-261
+M-BEAUTY-IO       ✅ a862b01 B-261
+M-BEAUTY-CASE     ❌ NEXT
+M-BEAUTY-ASSIGN   ❌
+M-BEAUTY-MATCH    ❌
+M-BEAUTY-COUNTER  ❌
+M-BEAUTY-STACK    ❌
+M-BEAUTY-TREE     ❌
+M-BEAUTY-SR       ❌
+M-BEAUTY-TDUMP    ❌
+M-BEAUTY-GEN      ❌
+M-BEAUTY-QIZE     ❌
+M-BEAUTY-READWRITE ❌
+M-BEAUTY-XDUMP    ❌
+M-BEAUTY-SEMANTIC ❌
+M-BEAUTY-OMEGA    ❌
+M-BEAUTY-TRACE    ❌
+```
+
+**Next session B-262 start block:**
+```bash
+cd /home/claude/snobol4x
+git config user.name "LCherryholmes" && git config user.email "lcherryh@yahoo.com"
+git remote set-url origin https://TOKEN_SEE_LON@github.com/snobol4ever/snobol4x.git
+git pull --rebase origin main
+
+# Setup (if fresh container):
+bash setup.sh
+gcc -shared -fPIC -O2 -Wall -o test/monitor/monitor_ipc_sync.so test/monitor/monitor_ipc_sync.c
+gcc -shared -fPIC -O2 -Wall -o /home/claude/x64/monitor_ipc_spitbol.so /home/claude/x64/monitor_ipc_spitbol.c
+git clone https://TOKEN_SEE_LON@github.com/snobol4ever/snobol4corpus /home/claude/snobol4corpus
+
+# Invariant check first:
+bash test/crosscheck/run_crosscheck_asm_corpus.sh   # must be 106/106
+
+# M-BEAUTY-CASE: write driver + ref, run monitor, fix until PASS
+INC=/home/claude/snobol4corpus/programs/inc
+snobol4 -f -P256k -I"$INC" test/beauty/case/driver.sno > test/beauty/case/driver.ref 2>/dev/null
+INC=/home/claude/snobol4corpus/programs/inc X64_DIR=/home/claude/x64 \
+  MONITOR_TIMEOUT=30 bash test/beauty/run_beauty_subsystem.sh case
+```
+
+case.sno exercises: UpperCase, LowerCase, ToUpper, ToLower, upr().
+DATATYPE() returns UPPERCASE in snobol4x — this is correct (CSNOBOL4 semantics).
