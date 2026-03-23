@@ -12256,3 +12256,13 @@ snobol4 -f -P256k -I"$INC" test/beauty/fence/driver.sno > test/beauty/fence/driv
 INC=/home/claude/snobol4corpus/programs/inc X64_DIR=/home/claude/x64 \
   MONITOR_TIMEOUT=30 bash test/beauty/run_beauty_subsystem.sh fence
 ```
+
+## Session F-215 — duplicate / absorbed by F-214 (2026-03-22)
+
+**Work attempted:** M-PROLOG-WIRE-ASM + M-PROLOG-HELLO — wiring `-pl -asm` through `asm_emit`, clean Prolog header, body goal emission for `write/1`/`nl/0`/`halt/0`.
+
+**Outcome:** Session F-214 (Lon, same day) had already committed `082141e` firing both milestones with a more complete implementation (`asm_emit_prolog()`, 24-byte Term structs, `pl_rt_init()`, full calling convention) before this session's stash could be pushed. Stash dropped. No new code landed.
+
+**OPEN BUG carried forward (M-PROLOG-R1 blocker):** Call sites in body goal emitter emit `pl_FUNCTOR_ARITY_r` (no slash encoding) but predicates are defined as `pl_FUNCTOR_sl_ARITY_r` (via `pl_safe("functor/arity")`). Fix: pass full `"functor/arity"` string through `pl_safe()` at every call site and drop `_%d_r` suffix. Unblocks rung02 facts and rung05 backtrack.
+
+**State at handoff:** snobol4x HEAD `082141e` F-214 (unchanged). Next F-session starts at F-216.
