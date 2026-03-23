@@ -32,7 +32,7 @@ Session numbers use per-type prefixes (see RULES.md §SESSION NUMBERS): B=backen
 | **TINY frontend** | `main` F-220 — rung01 ✅ rung02 ✅ rung03 ✅ rung04 ✅ rung05 ✅. Fix: base-relative continuation encoding in emit_byrd_asm.c replaces flat STRIDE division. Each clause has compile-time base[ci]; dispatch = linear jge scan; γ returns base[ci]+sub_cs+1 (body) or base[ci]+1 (fact). Sentinel ω-check for all-fact last clause. M-PROLOG-BETA+R5+R1 fire. | `caa3ed8` F-220 | M-PROLOG-R6 |
 | **DOTNET** | `net-polish` D-163 — clean slate | `8feb139` D-163 | TBD |
 | **README** | `main` — M-README-CSHARP-DRAFT ✅ | `00846d3` snobol4csharp | M-README-DEEP-SCAN (next) |
-| **ICON frontend** | `main` I-0 — M-ICON-ORACLE ✅ `d364a14`: icont+iconx built; 6/6 rung01 corpus oracle PASS; scaffold headers icon_lex.h/icon_ast.h/icon_parse.h/icon_emit.h committed; FRONTEND-ICON.md + tcode.c analysis complete | `d364a14` | M-ICON-LEX |
+| **ICON frontend** | `main` I-1 — M-ICON-LEX ✅ `d1697ac`: icon_lex.c + icon_lex_test.c; 103/103 PASS; all keywords, operators, literals, radix ints, # comments, no auto-semicolon, peek API | `d1697ac` | M-ICON-PARSE-LIT |
 | **README v2 sprint** | `main` R-2 — PIVOT: snobol4x M-FEAT-X deferred (partial, 12/20 pass); 20 feature test programs written to snobol4x/test/feat/; M-FEAT-* and M-GRID-REFERENCE MERGED (same work — see below); next: M-FEAT-JVM on snobol4jvm | TBD R-2 | M-FEAT-JVM |
 
 **Invariants (check before any work):**
@@ -663,7 +663,7 @@ Rating per row: ✅ complete · ⚠ partial · 🔧 skeleton · ❌ missing · �
 | ID | Trigger | Depends on | Status |
 |----|---------|-----------|--------|
 | **M-ICON-ORACLE** | `icont` + `iconx` built from icon-master; `every write(1 to 5);` → `1\n2\n3\n4\n5` confirmed; oracle at `icon-master/bin/icont`+`iconx` | — | ✅ `d364a14` |
-| **M-ICON-LEX** | `icon_lex.c` tokenizes all Tier 0 tokens; `icon_lex_test.c` 100% pass | M-ICON-ORACLE | ❌ |
+| **M-ICON-LEX** | `icon_lex.c` tokenizes all Tier 0 tokens; `icon_lex_test.c` 100% pass | M-ICON-ORACLE | ✅ `d1697ac` I-1 |
 | **M-ICON-PARSE-LIT** | Parser produces correct AST for all Proebsting §2 paper examples | M-ICON-LEX | ❌ |
 | **M-ICON-EMIT-LIT** | Byrd box for `ICN_INT` matches paper §4.1 exactly | M-ICON-PARSE-LIT | ❌ |
 | **M-ICON-EMIT-TO** | `to` generator; `every write(1 to 5);` → `1..5` | M-ICON-EMIT-LIT | ❌ |

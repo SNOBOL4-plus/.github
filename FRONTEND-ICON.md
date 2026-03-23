@@ -18,30 +18,29 @@ feeding the same TINY pipeline. Goal-directed generators map directly to Byrd bo
 
 | Session | Sprint | HEAD | Next milestone |
 |---------|--------|------|----------------|
-| **ICON frontend** | `main` I-1 — M-ICON-ORACLE ✅ `d364a14`; scaffold headers committed; Rung 1 corpus 6/6 oracle PASS; **next session starts here** | `d364a14` | M-ICON-LEX |
+| **ICON frontend** | `main` I-1 — M-ICON-LEX ✅ `d1697ac`; 103/103 PASS; **next session starts here** | `d1697ac` | M-ICON-PARSE-LIT |
 
-### Next session checklist (I-1)
+### Next session checklist (I-2)
 
 ```bash
 git clone https://github.com/snobol4ever/snobol4x
 git clone https://github.com/snobol4ever/.github
-bash /home/claude/snobol4x/setup.sh
-# icon-master already built at /home/claude/icon-master (or rebuild from zip)
-# Read FRONTEND-ICON.md — start at M-ICON-LEX
+# Read FRONTEND-ICON.md — start at M-ICON-PARSE-LIT
 ```
 
-**M-ICON-LEX acceptance criteria:**
-1. `icon_lex.c` + `icon_lex_test.c` compiled and all unit tests pass
-2. Tests cover: all keywords, all operators, integer/real/string/cset literals, ident, EOF, error token
-3. Specifically tokenizes every token that appears in the 6 Rung 1 corpus programs
-4. No auto-semicolon insertion (explicit `;` only)
+**M-ICON-PARSE-LIT acceptance criteria:**
+1. `icon_parse.c` + `icon_parse_test.c` compiled and all unit tests pass
+2. Parser produces correct AST for all Proebsting §2 paper examples (Rung 1 corpus)
+3. Specifically: `ICN_INT`, `ICN_TO`, `ICN_MUL`, `ICN_LT`, `ICN_GT`, `ICN_EVERY`, `ICN_CALL`, `ICN_PROC`
+4. `icn_node_dump()` implemented in `icon_ast.c` for test verification
 
 **Key files for next session:**
-- `src/frontend/icon/icon_lex.h` — interface already defined (do not change)
-- `src/frontend/icon/icon_ast.h` — AST already defined (do not change)
-- `src/frontend/prolog/prolog_lex.c` — structural template for hand-rolled lexer
-- `test/frontend/icon/corpus/rung01_paper/` — the 6 corpus programs to tokenize
-- `ByrdBox/test_icon.c` — golden C reference (use as sanity check)
+- `src/frontend/icon/icon_lex.h` + `icon_lex.c` — lexer (done ✅)
+- `src/frontend/icon/icon_ast.h` — AST already defined (do not change enum)
+- `src/frontend/icon/icon_parse.h` — parser API already defined
+- `src/frontend/prolog/prolog_parse.c` — structural template for recursive-descent
+- `test/frontend/icon/corpus/rung01_paper/*.icn` — the 6 corpus programs to parse
+- `FRONTEND-ICON.md §Deep JCON Analysis` — precedence and wiring reference
 
 ---
 
@@ -117,7 +116,7 @@ for now.
 | ID | Trigger | Depends on | Status |
 |----|---------|-----------|--------|
 | **M-ICON-ORACLE** | `icont` + `iconx` built from icon-master; `every write(1 to 5);` → `1\n2\n3\n4\n5` confirmed; `icon-master/bin/icont` and `iconx` committed to path | — | ❌ |
-| **M-ICON-LEX** | `icon_lex.c` tokenizes all Tier 0 tokens; `icon_lex_test.c` 100% pass | M-ICON-ORACLE | ❌ |
+| **M-ICON-LEX** | `icon_lex.c` tokenizes all Tier 0 tokens; `icon_lex_test.c` 100% pass | M-ICON-ORACLE | ✅ `d1697ac` I-1 |
 | **M-ICON-PARSE-LIT** | Parser produces correct AST for all Proebsting §2 paper examples | M-ICON-LEX | ❌ |
 | **M-ICON-EMIT-LIT** | Byrd box for `ICN_INT` matches paper §4.1 exactly | M-ICON-PARSE-LIT | ❌ |
 | **M-ICON-EMIT-TO** | `to` generator; `every write(1 to 5);` → `1..5` | M-ICON-EMIT-LIT | ❌ |
