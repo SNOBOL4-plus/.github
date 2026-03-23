@@ -26,7 +26,7 @@ Session numbers use per-type prefixes (see RULES.md §SESSION NUMBERS): B=backen
 
 | Session | Sprint | HEAD | Next milestone |
 |---------|--------|------|----------------|
-| **TINY backend** | `main` B-272 — M-BEAUTY-READWRITE partial: driver+ref created (8/8 CSN PASS); ASM diverges at step 1; root cause = `@var` AT-capture returns empty instead of cursor integer (AT_α macro does not call stmt_set). snobol4x HEAD `c7439cd`. Fix in emit_byrd_asm.c AT_α / snobol4_asm.mac AT_α. See snobol4x PLAN.md §29. | `c7439cd` B-272 | M-BEAUTY-READWRITE |
+| **TINY backend** | `main` B-273 — M-BEAUTY-READWRITE partial: binary E_ATP `pat @x` fix committed `695ce11` (corpus 106/106 ✅); steps 1–5 PASS; step 6 blocked on `_b_INPUT n==3` (filename embedded in opts string → returns NULVCL not FAILDESCR). Fix documented in snobol4x PLAN.md §30. HEAD `da79fbf`. | `da79fbf` B-273 | M-BEAUTY-READWRITE |
 | **TINY NET** | `net-t2` N-248 — M-T2-NET ✅ 110/110 clean | `425921a` N-248 | M-T2-FULL |
 | **TINY JVM** | `jvm-t2` J-213 — M-T2-JVM ✅ 106/106 clean | `8178b5c` J-213 | M-T2-FULL |
 | **TINY frontend** | `main` F-225 — M-PROLOG-BUILTINS ✅ rung09 PASS first try (functor/arg/univ/type-tests all correct). rung10 puzzles silent (puzzle_01/06 produce no output vs oracle). Root cause: `;/2` disjunction or `write('...\n')` escape in display. PLAN.md archived 368 lines of README/grid narrative → SESSIONS_ARCHIVE. | `4121ea2` F-225 | M-PROLOG-R10 |
