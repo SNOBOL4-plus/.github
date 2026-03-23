@@ -229,7 +229,7 @@ Sprint detail and runner design → [MONITOR.md](MONITOR.md)
 | **M-MON-BUG-ASM-DATATYPE-CASE** | ASM DATA type name returned lowercase (e.g. 'cell') instead of uppercase ('CELL'); treebank diverges at step 10 STK='cell' vs oracle 'CELL'; fix datatype() or DATA constructor to uppercase type names | snobol4x | ❌ |
 | **M-MON-BUG-JVM-WPAT** | JVM sno_mon_var: pattern datatype not handled in type-name path, emits empty string; fix so VALUE WPAT = PATTERN matches oracle | snobol4x | ❌ |
 | **M-BEAUTY-GLOBAL** | `test/beauty/global/driver.sno` exercises all character constants + &ALPHABET extractions from `global.sno`; driver passes 3-way monitor (CSNOBOL4+SPITBOL+ASM) with zero divergence; `run_beauty_subsystem.sh global` exits 0 | snobol4x | ❌ |
-| **M-BEAUTY-IS** | `test/beauty/is/driver.sno` exercises IsSnobol4()/IsSpitbol() from `is.sno`; 3-way PASS; depends on M-BEAUTY-GLOBAL | snobol4x | ❌ |
+| **M-BEAUTY-IS** | `test/beauty/is/driver.sno` exercises IsSnobol4()/IsSpitbol() from `is.sno`; 3-way PASS; depends on M-BEAUTY-GLOBAL | snobol4x | ✅ `be215bb` B-262 |
 | **M-BEAUTY-FENCE** | `test/beauty/FENCE/driver.sno` exercises FENCE primitive wrapper from `FENCE.sno`; 3-way PASS; depends on M-BEAUTY-IS | snobol4x | ❌ |
 | **M-BEAUTY-IO** | `test/beauty/io/driver.sno` exercises INPUT/OUTPUT OPSYN channels from `io.sno`; 3-way PASS; depends on M-BEAUTY-FENCE | snobol4x | ❌ |
 | **M-BEAUTY-CASE** | `test/beauty/case/driver.sno` exercises UpperCase/LowerCase/ToUpper/ToLower from `case.sno`; 3-way PASS; depends on M-BEAUTY-GLOBAL | snobol4x | ❌ |
