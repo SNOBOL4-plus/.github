@@ -18,9 +18,40 @@ feeding the same TINY pipeline. Goal-directed generators map directly to Byrd bo
 
 | Session | Sprint | HEAD | Next milestone |
 |---------|--------|------|----------------|
-| **ICON frontend** | `main` I-2 — M-ICON-CORPUS-R1 ✅ `1c299e3`; full Rung 1 pipeline; 6/6 PASS | `1c299e3` | M-ICON-PROC |
+| **ICON frontend** | `main` I-3 — M-ICON-PROC WIP `5cf9295`; param/local emitter fixed; t01_add_proc PASS; BSS recursion bug open | `5cf9295` | M-ICON-PROC (fix BSS recursion bug) |
 
-### Next session checklist (I-3)
+### Next session checklist (I-4)
+
+```bash
+git clone https://github.com/snobol4ever/snobol4x
+git clone https://github.com/snobol4ever/.github
+# Read FRONTEND-ICON.md §NOW — fix BSS recursion bug, then fire M-ICON-PROC
+```
+
+**OPEN BUG — must fix before M-ICON-PROC fires:**
+
+BSS `icon_N_val` slots are global static — one per node ID across the entire binary.
+Recursive calls overwrite the parent invocation's node value slots.
+Example: `fact(5)` emits to `icon_6_val` for VAR `n`; recursive `fact(4)` also
+writes `icon_6_val` (same node, same BSS label) — parent's `n` is clobbered.
+
+**Fix — stack-allocate node temps instead of BSS:**
+
+Replace the BSS `_val` pattern with push/pop:
+- At `α` succeed-exit: `push rax` instead of `mov [rel icon_N_val], rax; jmp succeed`
+- At `compute` site (binop/relop): `pop rcx` (left), `pop rax` (right) from stack
+- For `β` (resume): re-evaluate from scratch (same as now)
+
+This makes every node value per-invocation with zero allocation overhead.
+The emitter change is in `emit_binop`, `emit_relop`, `emit_var`, `emit_int`, `emit_call`.
+BSS is still needed for: `icn_retval`, `icn_failed`, global vars (`icn_gvar_*`).
+Node `_val` BSS entries should be eliminated entirely.
+
+**Acceptance criteria for M-ICON-PROC:**
+- `t01_add_proc`: `add(3,4)` → `7` ✅ already passing
+- `t02_fact`: `fact(5)` → `120`
+- `t03_locals`: `sum_to(5)` → `15`
+- All 6 rung01 corpus programs still PASS
 
 ```bash
 git clone https://github.com/snobol4ever/snobol4x
