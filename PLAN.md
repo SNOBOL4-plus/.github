@@ -32,7 +32,7 @@ Session numbers use per-type prefixes (see RULES.md §SESSION NUMBERS): B=backen
 | **TINY frontend** | `main` F-217 — rung01_hello ✅ rung02_facts ✅ rung03_unify ✅ rung04_arith ✅. Fixes: E_UNIFY body dispatch, compound term construction (term_new_compound), is/2+EMIT_CMP label naming, if-then-else (->), arithmetic nodes in emit_pl_term_load, retry loop trail_unwind ordering. rung05 FAIL: two bugs identified — start arg rcx vs rdx mismatch, head unif per-arg jmp bypasses subsequent args | `1dd7cff` F-219 | M-PROLOG-R1 |
 | **DOTNET** | `net-polish` D-163 — clean slate | `8feb139` D-163 | TBD |
 | **README** | `main` — M-README-CSHARP-DRAFT ✅ | `00846d3` snobol4csharp | M-README-DEEP-SCAN (next) |
-| **ICON frontend** | `main` I-0 — plan written, no code yet | — | M-ICON-LEX |
+| **ICON frontend** | `main` I-0 — JCON deep analysis complete: irgen.icn 38 procedures surveyed, deltas documented, bounded flag strategy, ICN_AND delta, Rung 1 runtime requirements confirmed zero-new-functions | `ea83ffd` | M-ICON-LEX |
 | **README v2 sprint** | `main` R-2 — PIVOT: snobol4x M-FEAT-X deferred (partial, 12/20 pass); 20 feature test programs written to snobol4x/test/feat/; M-FEAT-* and M-GRID-REFERENCE MERGED (same work — see below); next: M-FEAT-JVM on snobol4jvm | TBD R-2 | M-FEAT-JVM |
 
 **Invariants (check before any work):**
