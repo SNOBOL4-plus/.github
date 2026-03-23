@@ -26,7 +26,7 @@ Session numbers use per-type prefixes (see RULES.md §SESSION NUMBERS): B=backen
 
 | Session | Sprint | HEAD | Next milestone |
 |---------|--------|------|----------------|
-| **TINY backend** | `main` B-271 — M-BEAUTY-TDUMP ✅ + M-BEAUTY-GEN ✅ + M-BEAUTY-QIZE ✅ (3-way PASS all). BREAK/SPAN(expr) bug fixed: stmt_break_ptr/stmt_span_ptr + BREAK_α_PTR/SPAN_α_PTR macros. All 19 includes now in demo/inc/. snobol4x HEAD `33e5f7f`. Next: M-BEAUTY-READWRITE | `33e5f7f` B-271 | M-BEAUTY-READWRITE |
+| **TINY backend** | `main` B-272 — M-BEAUTY-READWRITE partial: driver+ref created (8/8 CSN PASS); ASM diverges at step 1; root cause = `@var` AT-capture returns empty instead of cursor integer (AT_α macro does not call stmt_set). snobol4x HEAD `c7439cd`. Fix in emit_byrd_asm.c AT_α / snobol4_asm.mac AT_α. See snobol4x PLAN.md §29. | `c7439cd` B-272 | M-BEAUTY-READWRITE |
 | **TINY NET** | `net-t2` N-248 — M-T2-NET ✅ 110/110 clean | `425921a` N-248 | M-T2-FULL |
 | **TINY JVM** | `jvm-t2` J-213 — M-T2-JVM ✅ 106/106 clean | `8178b5c` J-213 | M-T2-FULL |
 | **TINY frontend** | `main` F-226 — 2-ucall mini PASS ✅ (color(X),color(Y)→9/9); puzzle_01/05/06 PASS; βN unwind fix partial: rung05/06/08 regressed; root cause documented §27; uncommitted WIP on `b0b190c` | `b0b190c` F-224 (WIP) | M-PROLOG-R10 |
