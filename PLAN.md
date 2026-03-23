@@ -28,7 +28,7 @@ Session numbers use per-type prefixes (see RULES.md §SESSION NUMBERS): B=backen
 | **TINY backend** | `main` B-258 — M-MON-BUG-ASM-WPAT ✅: stmt_concat pattern SEQ fix (pat_cat); run_monitor_3way.sh (csn+spl+asm); wordcount ASM AGREE; treebank diverges step 10 STK='cell' vs 'CELL' → M-MON-BUG-ASM-DATATYPE-CASE open; **PIVOT: beauty subsystem testing begins (M-BEAUTY-* sprint)** | `a4a27ab` B-258 | M-BEAUTY-GLOBAL (beauty sprint) |
 | **TINY NET** | `net-t2` N-248 — M-T2-NET ✅ 110/110 clean | `425921a` N-248 | M-T2-FULL |
 | **TINY JVM** | `jvm-t2` J-213 — M-T2-JVM ✅ 106/106 clean | `8178b5c` J-213 | M-T2-FULL |
-| **TINY frontend** | `main` F-216 — three emitter bugs fixed: (1) naming: call sites now pass functor/arity through pl_safe(); (2) var-slot offset (slot+1)→(slot+2); (3) calling convention: args array ptr saved directly to [rbp-24]. rung01_hello ✅ rung02_facts ✅. Arithmetic runtime added (pl_is, pl_num_*). Open for F-217: extern declarations, E_FNC compound term building, ;/2 builtin dispatch, rung03/rung04 | `12df084` F-216 | M-PROLOG-R1 |
+| **TINY frontend** | `main` F-217 — rung01_hello ✅ rung02_facts ✅ rung03_unify ✅ rung04_arith ✅. Fixes: E_UNIFY body dispatch, compound term construction (term_new_compound), is/2+EMIT_CMP label naming, if-then-else (->), arithmetic nodes in emit_pl_term_load, retry loop trail_unwind ordering. rung05 FAIL: two bugs identified — start arg rcx vs rdx mismatch, head unif per-arg jmp bypasses subsequent args | `45c467f` F-217 | M-PROLOG-R1 |
 | **DOTNET** | `net-polish` D-163 — clean slate | `8feb139` D-163 | TBD |
 | **README** | `main` — M-README-CSHARP-DRAFT ✅ | `00846d3` snobol4csharp | M-README-DEEP-SCAN (next) |
 | **README v2 sprint** | `main` R-2 — PIVOT: snobol4x M-FEAT-X deferred (partial, 12/20 pass); 20 feature test programs written to snobol4x/test/feat/; M-FEAT-* and M-GRID-REFERENCE MERGED (same work — see below); next: M-FEAT-JVM on snobol4jvm | TBD R-2 | M-FEAT-JVM |
@@ -278,10 +278,10 @@ Design doc → [FRONTEND-PROLOG.md](FRONTEND-PROLOG.md)
 
 | ID | Trigger | Status |
 |----|---------|--------|
-| **M-PROLOG-WRITE** | `write/1` and `nl/0` builtins callable from ASM: emit `call pl_write` / `call pl_nl` with correct SysV ABI. Acceptance: `rung01_hello` PASS. | ❌ |
-| **M-PROLOG-FACTS** | Fact lookup with deterministic head unification. `rung02_facts` PASS. One clause, no body, no backtracking. | ❌ |
-| **M-PROLOG-UNIFY** | Compound head unification (`foo(X, bar(X))`). `rung03_unify` PASS. | ❌ |
-| **M-PROLOG-ARITH** | `is/2` + integer comparison in body. `rung04_arith` PASS. | ❌ |
+| **M-PROLOG-WRITE** | `write/1` and `nl/0` builtins callable from ASM: emit `call pl_write` / `call pl_nl` with correct SysV ABI. Acceptance: `rung01_hello` PASS. | ✅ `45c467f` F-217 |
+| **M-PROLOG-FACTS** | Fact lookup with deterministic head unification. `rung02_facts` PASS. One clause, no body, no backtracking. | ✅ `45c467f` F-217 |
+| **M-PROLOG-UNIFY** | Compound head unification (`foo(X, bar(X))`). `rung03_unify` PASS. | ✅ `45c467f` F-217 |
+| **M-PROLOG-ARITH** | `is/2` + integer comparison in body. `rung04_arith` PASS. | ✅ `45c467f` F-217 |
 
 **Sprint 4 — Backtracking (one session, depends M-PROLOG-ARITH)**
 

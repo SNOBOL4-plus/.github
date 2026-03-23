@@ -12307,3 +12307,74 @@ gcc -no-pie /tmp/t.o src/frontend/prolog/prolog_atom.o src/frontend/prolog/prolo
 # Then tackle F-217 work items above in order.
 # Target: rung03_unify + rung04_arith PASS → M-PROLOG-R1 fires.
 ```
+
+## Session F-217 — Prolog rung01–rung04 PASS via -pl -asm
+
+**Commit:** `45c467f` snobol4x main
+**Branch:** main
+**Milestone progress:** M-PROLOG-WRITE, M-PROLOG-FACTS, M-PROLOG-UNIFY, M-PROLOG-ARITH (rungs 1–4 all PASS)
+
+**Work done:**
+
+Six emitter fixes in `src/backend/x64/emit_byrd_asm.c`:
+
+1. **E_UNIFY body goal dispatch** — `=/2` is lowered to `E_UNIFY` by `pl_lower.c` but the body goal loop only handled `E_FNC` and `E_CUT`. Added `goal->kind == E_UNIFY` case: loads both args, calls `unify(lhs, rhs, trail)`, jumps to `next_clause` on failure, emits `ug{bi}` success label.
+
+2. **Compound term construction in `emit_pl_term_load`** — `E_FNC` with children (e.g. `f(X,a)`) was a stub emitting just the atom label, dropping all arguments. Now: `sub rsp, arity*8`, recursively `emit_pl_term_load` each child into the array, `call term_new_compound(atom_id, arity, args_ptr)`, `add rsp`. Added `pl_compound_uid_ctr` counter for unique labels.
+
+3. **`is/2` success label** — was jumping to `ug{bi+1}` (never defined → NASM undefined symbol). Changed to emit `isok{bi}` immediately after the operation.
+
+4. **`EMIT_CMP` success label** — same bug: `ug{bi+1}` → `cmpok{bi}`.
+
+5. **if-then-else `(Cond -> Then ; Else)`** — added detection at top of `;/2` handler. When left child of `;` is `->/2`: evaluate condition (numeric comparison or `=/2`), `jz else_lbl`, emit then-branch, `jmp done_lbl`, `else_lbl:`, emit else-branch. Handles `write/1`, `nl/0`, `writeln/1`, `true`, `fail`, and user calls in both branches.
+
+6. **Arithmetic nodes in `emit_pl_term_load`** — `E_ADD/E_SUB/E_MPY/E_DIV` now build compound `Term +(L,R)` etc. via `term_new_compound` so `pl_eval_arith` can recurse on them. Fixes `X is 2*3` → `6`.
+
+7. **`pl_is`, `pl_num_*` extern declarations** — added to emitted `.s` header.
+
+8. **Retry loop `trail_unwind` ordering** — moved from top of retry loop (which was unbinding X before `write(X)/nl` could use it) to a `retry_back` label after suffix goals. `fail` in suffix now jumps to `retry_back` → `trail_unwind` → `jmp retry`.
+
+**Results:**
+- rung01_hello ✅ rung02_facts ✅ rung03_unify ✅ rung04_arith ✅
+- rung05_backtrack ❌ (two bugs identified, not fixed — context full)
+
+**rung05 bugs identified for F-218:**
+
+1. **`start` arg register mismatch** — `pl_member_sl_2_r` saves start from `rcx` (`mov [rbp-32], rcx`) but SysV ABI arg index `arity+1` = 3 = `rdx` not `rcx`. The `argregs[]` array in `emit_prolog_choice` is `{rdi,rsi,rdx,rcx,r8,r9}` — for arity=2, `start_reg_idx=3` → `argregs[3]="rcx"`. But the caller does `mov edx, [rbp-36]; call pl_member_r` — it passes in `rdx`. Fix: save from `rdx` = `argregs[2]` always (it is always the 3rd arg after `rdi=args, rsi=trail`), or fix the caller.
+
+2. **Head unification dead code** — clause 0 of `member(X,[X|_])` has arity=2 so should unify arg[0] then arg[1]. The emitter emits `jmp pl_member_sl_2_c0_body` after each head arg's success, so arg[1] check is unreachable after arg[0] succeeds. The head unification loop should fall through all args sequentially before jumping to body, not jump to body after each individual arg.
+
+**Next session start block (F-218):**
+```bash
+git clone https://TOKEN_SEE_LON@github.com/snobol4ever/snobol4x /home/claude/snobol4x
+git clone https://TOKEN_SEE_LON@github.com/snobol4ever/.github /home/claude/.github
+cd /home/claude/snobol4x && apt-get install -y nasm
+cd /home/claude/snobol4x/src && make
+
+# Verify rung01–rung04 PASS, rung05 FAIL:
+for r in rung01_hello rung02_facts rung03_unify rung04_arith rung05_backtrack; do
+  pro=test/frontend/prolog/corpus/$r/*.pro
+  exp=test/frontend/prolog/corpus/$r/*.expected
+  ./sno2c -pl -asm $pro -o /tmp/t.s 2>/dev/null
+  nasm -f elf64 /tmp/t.s -o /tmp/t.o 2>/dev/null
+  gcc -no-pie /tmp/t.o src/frontend/prolog/prolog_atom.o src/frontend/prolog/prolog_unify.o src/frontend/prolog/prolog_builtin.o -o /tmp/t_pl 2>/dev/null
+  actual=$(timeout 3 /tmp/t_pl 2>/dev/null)
+  [ "$actual" = "$(cat $exp)" ] && echo "$r: PASS" || echo "$r: FAIL"
+done
+
+# F-218 work items (in order):
+# 1. Fix start arg register in emit_prolog_choice:
+#    Change argregs[start_reg_idx] save to always use rdx (it's always arg index 2
+#    after rdi=args, rsi=trail). In emit_prolog_clause_block caller site also verify
+#    edx is used for passing start.
+#
+# 2. Fix head unification control flow in emit_prolog_clause_block:
+#    Remove the per-arg "jmp c{idx}_body" after each head arg success.
+#    Only jump to body after ALL head args are unified successfully.
+#    The loop should fall through: check arg0, if fail->hfail0->next_clause,
+#    if succeed->fall through to check arg1, if fail->hfail1->next_clause,
+#    if succeed->fall through to body.
+#
+# 3. Test rung05 PASS → fire M-PROLOG-R1 (rungs 1–5 passing = Sprint 3+4 complete)
+# 4. Then continue rungs 6–9 for M-PROLOG-CORPUS
+```
