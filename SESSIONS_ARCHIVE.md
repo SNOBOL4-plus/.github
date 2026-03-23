@@ -12266,3 +12266,44 @@ INC=/home/claude/snobol4corpus/programs/inc X64_DIR=/home/claude/x64 \
 **OPEN BUG carried forward (M-PROLOG-R1 blocker):** Call sites in body goal emitter emit `pl_FUNCTOR_ARITY_r` (no slash encoding) but predicates are defined as `pl_FUNCTOR_sl_ARITY_r` (via `pl_safe("functor/arity")`). Fix: pass full `"functor/arity"` string through `pl_safe()` at every call site and drop `_%d_r` suffix. Unblocks rung02 facts and rung05 backtrack.
 
 **State at handoff:** snobol4x HEAD `082141e` F-214 (unchanged). Next F-session starts at F-216.
+
+## Session F-216 — Prolog ASM emitter: three call-site fixes (2026-03-22)
+
+**Session type:** TINY frontend (F)
+**Commit:** `12df084` snobol4x main
+
+**Work done:** Diagnosed and fixed three bugs in `emit_byrd_asm.c` on the `-pl -asm` path:
+
+1. **Naming mismatch** (the M-PROLOG-R1 blocker from F-215): All 5 call sites were emitting `pl_FUNCTOR_ARITY_r` but definitions use `pl_safe("functor/arity")` = `pl_FUNCTOR_sl_ARITY_r`. Fix: build `"functor/arity"` string at each call site and pass through `pl_safe()`, dropping the separate `_%d` suffix.
+
+2. **Var-slot offset**: `emit_pl_term_load` loaded var slot k from `[rbp-(slot+1)*8]` but frame initialises vars at `[rbp-(slot+2)*8]` (slot 0 was reading the trail mark slot). Fix: `(slot+1)` → `(slot+2)`.
+
+3. **Calling convention — args array ptr**: Predicate prologue saved `rdi` to `[rbp-40]` then set `args_ptr = &[rbp-40]`, adding an indirection layer. Callers pass `rdi` = the args array pointer directly (they `sub rsp,N; store terms; mov rdi,rsp`). Fix: `mov [rbp-24], rdi` directly — no intermediate slot.
+
+**Results:** rung01_hello ✅ rung02_facts ✅ (both PASS with correct backtracking through all 3 clauses).
+
+**Runtime added:** `pl_eval_arith`, `pl_is`, `pl_num_lt/gt/le/ge/eq/ne` in `prolog_builtin.c` with lazy atom interning. Builtin goal dispatch for `is/2`, `</2`, `>/2`, `=</2`, `>=/2`, `=:=/2`, `=\=/2`, `write/1`, `nl/0` added to emitter.
+
+**Still open for F-217 (M-PROLOG-R1):**
+- Add `extern pl_is, pl_num_lt/gt/le/ge/eq/ne` to emitted `.s` header (line ~4748)
+- `emit_pl_term_load`: handle `E_ADD/E_SUB/E_MPY/E_DIV` by calling `term_new_compound` so `pl_eval_arith` can walk them
+- `;/2` inner goal dispatch: add `is/2` and comparison builtins to the disjunction path
+- rung03: `emit_pl_term_load` for `E_FNC` with children → `term_new_compound` (currently emits atom stub)
+- rung04 depends on all of the above
+
+**Next session start block (F-217):**
+```bash
+git clone https://TOKEN_SEE_LON@github.com/snobol4ever/snobol4x /home/claude/snobol4x
+git clone https://TOKEN_SEE_LON@github.com/snobol4ever/.github /home/claude/.github
+cd /home/claude/snobol4x && bash setup.sh
+cd /home/claude/snobol4x/src && make
+
+# Verify rung01+rung02 still pass:
+./sno2c -pl -asm test/frontend/prolog/corpus/rung01_hello/hello.pro -o /tmp/t.s
+nasm -f elf64 /tmp/t.s -o /tmp/t.o
+gcc -no-pie /tmp/t.o src/frontend/prolog/prolog_atom.o src/frontend/prolog/prolog_unify.o src/frontend/prolog/prolog_builtin.o -o /tmp/t -lgc && /tmp/t
+# expected: hello
+
+# Then tackle F-217 work items above in order.
+# Target: rung03_unify + rung04_arith PASS → M-PROLOG-R1 fires.
+```
