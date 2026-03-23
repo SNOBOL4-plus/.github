@@ -910,3 +910,11 @@ succeeded. Push had silently failed (no credentials). Rule added below.
 
 ### Next session trigger phrase
 **"playing with Prolog frontend"** → F-225 → pick up at `snobol4x PLAN.md §25`.
+
+## §22-update — F-225 handoff (2026-03-23): multi-ucall backtracking WIP
+
+| Session | Sprint | HEAD | Next milestone |
+|---------|--------|------|----------------|
+| **TINY frontend** | `main` F-225 — per-ucall trail marks added; mini 9/9 PASS ✅; rung10 still broken (N>2 ucall fail/0 retry — αN mark taken on resume too, over-unwinds); see snobol4x PLAN.md §26 | `b0b190c` (uncommitted changes) | M-PROLOG-R10 |
+
+**Trigger:** `"playing with Prolog frontend"` → F-226 → snobol4x PLAN.md §26
