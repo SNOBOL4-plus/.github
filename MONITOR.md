@@ -9,6 +9,14 @@ No bisecting. No bombing. No chasing.
 The agreeing backends become the living specification for the fix.
 Known symptom + two reference implementations = essentially free fix.
 
+**The developer cycle:**
+```
+write driver → run monitor → first diverging line names the bug
+              → fix backend → re-run monitor → repeat → milestone fires
+```
+This is the full cycle in one BEAUTY SESSION. The monitor is the engine that
+makes it fast. MONITOR SESSION builds the tool; BEAUTY SESSION uses it.
+
 **The goal:** M-BEAUTIFY-BOOTSTRAP — `beauty.sno` reads `beauty.sno` and
 all three compiled backends produce output identical to the oracle AND
 identical to the input. A fixed point.

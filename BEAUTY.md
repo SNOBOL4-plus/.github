@@ -5,6 +5,12 @@ attempting full self-beautification. Each subsystem gets its own test driver (a 
 program that `-INCLUDE`s only that file plus its dependencies and exercises all DEFINE'd
 functions), run through the monitor against CSNOBOL4 + ASM.
 
+**The developer cycle:** The monitor is not just a pass/fail tool — it is the bug-finding engine.
+The first diverging trace line names the exact variable, value, and step where the backend goes wrong.
+The two agreeing participants (CSNOBOL4 + SPITBOL) are the live specification for the fix.
+One session = write driver → monitor finds divergence → fix backend → re-run → repeat → milestone fires.
+No separate BUG SESSION needed for beauty bugs: find it and fix it in the same session.
+
 Drivers live in `snobol4x/test/beauty/` alongside `.ref` oracle files.
 Gimpel corpus programs (snobol4corpus/programs/gimpel/) serve as inspiration and
 cross-validation — 145 programs exercising nearly every SNOBOL4 pattern, many
@@ -114,11 +120,33 @@ comments at the top of each driver. Example: `counter/driver.sno` references
 ## Harness
 
 `test/beauty/run_beauty_subsystem.sh <subsystem>` — runs one driver through
-the monitor (inject_traces.py → CSNOBOL4 + ASM → diff).
+the monitor (inject_traces.py → CSNOBOL4 + SPITBOL + ASM → sync-step diff).
 
 `test/beauty/run_beauty_all.sh` — runs all 19 subsystems, reports PASS/FAIL matrix.
 
 Both scripts live in `snobol4x/test/beauty/` on the `asm-backend` branch.
+
+**The fix loop (inside a BEAUTY SESSION):**
+
+```bash
+# 1. Generate oracle ref (once per driver)
+INC=/home/claude/snobol4corpus/programs/inc \
+  snobol4 -f -P256k -I$INC test/beauty/<sub>/driver.sno > test/beauty/<sub>/driver.ref
+
+# 2. Run monitor — first diverging line identifies the bug precisely
+INC=/home/claude/snobol4corpus/programs/inc X64_DIR=/home/claude/x64 \
+  MONITOR_TIMEOUT=30 bash test/beauty/run_beauty_subsystem.sh <sub>
+
+# 3. Fix the bug in src/runtime/snobol4/snobol4.c (or emitter)
+#    Agreeing participants = oracle + one other = live spec for the fix
+
+# 4. Rebuild and re-run — repeat steps 2-4 until exit 0
+
+# 5. Confirm corpus invariant still holds
+bash test/crosscheck/run_crosscheck_asm_corpus.sh   # must be 106/106
+
+# 6. Fire milestone — commit snobol4x, update PLAN.md + TINY.md, push .github
+```
 
 ---
 

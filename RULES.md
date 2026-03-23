@@ -354,7 +354,24 @@ push all → one-line pivot log entry in platform MD.
 
 **BUG SESSION** — Lon opens with "playing with fixing bugs from bug reports": target is the first ❌ `M-MON-BUG-*` in PLAN.md. Fix only that bug. If the fix reveals another bug: file a new milestone and stop — one milestone per session. When displaying trace output: last 100 lines only (`tail -100`) — never dump a raw full trace in chat.
 
-**MONITOR SESSION** — Lon opens with "playing with MONITOR": work the next ❌ M-MONITOR-* milestone in PLAN.md order. This includes implementing monitor infrastructure (e.g. sync-step barrier protocol). When the monitor is running and producing trace output, the goal is finding and reporting divergences — file M-MON-BUG-* milestones for divergences found. Fixing backend bugs is a separate BUG SESSION triggered by "playing with fixing bugs from bug reports".
+**MONITOR SESSION** — Lon opens with "playing with MONITOR": work the next ❌ M-MONITOR-* milestone in PLAN.md order. Scope is **monitor infrastructure only** — building, wiring, and validating the sync-step barrier protocol, IPC library, participant integration, timeout watchdog, etc. When the monitor runs and produces a divergence, file an `M-MON-BUG-*` milestone for it, but do not fix the backend bug in this session. Backend bug fixes happen in BEAUTY SESSION ("playing with beauty") or BUG SESSION ("playing with fixing bugs").
+
+**BEAUTY SESSION** — Lon opens with "playing with beauty": work the next ❌ M-BEAUTY-* milestone in PLAN.md dependency order. This is the **full developer cycle** — the monitor finds the divergence, you fix the backend bug, re-run the monitor, repeat until PASS, then fire the milestone. All in one session. Rules:
+1. Read BEAUTY.md first — it has the full 19-subsystem dependency chain and driver format.
+2. One subsystem per session — write `test/beauty/<subsystem>/driver.sno` + `driver.ref`, then drive the fix+verify loop.
+3. The driver exercises **every DEFINE'd function** in that subsystem with at least one call each, printing `PASS: <function>` for each.
+4. Run CSNOBOL4 first to generate the oracle `driver.ref`.
+5. **The developer cycle (repeat until monitor exits 0):**
+   - Run 3-way monitor → first diverging trace line names the exact variable/function/value that is wrong
+   - Read the trace — the two agreeing participants are the live specification for the fix
+   - Fix the bug in `src/runtime/snobol4/snobol4.c` (or emitter, as indicated)
+   - Re-run monitor — confirm divergence moves forward or disappears
+   - Loop until zero divergence
+6. Confirm 106/106 ASM corpus still passes after any fix (`run_crosscheck_asm_corpus.sh`).
+7. Fire the milestone, update PLAN.md + TINY.md, push both repos (snobol4x + .github).
+8. If a fix reveals a **different** bug in a **different subsystem**: file `M-MON-BUG-*` for it, but continue fixing the current subsystem — do not abandon the session's target milestone.
+9. Subsystem files live in `snobol4corpus/programs/inc/` (most) or `snobol4x/demo/inc/` (global/is/FENCE/io/case/stack). Always use `INC=/home/claude/snobol4corpus/programs/inc` for drivers.
+10. When displaying trace output: last 100 lines only (`tail -100`) — never dump a raw full trace in chat.
 
 **README SESSION** — Lon opens with "playing with README" or "playing with grids" (or similar): work the next ❌ milestone in this order: M-VOL-* → M-FEAT-* → M-README-V2-* → M-PROFILE-V2. Rules:
 1. Work **one repo per session** — source scanning fills the context window fast.

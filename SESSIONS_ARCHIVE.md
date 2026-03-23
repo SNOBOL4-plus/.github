@@ -12109,3 +12109,30 @@ values and field values untouched. Commit `05b809d` snobol4corpus.
 - `096_data_datatype_check`: NODE/hello — all engines match ✅  
 - `1115_data_basic`: DATATYPE comparison normalized; pre-existing value() bug (e005) separate
 106/106 ASM corpus still ALL PASS after corpus update.
+
+## B-259 (2026-03-23) — PIVOT: beauty sprint begins; HQ updated
+
+**Branch:** main · **HEAD:** `a4a27ab` B-258 (no new snobol4x commits this session — doc-only)
+
+**Work done:**
+- Cloned snobol4x, x64, snobol4corpus. Set git identity in all repos. Confirmed HEAD a4a27ab B-258.
+- PIVOT decision: M-MONITOR-4DEMO/M-MON-BUG-ASM-DATATYPE-CASE remain open; beauty subsystem sprint begins.
+- HQ updates (PLAN.md, RULES.md, TINY.md, BEAUTY.md, MONITOR.md):
+  - Added trigger phrase "playing with beauty" → BEAUTY SESSION to PLAN.md trigger table
+  - Expanded all 20 M-BEAUTY-* + M-BEAUTIFY-BOOTSTRAP rows in PLAN.md with full trigger descriptions, driver paths, dependency notes
+  - Updated TINY backend NOW row and Active Milestones to reflect beauty pivot
+  - Added full BEAUTY SESSION rules block to RULES.md (10 rules, full developer cycle)
+  - Clarified MONITOR SESSION scope: infrastructure only; bugs are fixed in BEAUTY SESSION or BUG SESSION
+  - Updated BEAUTY.md opening with explicit developer cycle paragraph; replaced Harness section with fix-loop script
+  - Added developer cycle diagram to MONITOR.md opening section
+  - Key clarification: BEAUTY SESSION = full developer cycle — monitor finds divergence → fix → re-run → milestone. Not "file and stop".
+
+**Milestones fired:** none (doc/HQ session)
+
+**Next session start block:**
+```
+Trigger: "playing with beauty"
+Repo: snobol4x
+Milestone: M-BEAUTY-GLOBAL
+Action: write test/beauty/global/driver.sno, generate driver.ref, run 3-way monitor, fix+loop until PASS
+```
