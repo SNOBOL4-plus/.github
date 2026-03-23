@@ -12562,46 +12562,79 @@ because intermediate goals in a deterministic chain are non-resumable.
 ### Next session trigger
 "playing with Prolog frontend" → Session F-222, next milestone M-PROLOG-R8.
 
-## D-164 — 2026-03-23 (Claude Sonnet 4.6)
+## Session I-5 — ICON frontend: rung01 6/6 + ICN_WHILE + ICN_SUSPEND scaffold
 
-**Session type:** DOTNET integration
-**Branch:** `snobol4dotnet:integrate/jeffrey`
-**HEAD:** `b303652`
+**Date:** 2026-03-23
+**Commit:** `0b8b6c7` (snobol4x main)
+**Milestone fired:** none (M-ICON-SUSPEND open — suspend calling convention broken)
 
 ### Work done
 
-Integrated Jeff Cooper's 10 commits from `merge/jeffrey-plus-msil` into a clean `integrate/jeffrey` branch. Carefully cherry-picked all substantive changes, excluded binary blobs and accidental files, fixed build regressions, and drove the Linux test suite from 1889 pass / 22 fail → **1903 pass / 0 fail**.
+**Bug 1 fixed — binop β left_is_value heuristic:**
+`emit_binop` now checks `left->kind` at emit time. Generator-left (TO, relop, etc.)
+sends β directly to `rb` (right.β) — left cache still valid. Value-left (VAR/INT/STR/CALL)
+re-evals left through `la` to refresh frame slot. Fixes t02_mult, t05_compound, t06_paper_expr.
 
-### What was taken
-- `ErrorJump` → `OnErrorGoto` rename (MsilHelpers.cs, ThreadedExecuteLoop.cs)
-- `StartTimer()` replacing `_timerExecute.Restart()` in Builder.cs
-- Statistics formatting: `h:m:s.μ` format, aligned columns (Statistics.cs, Banner.cs)
-- `DetectConfiguration()` in SetupTests.cs — auto-detects Debug/Release build path on Windows
-- `System.StringComparison` namespace fix in SetupTests.cs
-- `EnableWindowsTargeting` in Snobol4W.csproj
-- `CustomFunction/FSharpLibrary.fs` — fallback copy for machines without F# installed
-- `TestSnobol4/Griswold/RemoveLine.cs` — 7 new tests from Griswold's book, all passing
-- `LoadTests.cs` — structural fixes: UNLOAD syntax, [Ignore] on Windows-native-only tests
-- `README.md` updates
-- Deletions of stale files: AST.csv, ATS1.csv, Corrigenda.md, RecordTest.txt, Snobol Functions.xlsx, Snobol4.Common.zip, Snobol4W.zip, dotnet-install.sh, dotnet-install-install.sh
+**Bug 2 fixed — nested TO SEGV (`e2_seen` + `e1cur`):**
+`emit_to` now uses two new BSS slots per TO node: `e2_seen` (0=first init, 1=E2-advance)
+and `e1cur` (current E1 value). First init pops both E1+E2 from stack and saves E1 to
+`e1cur`. E2-advance init pops only E2 and resets I to `e1cur`. `e1bf` resets `e2_seen=0`
+so E1 advancing correctly re-runs the first-time path. Fixes t03_nested_to (1 2 1 2 3 2 2 3).
 
-### What was excluded / corrected
-- `"25.0"` / `"49.0"` / `"16.0"` assertions **reverted to `"25."` etc.** — SNOBOL4 spec prohibits trailing zeros in real number string representation; proved via CSNOBOL4 oracle, SPITBOL manual p.27, and MINIMAL source v37.min
-- `packages-microsoft-prod.deb` × 2 — Linux installer binaries, not source
-- `README.md.backup` — Windows editor artifact
-- Dead Roslyn `else` branch in Builder.cs that Jeff's branch reintroduced (GenerateCSharpCode was already removed from main)
-- Stray top-level `FSharpLibrary/` directory (Jeff added and deleted in same batch)
+**ICN_WHILE added:**
+`emit_while`: cond.γ→discard value→body.α; body.γ/ω→cond.α (loop back); cond.ω→ω.
 
-### Build fixes required
-- `AreaLibrary.csproj`: restored full `<Compile Remove>` subdirectory exclusion list (Jeff's version replaced it, causing duplicate AssemblyInfo errors)
-- `TestSnobol4.csproj`: added `FSharpOptionLibrary` and `VbLibrary` to ProjectReference list — both build cleanly on Linux, were simply missing from the build graph, causing 13 + 9 test failures
-- `LoadTests.cs` Load_Area failure-branch tests: corrected to check `result == "failed"` per SNOBOL4 spec (LOAD failure is silent :F, no error code recorded)
+**ICN_SUSPEND scaffold added:**
+`emit_suspend`: evaluates value expr, pops result to `icn_retval`, sets `icn_suspended=1`,
+stores resume label in `icn_suspend_resume`, yields via `proc_sret` (bare ret, frame live).
+`emit_call` β: checks `icn_suspended` before jumping resume slot. `proc_sret` emitted as
+bare `ret` (no frame teardown) alongside `proc_ret`.
 
-### .gitignore
-Extended to block: `*.deb`, `*.zip`, `*.nettrace`, `README.md.backup`, `dotnet-install*.sh`, scratch CSV/text files
+**rung03 test written:**
+`test/frontend/icon/corpus/rung03_suspend/t01_gen.icn`: `upto(4)` generator using
+`while i <= n do suspend i do i := i + 1`. Expected: `1\n2\n3\n4`.
 
-### Final numbers
-- Baseline main: 1889 pass / 22 fail / 2 skip
-- integrate/jeffrey: **1903 pass / 0 fail / 2 skip**
-- New tests: +7 Griswold (all green)
-- [Ignore] correctly applied to 8 Windows-native-only tests
+### State at handoff
+
+- rung01: 6/6 PASS ✅
+- rung02: 3/3 PASS ✅
+- rung03 t01_gen: FAIL — outputs `1` then SEGV on second β-resume
+
+### Open bug: suspend calling convention
+
+Root cause diagnosed: `call icn_PROC` / `proc_sret: ret` tears down nothing (bare ret),
+but the *caller* has `call` on the stack. When β fires and resumes inside the live frame,
+everything is fine for the first resume. But the stack is in an inconsistent state for
+any subsequent `call icn_PROC` from do_call (another frame gets pushed under the live one).
+
+Fix for I-6: replace `call icn_PROC` with `lea rax,[ret_addr]; mov [icn_PROC_caller_ret],rax; jmp icn_PROC`. `proc_ret`/`proc_done`/`proc_sret` all use `jmp [rel icn_PROC_caller_ret]`. Frame stays permanently on stack while suspended. See FRONTEND-ICON.md §NOW for exact spec.
+
+### Next session trigger
+"I'm playing with ICON" → Session I-6, fix suspend calling convention → M-ICON-SUSPEND.
+
+## Session I-5 — ICON frontend: rung01 6/6 + ICN_WHILE + ICN_SUSPEND scaffold
+
+**Date:** 2026-03-23
+**Commit:** `44be297` (snobol4x main)
+**Milestone fired:** none (M-ICON-SUSPEND open — suspend calling convention broken)
+
+### Work done
+
+**Bug 1 fixed — binop β left_is_value heuristic:** Generator-left β goes directly to rb; value-left re-evals left. Fixes t02_mult, t05_compound, t06_paper_expr.
+
+**Bug 2 fixed — nested TO SEGV:** `e2_seen` + `e1cur` BSS slots. First init pops both E1+E2; E2-advance pops only E2 and resets I to `e1cur`. Fixes t03_nested_to.
+
+**ICN_WHILE added:** cond.γ→body→cond.α; cond.ω→ω.
+
+**ICN_SUSPEND scaffold:** `emit_suspend`, `icn_suspended` flag, `proc_sret` bare ret, call-site β check. rung03/t01_gen written.
+
+### State at handoff
+
+rung01 6/6 ✅, rung02 3/3 ✅, rung03 t01_gen: outputs 1 then SEGV — suspend calling convention broken (call/ret tears down frame).
+
+### Open bug: suspend calling convention
+
+Fix for I-6: replace `call icn_PROC` with `lea rax,[after]; mov [icn_PROC_caller_ret],rax; jmp icn_PROC`. All proc exits use `jmp [rel icn_PROC_caller_ret]`. Frame stays live while suspended. Full spec in FRONTEND-ICON.md §NOW.
+
+### Next session trigger
+"I'm playing with ICON" → Session I-6, fix suspend calling convention → M-ICON-SUSPEND.

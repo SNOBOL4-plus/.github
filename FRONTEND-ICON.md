@@ -18,77 +18,63 @@ feeding the same TINY pipeline. Goal-directed generators map directly to Byrd bo
 
 | Session | Sprint | HEAD | Next milestone |
 |---------|--------|------|----------------|
-| **ICON frontend** | `main` I-4 — M-ICON-PROC ✅ `54248fe`: rung02 3/3 PASS (add=7, fact=120, sum_to=15); BSS _val→hw stack+frame slots; rung01 t02/t05/t06 regress (binop β conflict); t03_nested_to SEGV | `54248fe` | rung01 regression fix → M-ICON-SUSPEND |
+| **ICON frontend** | `main` I-5 — rung01 6/6 PASS ✅ rung02 3/3 PASS ✅; ICN_WHILE + ICN_SUSPEND scaffold; rung03 t01_gen FAIL: suspend yields 1 then SEGV on resume — call/ret tears down frame | `0b8b6c7` I-5 | Fix suspend calling convention → M-ICON-SUSPEND |
 
-### Next session checklist (I-5)
+### Next session checklist (I-6)
 
 ```bash
 git clone https://github.com/snobol4ever/snobol4x
 git clone https://github.com/snobol4ever/.github
-# Read FRONTEND-ICON.md §NOW — fix rung01 regressions, then M-ICON-SUSPEND
+# Read FRONTEND-ICON.md §NOW — fix suspend calling convention, fire M-ICON-SUSPEND
 ```
 
-**OPEN BUG 1 — binop β wiring conflict (fix first):**
+**OPEN BUG — suspend calling convention (fix first):**
 
-Two patterns need opposite β behaviors in `emit_binop` in `src/frontend/icon/icon_emit.c`:
+Root cause: `emit_suspend` yields via `proc_sret` (bare `ret`). The proc entry does
+`push rbp; mov rbp,rsp; sub rsp,N`. When suspend yields via bare `ret`, the caller
+gets the return address but the stack is NOT restored — `rsp` is still at `rbp-N`.
+On the next β-resume `jmp [icn_suspend_resume]` jumps back into the live proc frame
+correctly, BUT on every subsequent `call icn_PROC` from do_call another frame gets
+stacked. Second/third resumes corrupt stack alignment.
 
-- **Generator-left** e.g. `(1 to 3) * (1 to 2)` (t02_mult):
-  β should → right.β directly — preserve left cache, advance right generator only.
-  Current bflag=1 re-evals left → resets left TO to α → outputs only `1|2|` not `1|2|2|4|3|6|`.
+**Fix — jmp-based co-routine calling convention:**
 
-- **Value-left accumulator** e.g. `total + (1 to n)` (t03_locals):
-  β should → re-eval left (refresh `total` from frame), then → right.β.
-  Without re-eval, lc_slot holds stale `total`.
+Replace `call icn_PROC` / `ret` with direct `jmp`, keeping the frame permanently alive:
 
-**Fix — heuristic left-kind check at emit time:**
+1. **Per-proc BSS slot:** `icn_PROC_caller_ret: resq 1`
 
-In `emit_binop`, after `IcnNode *left = n->children[0]`, check:
-```c
-int left_is_value = (left->kind == ICN_VAR || left->kind == ICN_INT ||
-                     left->kind == ICN_STR || left->kind == ICN_CALL);
-```
-Then wire β accordingly:
-```c
-if (left_is_value) {
-    /* β: re-eval left to refresh (e.g. updated `total`), then resume right */
-    Ldef(em,b);
-    E(em,"    mov qword [rbp%+d], 1\n", slot_offset(bf_slot));
-    Jmp(em,la);
-} else {
-    /* β: right.β directly — left is a generator, cache still valid */
-    Ldef(em,b); Jmp(em,rb);
-}
-```
-The `bf_slot` / `lstore` → `je ra / jmp rb` logic in lstore remains unchanged.
-When `left_is_value=0` (generator left), β goes directly to `rb` — lstore never
-sees the β path, so bf_slot is irrelevant (could skip alloc, minor optimization).
+2. **Call site α (first call):** instead of `call icn_PROC`:
+   ```nasm
+   lea  rax, [rel icon_N_after_call]
+   mov  [rel icn_PROC_caller_ret], rax
+   jmp  icn_PROC
+   icon_N_after_call:
+   ```
 
-Acceptance: rung01 t01–t06 all PASS AND rung02 t01–t03 all still PASS.
+3. **`proc_sret` (suspend yield):**
+   ```nasm
+   icn_PROC_sret:
+       jmp [rel icn_PROC_caller_ret]   ; frame stays live, rsp/rbp unchanged
+   ```
 
-**OPEN BUG 2 — t03_nested_to SEGV:**
+4. **`proc_ret` / `proc_done` (normal return/fail):**
+   ```nasm
+   icn_PROC_ret:
+       add rsp, N
+       pop rbp
+       jmp [rel icn_PROC_caller_ret]   ; not ret — use stored return address
+   ```
 
-`every write((1 to 2) to (2 to 3))` — TO with generator bounds.
-In `emit_to`, `icon_N_init` does:
-```nasm
-pop rax   ; E2 bound  (top of stack)
-pop rax   ; E1 start
-```
-This assumes E1 pushed first, E2 pushed second (E2 on top at init).
-With `(1 to 2) to (2 to 3)`: E1=`(1 to 2)`, E2=`(2 to 3)`.
-E2's TO generator α fires, pushes its first value (2), jumps to `icon_N_init`.
-But at that point E1's TO has already pushed its first value (1) — stack is `[1, 2]` top=2.
-`pop rax` = 2 (bound ✓), `pop rax` = 1 (start ✓) — this should be correct.
-Investigate: run under gdb or add write() probes to trace the actual crash site.
-`nasm -f elf64 /tmp/t03.asm -o /tmp/t03.o && gcc -g ... && gdb /tmp/t03_bin`
+5. **Call site β:** unchanged — `icn_suspended` check + `jmp [icn_suspend_resume]`
 
-**Then M-ICON-SUSPEND:**
+6. **`icn_emit_file` changes:**
+   - Declare `icn_PROC_caller_ret: resq 1` in BSS for each non-main proc
+   - Proc entry: unchanged (`push rbp; mov rbp,rsp; sub rsp,N; pop args`)
+   - Replace `Ldef(em,proc_ret); ... E(em,"    pop rbp\n    ret\n")` with jmp variant
+   - Replace `Ldef(em,proc_sret); E(em,"    ret\n")` with jmp variant
+   - Replace `E(em,"    call    icn_%s\n",fname)` with lea+mov+jmp trampoline
 
-`suspend E` inside a procedure = user-defined generator (yield, keep frame alive).
-Implementation: single-active-generator BSS resume slot.
-- Add `ICN_SUSPEND` case to `emit_expr` dispatch
-- `emit_suspend`: store resume label in `icn_suspend_resume` BSS qword; jump to cur_ret_label (return to caller with value in icn_retval)
-- Call site β: `jmp [rel icn_suspend_resume]` to resume suspended proc
-- Write `test/frontend/icon/corpus/rung03/t01_gen.icn` (upto generator)
+Acceptance: `rung03/t01_gen` → `1\n2\n3\n4`. Then M-ICON-SUSPEND fires.
 
 ---
 
