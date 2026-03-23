@@ -68,6 +68,36 @@ RULES.md and SESSIONS_ARCHIVE.md are append-only — rebase handles them.
 
 **Never `git push --force` on .github. Ever.**
 
+## ⛔ HANDOFF — push must succeed and be verified before handoff is declared
+
+**Root cause logged 2026-03-22 F-214:** Claude committed both repos, wrote "Handoff complete", then never ran git push. Another session proceeded on stale remote state, repeating work.
+
+**The rule:** "Handoff complete" means `git push origin main` exited 0 on **both** `snobol4x` AND `.github`, and the remote shows your commit. Committed is not pushed. Rebased is not pushed. The only proof is:
+
+```bash
+git log origin/main --oneline -1   # must show YOUR commit hash
+```
+
+**Mandatory final sequence — do this in order, verify each step:**
+
+```bash
+# 1. snobol4x
+cd /home/claude/snobol4x
+git pull --rebase origin main
+git push origin main
+git log origin/main --oneline -1   # confirm YOUR hash is here
+
+# 2. .github
+cd /home/claude/.github
+git pull --rebase origin main
+git push origin main
+git log origin/main --oneline -1   # confirm YOUR hash is here
+```
+
+**If push is rejected:** rebase, resolve conflicts, push again. Do not write the handoff summary until both pushes succeed.
+
+**Never write "Handoff complete" or any session summary until both pushes are verified.** The summary is the last thing written, not the second-to-last.
+
 ## ⛔ GIT IDENTITY — Every commit in every repo
 
 ```bash
