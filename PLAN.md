@@ -29,7 +29,7 @@ Session numbers use per-type prefixes (see RULES.md §SESSION NUMBERS): B=backen
 | **TINY backend** | `main` B-258 — M-MON-BUG-ASM-WPAT ✅: stmt_concat pattern SEQ fix (pat_cat); run_monitor_3way.sh (csn+spl+asm); wordcount ASM AGREE; treebank diverges step 10 STK='cell' vs 'CELL' → M-MON-BUG-ASM-DATATYPE-CASE open; **PIVOT: beauty subsystem testing begins (M-BEAUTY-* sprint)** | `a4a27ab` B-258 | M-BEAUTY-GLOBAL (beauty sprint) |
 | **TINY NET** | `net-t2` N-248 — M-T2-NET ✅ 110/110 clean | `425921a` N-248 | M-T2-FULL |
 | **TINY JVM** | `jvm-t2` J-213 — M-T2-JVM ✅ 106/106 clean | `8178b5c` J-213 | M-T2-FULL |
-| **TINY frontend** | `main` F-222 — rung01 ✅ rung02 ✅ rung03 ✅ rung04 ✅ rung05 ✅ rung06 ✅ rung07 ✅ rung08 ✅ rung09 ✅. Fixes: (1) [rbp-32] dual-use bug in multi-ucall bodies → sub_cs_acc at [rbp-16]; (2) M-PROLOG-BUILTINS: functor/3 arg/3 =../2 type-tests in body+if-then-else; (3) NASM atom string escape fix (newlines in write('\\n')); (4) frame extended for per-ucall sub_cs slots (rung10 prep). M-PROLOG-RECUR+M-PROLOG-BUILTINS fire. Open: rung10 puzzles assemble, run silent — E2.fail→E1.resume wiring needed (F-223). | `e24e962` F-222 | M-PROLOG-R10 |
+| **TINY frontend** | `main` F-224 — greek consistency pass (α/β/γ/ω everywhere in emitters); F-223 fix4 trail_unwind in bfailN; build clean; M-PROLOG-R10 pending mini cross-product test | `b0b190c` F-224 | M-PROLOG-R10 |
 | **DOTNET** | `main` D-164 — Jeff's branch merged: ErrorJump→OnErrorGoto, StartTimer(), DetectConfiguration(), Griswold tests (7), VbLibrary+FSharpOptionLibrary wired, LOAD :F semantics correct; **1903/1903 pass 0 fail on Linux** | `e1e4d9e` D-164 | TBD |
 | **README** | `main` — M-README-CSHARP-DRAFT ✅ | `00846d3` snobol4csharp | M-README-DEEP-SCAN (next) |
 | **ICON frontend** | `main` I-5 — rung01 6/6 PASS ✅ rung02 3/3 PASS ✅: (1) binop β left_is_value fix — generator-left goes directly to rb; (2) emit_to e2_seen+e1cur fix — nested TO SEGV resolved; (3) ICN_WHILE added; (4) ICN_SUSPEND scaffold: icn_suspended flag, proc_sret bare-ret, call-site β checks flag before jmp [icn_suspend_resume]. rung03 t01_gen outputs 1 only — suspend SEGV on resume: call/ret convention tears down frame; need jmp-based co-routine. | `0b8b6c7` I-5 | M-ICON-SUSPEND (fix suspend calling convention: jmp not call/ret) |
@@ -880,3 +880,33 @@ Root question: does `trail_unwind` correctly reset Term* bindings so that
 
 ### Next session (F-224) trigger phrase
 **"playing with Prolog frontend"** → F-224 session → pick up at snobol4x PLAN.md §24.
+
+## §23 — Session Handoff F-224 (2026-03-23): Greek-letter consistency pass ✅
+
+### What was done
+
+Pure naming consistency pass — no functional changes to Prolog logic.
+
+Renamed all spelled-out greek port names to unicode symbols across three files:
+- `src/backend/x64/emit_byrd_asm.c` (~340 instances)
+- `src/backend/c/emit_byrd_c.c` (~461 instances)
+- `src/frontend/prolog/prolog_emit.c` (~50 instances)
+
+**Rule now enforced everywhere:** C identifiers and NASM label suffixes use α/β/γ/ω only.
+Single ASCII exception: generated NASM `.bss` symbol names (NASM cannot use unicode).
+
+Prolog clause-block NASM labels renamed to canonical port names:
+- `bfail%d` → `β%d` (body call β port)
+- `bsucc%d` → `γ%d` (body call γ port)
+- `ucres%d` → `α%d` (resume / α entry)
+- `hfail%d` → `hω%d` (head unification ω)
+- `hok%d`   → `hγ%d` (head unification γ)
+
+Head-unif local `β_lbl` renamed `hω_lbl` (it holds a `hω` label, not a β port).
+Build: `make` clean, zero errors. Committed `b0b190c` to snobol4x main.
+
+**Process fix:** Previous session reported "HANDOFF COMPLETE" before confirming push
+succeeded. Push had silently failed (no credentials). Rule added below.
+
+### Next session trigger phrase
+**"playing with Prolog frontend"** → F-225 → pick up at `snobol4x PLAN.md §25`.

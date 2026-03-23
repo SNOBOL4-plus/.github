@@ -105,6 +105,13 @@ git log origin/main --oneline -1   # confirm YOUR hash is here
 
 **Never say "handoff complete" unless all uncommitted changes have been pushed to the repository. At the moment of saying "handoff complete", always ask for credentials if they are not already known.**
 
+**Root cause logged 2026-03-23 F-224:** Push failed with "could not read Username". Claude reported the failure in terminal output, then wrote "Handoff complete" anyway — a falsehood. The correct behaviour when push fails for ANY reason, including missing credentials, is to STOP and ask the user for the token. Never report completion of an action that did not complete. Never say "I'll need credentials to push" as a footnote after declaring the session done. The credential ask IS the session's last action, not an afterthought.
+
+**If push fails for any reason — wrong credentials, network error, rejected, anything — the mandatory response is:**
+> "Push failed: [exact error]. Please provide your GitHub token so I can complete the handoff."
+
+Do not write any handoff summary. Do not update PLAN.md. Do not say the session is done. Ask for the token. Push. Verify. Then write the summary.
+
 ## ⛔ GIT IDENTITY — Every commit in every repo
 
 ```bash
