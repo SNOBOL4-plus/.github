@@ -12966,3 +12966,380 @@ and no skip-mark guard is needed.
 
 ### Next session (I-8) trigger phrase
 **"playing with ICON"** → I-8 → M-ICON-CORPUS-R3 (user procedures + user-defined generators)
+
+---
+
+## Session R-3 (2026-03-23) — PLAN.md README/Grid sprint sections archived
+
+Moved from PLAN.md to here to keep L1 doc small.
+All milestone *status* rows remain in PLAN.md Milestone Dashboard.
+Narrative, session plans, grid taxonomy, and dependency chains moved here.
+
+## README Milestones — Per-Repo Documentation
+
+> These milestones track the state of each repo's public README.
+> "Draft" = written but not yet source-verified against actual repo code.
+> "Verified" = a dedicated session has scanned the source and corrected every claim.
+> Source verification is a separate session per repo — each will consume significant context.
+
+| ID | Repo | Trigger | Status |
+|----|------|---------|--------|
+| **M-README-PROFILE-DRAFT** | profile/README.md rewritten: correct attributions (Byrd/Proebsting/Emmer/Budne/Koenig), updated test counts, softened benchmark claims, community tone, beauty.sno/compiler.sno bootstrap gates explicit | snobol4ever/.github | ✅ `88e8f17` F-211 |
+| **M-README-PROFILE-VERIFIED** | profile/README.md verified against all repo READMEs and source; every number, claim, and attribution confirmed correct | snobol4ever/.github | ❌ |
+| **M-README-JVM-DRAFT** | snobol4jvm README written: architecture, pipeline stages, performance numbers, corpus status, build instructions | snobol4jvm | ✅ `e4626cb` |
+| **M-README-JVM-VERIFIED** | snobol4jvm README verified against Clojure source; every claim confirmed | snobol4jvm | ✅ `0ee1143` README-4 |
+| **M-README-X-DRAFT** | snobol4x README updated: 15×3 frontend/backend matrix, corpus status per backend, build instructions, Byrd Box explanation | snobol4x | ✅ F-211b |
+| **M-README-X-VERIFIED** | snobol4x README verified against C source; every claim confirmed | snobol4x | ✅ `5837806` README session |
+| **M-README-DOTNET-DRAFT** | snobol4dotnet README: backup Jeff's original as README.jeff.md; new README written with current numbers and structure | snobol4dotnet | ✅ `aeac61e` |
+| **M-README-DOTNET-VERIFIED** | snobol4dotnet README verified against C# source; coordinated with Jeff Cooper | snobol4dotnet | ✅ `e8b22cb` README-2 |
+| **M-README-PYTHON-DRAFT** | snobol4python README light polish: verify version, test counts, backend description | snobol4python | ✅ `8669c58` README-4 |
+| **M-README-CSHARP-DRAFT** | snobol4csharp README light polish: already solid; verify test counts and status | snobol4csharp | ✅ `1f668f5` README-4 |
+
+### README session plan
+
+Each "VERIFIED" milestone is a dedicated session that:
+1. Clones the repo fresh
+2. Scans every source file relevant to README claims
+3. Runs the test suite to confirm counts
+4. Corrects any claims that don't match source
+5. Commits and pushes
+
+Do not attempt more than one VERIFIED milestone per session — source scanning consumes most of the context window.
+
+Order recommendation: JVM first (empty README, highest urgency), then snobol4x, then dotnet (coordinate with Jeff), then python/csharp (light touch).
+
+---
+
+## GRIDS.md Location Note
+
+GRIDS.md lives in snobol4ever/.github (this repo) at the top level.
+It is linked from profile/README.md as `../GRIDS.md` — this resolves correctly
+when viewed on GitHub as the org's profile page reads from .github/profile/.
+If GitHub does not resolve the relative link correctly, move GRIDS.md to
+.github/profile/GRIDS.md and update the link.
+
+---
+
+## Deep Scan + Benchmark Milestone
+
+**M-README-PROFILE-FINAL is on hold** pending M-README-DEEP-SCAN and the M-GRID-* harness runs.
+
+M-README-DEEP-SCAN is the prerequisite: a dedicated session per repo that goes deeper than previous README verification passes — scanning every source file, header, comment, and doc string, and running the benchmark suite for that repo to produce verified, community-reproducible numbers.
+
+| ID | Repo | Trigger | Status |
+|----|------|---------|--------|
+| **M-DEEP-SCAN-JVM** | snobol4jvm | Full source scan: every `.clj` file, all docstrings, grammar rules, emitter logic, test names; benchmark suite run (`lein bench` or equivalent); all README claims re-verified or corrected against actual source | snobol4jvm | ❌ |
+| **M-DEEP-SCAN-X** | snobol4x | Full source scan: all `.c`/`.h` files in frontend/ ir/ backend/ driver/ runtime/; all comments and doc blocks; benchmark suite run (crosscheck + perf harness); ASM/JVM/NET corpus numbers re-verified | snobol4x | ❌ |
+| **M-DEEP-SCAN-DOTNET** | snobol4dotnet | Full source scan: all `.cs` files, XML doc comments, test names; benchmark suite run (`dotnet run --project benchmarks`); MSIL emitter steps verified; coordinate with Jeff Cooper | snobol4dotnet | ❌ |
+| **M-DEEP-SCAN-PYTHON** | snobol4python | Full source scan: all `.py` and `.c` extension files, docstrings, test names; benchmark run (C extension vs pure-Python timing); v0.5.0 API surface verified | snobol4python | ⏸ DEFERRED |
+| **M-DEEP-SCAN-CSHARP** | snobol4csharp | Full source scan: all `.cs` files, XML doc comments, test names; benchmark run (pattern match timing on Porter/Treebank/CLAWS5 corpora); delegate-capture API surface verified | snobol4csharp | ⏸ DEFERRED |
+| **M-README-DEEP-SCAN** | all | All five M-DEEP-SCAN-* milestones fired; every README in the org reflects actual source — line counts, function names, benchmark numbers, known gaps — not summaries from HQ docs | all repos | ❌ |
+
+### What each M-DEEP-SCAN-* session does
+
+Each is a dedicated session (one repo per session — source scanning fills the context window):
+
+1. Clone the repo fresh
+2. Walk **every source file** — not just entry points:
+   - All `.clj` / `.c` / `.h` / `.cs` / `.py` files
+   - All inline comments, docstrings, and XML doc blocks
+   - All test file names and test group names
+   - All benchmark harness files and their programs
+3. Run the benchmark suite and record actual numbers with machine spec (CPU, RAM, OS, date)
+4. Run the test suite and confirm counts match README
+5. Correct any README claim that doesn't match source
+6. Add a **source line count table** (per file, from `wc -l`) — makes the scope of each component concrete
+7. Add a **benchmark table** with actual measured numbers, build flags, and machine spec
+8. Commit, push, fire the milestone
+
+### Dependency chain
+
+```
+M-DEEP-SCAN-JVM    ┐
+M-DEEP-SCAN-X      │
+M-DEEP-SCAN-DOTNET ├──→  M-README-DEEP-SCAN  ──→  M-README-PROFILE-FINAL
+M-DEEP-SCAN-PYTHON │
+M-DEEP-SCAN-CSHARP ┘
+```
+
+M-README-DEEP-SCAN fires when all five individual scans are done.
+M-README-PROFILE-FINAL fires after M-README-DEEP-SCAN AND all M-GRID-* milestones.
+
+---
+
+## Final Integration Milestone — Profile README v2
+
+> **ON HOLD** — blocked on M-README-DEEP-SCAN + M-GRID-* harness runs. Do not attempt until both chains complete.
+
+| ID | Trigger | Status |
+|----|---------|--------|
+| **M-README-PROFILE-FINAL** | profile/README.md updated a second time, after all of the following have fired: M-README-DEEP-SCAN, M-GRID-BENCH, M-GRID-CORPUS, M-GRID-COMPAT, M-GRID-REFERENCE. At that point every number, every claim, every repo description, every benchmark figure, and every feature statement in the profile README is backed by deep-scanned repo READMEs and actual harness runs. This is the version that goes to the SNOBOL4/SPITBOL community on groups.io and to the broader world. | ❌ |
+
+### What M-README-PROFILE-FINAL incorporates
+
+- Updated test counts from all repos (pulled from their verified READMEs)
+- Updated corpus ladder results from M-GRID-CORPUS (real numbers, all 7 engines)
+- Benchmark table from M-GRID-BENCH (real numbers, community-verifiable)
+- Feature/compat summary from M-GRID-COMPAT and M-GRID-REFERENCE
+- Any architectural changes that occurred during the bootstrap sprints
+  (beauty.sno status, compiler.sno status, new milestones fired)
+- Final tone review for the SNOBOL4/SPITBOL community audience
+  (Phil Budne, Andrew Koenig, Mark Emmer, Cheyenne Wills, groups.io)
+- Any corrections surfaced during source verification sessions
+
+### Dependency chain (complete picture)
+
+```
+clone repos → deep source scan → benchmarks → verified READMEs
+     │
+     ├─ M-DEEP-SCAN-JVM
+     ├─ M-DEEP-SCAN-X
+     ├─ M-DEEP-SCAN-DOTNET        ← coordinate with Jeff Cooper
+     ├─ M-DEEP-SCAN-PYTHON
+     └─ M-DEEP-SCAN-CSHARP
+                │
+                ▼
+     M-README-DEEP-SCAN  ←  all five scans complete
+                │
+                │    run harness → fill grids
+                │    │
+                │    ├─ M-GRID-CORPUS
+                │    ├─ M-GRID-BENCH
+                │    ├─ M-GRID-COMPAT
+                │    └─ M-GRID-REFERENCE
+                │         │
+                └──────────▼
+     M-README-PROFILE-FINAL  ←  the version that goes public
+                │
+                ▼
+     post to groups.io SNOBOL4 + SPITBOL lists
+     post to Hacker News / broader world
+```
+
+This milestone is the gate between internal development and public community presentation.
+Do not post to groups.io before it fires.
+
+---
+
+## README v2 — Grid Sprint (added 2026-03-22)
+
+> **Goal:** Each of the five main repos gets a world-class README that is a one-stop community reference.
+> The org profile README gets a rolled-up summary grid.
+> Every grid cell is backed by an actual run or source scan — no placeholders in the published version.
+>
+> This sprint defines **10 new grid types** (some per-repo, some cross-repo) and the milestones to fill them.
+> It extends and supersedes the stub work in GRIDS.md Grid 1–4.
+>
+> **Comparators in every cross-engine grid:** CSNOBOL4 · SPITBOL · SNOBOL5
+> (SNOBOL5 added as third external reference — historical completeness)
+>
+> **Seven engines in all timed/run grids:**
+> CSNOBOL4 · SPITBOL · snobol4dotnet · snobol4jvm · snobol4x/ASM · snobol4x/JVM · snobol4x/NET
+
+---
+
+### Grid Taxonomy
+
+| Grid ID | Name | Scope | Lives in |
+|---------|------|-------|----------|
+| G-BENCH | Benchmark — total time | cross-engine | GRIDS.md + all READMEs |
+| G-STARTUP | Benchmark — cold/warm startup | cross-engine | GRIDS.md + all READMEs |
+| G-CORPUS | Corpus ladder pass rates | cross-engine | GRIDS.md + all READMEs |
+| G-COMPAT | Compatibility / behavior divergences | cross-engine | GRIDS.md + all READMEs |
+| G-BUILTIN | Built-in functions (all ~50) | cross-engine | GRIDS.md + all READMEs |
+| G-KEYWORD | Program keywords / &-vars (~30) | cross-engine | GRIDS.md + all READMEs |
+| G-SWITCH | CLI switches per engine | cross-engine | GRIDS.md + all READMEs |
+| G-OPERATOR | Operators (binary, unary, pattern) | cross-engine | GRIDS.md + all READMEs |
+| G-VOLUME | Source code volume by category | per-repo | each repo README |
+| G-FEATURE | Feature completeness matrix | per-repo | each repo README |
+
+---
+
+### New Milestone Definitions
+
+#### G-STARTUP (extends G-BENCH)
+
+Startup time matters for scripting use. Two columns per engine:
+- **cold**: first invocation after OS reboot (page cache cold)
+- **warm**: second invocation, same binary, same file
+
+| Program | CSNOBOL4 cold | CSNOBOL4 warm | SPITBOL cold | SPITBOL warm | dotnet cold | dotnet warm | jvm cold | jvm warm | x-asm cold | x-asm warm | x-jvm cold | x-jvm warm | x-net cold | x-net warm |
+|---------|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
+| null.sno (zero work) | — | — | — | — | — | — | — | — | — | — | — | — | — | — |
+| hello.sno (one print) | — | — | — | — | — | — | — | — | — | — | — | — | — | — |
+| roman.sno (real work) | — | — | — | — | — | — | — | — | — | — | — | — | — | — |
+
+Units: milliseconds. Machine spec recorded at run time.
+
+#### G-OPERATOR
+
+All operators across the three comparison points + seven engines.
+
+Categories:
+- **Arithmetic**: `+` `-` `*` `/` `**` (exponent) `REMDR`
+- **Relational (numeric)**: `EQ` `NE` `LT` `LE` `GT` `GE`
+- **Relational (string)**: `IDENT` `DIFFER` `LGT`
+- **Pattern**: concatenation (juxtaposition) `|` (alternation) `~` (complement, SPITBOL) `.` (cond assign) `$` (immediate assign) `@` (cursor)
+- **Indirect reference**: `$` prefix (unary indirect)
+- **Unary negation**: `-` unary
+- **Unevaluated**: `*` prefix (named pattern ref)
+- **OPSYN-defined**: user-defined operator aliases
+
+| Operator | CSNOBOL4 | SPITBOL | SNOBOL5 | dotnet | jvm | x-asm | x-jvm | x-net |
+|----------|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
+| `+` `-` `*` `/` | ✅ | ✅ | ✅ | — | — | — | — | — |
+| `**` (exponentiation) | ✅ | ✅ | ✅ | — | — | — | — | — |
+| `REMDR` | ✅ | ✅ | ✅ | — | — | — | — | — |
+| `EQ NE LT LE GT GE` | ✅ | ✅ | ✅ | — | — | — | — | — |
+| `IDENT DIFFER LGT` | ✅ | ✅ | ✅ | — | — | — | — | — |
+| Pattern concat (juxtaposition) | ✅ | ✅ | ✅ | — | — | — | — | — |
+| `\|` alternation | ✅ | ✅ | ✅ | — | — | — | — | — |
+| `~` complement | ❌ | ✅ | — | — | — | — | — | — |
+| `.` conditional assign | ✅ | ✅ | ✅ | — | — | — | — | — |
+| `$` immediate assign | ✅ | ✅ | ✅ | — | — | — | — | — |
+| `@` cursor capture | ✅ | ✅ | ✅ | — | — | — | — | — |
+| `$` unary indirect ref | ✅ | ✅ | ✅ | — | — | — | — | — |
+| `*` unevaluated / named ref | ✅ | ✅ | ✅ | — | — | — | — | — |
+| `-` unary negation | ✅ | ✅ | ✅ | — | — | — | — | — |
+| OPSYN user operators | ✅ | ✅ | ⚠ | — | — | — | — | — |
+
+SNOBOL5 column to be filled from SNOBOL5 documentation + source review (not a live run).
+
+#### G-VOLUME (per-repo)
+
+Source code volume by **logical function** — categories must be comparable across all repos
+regardless of implementation language (C, Clojure, C#). Do NOT use backend-specific names
+like "x64 ASM emitter" or "Clojure IR" — those are implementation details, not logical functions.
+
+**Cross-repo comparable categories (use these exactly in every repo's table):**
+
+| Category | What counts | snobol4x | snobol4jvm | snobol4dotnet |
+|----------|-------------|----------|------------|---------------|
+| **Parser / lexer** | Source reading, tokenising, parsing to AST | `frontend/snobol4/`, `frontend/snocone/`, `frontend/rebus/` | `grammar.clj`, `emitter.clj`, `snocone*.clj` | `Builder/Lexer.cs`, `Builder/Parser.cs`, `Builder/Snocone*.cs`, `Builder/SourceCode.cs` |
+| **Code emitter** | AST/IR → target code (C, MSIL, JVM bytecode, ASM) | `backend/c/`, `backend/x64/`, `backend/jvm/`, `backend/net/` | `transpiler.clj`, `vm.clj`, `jvm_codegen.clj` | `Builder/BuilderEmitMsil.cs`, `Builder/ThreadedCodeCompiler.cs`, `Builder/Builder.cs` |
+| **Pattern engine** | Byrd Box match engine, pattern primitives | `runtime/engine/`, `runtime/asm/` | `match.clj`, `match_api.clj`, `primitives.clj`, `patterns.clj`, `engine_frame.clj` | `Runtime/Pattern/`, `Runtime/PatternMatching/` |
+| **Runtime / builtins** | Statement execution, built-in functions, variables, I/O, keywords, TRACE | `runtime/snobol4/` | `runtime.clj`, `functions.clj`, `operators.clj`, `invoke.clj`, `env.clj`, `trace.clj`, `errors.clj` | `Runtime/Functions/`, `Runtime/Variable/`, `Runtime/Execution/`, `Runtime/ErrorHandling/` |
+| **Driver / CLI** | Entry point, argument parsing, top-level dispatch | `driver/main.c` | `main.clj`, `core.clj` | `Snobol4/MainConsole.cs`, `Builder/CommandLine.cs` |
+| **Extensions / plugins** | External function loading, native interop, probe tools | `runtime/mock/` | `src/probe/`, `src/t4probe/` | `CustomFunction/`, `Snobol4.Common/ExternalLibrary/` |
+| **Tests** | All test programs, harness scripts, corpus runners | `test/` | `test/` | `TestSnobol4/` |
+| **Benchmarks** | Benchmark programs and harness | — | `bench/`, `bench.clj` | `BenchmarkSuite1/`, `BenchmarkSuite2/` |
+| **Docs / Markdown** | README, design docs, markdown | repo root `*.md` | `doc/`, `*.md` | `*.md` |
+| **Total** | All source (excl. generated artifacts) | | | |
+
+Columns: file count · line count (wc -l) · blank-stripped lines · % of total (src only, no generated artifacts)
+
+#### G-FEATURE (per-repo)
+
+What each repo implements vs. the full SNOBOL4 + SPITBOL feature surface.
+Complements G-COMPAT (which is cross-engine) — G-FEATURE is per-repo depth.
+
+Categories (rows):
+- Core language (labels, GOTOs, subject/pattern/replacement)
+- String operations
+- Numeric operations and types
+- Pattern primitives (all ~25)
+- Capture operators
+- Built-in functions (count implemented / total)
+- Keywords (count implemented / total)
+- DATA / ARRAY / TABLE types
+- User-defined functions + recursion
+- I/O (INPUT/OUTPUT channels, file I/O)
+- LOAD / UNLOAD (external functions)
+- EVAL / CODE (dynamic compilation)
+- OPSYN
+- TRACE / DUMP / debugging
+- CLI switches (count implemented / total)
+- INCLUDE preprocessing
+- Error handling (&ERRLIMIT, SETEXIT)
+- Real number support
+- Unicode / &ALPHABET beyond ASCII
+
+Rating per row: ✅ complete · ⚠ partial · 🔧 skeleton · ❌ missing · — N/A
+
+---
+
+### README v2 Sprint Plan
+
+Each repo README gets its own dedicated session (context window fills fast with source scans).
+Order: snobol4x first (most complete, ASM backend proven), then jvm, dotnet (Jeff), then profile README rollup.
+**snobol4python and snobol4csharp are DEFERRED** — their M-VOL, M-FEAT, M-DEEP-SCAN, and M-README-V2 milestones are out of scope for this sprint. Profile README v2 will roll up only the three active engines (dotnet, jvm, x/ASM) plus reference columns (CSNOBOL4, SPITBOL, SNOBOL5).
+
+**⚠ M-FEAT-* and M-GRID-REFERENCE are the same work — MERGED**
+
+Both require per-feature verification by running actual programs. M-FEAT-* fills Grid 8 per-repo;
+M-GRID-REFERENCE fills Grid 4 cross-engine. Same test programs drive both. Do them together.
+When M-FEAT-{repo} fires, fill that repo's Grid 8 column AND the corresponding engine columns in Grid 4.
+
+**Feature verification technique — one test per feature (R-2 session discovery 2026-03-22):**
+
+The correct approach for M-FEAT-* is NOT static source analysis (grep for register_fn).
+It is: write one 1-3 line `.sno` program per feature, run it against CSNOBOL4 (oracle) first
+to validate the test, then run it against the target engine. Output `PASS` or `FAIL`.
+This reveals both presence AND correctness (e.g. DATATYPE returns lowercase in snobol4x — a real compat divergence).
+
+Test programs live in `test/feat/` in each repo:
+- `f01_core_labels_goto.sno` … `f20_alphabet_unicode.sno`
+- Each outputs exactly `PASS` or `FAIL` (or `PASS (note)` for partial)
+- CSNOBOL4 oracle must output `PASS` for every test before it's committed
+- Run the full suite: `for f in test/feat/f*.sno; do echo "$f: $(snobol4-asm $f)"; done`
+- Results map directly to Grid 8 rows and Grid 4 cells
+
+snobol4x R-2 results (2026-03-22, 12/20 pass):
+- ✅ f01 core labels/goto, f02 string ops, f03 numeric, f04 pattern primitives
+- ✅ f07 keywords, f08 DATA/ARRAY/TABLE, f09 functions+recursion, f14 OPSYN
+- ✅ f15 TRACE/DUMP, f16 CLI switches, f17 INCLUDE (noop), f20 &ALPHABET/256
+- ❌ f05 `@` cursor capture (not implemented), f06 DATATYPE case (lowercase vs UPPERCASE)
+- ❌ f10/f11 named I/O channels, f12 UNLOAD, f13 EVAL/CODE, f18 SETEXIT, f19 REAL predicate
+
+**Per-repo session checklist (revised):**
+1. Clone repo fresh; build engine
+2. Run `wc -l` across all source dirs → G-VOLUME table (if not already done)
+3. Copy `test/feat/` programs from snobol4x; adapt runner for this engine
+4. Run all 20 against oracle (CSNOBOL4) to confirm tests valid
+5. Run all 20 against target engine; record PASS/FAIL per feature
+6. Fill Grid 8 column for this repo; fill Grid 4 engine columns
+7. Run corpus + harness → fill G-CORPUS, G-BENCH for this engine
+8. Commit test/feat/ + README with all grids; fire M-FEAT-* and partial M-GRID-REFERENCE
+9. Note every G-COMPAT divergence (e.g. DATATYPE case) in Grid 3
+
+**Profile README session (last):**
+1. Pull from all five M-README-V2-* READMEs
+2. Collapse each 10-grid into a summary row per repo
+3. Write a single community-facing narrative intro
+4. Commit; fire M-PROFILE-V2
+
+---
+
+### Dependency chain — README v2
+
+```
+per-repo source scans (M-DEEP-SCAN-*)
+    │
+    ├─ M-VOL-{X,JVM,DOTNET,PYTHON,CSHARP}    (source counting — fast, one session each)
+    ├─ M-FEAT-{X,JVM,DOTNET,PYTHON,CSHARP}   (feature table — from source, no runs)
+    │
+    └─ harness runs (snobol4harness)
+           │
+           ├─ M-GRID-CORPUS     (106-program ladder)
+           ├─ M-GRID-BENCH      (total-time benchmarks)
+           ├─ M-GRID-STARTUP    (cold/warm startup — NEW)
+           ├─ M-GRID-COMPAT     (behavior divergences)
+           ├─ M-GRID-REFERENCE  (builtins/keywords/switches)
+           └─ M-GRID-OPERATOR   (operator grid — NEW)
+                    │
+                    ▼
+    M-GRID-SWITCH-FULL  (CLI switch grid — NEW, from source + runs)
+                    │
+                    ▼
+    M-README-V2-{X,JVM,DOTNET,PYTHON,CSHARP}  (one session each)
+                    │
+                    ▼
+           M-PROFILE-V2   ←  community one-stop shop
+                    │
+                    ▼
+     post to groups.io SNOBOL4 + SPITBOL lists
+```
+
+Three new grids (G-STARTUP, G-OPERATOR, G-SWITCH-FULL) plus five new per-repo grids (G-VOLUME, G-FEATURE)
+bring the total from 4 → 10 grids per repo and 6 → 9 cross-engine grids in GRIDS.md.
+
