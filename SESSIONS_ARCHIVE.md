@@ -12480,3 +12480,32 @@ cd snobol4x && bash setup.sh
 # No auto-semicolon insertion
 # Start at: TK_EOF=0 through TK_ERROR, then implement hand-rolled lexer
 ```
+
+## Session B-264 (2026-03-23) — M-BEAUTY-CASE partial: 4 fixes toward icase PATTERN
+
+**State at entry:** M-BEAUTY-CASE ❌, HEAD a862b01 (then rebased to caa3ed8 from concurrent sessions)
+
+**Work done:**
+
+Four bugs found and fixed toward making icase('hello') return DT_P (PATTERN):
+
+1. **snobol4-asm missing -I"$INC"**: sno2c was called without the include path. All -INCLUDE directives silently failed; the compiled program exited without printing a line. Fix: added `-I"$INC"` to the sno2c call in snobol4-asm.
+
+2. **LOAD_NULVCL DT_S=1 bug**: macro stored `1` (DT_S) instead of `0` (DT_SNUL) and didn't set rax/rdx. Callers doing `mov [r12+N], rax` after LOAD_NULVCL got garbage type tags in function DATA blocks. Fix: `xor eax,eax; xor edx,edx` then store to [rbp-16/8].
+
+3. **LOAD_NULVCL32 same bug**: same DT_S=1 → DT_SNUL=0 fix.
+
+4. **ANY(expr) compiled as ANY("")**: `ANY(&UCASE &LCASE)` has an E_CONC arg (not E_VART or E_QLIT). The emitter's else branch silently used cs="" → `lit_str_1 db 0`. Pattern never matched any character so `letter` was never set. Fix: emit_byrd_asm.c ANY dispatch — when arg is neither E_VART nor E_QLIT, emit_expr into temp .bss slot + ANY_α_VAR.
+
+**Open bug (B-265 target):** ANY_α_VAR calls `NV_GET_fn(varname)` which looks up the SNOBOL4 variable table — it doesn't find the temp .bss labels `any_expr_tmp_N_t/p`. Need `ANY_α_SLOT` macro that reads charset directly from absolute .bss addresses (type_ptr, str_ptr), bypassing NV_GET_fn entirely.
+
+**Commit:** `6fd01aa` B-264
+
+**State at handoff:** M-BEAUTY-CASE ❌ still, 4/5 bugs fixed. B-265 needs ANY_α_SLOT macro + verification that icase('hello') returns PATTERN, then 3-way monitor 9/9 PASS.
+
+**Next session start block:**
+```
+Session B-265 — M-BEAUTY-CASE (BEAUTY SESSION)
+HEAD: 6fd01aa B-264
+Action: Fix ANY_α_SLOT; verify icase PATTERN; run 3-way monitor 9/9; fire M-BEAUTY-CASE
+```

@@ -793,3 +793,55 @@ per-repo source scans (M-DEEP-SCAN-*)
 
 Three new grids (G-STARTUP, G-OPERATOR, G-SWITCH-FULL) plus five new per-repo grids (G-VOLUME, G-FEATURE)
 bring the total from 4 → 10 grids per repo and 6 → 9 cross-engine grids in GRIDS.md.
+
+## §21 — Session B-264 (2026-03-23): M-BEAUTY-CASE — 4 fixes, 1 open (ANY_α_SLOT)
+
+### Fixes applied
+
+| # | Bug | File | Fix |
+|---|-----|------|-----|
+| 1 | `snobol4-asm` missing `-I"$INC"` → -INCLUDE fails silently | `snobol4-asm` | Add `-I"$INC"` to sno2c call |
+| 2 | `LOAD_NULVCL` stores DT_S=1 not DT_SNUL=0; doesn't set rax/rdx | `snobol4_asm.mac` | `xor eax/edx` then store |
+| 3 | `LOAD_NULVCL32` same bug | `snobol4_asm.mac` | same |
+| 4 | `ANY(&UCASE &LCASE)` → E_CONC arg → emitted as `ANY("")` | `emit_byrd_asm.c` | emit_expr into temp .bss slot |
+
+### §21.1 — Remaining open bug: ANY_α_SLOT needed
+
+After fix 4, the emitter generates:
+```nasm
+any_expr_tmp_2_t resq 1   ; .bss: type field of evaluated charset DESCR_t
+any_expr_tmp_2_p resq 1   ; .bss: ptr field
+mov [rel any_expr_tmp_2_t], rax  ; store charset type at match-setup time
+mov [rel any_expr_tmp_2_p], rdx  ; store charset ptr
+; ... then ANY_α_VAR any_expr_tmp_2, ...
+```
+
+But `ANY_α_VAR` expands to `ANY_α_VAR varlab, ...` which calls `stmt_get(varlab)` → `NV_GET_fn("any_expr_tmp_2")`. That name is not in the SNOBOL4 variable table — it's just a .bss label. So charset lookup fails and ANY still doesn't match.
+
+**Fix needed in B-265:**
+
+Add `ANY_α_SLOT` macro to `snobol4_asm.mac`:
+```nasm
+; ANY_α_SLOT typelab, ptrlab, saved, cursor, subj, subj_len, gamma, omega
+; Reads charset directly from .bss type+ptr labels (no NV_GET_fn).
+%macro ANY_α_SLOT 8
+    mov     rax, [rel %1]     ; type
+    mov     rdx, [rel %2]     ; ptr
+    ; build a DESCR_t on stack and call the engine's any_match_descr helper
+    ; (or inline the charset-string extraction logic)
+    ...
+%endmacro
+```
+
+And in `emit_byrd_asm.c` ANY expr branch, emit `ANY_α_SLOT tmplab_t, tmplab_p, ...` instead of `ANY_α_VAR tmplab`.
+
+### §21.2 — Next session action (B-265)
+
+1. `bash setup.sh`
+2. Add `ANY_α_SLOT` macro to `snobol4_asm.mac` that reads charset from two .bss labels directly
+3. Update `emit_byrd_asm.c` ANY expr branch: emit `ANY_α_SLOT` instead of `ANY_α_VAR`
+4. Test: `INC=demo/inc ./snobol4-asm /tmp/icase_test.sno` → must print PATTERN
+5. Run 3-way monitor: `INC=demo/inc bash test/beauty/run_beauty_subsystem.sh case` → 9/9 PASS
+6. Confirm `bash test/crosscheck/run_crosscheck_asm_corpus.sh` → 106/106
+7. Commit `B-265: M-BEAUTY-CASE ✅`, update PLAN.md dashboard + TINY.md, push both repos
+

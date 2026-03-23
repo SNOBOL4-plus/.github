@@ -13,38 +13,55 @@ snobol4x: multiple frontends, multiple backends.
 ## NOW
 
 **Sprint:** `main` — M-BEAUTY-* sprint (beauty.sno subsystem testing via monitor)
-**HEAD:** `a862b01` B-262 (main)
-**Milestone:** M-BEAUTY-CASE ❌ — NEXT (M-BEAUTY-IS ⏸ deferred; M-BEAUTY-FENCE ✅; M-BEAUTY-IO ✅)
+**HEAD:** `6fd01aa` B-264 (main)
+**Milestone:** M-BEAUTY-CASE ❌ — IN PROGRESS (4 fixes applied, 1 open)
 **Invariants:** 106/106 ASM corpus ALL PASS ✅ · 110/110 NET corpus ALL PASS ✅
-**Compatibility policy:** snobol4x implements all SPITBOL extensions (internal builtins + command-line switches identical to SPITBOL). For semantic edge cases where CSNOBOL4 and SPITBOL differ, snobol4x follows CSNOBOL4 behavior. Key exception: DATATYPE() returns UPPERCASE (CSNOBOL4 convention) not lowercase (SPITBOL).
+**Compatibility policy:** snobol4x follows CSNOBOL4 behavior. DATATYPE() returns UPPERCASE.
 
-**⚡ CRITICAL NEXT ACTION — Session B-262 (M-BEAUTY-CASE, BEAUTY SESSION):**
+**⚡ CRITICAL NEXT ACTION — Session B-265 (M-BEAUTY-CASE, BEAUTY SESSION):**
 
 ```bash
-cd /home/claude/snobol4x
+cd /home/claude/snobol4-project/snobol4x   # or: git clone snobol4ever/snobol4x
 git config user.name "LCherryholmes" && git config user.email "lcherryh@yahoo.com"
 git remote set-url origin https://TOKEN_SEE_LON@github.com/snobol4ever/snobol4x.git
-git pull --rebase origin main
+git pull --rebase origin main   # HEAD should be 6fd01aa B-264
 
 # Setup (if fresh container):
 bash setup.sh
 gcc -shared -fPIC -O2 -Wall -o test/monitor/monitor_ipc_sync.so test/monitor/monitor_ipc_sync.c
-gcc -shared -fPIC -O2 -Wall -o /home/claude/x64/monitor_ipc_spitbol.so /home/claude/x64/monitor_ipc_spitbol.c
+gcc -shared -fPIC -O2 -Wall -o /home/claude/snobol4-project/x64/monitor_ipc_spitbol.so     /home/claude/snobol4-project/x64/monitor_ipc_spitbol.c
 
-# Run monitor for fence subsystem:
-INC=/home/claude/snobol4corpus/programs/inc X64_DIR=/home/claude/x64 \
-  MONITOR_TIMEOUT=30 bash test/beauty/run_beauty_subsystem.sh case
-# → fix any ASM divergence vs SPITBOL, repeat until exit 0
+# THE ONE REMAINING BUG (read §21 below before coding):
+# ANY(&UCASE &LCASE) emits temp slot via emit_expr → any_expr_tmp_N_t/p .bss labels.
+# But ANY_α_VAR calls NV_GET_fn(varname) which doesn't know temp labels.
+# Fix: add ANY_α_SLOT macro to snobol4_asm.mac that reads charset directly from
+# two absolute .bss addresses (type ptr + str ptr) rather than via NV_GET_fn.
+# Then in emit_byrd_asm.c ANY expr branch: emit ANY_α_SLOT tmplab_t, tmplab_p, ...
+# instead of registering a fake variable and calling emit_any_var.
+
+# After fix — test icase:
+INC=demo/inc ./snobol4-asm /tmp/icase_test.sno   # must print PATTERN
+
+# Then 3-way monitor:
+INC=demo/inc X64_DIR=/home/claude/snobol4-project/x64   MONITOR_TIMEOUT=30 bash test/beauty/run_beauty_subsystem.sh case
+# → 9/9 PASS → fire M-BEAUTY-CASE
 
 # Confirm corpus invariant
 bash test/crosscheck/run_crosscheck_asm_corpus.sh   # must be 106/106
 
-# Fire M-BEAUTY-CASE — commit snobol4x, update TINY.md, push .github
+# Fire M-BEAUTY-CASE — commit snobol4x, update TINY.md + PLAN.md, push both repos
 ```
 Trigger phrase for beauty sprint: **"playing with beauty"**
-Full developer cycle and subsystem plan → BEAUTY.md · RULES.md §BEAUTY SESSION
+Full developer cycle → BEAUTY.md · RULES.md §BEAUTY SESSION
 
 ## Last Session Summary
+
+**Session B-264 (2026-03-23) — M-BEAUTY-CASE partial — 4 fixes, 1 open:**
+- Fix 1: `snobol4-asm` was not passing `-I"$INC"` to `sno2c` — `-INCLUDE` silently failed, program produced no output.
+- Fix 2+3: `LOAD_NULVCL` / `LOAD_NULVCL32` used `DT_S=1` instead of `DT_SNUL=0`, and didn't set rax/rdx — function variable clear slots got garbage type tags.
+- Fix 4: `emit_byrd_asm.c` ANY(expr) — `ANY(&UCASE &LCASE)` (E_CONC arg) was silently compiled as `ANY("")`. Added emit_expr into temp .bss slot + ANY_α_VAR dispatch.
+- Open: `ANY_α_VAR` calls `NV_GET_fn(varname)` which doesn't find temp labels — needs `ANY_α_SLOT` macro reading charset directly from .bss type+ptr. Root cause of `icase` returning STRING. Fix in B-265.
+- snobol4x commit: `6fd01aa` B-264
 
 **Session F-214 (2026-03-22) — M-PROLOG-HELLO ✅ — Prolog x64 ASM backend first working program:**
 - Wired `-pl -asm` in `main.c` to call new `asm_emit_prolog()` instead of `pl_emit()`.
@@ -64,39 +81,7 @@ Full developer cycle and subsystem plan → BEAUTY.md · RULES.md §BEAUTY SESSI
 - OPEN BUG blocking M-PROLOG-R1: call sites use `pl_NAME_ARITY_r` but predicates defined as `pl_NAME_sl_ARITY_r`. Fix: pass `"functor/arity"` through `pl_safe()` at every call site; drop `_%d` suffix. Grep: `pl_%s_%d_r` in `emit_byrd_asm.c`.
 - snobol4x commit: `082141e` F-214
 
-**Session B-260 (2026-03-23) — M-BEAUTY-GLOBAL partial — binary string NUL-safety:**
-- Built CSNOBOL4 2.3.3 from tarball. Cloned snobol4corpus. Confirmed 106/106 ASM ALL PASS.
-- Built monitor_ipc_sync.so + monitor_ipc_spitbol.so.
-- Created test/beauty/run_beauty_subsystem.sh harness.
-- Fixed run_monitor_3way.sh: SNOLIB includes INC path (cd "$INC") so SPITBOL finds -INCLUDE files.
-- 3-way monitor fired: DIVERGENCE at step 1 — ASM skipped PASS: nul (CSNOBOL4+SPITBOL agreed).
-- Root cause chain (4 bugs, all fixed):
-  1. apply_captures (snobol4_pattern.c): STRVAL → BSTRVAL(text, len) — preserves slen
-  2. stmt_set_capture (snobol4_stmt_rt.c): STRVAL → BSTRVAL(s, len)
-  3. stmt_setup_subject (snobol4_stmt_rt.c): strlen(&ALPHABET)=0 → descr_slen()
-  4. BCHAR_fn: STRVAL → BSTRVAL(buf,1); ident(): strcmp → memcmp+descr_slen
-- 106/106 ALL PASS after fixes.
-- Remaining blocker: M-MON-BUG-ASM-CAPTURE-INCLUDE — SET_CAPTURE not emitted for
-  pat.var conditionals in -INCLUDE'd files. Zero SET_CAPTURE in full driver vs correct
-  standalone. Emitter bug in emit_byrd_asm.c. Next session B-262.
-- snobol4x commit: `7f9491a` B-260
 
-**Session B-260 (2026-03-23) — M-BEAUTY-GLOBAL partial — binary string NUL-safety:**
-- Built CSNOBOL4 2.3.3 from tarball. Cloned snobol4corpus. Confirmed 106/106 ASM ALL PASS.
-- Built monitor_ipc_sync.so + monitor_ipc_spitbol.so.
-- Created test/beauty/run_beauty_subsystem.sh harness.
-- Fixed run_monitor_3way.sh: SNOLIB includes INC path (cd "$INC") so SPITBOL finds -INCLUDE files.
-- 3-way monitor fired: DIVERGENCE at step 1 — ASM skipped PASS: nul (CSNOBOL4+SPITBOL agreed).
-- Root cause chain (4 bugs, all fixed):
-  1. apply_captures (snobol4_pattern.c): STRVAL → BSTRVAL(text, len) — preserves slen
-  2. stmt_set_capture (snobol4_stmt_rt.c): STRVAL → BSTRVAL(s, len)
-  3. stmt_setup_subject (snobol4_stmt_rt.c): strlen(&ALPHABET)=0 → descr_slen()
-  4. BCHAR_fn: STRVAL → BSTRVAL(buf,1); ident(): strcmp → memcmp+descr_slen
-- 106/106 ALL PASS after fixes.
-- Remaining blocker: M-MON-BUG-ASM-CAPTURE-INCLUDE — SET_CAPTURE not emitted for
-  pat.var conditionals in -INCLUDE'd files. Zero SET_CAPTURE in full driver vs correct
-  standalone. Emitter bug in emit_byrd_asm.c. Next session B-262.
-- snobol4x commit: `7f9491a` B-260
 
 **Session B-259 (2026-03-23) — PIVOT: beauty sprint; HQ doc-only session: (2026-03-23) — PIVOT: beauty sprint; HQ doc-only session:**
 - No snobol4x source changes. All work in .github (PLAN.md, RULES.md, TINY.md, BEAUTY.md, MONITOR.md).
