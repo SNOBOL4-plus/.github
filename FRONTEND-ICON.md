@@ -18,7 +18,7 @@ feeding the same TINY pipeline. Goal-directed generators map directly to Byrd bo
 
 | Session | Sprint | HEAD | Next milestone |
 |---------|--------|------|----------------|
-| **ICON frontend** | `main` I-0 — plan written, no code yet | — | M-ICON-LEX |
+| **ICON frontend** | `main` I-0 — JCON deep analysis complete: irgen.icn 38 procedures surveyed, deltas documented, bounded flag strategy, ICN_AND delta, Rung 1 runtime requirements confirmed zero-new-functions; icon-master/tcode.c traverse() surveyed — bytecode emitter, useful only for AST node names; golden C reference test_icon.c confirms α/β/ω/γ label structure; oracle build prerequisite added as M-ICON-ORACLE | `ea83ffd` | M-ICON-ORACLE |
 
 ---
 
@@ -93,7 +93,8 @@ for now.
 
 | ID | Trigger | Depends on | Status |
 |----|---------|-----------|--------|
-| **M-ICON-LEX** | `icon_lex.c` tokenizes all Tier 0 tokens; `icon_lex_test.c` 100% pass | — | ❌ |
+| **M-ICON-ORACLE** | `icont` + `iconx` built from icon-master; `every write(1 to 5);` → `1\n2\n3\n4\n5` confirmed; `icon-master/bin/icont` and `iconx` committed to path | — | ❌ |
+| **M-ICON-LEX** | `icon_lex.c` tokenizes all Tier 0 tokens; `icon_lex_test.c` 100% pass | M-ICON-ORACLE | ❌ |
 | **M-ICON-PARSE-LIT** | Parser produces correct AST for all Proebsting §2 paper examples | M-ICON-LEX | ❌ |
 | **M-ICON-EMIT-LIT** | Byrd box for `ICN_INT` matches paper §4.1 exactly | M-ICON-PARSE-LIT | ❌ |
 | **M-ICON-EMIT-TO** | `to` generator; `every write(1 to 5);` → `1..5` | M-ICON-EMIT-LIT | ❌ |
@@ -530,3 +531,129 @@ Every `xN_start:`/`xN_resume:` label structure = directly maps to our α/β nami
 Only needs: integer arithmetic (reuse x64 ops), range check (`cmp`/`jg`),
 `write(v)` → print int + newline. No strings, no floats, no user procedures.
 **The entire paper example is inlinable with zero new runtime functions.**
+
+---
+
+## icon-master/tcode.c Analysis — Session I-0 (2026-03-23)
+
+Full scan of `icon-master/src/icont/tcode.c` (1066 lines), `tlex.c`, `tparse.c`, and
+the ByrdBox reference files (`test_icon.c`, `test_icon-1.py`, `test_icon-4.py`).
+
+### Critical finding: tcode.c is a stack-VM bytecode emitter — NOT a Byrd box emitter
+
+`traverse()` emits opcode strings (`emit("toby")`, `emit("pfail")`, `emit("invoke")`)
+for a stack-based virtual machine (interpreted by iconx at runtime).
+**Our emitter is structurally different** — we emit labeled goto code / NASM jumps
+directly. tcode.c is useful only as a reference for:
+- AST node type names (`N_To`, `N_If`, `N_Loop`, `N_Scan`, etc.)
+- Understanding which cases need special handling
+
+### AST node names from tcode.c (authoritative)
+
+| icont node | Our enum | Notes |
+|-----------|---------|-------|
+| `N_Int` | `ICN_INT` | ✅ matches |
+| `N_Real` | `ICN_REAL` | ✅ matches |
+| `N_Str` | `ICN_STR` | ✅ matches |
+| `N_Cset` | `ICN_CSET` | ✅ matches |
+| `N_Id` | `ICN_VAR` | ✅ matches |
+| `N_To` | `ICN_TO` | ✅ matches |
+| `N_ToBy` | `ICN_TO_BY` | ✅ matches |
+| `N_If` | `ICN_IF` | ✅ matches |
+| `N_Loop` | `ICN_EVERY`/`ICN_WHILE`/`ICN_UNTIL`/`ICN_REPEAT` | ⚠ icont unifies all loops into `N_Loop` with `ltype`; we keep separate enums — simpler emitter |
+| `N_Not` | `ICN_NOT` | ✅ matches |
+| `N_Limit` | `ICN_LIMIT` | ✅ matches |
+| `N_Scan` | `ICN_SCAN` | ✅ deferred to Rung 4 |
+| `N_Ret` | `ICN_RETURN`/`ICN_FAIL`/`ICN_SUSPEND` | icont uses `Val0(Tree0(t)) == FAIL` to distinguish; our separate nodes are cleaner |
+| `N_Proc` | `ICN_PROC` | icont: `init` block → body → `pfail` fallthrough (procedure always fails at end if no return) |
+| `N_Create` | *(not planned)* | Co-expressions — out of scope |
+| `N_Invok` | `ICN_CALL` | icont emits arg count via `traverse()` return value; we do not use return value |
+| `N_Apply` | `ICN_CALL` | `invoke -1` = dynamic application |
+| `N_Key` | `ICN_VAR` (keyword) | icont: `emits("keywd", name)`; we map keywords to special variable references |
+
+### N_Loop unification (icont pattern — useful to know)
+
+icont treats `every`, `while`, `until`, `repeat` as `N_Loop` with `ltype`:
+
+```c
+case N_Loop:
+    switch ((int)Val0(Tree0(t))) {
+        case EVERY:   // every E do body
+        case WHILE:   // while E do body
+        case UNTIL:   // until E do body
+        case REPEAT:  // repeat body
+    }
+```
+
+**Decision:** Keep our separate `ICN_EVERY/ICN_WHILE/ICN_UNTIL/ICN_REPEAT` enum values.
+Each has distinct four-port wiring (documented in JCON irgen.icn analysis above).
+Merging them into one node with a subtype would require a subtype check in the emitter
+anyway — no benefit, slightly less readable.
+
+### N_Proc structure (icont reveals implicit pfail)
+
+Every Icon procedure body ends with `emit("pfail")` — an unconditional procedure failure.
+This is what happens when execution falls off the end of a procedure body without `return`
+or `fail`. In our emitter:
+
+```nasm
+; end of procedure body — fall through to implicit fail
+  jmp  proc_name_omega
+```
+
+The `pfail` is the ω port of the procedure's Byrd box — already in our design, confirmed correct.
+
+### `return` vs `fail` vs `suspend` (icont clarifies)
+
+icont uses `Val0(Tree0(t)) == FAIL` to check whether `return`/`fail`/`suspend`:
+- `return` without expression → `return &null` (succeeds, returns null)
+- `fail` → procedure failure (ω port)
+- `suspend E` → yield value, keep activation frame alive for resume (β port)
+
+Our separate `ICN_RETURN`/`ICN_FAIL`/`ICN_SUSPEND` nodes encode this cleanly.
+
+### Golden C reference confirms label structure
+
+`ByrdBox/test_icon.c` shows both Figure 1 (raw templates) and Figure 2 (optimized)
+as compilable C. Port naming: `xN_start` / `xN_resume` / `xN_fail` / `xN_succeed`
+maps exactly to our NASM label convention `nodeN_a` / `nodeN_b` / `nodeN_w` / `nodeN_g`.
+
+Extra label `to1_code` (for the counter check loop) is explicitly shown and required.
+This is the canonical reference for correctness of the `to` generator translation.
+
+### test_icon-1.py and test_icon-4.py (execution model reference)
+
+| File | Model | Overhead | Use |
+|------|-------|----------|-----|
+| `test_icon-1.py` | Recursive dispatch, `match port:` per operator | Recursion | Pedagogic clarity |
+| `test_icon-4.py` | Trampoline: each port = function returning next function | No recursion | Continuation-passing style |
+| Our ASM emitter | Flat NASM labels + `jmp` | Zero | Most efficient; matches `test_icon.c` |
+
+### `to` generator: inline counter vs runtime opcode
+
+icont emits: `pnull / traverse(E1) / traverse(E2) / push1 / toby`
+The `toby` VM opcode handles the generator at runtime.
+
+**We use paper §4.4 inline counter** — no runtime function call, pure goto logic.
+This is the correct approach for our emitter. Confirmed by `test_icon.c` Figure 2.
+
+### Oracle build note
+
+The icon-master source uses a configure/make system. Before M-ICON-CORPUS-R1 tests
+can run, `icont` and `iconx` must be built. Add M-ICON-ORACLE as the first milestone
+(see Milestone Table above). Build command:
+
+```bash
+cd /home/claude/icon-master
+./configure && make
+# binaries land in bin/icont and bin/iconx
+echo "every write(1 to 5);" > /tmp/t.icn
+./bin/icont -s /tmp/t.icn && ./bin/t
+# expect: 1 2 3 4 5 (one per line)
+```
+
+### Auto-semicolon: icont does it, we don't
+
+icont's lexer (`yylex.h` + `lextab.h`) inserts virtual `;` on newlines when
+last token ∈ `lex_ender_set`. This is standard Icon. **We reject this** —
+explicit `;` everywhere. Confirmed deliberate deviation. Corpus programs need patching.
