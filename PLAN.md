@@ -32,7 +32,7 @@ Session numbers use per-type prefixes (see RULES.md §SESSION NUMBERS): B=backen
 | **TINY frontend** | `main` F-221 — rung01 ✅ rung02 ✅ rung03 ✅ rung04 ✅ rung05 ✅ rung06 ✅ rung07 ✅. Fixes: (1) cut E_CUT redirects next_clause→omega after _cut=1 so fail/0 exits correctly; (2) if-then-else user-call condition emits pl_<pred>_r call + js else_lbl; (3) sequential body ucalls: only last call uses base-relative sub_cs, earlier calls always fresh (xor edx). M-PROLOG-R6+R7 fire. Open: rung08 sub_cs propagation across sequential recursive calls (fib→factorial); rung09 NASM FAIL (undiagnosed). | `692a9ff` F-221 | M-PROLOG-R8 |
 | **DOTNET** | `net-polish` D-163 — clean slate | `8feb139` D-163 | TBD |
 | **README** | `main` — M-README-CSHARP-DRAFT ✅ | `00846d3` snobol4csharp | M-README-DEEP-SCAN (next) |
-| **ICON frontend** | `main` I-3 — M-ICON-PROC WIP `5cf9295`: param/local fixes done; t01_add_proc PASS; t02_fact+t03_locals FAIL — BSS _val slots global not per-invocation; recursive calls overwrite parent node vals; fix = stack-allocate node temps | `5cf9295` | M-ICON-PROC (fix BSS recursion bug) |
+| **ICON frontend** | `main` I-4 — M-ICON-PROC ✅ `54248fe`: BSS _val→hw stack push/pop + frame slots; rung02 t01/t02/t03 PASS (add=7, fact=120, sum_to=15); rung01 t02/t05/t06 regress (binop β wiring conflict: generator-left vs value-left — needs bounded flag); t03_nested_to SEGV | `54248fe` | M-ICON-SUSPEND (after rung01 regression fix) |
 | **README v2 sprint** | `main` R-2 — PIVOT: snobol4x M-FEAT-X deferred (partial, 12/20 pass); 20 feature test programs written to snobol4x/test/feat/; M-FEAT-* and M-GRID-REFERENCE MERGED (same work — see below); next: M-FEAT-JVM on snobol4jvm | TBD R-2 | M-FEAT-JVM |
 
 **Invariants (check before any work):**

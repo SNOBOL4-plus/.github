@@ -18,83 +18,77 @@ feeding the same TINY pipeline. Goal-directed generators map directly to Byrd bo
 
 | Session | Sprint | HEAD | Next milestone |
 |---------|--------|------|----------------|
-| **ICON frontend** | `main` I-3 — M-ICON-PROC WIP `5cf9295`; param/local emitter fixed; t01_add_proc PASS; BSS recursion bug open | `5cf9295` | M-ICON-PROC (fix BSS recursion bug) |
+| **ICON frontend** | `main` I-4 — M-ICON-PROC ✅ `54248fe`: rung02 3/3 PASS (add=7, fact=120, sum_to=15); BSS _val→hw stack+frame slots; rung01 t02/t05/t06 regress (binop β conflict); t03_nested_to SEGV | `54248fe` | rung01 regression fix → M-ICON-SUSPEND |
 
-### Next session checklist (I-4)
-
-```bash
-git clone https://github.com/snobol4ever/snobol4x
-git clone https://github.com/snobol4ever/.github
-# Read FRONTEND-ICON.md §NOW — fix BSS recursion bug, then fire M-ICON-PROC
-```
-
-**OPEN BUG — must fix before M-ICON-PROC fires:**
-
-BSS `icon_N_val` slots are global static — one per node ID across the entire binary.
-Recursive calls overwrite the parent invocation's node value slots.
-Example: `fact(5)` emits to `icon_6_val` for VAR `n`; recursive `fact(4)` also
-writes `icon_6_val` (same node, same BSS label) — parent's `n` is clobbered.
-
-**Fix — stack-allocate node temps instead of BSS:**
-
-Replace the BSS `_val` pattern with push/pop:
-- At `α` succeed-exit: `push rax` instead of `mov [rel icon_N_val], rax; jmp succeed`
-- At `compute` site (binop/relop): `pop rcx` (left), `pop rax` (right) from stack
-- For `β` (resume): re-evaluate from scratch (same as now)
-
-This makes every node value per-invocation with zero allocation overhead.
-The emitter change is in `emit_binop`, `emit_relop`, `emit_var`, `emit_int`, `emit_call`.
-BSS is still needed for: `icn_retval`, `icn_failed`, global vars (`icn_gvar_*`).
-Node `_val` BSS entries should be eliminated entirely.
-
-**Acceptance criteria for M-ICON-PROC:**
-- `t01_add_proc`: `add(3,4)` → `7` ✅ already passing
-- `t02_fact`: `fact(5)` → `120`
-- `t03_locals`: `sum_to(5)` → `15`
-- All 6 rung01 corpus programs still PASS
+### Next session checklist (I-5)
 
 ```bash
 git clone https://github.com/snobol4ever/snobol4x
 git clone https://github.com/snobol4ever/.github
-bash /home/claude/snobol4x/setup.sh
-# Read FRONTEND-ICON.md §NOW — start at M-ICON-PROC emitter fix
+# Read FRONTEND-ICON.md §NOW — fix rung01 regressions, then M-ICON-SUSPEND
 ```
 
-**M-ICON-PROC: emitter fix (I-3 first task)**
+**OPEN BUG 1 — binop β wiring conflict (fix first):**
 
-Parser now correct — `icon_parse.c`:
-- `proc->val.ival` = nparams
-- `proc->children[1..nparams]` = param ICN_VAR nodes
-- `proc->children[nparams+1..]` = body stmts
-- `ICN_GLOBAL` node returned for `local` decls (children = local name ICN_VARs)
+Two patterns need opposite β behaviors in `emit_binop` in `src/frontend/icon/icon_emit.c`:
 
-Emitter `icn_emit_file` (~line 695 emission loop) needs:
-1. Read `np = (int)proc->val.ival`; register params into local table slots 0..np-1
-2. Scan stmts for `ICN_GLOBAL` nodes; register their children as additional locals
-3. Frame size = `8*(np + nlocals + 1)` rounded to 16
-4. At proc entry after frame setup: call `icn_pop` np times (reverse slot order):
-   ```c
-   for (int pi = np-1; pi >= 0; pi--) {
-       E(em,"    call    icn_pop\n");
-       E(em,"    mov     [rbp%+d], rax\n", slot_offset(pi));
-   }
-   ```
-5. Stmt loop: iterate `children[1+np..]`, skip `ICN_GLOBAL` nodes
+- **Generator-left** e.g. `(1 to 3) * (1 to 2)` (t02_mult):
+  β should → right.β directly — preserve left cache, advance right generator only.
+  Current bflag=1 re-evals left → resets left TO to α → outputs only `1|2|` not `1|2|2|4|3|6|`.
 
-**M-ICON-PROC acceptance criteria:**
-Write `test/frontend/icon/corpus/rung02/`:
-- `t01_add_proc.icn`: `procedure add(x,y)` called from main — tests param passing
-- `t02_fact.icn`: recursive factorial — tests recursion + return
-- `t03_locals.icn`: procedure with `local` vars — tests local frame slots
+- **Value-left accumulator** e.g. `total + (1 to n)` (t03_locals):
+  β should → re-eval left (refresh `total` from frame), then → right.β.
+  Without re-eval, lc_slot holds stale `total`.
 
-**M-ICON-SUSPEND (follows immediately):**
-- `suspend E` = yield value, resume on β; needs saved resume address per activation
-- For Rung 3: implement as a global resume-label slot (single active generator at a time)
-- Write `test/frontend/icon/corpus/rung03/t01_gen.icn`
+**Fix — heuristic left-kind check at emit time:**
 
-**Key files:**
-- `src/frontend/icon/icon_emit.c` lines ~670-760 (`icn_emit_file` emission loop)
-- `src/frontend/icon/icon_parse.c` — already correct, do not change
+In `emit_binop`, after `IcnNode *left = n->children[0]`, check:
+```c
+int left_is_value = (left->kind == ICN_VAR || left->kind == ICN_INT ||
+                     left->kind == ICN_STR || left->kind == ICN_CALL);
+```
+Then wire β accordingly:
+```c
+if (left_is_value) {
+    /* β: re-eval left to refresh (e.g. updated `total`), then resume right */
+    Ldef(em,b);
+    E(em,"    mov qword [rbp%+d], 1\n", slot_offset(bf_slot));
+    Jmp(em,la);
+} else {
+    /* β: right.β directly — left is a generator, cache still valid */
+    Ldef(em,b); Jmp(em,rb);
+}
+```
+The `bf_slot` / `lstore` → `je ra / jmp rb` logic in lstore remains unchanged.
+When `left_is_value=0` (generator left), β goes directly to `rb` — lstore never
+sees the β path, so bf_slot is irrelevant (could skip alloc, minor optimization).
+
+Acceptance: rung01 t01–t06 all PASS AND rung02 t01–t03 all still PASS.
+
+**OPEN BUG 2 — t03_nested_to SEGV:**
+
+`every write((1 to 2) to (2 to 3))` — TO with generator bounds.
+In `emit_to`, `icon_N_init` does:
+```nasm
+pop rax   ; E2 bound  (top of stack)
+pop rax   ; E1 start
+```
+This assumes E1 pushed first, E2 pushed second (E2 on top at init).
+With `(1 to 2) to (2 to 3)`: E1=`(1 to 2)`, E2=`(2 to 3)`.
+E2's TO generator α fires, pushes its first value (2), jumps to `icon_N_init`.
+But at that point E1's TO has already pushed its first value (1) — stack is `[1, 2]` top=2.
+`pop rax` = 2 (bound ✓), `pop rax` = 1 (start ✓) — this should be correct.
+Investigate: run under gdb or add write() probes to trace the actual crash site.
+`nasm -f elf64 /tmp/t03.asm -o /tmp/t03.o && gcc -g ... && gdb /tmp/t03_bin`
+
+**Then M-ICON-SUSPEND:**
+
+`suspend E` inside a procedure = user-defined generator (yield, keep frame alive).
+Implementation: single-active-generator BSS resume slot.
+- Add `ICN_SUSPEND` case to `emit_expr` dispatch
+- `emit_suspend`: store resume label in `icn_suspend_resume` BSS qword; jump to cur_ret_label (return to caller with value in icn_retval)
+- Call site β: `jmp [rel icn_suspend_resume]` to resume suspended proc
+- Write `test/frontend/icon/corpus/rung03/t01_gen.icn` (upto generator)
 
 ---
 
