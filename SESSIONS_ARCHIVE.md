@@ -12434,3 +12434,49 @@ done
 #   - In bfail path (retry), pass saved_idx+1 as start instead of 0
 #   - This enables depth-first backtracking through recursive predicates
 ```
+
+## Session I-0 — JCON Deep Analysis + FRONTEND-ICON.md update
+
+**Date:** 2026-03-23
+**Trigger:** "playing with ICON frontend for snobol4x" + JCON source zip + ByrdBox zip + Proebsting paper PDF
+**Milestone:** Pre-coding analysis only — no milestone fired. Next: M-ICON-LEX.
+**Commit:** `e675b4b` (.github FRONTEND-ICON.md + PLAN.md)
+
+### Work done
+
+1. Read PLAN.md (HQ), FRONTEND-ICON.md, MISC.md §JCON, ARCH.md.
+2. Fully scanned `jcon-master/tran/` (9904 lines across 9 files):
+   - `ir.icn` (48): complete IR vocabulary documented
+   - `irgen.icn` (1559): all 38 four-port wiring procedures surveyed
+   - `optimize.icn` (472): three passes documented (dead-assign, copy-prop, goto-chain)
+   - `lexer.icn` (259): auto-semicolon logic documented (we reject it)
+   - `gen_bc.icn` (2038): JVM backend — not needed for x64 ASM, skimmed only
+3. Read `ByrdBox/test_icon.c` — golden C reference for `every write(5 > ((1 to 2) * (3 to 4)));`
+4. Read Proebsting 1996 paper (attached PDF) — confirmed all §4.1–4.5 templates match irgen.icn.
+5. Committed 248-line JCON analysis appendix to FRONTEND-ICON.md.
+
+### Key findings
+
+- **`bounded` flag**: thread as parameter now even without optimizing — matches irgen.icn architecture
+- **`ir_ResumeValue` not needed for Rung 1**: all paper ops (`+`,`*`,`<`,`>`,`to`,`every`,`if`) are in the `funcs` set → simple β wiring only
+- **`to` generator**: use inline counter (paper §4.4), NOT JCON's runtime `"..."` call
+- **`ICN_AND` needed**: conjunction `&` uses `ir_conjunction` wiring, not binop
+- **New enum entries needed**: `ICN_NOT`, `ICN_LIMIT`, `ICN_REPALT`, `ICN_COMPOUND`, `ICN_MUTUAL`, `ICN_SECTION`, `ICN_AND`
+- **`suspend`**: requires Technique 2 DATA blocks — Rung 3, not blocking Rungs 1-2
+- **Optimizer**: defer until post-R1; streaming ASM gives Figure-1-style output, which is correct
+- **Rung 1 runtime**: zero new runtime functions needed — fully inlinable on x64
+- **Milestone sequence M-ICON-LEX → M-ICON-CORPUS-R4**: correct as written, no reordering needed
+
+### Next session bootstrap
+
+```bash
+git clone https://github.com/snobol4ever/.github
+git clone https://github.com/snobol4ever/snobol4x
+cd snobol4x && bash setup.sh
+# Read FRONTEND-ICON.md — especially §Deep JCON Analysis (I-0) before writing any code
+# First milestone: M-ICON-LEX
+# File to create: src/frontend/icon/icon_lex.h + icon_lex.c + icon_lex_test.c
+# Token set: see FRONTEND-ICON.md §Sprint I-1 Plan
+# No auto-semicolon insertion
+# Start at: TK_EOF=0 through TK_ERROR, then implement hand-rolled lexer
+```
