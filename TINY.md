@@ -51,21 +51,18 @@ grep -n "_b_DATA\|type->name\|DT_DATA" src/runtime/snobol4/snobol4.c | head -15
 
 ## Last Session Summary
 
-**Session B-257 (2026-03-22) — M-MONITOR-4DEMO partial:**
-- Root cause of treebank step-0 timeout: three layered bugs found and fixed
-- Bug 1: `FAIL_BR` emitter bug — assignment with unconditional goto `:(LABEL)` + NRETURN fn:
-  `FAIL_BR` jumped to next statement instead of goto target. Fixed in 5 assignment cases
-  (VART/KW general path, E_INDR indirect, E_IDX array, field-set, item-set). All emit
-  `has_u_only` stub routing NRETURN failure to `tgt_u`. 106/106 corpus ALL PASS after fix.
-- Bug 2: `demo/treebank.sno` program: pre-built `WBRKS = '( )' NL` before `word` pattern
-  (inline concat inside NOTANY/BREAK fails in ASM). DATATYPE checks made case-insensitive.
-  ASM treebank now produces correct output vs oracle.
-- Bug 3: `run_monitor_sync.sh`: ASM/NET were compiling original `$SNO` not `$TMP/instr.sno`
-  (no TRACE() calls → zero events → step-0 timeout). Also: `blk_alloc.c`/`blk_reloc.c`
-  missing from ASM link. Both fixed. ASM now participates in treebank monitor.
-- Status after fix: wordcount diverges at step 3 (M-MON-BUG-ASM-WPAT: PATTERNPATTERN);
-  treebank NET still step-0 timeout (NET deferred per command decision).
-- Commits: `832c236` B-257
+**Session B-258 (2026-03-22) — M-MON-BUG-ASM-WPAT ✅ + 3-way monitor + corpus DATATYPE fixes:**
+- Root cause: `stmt_concat()` in `snobol4_stmt_rt.c` lacked pattern case. `BREAK(WORD) SPAN(WORD)`
+  passed both `DT_P` operands through `VARVAL_fn()` → `"PATTERN"` each → concatenated →
+  `"PATTERNPATTERN"`. Fix: `if (a.v == DT_P || b.v == DT_P) return pat_cat(pa, pb)` guard,
+  promoting string operands to `pat_lit()`. Mirrors identical guard in `snobol4.c`.
+- Added `test/monitor/run_monitor_3way.sh` — 3-way variant (csn+spl+asm), JVM/NET excluded.
+- 3-way results: hello PASS ✅; wordcount ASM AGREE ✅; treebank diverges step 10
+  `STK='cell'` vs `'CELL'` — filed M-MON-BUG-ASM-DATATYPE-CASE; claws5 spl segfault (known).
+- snobol4corpus: fixed 3 tests to normalize `DATATYPE()` via `REPLACE(x,&LCASE,&UCASE)` —
+  `081_builtin_datatype`, `096_data_datatype_check`, `1115_data_basic`. Only `DATATYPE()`
+  return values coerced; user field values untouched. Stable across CSNOBOL4/SPITBOL(-f/-F)/ASM.
+- 106/106 ALL PASS. Commits: `a4a27ab` B-258 (snobol4x), `05b809d` (snobol4corpus)
 
 **Session B-255 (2026-03-22) — M-MONITOR-SYNC ✅:**
 - Added trace-registration hash set (64-slot open-addressed, `trace_set[]`) to snobol4.c
@@ -86,7 +83,7 @@ grep -n "_b_DATA\|type->name\|DT_DATA" src/runtime/snobol4/snobol4.c | head -15
 |----|--------|
 | M-MONITOR-SYNC     | ✅ `2652a51` B-255 |
 | M-MON-BUG-NET-TIMEOUT | ✅ `1e9f361` B-256 |
-| M-MONITOR-4DEMO    | ❌ **NEXT** — fix treebank ASM/NET step-0 timeout; then all 5 PASS on wordcount+treebank+claws5 |
+| M-MONITOR-4DEMO    | ❌ — wordcount ASM AGREE ✅; treebank blocks on M-MON-BUG-ASM-DATATYPE-CASE; claws5 spl segfault (known) |
 | M-MON-BUG-SPL-EMPTY   | ❌ |
 | M-MON-BUG-ASM-WPAT    | ✅ `a4a27ab` B-258 |
 | M-MON-BUG-ASM-DATATYPE-CASE | ❌ **NEXT** |
