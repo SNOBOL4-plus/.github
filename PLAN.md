@@ -26,7 +26,7 @@ Session numbers use per-type prefixes (see RULES.md §SESSION NUMBERS): B=backen
 
 | Session | Sprint | HEAD | Next milestone |
 |---------|--------|------|----------------|
-| **TINY backend** | `main` B-270 — monitor infrastructure fix: x64 cloned to `/home/claude/beauty-project/x64`; symlink `/home/claude/x64 → /home/claude/beauty-project/x64` required for 3-way monitor (default X64_DIR). M-BEAUTY-STACK 3-way PASS confirmed (CSN+SPL+ASM 8 steps, 0 divergence). snobol4x HEAD `3251cd4`. Next: M-BEAUTY-TDUMP — 2 bugs open: ANY(&UCASE &LCASE) charset quoting + STLIMIT loop in Gen | `3251cd4` B-269 | M-BEAUTY-TDUMP |
+| **TINY backend** | `main` B-271 — M-BEAUTY-TDUMP 3-way PASS (CSN+SPL+ASM 1 step, 0 divergence). INC=demo/inc fix (correct include path for beauty drivers). 106/106 corpus invariant holds. Next: M-BEAUTY-GEN | `6255a71` B-270 | M-BEAUTY-GEN |
 | **TINY NET** | `net-t2` N-248 — M-T2-NET ✅ 110/110 clean | `425921a` N-248 | M-T2-FULL |
 | **TINY JVM** | `jvm-t2` J-213 — M-T2-JVM ✅ 106/106 clean | `8178b5c` J-213 | M-T2-FULL |
 | **TINY frontend** | `main` F-226 — 2-ucall mini PASS ✅ (color(X),color(Y)→9/9); puzzle_01/05/06 PASS; βN unwind fix partial: rung05/06/08 regressed; root cause documented §27; uncommitted WIP on `b0b190c` | `b0b190c` F-224 (WIP) | M-PROLOG-R10 |
@@ -241,7 +241,7 @@ Sprint detail and runner design → [MONITOR.md](MONITOR.md)
 | **M-BEAUTY-STACK** | `test/beauty/stack/driver.sno` exercises Init/Push/Pop/Top value stack from `stack.sno`; 3-way PASS | snobol4x | ✅ `c09c33a` B-267 |
 | **M-BEAUTY-TREE** | `test/beauty/tree/driver.sno` exercises DATA tree(t,v,n,c): Append/Prepend/Insert/Remove from `tree.sno`; 3-way PASS; depends on M-BEAUTY-STACK | snobol4x | ✅ `ed72c0f` B-268 |
 | **M-BEAUTY-SR** | `test/beauty/ShiftReduce/driver.sno` exercises Shift(t,v)/Reduce(t,n) tree builder from `ShiftReduce.sno`; 3-way PASS; depends on M-BEAUTY-TREE + M-BEAUTY-COUNTER | snobol4x | ✅ `163c952` B-269 |
-| **M-BEAUTY-TDUMP** | `test/beauty/TDump/driver.sno` exercises TLump/TDump tree pretty-printer from `TDump.sno`; 3-way PASS; depends on M-BEAUTY-TREE | snobol4x | ❌ |
+| **M-BEAUTY-TDUMP** | `test/beauty/TDump/driver.sno` exercises TLump/TDump tree pretty-printer from `TDump.sno`; 3-way PASS; depends on M-BEAUTY-TREE | snobol4x | ✅ `6255a71` B-271 |
 | **M-BEAUTY-GEN** | `test/beauty/Gen/driver.sno` exercises Gen/GenLine code generation output from `Gen.sno`; 3-way PASS; depends on M-BEAUTY-IO | snobol4x | ❌ |
 | **M-BEAUTY-QIZE** | `test/beauty/Qize/driver.sno` exercises Qize/DeQize quoting/unquoting from `Qize.sno`; 3-way PASS; depends on M-BEAUTY-GLOBAL | snobol4x | ❌ |
 | **M-BEAUTY-READWRITE** | `test/beauty/ReadWrite/driver.sno` exercises ReadLine/WriteLine buffered I/O from `ReadWrite.sno`; 3-way PASS; depends on M-BEAUTY-IO | snobol4x | ❌ |

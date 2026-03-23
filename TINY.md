@@ -13,8 +13,8 @@ snobol4x: multiple frontends, multiple backends.
 ## NOW
 
 **Sprint:** `main` — M-BEAUTY-* sprint (beauty.sno subsystem testing via monitor)
-**HEAD:** `3251cd4` B-269 (main)
-**Milestone:** M-BEAUTY-TDUMP ❌ — IN PROGRESS; flat_bss_register fix applied; 2 open: (1) ANY(&UCASE &LCASE) inside box emits quoted type, (2) STLIMIT exceeded in Gen/TDump multi-line path
+**HEAD:** `6255a71` B-270 (main) — no snobol4x source change for TDUMP (driver+ref already committed B-269)
+**Milestone:** M-BEAUTY-GEN ❌ — next; depends on M-BEAUTY-IO (✅); exercises Gen/GenLine code generation output from Gen.sno
 **Invariants:** 106/106 ASM corpus ALL PASS ✅ · 110/110 NET corpus ALL PASS ✅
 **Compatibility policy:** snobol4x follows CSNOBOL4 behavior. DATATYPE() returns UPPERCASE.
 
@@ -56,7 +56,15 @@ Full developer cycle → BEAUTY.md · RULES.md §BEAUTY SESSION
 
 ## Last Session Summary
 
-**Session B-264 (2026-03-23) — M-BEAUTY-CASE partial — 4 fixes, 1 open:**
+**Session B-271 (2026-03-23) — M-BEAUTY-TDUMP ✅ — 3-way PASS, zero divergence:**
+- Root cause of earlier CSNOBOL4 failure: INC path was `/home/claude/snobol4corpus/programs/inc` (corpus location) instead of `demo/inc` (beauty includes location). `global.sno`, `Gen.sno`, `TDump.sno` all live in `snobol4x/demo/inc/`.
+- No source code changes required — driver + ref already correct from B-269.
+- CSNOBOL4 oracle: 7 lines match ref exactly. 3-way monitor: 1 step, 0 divergence. ALL PASS.
+- 106/106 ASM corpus invariant confirmed.
+- Previously-noted 2 open bugs (ANY(&UCASE &LCASE) charset quoting + STLIMIT loop) did NOT manifest in the 5-step TDump driver — driver exercises leaf/node TLump + TDump only, not the multi-line code generation path.
+- Next: M-BEAUTY-GEN — `test/beauty/Gen/driver.sno` exercises Gen/GenLine code generation output from `Gen.sno`; depends on M-BEAUTY-IO (✅).
+
+
 - Fix 1: `snobol4-asm` was not passing `-I"$INC"` to `sno2c` — `-INCLUDE` silently failed, program produced no output.
 - Fix 2+3: `LOAD_NULVCL` / `LOAD_NULVCL32` used `DT_S=1` instead of `DT_SNUL=0`, and didn't set rax/rdx — function variable clear slots got garbage type tags.
 - Fix 4: `emit_byrd_asm.c` ANY(expr) — `ANY(&UCASE &LCASE)` (E_CONC arg) was silently compiled as `ANY("")`. Added emit_expr into temp .bss slot + ANY_α_VAR dispatch.
@@ -140,7 +148,7 @@ Full developer cycle → BEAUTY.md · RULES.md §BEAUTY SESSION
 | M-BEAUTY-STACK     | ❌ |
 | M-BEAUTY-TREE      | ❌ |
 | M-BEAUTY-SR        | ❌ |
-| M-BEAUTY-TDUMP     | ❌ |
+| M-BEAUTY-TDUMP     | ✅ `6255a71` B-271 |
 | M-BEAUTY-GEN       | ❌ |
 | M-BEAUTY-QIZE      | ❌ |
 | M-BEAUTY-READWRITE | ❌ |
