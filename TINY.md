@@ -13,11 +13,11 @@ snobol4x: multiple frontends, multiple backends.
 ## NOW
 
 **Sprint:** `main` — M-BEAUTY-* sprint (beauty.sno subsystem testing via monitor)
-**HEAD:** `7f9491a` B-260 (main)
-**Milestone:** M-BEAUTY-GLOBAL ❌ — partial; blocker M-MON-BUG-ASM-CAPTURE-INCLUDE
+**HEAD:** `7e925fd` B-261 (main)
+**Milestone:** M-BEAUTY-IS ❌ — NEXT
 **Invariants:** 106/106 ASM corpus ALL PASS ✅ · 110/110 NET corpus ALL PASS ✅
 
-**⚡ CRITICAL NEXT ACTION — Session B-261 (M-BEAUTY-GLOBAL finish, BEAUTY SESSION):**
+**⚡ CRITICAL NEXT ACTION — Session B-262 (M-BEAUTY-IS, BEAUTY SESSION):**
 
 ```bash
 cd /home/claude/snobol4x
@@ -30,31 +30,31 @@ bash setup.sh
 gcc -shared -fPIC -O2 -Wall -o test/monitor/monitor_ipc_sync.so test/monitor/monitor_ipc_sync.c
 gcc -shared -fPIC -O2 -Wall -o /home/claude/x64/monitor_ipc_spitbol.so /home/claude/x64/monitor_ipc_spitbol.c
 
-# THE BUG: M-MON-BUG-ASM-CAPTURE-INCLUDE
-# SET_CAPTURE not emitted for pat.var conditionals in -INCLUDE'd files.
-# Reproduce:
-INC=/home/claude/snobol4corpus/programs/inc
-./sno2c -asm -I"$INC" test/beauty/global/driver.sno 2>/dev/null | grep -c SET_CAPTURE
-# → 0  (WRONG — should be ~12 for all &ALPHABET captures)
-./sno2c -asm /home/claude/snobol4corpus/programs/inc/global.sno 2>/dev/null | grep -c SET_CAPTURE
-# → compare: is it also 0 standalone?
-# Fix in: src/backend/x64/emit_byrd_asm.c  (pat.var conditional assignment)
-
-# After fix — run monitor:
+# Run monitor for next subsystem:
 INC=/home/claude/snobol4corpus/programs/inc X64_DIR=/home/claude/x64 \
-  MONITOR_TIMEOUT=30 bash test/beauty/run_beauty_subsystem.sh global
-# → repeat fix loop until monitor exits 0
+  MONITOR_TIMEOUT=30 bash test/beauty/run_beauty_subsystem.sh is
+# → fix any divergence, repeat until exit 0
 
 # Confirm corpus invariant
 bash test/crosscheck/run_crosscheck_asm_corpus.sh   # must be 106/106
 
-# Fire M-BEAUTY-GLOBAL — commit snobol4x, update TINY.md, push .github
+# Fire M-BEAUTY-IS — commit snobol4x, update TINY.md, push .github
 ```
 
 Trigger phrase for beauty sprint: **"playing with beauty"**
 Full developer cycle and subsystem plan → BEAUTY.md · RULES.md §BEAUTY SESSION
 
 ## Last Session Summary
+
+**Session B-261 (2026-03-22) — M-BEAUTY-GLOBAL ✅ — fix -INCLUDE and ;* inline comments:**
+- Root cause hunt: SET_CAPTURE=0 for driver.sno with -I flag.
+- Discovered sno2c has TWO frontend implementations: sno.l/sno.y (flex/bison, unused) and lex.c/parse.c (active).
+- Bug 1: lex.c join_file() had -INCLUDE as intentional no-op ("library functions in mock_includes.c"). Fixed: call open_include(iname, fname, out) to recursively inline included SNOBOL4 source.
+- Bug 2: global.sno uses ';* comment' end-of-line syntax. FLUSH() semicolon-split pushed '* null character' as second SnoLine → parse error "expected operand after unary operator" on every &ALPHABET line. Fixed: in semicolon-split loop, if next_src after ';' starts with '*' or is empty, set next_len=-1 (treat as end-of-statement comment, not multi-stmt separator).
+- After both fixes: 19 SET_CAPTURE in driver.sno output, 0 parse errors.
+- M-BEAUTY-GLOBAL monitor: PASS — all 3 participants agree at every step (21 steps).
+- 106/106 ALL PASS after fixes.
+- snobol4x commit: `7e925fd` B-261
 
 **Session B-260 (2026-03-23) — M-BEAUTY-GLOBAL partial — binary string NUL-safety:**
 - Built CSNOBOL4 2.3.3 from tarball. Cloned snobol4corpus. Confirmed 106/106 ASM ALL PASS.
@@ -136,8 +136,8 @@ Full developer cycle and subsystem plan → BEAUTY.md · RULES.md §BEAUTY SESSI
 | M-MON-BUG-ASM-WPAT    | ✅ `a4a27ab` B-258 |
 | M-MON-BUG-ASM-DATATYPE-CASE | ❌ — open bug (treebank STK case); beauty sprint proceeds in parallel |
 | M-MON-BUG-JVM-WPAT    | ❌ |
-| **M-BEAUTY-GLOBAL**   | ❌ **NEXT (beauty sprint)** |
-| M-BEAUTY-IS        | ❌ |
+| **M-BEAUTY-GLOBAL**   | ✅ `7e925fd` B-261 |
+| **M-BEAUTY-IS**       | ❌ **NEXT (beauty sprint)** |
 | M-BEAUTY-FENCE     | ❌ |
 | M-BEAUTY-IO        | ❌ |
 | M-BEAUTY-CASE      | ❌ |
