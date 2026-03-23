@@ -13,12 +13,12 @@ snobol4x: multiple frontends, multiple backends.
 ## NOW
 
 **Sprint:** `main` — M-BEAUTY-* sprint (beauty.sno subsystem testing via monitor)
-**HEAD:** `7e925fd` B-261 (main)
-**Milestone:** M-BEAUTY-FENCE ❌ — NEXT (M-BEAUTY-IS ⏸ deferred)
+**HEAD:** `822c58f` B-261 (main)
+**Milestone:** M-BEAUTY-IO ❌ — NEXT (M-BEAUTY-IS ⏸ deferred; M-BEAUTY-FENCE ✅)
 **Invariants:** 106/106 ASM corpus ALL PASS ✅ · 110/110 NET corpus ALL PASS ✅
 **Compatibility policy:** snobol4x implements all SPITBOL extensions (internal builtins + command-line switches identical to SPITBOL). For semantic edge cases where CSNOBOL4 and SPITBOL differ, snobol4x follows CSNOBOL4 behavior. Key exception: DATATYPE() returns UPPERCASE (CSNOBOL4 convention) not lowercase (SPITBOL).
 
-**⚡ CRITICAL NEXT ACTION — Session B-262 (M-BEAUTY-FENCE, BEAUTY SESSION):**
+**⚡ CRITICAL NEXT ACTION — Session B-262 (M-BEAUTY-IO, BEAUTY SESSION):**
 
 ```bash
 cd /home/claude/snobol4x
@@ -33,19 +33,25 @@ gcc -shared -fPIC -O2 -Wall -o /home/claude/x64/monitor_ipc_spitbol.so /home/cla
 
 # Run monitor for fence subsystem:
 INC=/home/claude/snobol4corpus/programs/inc X64_DIR=/home/claude/x64 \
-  MONITOR_TIMEOUT=30 bash test/beauty/run_beauty_subsystem.sh fence
+  MONITOR_TIMEOUT=30 bash test/beauty/run_beauty_subsystem.sh io
 # → fix any ASM divergence vs SPITBOL, repeat until exit 0
 
 # Confirm corpus invariant
 bash test/crosscheck/run_crosscheck_asm_corpus.sh   # must be 106/106
 
-# Fire M-BEAUTY-FENCE — commit snobol4x, update TINY.md, push .github
+# Fire M-BEAUTY-IO — commit snobol4x, update TINY.md, push .github
 ```
 
 Trigger phrase for beauty sprint: **"playing with beauty"**
 Full developer cycle and subsystem plan → BEAUTY.md · RULES.md §BEAUTY SESSION
 
 ## Last Session Summary
+
+**Session B-261 (2026-03-22) — M-BEAUTY-FENCE ✅ + SPITBOL segfault fixed:**
+- SPITBOL segfault-on-exit: nextef() SET_WA(type) → SET_WA(scanp); blkln needs block ptr in wa. Added blksize==0 guard. Committed to snobol4ever/x64 as 2d4554a.
+- P_FENCE_β not defined: user functions (is_fn=1) emitted α and fn_γ/fn_ω but not β. Call sites reference β for backtrack. Fixed: emit beta_lbl as standalone stub after fn_ω → ret_omega.
+- M-BEAUTY-FENCE monitor: PASS (1 step). 106/106 ALL PASS.
+- snobol4x commit: `822c58f` B-261
 
 **Session B-261 (2026-03-22) — M-BEAUTY-GLOBAL ✅ — fix -INCLUDE and ;* inline comments:**
 - Root cause hunt: SET_CAPTURE=0 for driver.sno with -I flag.
@@ -139,8 +145,8 @@ Full developer cycle and subsystem plan → BEAUTY.md · RULES.md §BEAUTY SESSI
 | M-MON-BUG-JVM-WPAT    | ❌ |
 | **M-BEAUTY-GLOBAL**   | ✅ `7e925fd` B-261 |
 | **M-BEAUTY-IS**       | ⏸ DEFERRED — .NAME/NAME semantics (SPITBOL compat, fix post-bootstrap) |
-| **M-BEAUTY-FENCE**    | ❌ **NEXT (beauty sprint)** |
-| M-BEAUTY-IO        | ❌ |
+| **M-BEAUTY-FENCE**    | ✅ `822c58f` B-261 |
+| **M-BEAUTY-IO**       | ❌ **NEXT (beauty sprint)** |
 | M-BEAUTY-CASE      | ❌ |
 | M-BEAUTY-ASSIGN    | ❌ |
 | M-BEAUTY-MATCH     | ❌ |
