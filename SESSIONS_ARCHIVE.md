@@ -1,4 +1,5 @@
 > Org renamed SNOBOL4-plus → snobol4ever, repos renamed March 2026. Historical entries use old names.
+> **Access pattern:** `tail -80 SESSIONS_ARCHIVE.md` for last 1–2 sessions. Never read the full file.
 
 ## N-248 (2026-03-22) — M-T2-NET ✅ + M-T2-FULL ✅
 

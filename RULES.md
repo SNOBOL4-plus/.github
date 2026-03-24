@@ -400,12 +400,17 @@ If the token has not been provided: say explicitly "I cannot push — please pro
 This rule has no exceptions.
 
 **Start:**
-1. Read PLAN.md — know what repo/sprint/HEAD/next-action without reading anything else.
-2. **Read RULES.md** — mandatory every session. Token, identity, artifact, invariant, and chat rules apply immediately.
-3. Read the active platform MD (TINY.md etc.) — get build commands and invariant.
-4. `git log --oneline -3` — verify HEAD matches platform MD. If stale: read SESSIONS_ARCHIVE.md.
-5. Run invariant check (ASM 26/26). If failing: fix before any other work.
-6. **If sprint is `asm-backend`:** read `artifacts/asm/` to orient — last `.s` file is the prior milestone oracle.
+1. **Read PLAN.md §NOW only** — `grep -n "^## \|^| \*\*" .github/PLAN.md | head -20` to find the NOW table. Read only that section. Know repo/sprint/HEAD/next-milestone.
+2. **Read RULES.md section headers only** — `grep -n "^## ⛔" .github/RULES.md` to get the map. Read only the sections relevant to this session type (TOKEN, GIT IDENTITY, SESSION NUMBERS, and your session type's specific rules). Do NOT read RULES.md top-to-bottom.
+3. **Read §NOW and §CRITICAL NEXT ACTION from platform MD only:**
+   ```bash
+   grep -n "^## " .github/TINY.md          # get section line numbers
+   sed -n 'NOW_LINE,CNA_ENDp' .github/TINY.md  # read just those two sections
+   ```
+   Do NOT read the full TINY.md. The session summaries and beauty status are not needed at start.
+4. `git log --oneline -3` — verify HEAD matches §NOW. If stale: `tail -80 .github/SESSIONS_ARCHIVE.md` only.
+5. Run invariant check (`bash snobol4x/test/crosscheck/run_crosscheck_asm_corpus.sh`). Fix before any other work.
+6. **If sprint is beauty:** `grep "← now" .github/TINY.md` — one line tells you the current subsystem. Do NOT read all of BEAUTY.md — only look up the specific subsystem's driver format if needed.
 
 **End:**
 1. Run artifact check (see ARTIFACTS rule above).
