@@ -14847,3 +14847,29 @@ bash /home/claude/snobol4x/setup.sh
 **Milestones fired:** none (M-BEAUTY-READWRITE still in progress)
 
 **Next session:** Fix `_b_OUTPUT` n==3 → build → `INC=demo/inc bash test/beauty/run_beauty_subsystem.sh ReadWrite` → 8/8 → commit B-274: M-BEAUTY-READWRITE ✅ → advance to M-BEAUTY-XDUMP.
+
+## B-274 cont. (2026-03-24) — M-BEAUTY-READWRITE partial; named-channel I/O; RULES.md NOW-row format
+
+**Branch:** main · **HEAD:** cb03ddc (snobol4x) · (pending push, .github)
+
+**Work done:**
+- Built CSNOBOL4 2.3.3 from tarball (`snobol4-2_3_3_tar.gz`) — installed at `/usr/local/bin/snobol4`.
+- Cloned missing `snobol4corpus` — was cause of `setup.sh` exit 1; 106/106 ALL PASS confirmed after clone.
+- Implemented **named-channel I/O table** in `src/runtime/snobol4/snobol4.c`:
+  - `io_chan_t _io_chan[32]` — maps channel# → `{FILE*, varname, is_output, buf, cap}`.
+  - `_b_ENDFILE` upgraded from stub (returned FAILDESCR) to real close-by-channel.
+  - `_b_INPUT` rewritten: stores varname from `a[0]`, opens file into channel slot.
+  - `_b_OUTPUT` added (was completely missing): opens file for write, registers channel.
+  - `NV_GET_fn`: channel-bound input vars now route to `getline()` from channel FILE*.
+  - `NV_SET_fn`: channel-bound output vars now route to `fprintf()` to channel FILE*.
+  - `_b_OUTPUT` registered: `register_fn("OUTPUT", _b_OUTPUT, 1, 4)`.
+- **CSNOBOL4 8/8 PASS** (ref matches oracle).
+- **ASM 7/8** — test 4 (`Read FRETURN on bad path`) fails. Hypothesis: OPSYN chain `input_→io→APPLY(io,name,chan,opts,file)` passes 4 args; `a[3]` may not carry the filename as expected from the `io` function's local variable `fileName` after pattern extraction.
+- **SPITBOL times out at step 0** — known `M-MON-BUG-SPL-EMPTY` open bug; not this session's scope.
+- Added `test/beauty/ReadWrite/tracepoints.conf` (minimal: Read/Write/LineMap only).
+- **RULES.md**: added `⛔ NOW TABLE ROW FORMAT` section — forbids narrative prose in Sprint cell, documents correct 3-field format, gives wrong/right examples, enforces ~80-char limit.
+- **PLAN.md** TINY backend row cleaned of narrative prose per new rule.
+
+**Milestones fired:** none (M-BEAUTY-READWRITE still ❌)
+
+**Next session (B-275):** Debug ASM test 4 — add `fprintf(stderr,...)` in `_b_INPUT` to print `n`, `fname`, `fopen` result. Likely fix is in how `io.sno` passes `fileName` through the OPSYN chain. Once 8/8 ASM → run 3-way → check SPL precedent → fire M-BEAUTY-READWRITE ✅ → advance to M-BEAUTY-XDUMP.

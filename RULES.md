@@ -358,6 +358,29 @@ L3: ARCH/TESTING/MONITOR/RULES/SESSIONS_ARCHIVE/PATCHES/MISC.md  ← deep refere
 When Lon says "update HQ": identify which level owns that content and update there.
 PLAN.md changes only when: milestone status changes, NOW block changes, or 4D matrix cell flips.
 
+## ⛔ NOW TABLE ROW FORMAT — three fields only, no narrative
+
+The NOW table in PLAN.md has exactly three columns: **Session**, **Sprint**, **Next milestone**.
+
+**Sprint cell format:** `` `branch` token — milestone-id milestone-label ``
+**Allowed content:** branch name, commit token, milestone ID, milestone label, ✅/❌ status.
+**Forbidden content:** any step description, any bug detail, any "fixed this session" prose,
+any "session history →" pointer, any parenthetical explanation of what changed.
+
+That content belongs in SESSIONS_ARCHIVE.md (append a new entry) and/or the platform L2 doc.
+
+**Correct example:**
+```
+| **TINY backend** | `main` B-274 — M-BEAUTY-READWRITE ✅ | `abc1234` B-274 | M-BEAUTY-XDUMP |
+```
+
+**Wrong — contains narrative prose:**
+```
+| **TINY backend** | `main` B-274 — M-BEAUTY-READWRITE in progress: _b_INPUT n==3 fixed (bad path now returns FAILDESCR); _b_OUTPUT n==3 fix needed; steps 1–5 PASS. snobol4x PLAN.md is now lean (61 lines). Session history → .github/SESSIONS_ARCHIVE.md. | `da79fbf` B-274 | M-BEAUTY-READWRITE |
+```
+
+**Rule:** If the Sprint cell is longer than ~80 characters, it contains forbidden content. Trim it.
+
 ## ⛔ PUSH — Handoff is not complete until git push succeeds
 
 **Never say "handoff complete", "session done", or any equivalent until `git push` output confirms success on every touched repo.**

@@ -13,12 +13,47 @@ snobol4x: multiple frontends, multiple backends.
 ## NOW
 
 **Sprint:** `main` — M-BEAUTY-* sprint (beauty.sno subsystem testing via monitor)
-**HEAD:** `33e5f7f` B-271 (main)
-**Milestone:** M-BEAUTY-READWRITE ❌ — next; depends on M-BEAUTY-IO (✅); exercises Read/Write/LineMap buffered I/O from ReadWrite.sno
+**HEAD:** `cb03ddc` B-274 (main)
+**Milestone:** M-BEAUTY-READWRITE ❌ — in progress; CSNOBOL4 8/8 PASS; ASM 7/8 (test 4 Read FRETURN failing); SPITBOL known M-MON-BUG-SPL-EMPTY timeout
 **Invariants:** 106/106 ASM corpus ALL PASS ✅ · 110/110 NET corpus ALL PASS ✅
 **Compatibility policy:** snobol4x follows CSNOBOL4 behavior. DATATYPE() returns UPPERCASE.
 
-**⚡ CRITICAL NEXT ACTION — Session B-272 (M-BEAUTY-READWRITE, BEAUTY SESSION):**
+**⚡ CRITICAL NEXT ACTION — Session B-275 (M-BEAUTY-READWRITE, BEAUTY SESSION):**
+
+```bash
+cd /home/claude/beauty-project/snobol4x   # or: git clone snobol4ever/snobol4x + snobol4ever/.github + snobol4ever/x64
+git config user.name "LCherryholmes" && git config user.email "lcherryh@yahoo.com"
+git remote set-url origin https://TOKEN_SEE_LON@github.com/snobol4ever/snobol4x.git
+git pull --rebase origin main   # HEAD should be cb03ddc B-274
+
+# Also clone snobol4corpus sibling:
+git clone https://github.com/snobol4ever/snobol4corpus ../snobol4corpus
+
+# Setup (if fresh container — build CSNOBOL4 from uploaded tarball snobol4-2_3_3_tar.gz):
+# tar xzf snobol4-2_3_3_tar.gz && cd snobol4-2.3.3 && ./configure --prefix=/usr/local && make -j4 && make install
+bash setup.sh   # must end 106/106 ALL PASS
+
+# BUG TO FIX — test 4 (Read FRETURN on bad path) fails in ASM:
+# Read('/nonexistent/path/file.txt') calls INPUT(.rdInput, 8, fname'[-m10 -l131072]')
+# _b_INPUT should return FAILDESCR when fopen fails → :F(FRETURN)
+# Hypothesis: OPSYN chain input_→io→APPLY(io,name,channel,options,fileName) passes
+# 4 args to _b_INPUT. n>=4 branch uses a[3] as fname. Check a[3] value in io chain:
+# io.sno sets fileName via pattern match on arg3; may strip opts differently.
+# Debug: add fprintf(stderr,...) in _b_INPUT to print fname, n, fopen result.
+# Fix confirmed → cd src && make
+
+# Then run 8/8:
+INC=demo/inc bash test/beauty/run_beauty_subsystem.sh ReadWrite
+# SPITBOL will timeout (M-MON-BUG-SPL-EMPTY — known open bug).
+# PRECEDENT: check SESSIONS_ARCHIVE for how prior milestones handled SPL timeout.
+# If 2-way (CSN+ASM) is acceptable per project precedent → fire milestone.
+
+# Fire milestone:
+git commit -m "B-275: M-BEAUTY-READWRITE ✅"
+# Update PLAN.md TINY backend row → M-BEAUTY-XDUMP, update TINY.md NOW
+# git pull --rebase .github && push both repos
+```
+Trigger phrase for beauty sprint: **"playing with beauty"**
 
 ```bash
 cd /home/claude/beauty-project/snobol4x   # or: git clone snobol4ever/snobol4x
