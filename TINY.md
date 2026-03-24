@@ -9,72 +9,53 @@ snobol4x: multiple frontends, multiple backends.
 
 ## NOW
 
-**Sprint:** `main` — B-280 (BEAUTY) · F-223 (Prolog) concurrent
-**HEAD:** `a4f44a3` B-280 (snobol4x)
-**B-session:** M-BEAUTIFY-BOOTSTRAP ❌ — CSNOBOL4 ✅; ASM exit 0 ✅; output 10/784 lines; Parse Error at main02
-**F-session:** M-PROLOG-CORPUS ❌ — rung05 encoding fix attempted, reverted clean
-**Invariants:** 106/106 ASM corpus ALL PASS ✅
+**Sprint:** `main` — B-282 (BEAUTY)
+**HEAD:** `c16c575` B-282 (snobol4x)
+**B-session:** M-BEAUTIFY-BOOTSTRAP ❌ — 3 bugs fixed; M-BEAUTY-GLOBAL ✅ M-BEAUTY-IS ✅ M-BEAUTY-ASSIGN ✅; match driver has pre-existing TxInList bug
+**Invariants:** 106/106 ASM corpus ALL PASS ✅ · claws5 now 0 nasm errors ✅
 
-**⚡ CRITICAL NEXT ACTION — B-281 (M-BEAUTIFY-BOOTSTRAP continued):**
+**⚡ CRITICAL NEXT ACTION — B-283:**
 
 ```bash
 cd /home/claude/snobol4x
-# Build beauty ASM binary (sno2c already fixed in B-280):
+
+# 1. Fix match driver — TxInList undefined (in beauty.sno, not inc/).
+#    Rewrite test/beauty/match/driver.sno to use a simple string+pattern test.
+#    Regenerate ref: snobol4 -f -P256k -Idemo/inc test/beauty/match/driver.sno > test/beauty/match/driver.ref
+
+# 2. Run monitor for remaining subsystems in dependency order:
+for sub in match tree ShiftReduce TDump Gen Qize ReadWrite XDump semantic; do
+  INC=demo/inc X64_DIR=/home/claude/x64 MONITOR_TIMEOUT=60 \
+    bash test/beauty/run_beauty_subsystem.sh $sub
+done
+
+# 3. After all 19 PASS → run beauty bootstrap:
 WORK=$(mktemp -d /tmp/beau_XXXXXX); RT=src/runtime; INC=demo/inc
 for f in asm/snobol4_stmt_rt.c snobol4/snobol4.c mock/mock_includes.c \
-          snobol4/snobol4_pattern.c engine/engine.c; do
-  gcc -O0 -g -c "$RT/$f" -I"$RT/snobol4" -I"$RT" -Isrc/frontend/snobol4 -w -o "$WORK/$(basename $f .c).o"
+          snobol4/snobol4_pattern.c engine/engine.c asm/blk_alloc.c asm/blk_reloc.c; do
+  gcc -O0 -g -c "$RT/$f" -I"$RT/snobol4" -I"$RT" -I"$RT/asm" \
+      -Isrc/frontend/snobol4 -w -o "$WORK/$(basename $f .c).o"
 done
-gcc -O0 -g -c "$RT/asm/blk_alloc.c" -I"$RT/asm" -w -o "$WORK/blk_alloc.o"
-gcc -O0 -g -c "$RT/asm/blk_reloc.c" -I"$RT/asm" -w -o "$WORK/blk_reloc.o"
 ./sno2c -asm -I"$INC" demo/beauty.sno > "$WORK/prog.s"
-nasm -f elf64 -I"$RT/asm/" "$WORK/prog.s" -o "$WORK/prog.o"
+nasm -f elf64 -Isrc/runtime/asm/ "$WORK/prog.s" -o "$WORK/prog.o"
 gcc -no-pie "$WORK"/*.o -lgc -lm -o "$WORK/beauty_asm"
-echo "build: $?"
-
-# Run and diff:
 snobol4 -f -P256k -Idemo/inc demo/beauty.sno < demo/beauty.sno > /tmp/oracle.sno
 "$WORK/beauty_asm" < demo/beauty.sno > /tmp/asm_out.sno 2>/tmp/asm_err.txt
-echo "ASM exit: $?  lines: $(wc -l < /tmp/asm_out.sno)"
 diff /tmp/oracle.sno /tmp/asm_out.sno | head -30
 ```
 
-**BUG B-280-PARSE-ERROR — beauty.sno emits "Parse Error" at main02/main05:**
-```
-ROOT CAUSE: Pattern `Src POS(0) *Parse *Space RPOS(0)` fails on Src at runtime.
-  The Parse pattern variable is set by the parser. Pop() returns the parsed stmt.
-  The failure means either:
-    (a) Parse pattern is not matching/consuming the full Src buffer, OR
-    (b) Pop() returns DIFFER-fail (stack empty), OR
-    (c) The Src accumulation in main02 is wrong (Line concatenation bug)
-  DIAGNOSE: Add xTrace output around main02 to see Src contents and Parse value.
-  Compare Src/Parse values between CSNOBOL4 and ASM runs using the monitor.
-  Run: bash test/beauty/run_beauty_subsystem.sh global (confirm still passing)
-  Then: diagnose main02 Parse pattern match failure vs oracle.
-```
-
-**⚡ F-CRITICAL NEXT ACTION — F-224 (M-PROLOG-CORPUS):**
-
-```
-BUG: rung05 backtrack FAIL — prints a\nb instead of a\nb\nc.
-ROOT CAUSE: prolog_emit.c emit_body last-goal user-call branch (~line 692).
-  PG(γ) returns clause_idx. Caller increments. switch hits default → ω.
-  Inner _cs lost. On retry _cs resets to 0, re-finds b not c.
-
-RECOMMENDED FIX — inner_cs out-param:
-  Change _r signature: int pl_F_r(args, Trail*, int _start, int *_ics_out)
-  After _cr = pl_F_r(..., _lcs, &_ics): *_ics_out = _ics; goto γ;
-  Caller retry: pass &_ics, on retry call with _start=ci, _ics pre-set.
-
-After fix: run all 10 rungs → M-PROLOG-CORPUS fires.
-```
+**Subsystems PASSING after B-282:** global ✅ is ✅ fence ✅ io ✅ case ✅ assign ✅ counter ✅ stack ✅
+**Subsystems NOT YET RUN:** match (driver bug) tree ShiftReduce TDump Gen Qize ReadWrite XDump semantic omega trace
 
 ---
 
 ## Last Two Sessions (3 lines each)
 
-**B-280 (2026-03-24) — 3 emitter bugs fixed; beauty_asm now exit 0; Parse Error at main02:**
-emit_byrd_asm.c: (1) cur_fn not set for DEFINE-body labels (body_label fallback); (2) cur_fn leaked past last fn body (body_end_idx + end_label pre-scan); (3) pre-scan must run before Pass 3. Result: 0 nasm errors, exit 0, 10/784 output lines, Parse Error. 106/106 corpus ALL PASS. HEAD `a4f44a3`.
+**B-282 (2026-03-24) — 3 bugs fixed; M-BEAUTY-GLOBAL/IS/ASSIGN PASS; 106/106:**
+(1) stmt_match_descr: FAILDESCR coerced to empty string matched everywhere; fix IS_FAIL_fn guard.
+(2) stmt_setup_subject: stale subject_len_val on early FAILDESCR return; fix zero before return.
+(3) E_NAM: emitted DT_S(1) not DT_N(9); stmt_nreturn_deref updated. HEAD `c16c575`.
 
-**B-279 (2026-03-24) — ASM nasm errors fixed; binary assembles+links; runtime segfault next:**
-3 bugs in emit_byrd_asm.c: (1) fn-body pattern BSS slots routed into per-box DATA via box_ctx; (2) ANY/SPAN/BREAK expr-tmp tlab/plab use flat_bss_register (direct label required by macros); (3) MAX_VARS 512→2048. Result: 0 nasm undefined symbols. Segfault on runtime run. HEAD `4bc319c`.
+**B-281 (2026-03-24) — E_STAR split from E_INDR; beauty_asm exit 0; 10/784 lines:**
+emit_byrd_asm.c: *VAR runtime DT_P dispatch fixed; binary exits 0; Parse Error at main02 remains.
+HEAD `a732d3b` B-281.

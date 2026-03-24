@@ -50,15 +50,15 @@ backends come online per M-MONITOR-5WAY).
 
 | ID | Subsystem | Depends on | Status |
 |----|-----------|------------|--------|
-| **M-BEAUTY-GLOBAL** | global.sno — character constants correct | — | ❌ |
-| **M-BEAUTY-IS** | is.sno — IsSnobol4/IsSpitbol correct | GLOBAL | ❌ |
-| **M-BEAUTY-FENCE** | FENCE.sno — FENCE primitive correct | IS | ❌ |
-| **M-BEAUTY-IO** | io.sno — INPUT/OUTPUT OPSYN correct | FENCE | ❌ |
-| **M-BEAUTY-CASE** | case.sno — case conversion correct | GLOBAL | ❌ |
-| **M-BEAUTY-ASSIGN** | assign.sno — conditional assignment correct | — | ❌ |
+| **M-BEAUTY-GLOBAL** | global.sno — character constants correct | — | ✅ |
+| **M-BEAUTY-IS** | is.sno — IsSnobol4/IsSpitbol correct | GLOBAL | ✅ |
+| **M-BEAUTY-FENCE** | FENCE.sno — FENCE primitive correct | IS | ✅ |
+| **M-BEAUTY-IO** | io.sno — INPUT/OUTPUT OPSYN correct | FENCE | ✅ |
+| **M-BEAUTY-CASE** | case.sno — case conversion correct | GLOBAL | ✅ |
+| **M-BEAUTY-ASSIGN** | assign.sno — conditional assignment correct | — | ✅ |
 | **M-BEAUTY-MATCH** | match.sno — match/notmatch correct | — | ❌ |
-| **M-BEAUTY-COUNTER** | counter.sno — counter stack correct | — | ❌ |
-| **M-BEAUTY-STACK** | stack.sno — value stack correct | — | ❌ |
+| **M-BEAUTY-COUNTER** | counter.sno — counter stack correct | — | ✅ |
+| **M-BEAUTY-STACK** | stack.sno — value stack correct | — | ✅ |
 | **M-BEAUTY-TREE** | tree.sno — tree DATA type correct | STACK | ❌ |
 | **M-BEAUTY-SR** | ShiftReduce.sno — Shift/Reduce correct | TREE, COUNTER | ❌ |
 | **M-BEAUTY-TDUMP** | TDump.sno — tree dump correct | TREE | ❌ |

@@ -15382,6 +15382,7 @@ The assign and recursive-call emitters still have stack-across-label violations.
 
 **Open for IJ-5:** Bug 3 (rung01 VerifyError in write(long)), then M-IJ-CORPUS-R2.
 
+<<<<<<< Updated upstream
 ## Session PJ-5 — 2026-03-24 — M-PJ-BACKTRACK (in progress)
 
 **Sprint:** `main` PJ-5
@@ -15432,3 +15433,30 @@ cd snobol4x && make -C src
 
 ### Open for IJ-6
 Fix VerifyError: emit `lconst_0; lstore N` for all long slots before suspend_id dispatch so verifier sees consistent types at `icn_upto_beta` join point. See FRONTEND-ICON-JVM.md §IJ-5 findings for full strategy.
+=======
+## Session B-282 — 2026-03-24 — 3 runtime bugs fixed; 8 beauty subsystems PASS
+
+**State at start:** HEAD `a732d3b` B-281. beauty_asm exits 0, 10/784 lines, Parse Error at main02. 106/106 corpus PASS.
+
+**Work done:**
+- Cloned all repos from scratch (new container): snobol4x, .github, x64, snobol4corpus. Built CSNOBOL4 2.3.3 + SPITBOL x64 + sno2c.
+- Ran beauty subsystem monitors with correct INC=demo/inc (not snobol4corpus/programs/inc which doesn't exist).
+- Found and fixed 3 bugs:
+  1. `stmt_match_descr` (snobol4_stmt_rt.c): FAILDESCR coerced to `""` via VARVAL_fn default branch → matched everywhere as empty pattern. Fix: `IS_FAIL_fn` guard returns 0 immediately.
+  2. `stmt_setup_subject` (snobol4_stmt_rt.c): early FAILDESCR return left `subject_len_val` stale → spurious scan retries in P_ω. Fix: zero `subject_len_val` before return.
+  3. `E_NAM` value context (emit_byrd_asm.c): emitted DT_S(1) for `.VAR` instead of DT_N(9). `stmt_nreturn_deref` updated to handle DT_N. assign() now correctly returns `''` not `'dummy'`.
+- claws5 now assembles with 0 nasm errors (was 3 — fixed by prior sessions, confirmed here).
+- match driver has pre-existing bug: TxInList undefined in driver scope (defined in beauty.sno, not inc/). Not caused by B-282. Needs driver rewrite.
+
+**Subsystems PASS after B-282:** global ✅ is ✅ fence ✅ io ✅ case ✅ assign ✅ counter ✅ stack ✅
+**Subsystems remaining:** match (driver bug) tree SR TDump Gen Qize ReadWrite XDump semantic
+
+**State at handoff:** HEAD `c16c575` B-282 on origin/main. 106/106 ALL PASS. BEAUTY.md updated (8 ✅). TINY.md rewritten. PLAN.md NOW row updated.
+
+**Next session start (B-283):**
+1. `git config user.name "LCherryholmes" && git config user.email "lcherryh@yahoo.com"`
+2. Verify `git log origin/main --oneline -1` = `c16c575` in snobol4x
+3. Run `bash test/crosscheck/run_crosscheck_asm_corpus.sh` → must be 106/106
+4. Fix match driver (rewrite to not use TxInList), regenerate ref, run monitor
+5. Continue remaining subsystems in dependency order
+>>>>>>> Stashed changes
