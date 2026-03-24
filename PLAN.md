@@ -15,7 +15,7 @@ Each concurrent session owns exactly one row. Update only your row on every push
 | **TINY backend** | `main` B-274 — M-BEAUTY-READWRITE ❌ | `cb03ddc` B-274 | M-BEAUTY-READWRITE |
 | **TINY NET** | `net-t2` N-248 — M-T2-NET ✅ 110/110 clean | `425921a` N-248 | M-T2-FULL |
 | **TINY JVM** | `jvm-t2` J-213 — M-T2-JVM ✅ 106/106 clean | `8178b5c` J-213 | M-T2-FULL |
-| **TINY frontend** | `main` F-227 | `d2457bd` F-227 | M-PROLOG-R10 |
+| **TINY frontend** | `main` F-215 — prolog_emit dead _mark fix ✅ | `978398a` F-215 | M-PROLOG-WIRE-ASM |
 | **DOTNET** | `main` D-164 — 1903/1903 pass 0 fail on Linux | `e1e4d9e` D-164 | TBD |
 | **README** | `main` — M-README-CSHARP-DRAFT ✅ | `00846d3` snobol4csharp | M-README-DEEP-SCAN |
 | **ICON frontend** | `main` I-8 — diagnosis: 3 bugs in icon_emit.c found (is_gen=0, left_is_value, rsp); no commit | `54031a5` I-7 | M-ICON-CORPUS-R3 |

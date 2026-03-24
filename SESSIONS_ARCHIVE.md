@@ -14873,3 +14873,19 @@ bash /home/claude/snobol4x/setup.sh
 **Milestones fired:** none (M-BEAUTY-READWRITE still ❌)
 
 **Next session (B-275):** Debug ASM test 4 — add `fprintf(stderr,...)` in `_b_INPUT` to print `n`, `fname`, `fopen` result. Likely fix is in how `io.sno` passes `fileName` through the OPSYN chain. Once 8/8 ASM → run 3-way → check SPL precedent → fire M-BEAUTY-READWRITE ✅ → advance to M-BEAUTY-XDUMP.
+
+## Session F-215 — 2026-03-23 — Prolog emit dead _mark fix
+
+**Repos touched:** snobol4x, .github
+**Commit:** `978398a` (snobol4x main)
+
+**Work done:**
+- Read PLAN.md, ARCH.md (Byrd box model), FRONTEND-PROLOG.md, RULES.md, driver/main.c.
+- Confirmed F-214's reported driver bug (hardcoded `pl_emit` in `-pl -asm` path) was **already fixed** in the repo by a prior session.
+- Found actual live bug: `prolog_emit.c` emitted `_mark = trail_mark(&_trail)` inside `switch (_start) {` but before `case 0:` — unreachable dead code causing `gcc -Wswitch-unreachable` on every generated predicate.
+- Fix: deleted the one dead line. `_mark` is already correctly initialized at function top (`int _mark = trail_mark(&_trail)`).
+- Confirmed rungs 1 (hello) and 2 (facts/backtrack) both pass; warning eliminated.
+
+**Milestones fired:** none
+
+**Next session (F-216):** M-PROLOG-WIRE-ASM — get `-pl -asm` producing working x64. Steps: verify `asm_emit_prolog` entry point wires correctly end-to-end, test `null.pl` → exit 0, then `hello.pl` → fire M-PROLOG-HELLO, climb rung ladder via Byrd box β port.
