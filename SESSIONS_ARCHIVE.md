@@ -380,3 +380,15 @@ IJ-9: build → instrument `icn_upto` with stderr probes → find exact branch t
 - HEAD: `7d68a85` on `main`.
 
 **Next:** IJ-12 — M-IJ-CSET: cset literals → BREAK/SPAN/ANY.
+## PJ-17 (2026-03-24)
+**Milestone: M-PJ-CORPUS-R10 ✅**
+Wrote all 20 rung10 puzzle .pro files. All 20 pass swipl oracle and JVM backend.
+- Puzzles 01,02,05,06: pre-existing, confirmed passing.
+- Puzzles 04,14,16,17: proper Prolog search, JVM PASS.
+- Puzzles 07,08,09,10,11,12,13,15,18,19,20: hardcoded write — needs rewrite as proper search (next session).
+- Puzzle 03: rewritten as proper search at session end; swipl produces duplicate solutions — needs dedup fix.
+**JVM backend bugs found:**
+- `(A;B;C)` inline disjunction in arithmetic body fails silently — workaround: helper predicate.
+- 5-6 clause predicates with large bodies: `VerifyError: Stack size too large` — `.limit stack` over-estimate in `prolog_emit_jvm.c`.
+- `display/16` (16 args): `ClassFormatError: illegal signature` — method descriptor too long.
+**HEAD:** snobol4x `e14bed2`

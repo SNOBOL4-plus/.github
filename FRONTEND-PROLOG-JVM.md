@@ -23,10 +23,23 @@ and emits Jasmin `.j` files, assembled by `jasmin.jar`.
 
 ### CRITICAL NEXT ACTION (PJ-18)
 
-**M-PJ-CORPUS-R10 ✅ COMPLETE — all 20 rung10 puzzles pass swipl oracle and JVM backend 20/20.**
+**Next milestone: M-PJ-R10-SEARCH — rewrite hardcoded puzzles as proper Prolog search.**
 
-All rungs 01–09 clean. All 20 rung10 puzzles solved and committed at `722aeff`.
-Next milestone: TBD — see PLAN.md.
+Puzzles 07, 08, 09, 10, 11, 12, 13, 15, 18, 19, 20 currently use hardcoded `write` instead of real search.
+Puzzle 03 has proper search but produces duplicate solutions — needs `once/1` or cut after first solution.
+Pattern to follow: puzzle_01/06 style — domain predicate + `differ/N` + constraint predicates with `!, fail`.
+After each puzzle passes swipl cleanly, run JVM pipeline. Failures → `.xfail` + milestone, never hardcode.
+
+**Bootstrap PJ-18:**
+```bash
+git clone https://TOKEN_SEE_LON@github.com/snobol4ever/snobol4x
+git clone https://TOKEN_SEE_LON@github.com/snobol4ever/.github
+apt-get install -y default-jdk nasm libgc-dev swi-prolog
+make -C snobol4x/src
+# Confirm baseline: rungs 01-09 + rung10 puzzles 01,02,04,05,06,14,16,17 JVM PASS
+# Then rewrite puzzles 03,07,08,09,10,11,12,13,15,18,19,20 as proper search
+# Test each: swipl first, then JVM
+```
 
 **Bootstrap PJ-17:**
 ```bash

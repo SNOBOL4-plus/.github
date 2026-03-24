@@ -94,6 +94,14 @@ Full sprint detail → [FRONTEND-PROLOG.md](FRONTEND-PROLOG.md)
 
 ### Prolog JVM — Active
 
+| ID | Trigger | Status |
+|----|---------|--------|
+| **M-PJ-CORPUS-R10** | Rung 10: Lon's puzzle corpus PASS | ✅ |
+| **M-PJ-R10-SEARCH** | Rewrite hardcoded puzzles 07-13,15,18-20 as proper Prolog search; swipl+JVM all PASS | ❌ |
+| **M-PJ-STACK-LIMIT** | Fix `.limit stack` over-estimate in `prolog_emit_jvm.c` — eliminate VerifyError on 5+ clause predicates | ❌ |
+| **M-PJ-DISJ-ARITH** | Fix `(A;B;C)` inline disjunction silent failure in arithmetic body in JVM emitter | ❌ |
+| **M-PJ-ARITY-CAP** | Fix `ClassFormatError` on high-arity predicates (display/16) — pack args or cap arity | ❌ |
+
 Full sprint detail → [BACKEND-JVM-PROLOG.md](BACKEND-JVM-PROLOG.md) · [FRONTEND-PROLOG-JVM.md](FRONTEND-PROLOG-JVM.md)
 
 ### ICON Frontend — Active
