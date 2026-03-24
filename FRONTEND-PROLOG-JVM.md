@@ -19,60 +19,40 @@ and emits Jasmin `.j` files, assembled by `jasmin.jar`.
 
 | Session | Sprint | HEAD | Next milestone |
 |---------|--------|------|----------------|
-| **Prolog JVM** | `main` PJ-15 — call_omega local_cs reset fix; rungs 01-09 PASS; two-clause fail/retry loop still open | `0df7b38` PJ-15 | M-PJ-CORPUS-R10 |
+| **Prolog JVM** | `main` PJ-16 — two-clause fail/retry fix; rungs 01-09 PASS | `f575016` PJ-16 | M-PJ-CORPUS-R10 |
 
-### CRITICAL NEXT ACTION (PJ-16)
+### CRITICAL NEXT ACTION (PJ-17)
 
-**Bug: two-clause fail/retry predicate (`p :- ..., fail. p.`) loops forever.**
+**Next milestone: M-PJ-CORPUS-R10 — Lon's rung10 puzzle corpus PASS.**
 
-Reproducer (`/tmp/min3.pro`):
-```prolog
-:- initialization(main).
-item(a). item(b).
-differ(X, X) :- !, fail.
-differ(_, _).
-main :- item(X), item(Y), differ(X, Y), write(X), write('-'), write(Y), write('\n'), fail.
-main.
-```
-Expected: `a-b\nb-a` then exit 0. Actual: infinite output, loops forever.
+Rungs 01-09 clean. min3 reproducer (`item/differ/fail` pattern) fixed. Puzzles 01, 05, 06 already pass. Next step: run all rung10 puzzles, identify which stubs/failing cases remain, implement.
 
-**Root cause:** `fail/0` in `pj_emit_goal` does `JI("goto", lbl_ω)`. When `fail` is the last body goal of clause 0, `lbl_ω` at that point is the **clause beta** (retry clause 0), not `lbl_pred_ω` (advance to clause 1). So exhausting clause 0 restarts it instead of falling to clause 1.
-
-**Fix:** In `pj_emit_body`, when the last goal is `fail/0` (or any deterministic builtin that always fails), its omega should be `lbl_pred_ω` (or `lbl_outer_ω`), not the clause-level beta. Alternatively: ensure `lbl_ω` passed to the last goal in a clause body is `lbl_pred_ω` when there are no more goals after it.
-
-The call site is in `pj_emit_clause` (around line 1870–2020): the body is emitted via `pj_emit_body(..., lbl_ω=clause_beta, lbl_outer_ω=pred_omega, ...)`. The `fail` goal receives `lbl_ω=clause_beta` which re-enters the clause — wrong. It should receive `lbl_pred_ω` directly, since there is nothing to retry in this clause after fail.
-
-**Bootstrap PJ-16:**
+**Bootstrap PJ-17:**
 ```bash
 git clone https://TOKEN_SEE_LON@github.com/snobol4ever/snobol4x
 git clone https://TOKEN_SEE_LON@github.com/snobol4ever/.github
 apt-get install -y default-jdk nasm libgc-dev swi-prolog
 make -C snobol4x/src
-# Baseline: rungs 01-09 PASS
+# Confirm baseline: rungs 01-09 PASS
 for rung in rung01_hello/hello rung02_facts/facts rung03_unify/unify rung04_arith/arith rung05_backtrack/backtrack rung06_lists/lists rung07_cut/cut rung08_recursion/recursion rung09_builtins/builtins; do
-  base=$(basename $rung); cls=$(echo "$base" | sed 's/.*/\u&/')
+  base=$(basename $rung)
+  cls=$(echo "$base" | python3 -c "import sys; s=sys.stdin.read().strip(); print(s[0].upper()+s[1:])")
   ./sno2c -pl -jvm test/frontend/prolog/corpus/$rung.pro -o /tmp/${cls}.j
   java -jar src/backend/jvm/jasmin.jar /tmp/${cls}.j -d /tmp 2>/dev/null
   result=$(timeout 5 java -cp /tmp $cls 2>/dev/null)
   expected=$(cat test/frontend/prolog/corpus/$rung.expected)
   [ "$result" = "$expected" ] && echo "$rung: PASS" || echo "$rung: FAIL"
 done
-# Test the fail/retry reproducer:
-cat > /tmp/min3.pro << 'PROEOF'
-:- initialization(main).
-item(a). item(b).
-differ(X, X) :- !, fail.
-differ(_, _).
-main :- item(X), item(Y), differ(X, Y), write(X), write('-'), write(Y), write('\n'), fail.
-main.
-PROEOF
-./sno2c -pl -jvm /tmp/min3.pro -o /tmp/Min3.j
-java -jar src/backend/jvm/jasmin.jar /tmp/Min3.j -d /tmp
-timeout 3 java -cp /tmp Min3   # should print a-b, b-a then exit 0
-# Fix in: src/frontend/prolog/prolog_emit_jvm.c
-# Look at pj_emit_clause ~line 1870-2020 — where lbl_ω is passed to pj_emit_body
-# The clause body's lbl_ω (beta) is correct for backtrackable goals but wrong
-# for the last goal when it is fail/0 (or any always-failing goal).
+# Run rung10 puzzles vs swipl oracle:
+for f in puzzle_01 puzzle_02 puzzle_05 puzzle_06; do
+  cls=$(echo "$f" | python3 -c "import sys; s=sys.stdin.read().strip(); print(s[0].upper()+s[1:])")
+  ./sno2c -pl -jvm test/frontend/prolog/corpus/rung10_programs/${f}.pro -o /tmp/${cls}.j
+  java -jar src/backend/jvm/jasmin.jar /tmp/${cls}.j -d /tmp 2>/dev/null
+  jvm=$(timeout 10 java -cp /tmp $cls 2>/dev/null)
+  oracle=$(timeout 10 swipl -q -g halt -t main test/frontend/prolog/corpus/rung10_programs/${f}.pro 2>/dev/null)
+  [ "$jvm" = "$oracle" ] && echo "$f: PASS" || echo "$f: FAIL"
+done
+# Then tackle remaining stub puzzles starting with M-PZ-14 (easiest per FRONTEND-PROLOG.md)
 ```
 
 ### CRITICAL NEXT ACTION (PJ-15)
@@ -165,6 +145,8 @@ Cut (`!`) in `pj_emit_body` now: (1) stores `base[nclauses]` into `cs_local` (se
 | **M-PJ-RECUR** | Rung 8: `fibonacci/2`, `factorial/2` | ✅ |
 | **M-PJ-BUILTINS** | Rung 9: `functor/3`, `arg/3`, `=../2`, type tests | ✅ |
 | **M-PJ-CORPUS-R10** | Rung 10: Lon's puzzle corpus PASS | ❌ |
+
+**PJ-16 fix note:** True root cause of the `fail/retry` infinite loop was `pj_emit_clause` passing `α_retry_lbl` as `lbl_ω` to `pj_emit_body`. When the outermost body user-call exhausted, `call_ω` jumped to `α_retry_lbl` (clause head-retry), re-running the body from cs=0 forever. Fix: pass `ω_lbl` (next-clause dispatch) as `lbl_ω` to the top-level `pj_emit_body` call. Nested calls unaffected — they receive `call_β` from their own recursive emit site. `pj_is_always_fail()` helper also added for future use.
 
 ---
 

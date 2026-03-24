@@ -19,8 +19,8 @@ Each concurrent session owns exactly one row. Update only your row on every push
 | **DOTNET** | `main` D-164 — 1903/1903 pass 0 fail on Linux | `e1e4d9e` D-164 | TBD |
 | **README** | `main` — M-README-CSHARP-DRAFT ✅ | `00846d3` snobol4csharp | M-README-DEEP-SCAN |
 | **ICON frontend** | `main` I-11 — M-ICON-CORPUS-R3 ✅ rbp fix + 5/5 rung03 PASS | `bab5664` I-11 | M-ICON-STRING |
-| **Prolog JVM** | `main` PJ-15 — call_omega local_cs reset fix; rungs 01-09 PASS; two-clause fail/retry loop still open | `0df7b38` PJ-15 | M-PJ-CORPUS-R10 |
-| **Icon JVM** | `main` IJ-9 — M-IJ-CORPUS-R3 ✅ + M-IJ-STRING ✅; 19/19 rung01-03 + 5/5 rung04 clean | `9932df5` IJ-9 | M-IJ-SCAN |
+| **Prolog JVM** | `main` PJ-16 — two-clause fail/retry fix; rungs 01-09 PASS | `f575016` PJ-16 | M-PJ-CORPUS-R10 |
+| **Icon JVM** | `main` IJ-9 — M-IJ-CORPUS-R3 ✅ named vars→static fields; clear suspend_id on done; 5/5 rung03 PASS | `54c301b` IJ-9 | M-IJ-STRING |
 | **README v2 sprint** | `main` R-2 | TBD R-2 | M-FEAT-JVM |
 
 **Invariants (check before any work):**

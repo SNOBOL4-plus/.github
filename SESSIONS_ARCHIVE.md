@@ -327,3 +327,18 @@ IJ-9: build → instrument `icn_upto` with stderr probes → find exact branch t
 - Created rung04_string corpus: t01_str_lit, t02_concat, t03_str_var, t04_multi_str, t05_concat_chain
 - Result: 5/5 rung04 PASS; total corpus 24/24 PASS
 - Next: M-IJ-SCAN (`E ? E` string scanning)
+
+---
+
+## PJ-16 — 2026-03-24
+
+**Session:** Prolog JVM · `main` · HEAD `f575016`
+**Milestone:** (none fired — M-PJ-CORPUS-R10 still open)
+
+**Work done:**
+- Diagnosed and fixed two-clause fail/retry infinite loop (min3 reproducer).
+- True root cause: `pj_emit_clause` passed `α_retry_lbl` as `lbl_ω` to top-level `pj_emit_body`. When outermost body user-call exhausted, `call_ω → α_retry_lbl` re-ran clause from cs=0 forever.
+- Fix: pass `ω_lbl` (next-clause dispatch) as `lbl_ω` to top-level `pj_emit_body`. One line changed in `pj_emit_clause`. Added `pj_is_always_fail()` helper.
+- Rungs 01–09: 9/9 PASS. No regressions. min3: `a-b\nb-a` ✅
+
+**Next:** PJ-17 — M-PJ-CORPUS-R10 (rung10 puzzle stubs). Puzzles 01/02/05/06 already pass swipl oracle. Start with M-PZ-14 (easiest per FRONTEND-PROLOG.md ordering).
