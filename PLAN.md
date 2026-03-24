@@ -20,6 +20,7 @@ Each concurrent session owns exactly one row. Update only your row on every push
 | **README** | `main` — M-README-CSHARP-DRAFT ✅ | `00846d3` snobol4csharp | M-README-DEEP-SCAN |
 | **ICON frontend** | `main` I-10 — SESSIONS_ARCHIVE pruned 782KB→15KB; fixes documented, not yet applied | `54031a5` I-7 | M-ICON-CORPUS-R3 |
 | **Prolog JVM** | `main` PJ-1 — planning done; `prolog_emit_jvm.c` not yet created | `e7fc3a2` PJ-0 | M-PJ-SCAFFOLD |
+| **Icon JVM** | `main` IJ-1 — planning done; `icon_emit_jvm.c` not yet created | `e7fc3a2` IJ-0 | M-IJ-SCAFFOLD |
 | **README v2 sprint** | `main` R-2 | TBD R-2 | M-FEAT-JVM |
 
 **Invariants (check before any work):**
@@ -161,6 +162,24 @@ Full sprint detail → [FRONTEND-ICON.md](FRONTEND-ICON.md)
 
 Full sprint detail → [FRONTEND-PROLOG-JVM.md](FRONTEND-PROLOG-JVM.md)
 
+### Icon JVM Frontend — Active
+
+| ID | Trigger | Status |
+|----|---------|--------|
+| **M-IJ-SCAFFOLD** | `icon_emit_jvm.c` exists; `-jvm null.icn → null.j` assembles + exits 0 | ❌ |
+| **M-IJ-HELLO** | `every write(1 to 5);` → JVM `1\n2\n3\n4\n5` | ❌ |
+| **M-IJ-CORPUS-R1** | All 6 rung01 tests PASS vs ASM oracle | ❌ |
+| **M-IJ-PROC** | rung02_proc: user procedures + locals | ❌ |
+| **M-IJ-CORPUS-R2** | rung02 arith_gen 5/5 + proc 3/3 PASS | ❌ |
+| **M-IJ-SUSPEND** | `suspend E` generators via tableswitch resume | ❌ |
+| **M-IJ-CORPUS-R3** | rung03_suspend PASS | ❌ |
+| **M-IJ-STRING** | `ICN_STR`, `\|\|` concat | ❌ |
+| **M-IJ-SCAN** | `E ? E` string scanning | ❌ |
+| **M-IJ-CSET** | Cset literals → BREAK/SPAN/ANY | ❌ |
+| **M-IJ-CORPUS-R4** | Rung 4: string ops + scanning PASS | ❌ |
+
+Full sprint detail → [FRONTEND-ICON-JVM.md](FRONTEND-ICON-JVM.md)
+
 ### Grid + README v2 — Active
 
 | ID | Repo | Status |
@@ -199,6 +218,7 @@ Full trigger specs → [GRIDS.md](GRIDS.md)
 | [FRONTEND-PROLOG.md](FRONTEND-PROLOG.md) | L3 | Prolog frontend sprint detail |
 | [FRONTEND-ICON.md](FRONTEND-ICON.md) | L3 | Icon frontend sprint detail |
 | [FRONTEND-PROLOG-JVM.md](FRONTEND-PROLOG-JVM.md) | L3 | Prolog→JVM frontend sprint detail |
+| [FRONTEND-ICON-JVM.md](FRONTEND-ICON-JVM.md) | L3 | Icon→JVM frontend sprint detail |
 | [TESTING.md](TESTING.md) | L3 | Corpus ladder, oracle index |
 | [PATCHES.md](PATCHES.md) | L3 | Runtime patch audit trail |
 
