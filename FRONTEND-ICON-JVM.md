@@ -18,47 +18,68 @@ assembled by `jasmin.jar` into `.class` files.
 
 | Session | Sprint | HEAD | Next milestone |
 |---------|--------|------|----------------|
-| **Icon JVM** | `main` IJ-6 — Fix1 slot-type VerifyError ✅; Fix2 bdone drain ✅; Fix3 sdrain ✅; remaining: body ω path routes through pop2 (empty stack) — one-line fix needed | `d169d6f` IJ-6 | M-IJ-CORPUS-R3 |
+| **Icon JVM** | `main` IJ-7 — bp.ω fix confirmed applied; rung03 x64 ASM 5/5 PASS confirmed; JVM t01_gen no-output bug diagnosed — root cause: `icn_0_condok: pop2` stack discipline | `a3d4a55` IJ-7 | M-IJ-CORPUS-R3 |
 
-### Next session checklist (IJ-7)
+### Next session checklist (IJ-8)
 
 ```bash
 git clone https://TOKEN_SEE_LON@github.com/snobol4ever/snobol4x
 git clone https://TOKEN_SEE_LON@github.com/snobol4ever/.github
 apt-get install -y default-jdk nasm libgc-dev
 cd snobol4x
-gcc -Wall -Wextra -g -O0 -I. src/frontend/icon/icon_driver.c src/frontend/icon/icon_lex.c     src/frontend/icon/icon_parse.c src/frontend/icon/icon_ast.c     src/frontend/icon/icon_emit.c src/frontend/icon/icon_emit_jvm.c     src/frontend/icon/icon_runtime.c -o /tmp/icon_driver
-# Read FRONTEND-ICON-JVM.md §NOW — HEAD = d169d6f
-# rung01 6/6 + rung02 14/14 already pass
-# One fix remains — see IJ-6 findings below — then fire M-IJ-CORPUS-R3
+gcc -Wall -Wextra -g -O0 -I. src/frontend/icon/icon_driver.c src/frontend/icon/icon_lex.c \
+    src/frontend/icon/icon_parse.c src/frontend/icon/icon_ast.c \
+    src/frontend/icon/icon_emit.c src/frontend/icon/icon_emit_jvm.c \
+    src/frontend/icon/icon_runtime.c -o /tmp/icon_driver
+# Read FRONTEND-ICON-JVM.md §NOW
+# rung01 6/6 + rung02 14/14 already pass (confirmed IJ-6)
+# bp.ω fix already applied (line 521: strncpy(bp.ω, ports.γ, 63))
+# Fix IJ-7 no-output bug (see findings below), then fire M-IJ-CORPUS-R3
 ```
 
-### IJ-6 findings
+### IJ-7 findings — no-output bug in t01_gen
 
-**Bug 1 — FIXED (d169d6f):** `lconst_0; lstore N` preamble for all `ij_nlocals` long
-slots emitted in `ij_emit_proc` before the `getstatic icn_suspend_id / ifne beta`
-dispatch. Slot-type VerifyError `Register pair 2/3 contains wrong type` is dead.
-
-**Bug 3 (inter-stmt drain) — FIXED (d169d6f):** Top-level statement γ port now routes
-through `icn_sN_sdrain: pop2; goto next_a` instead of jumping directly to the next
-statement's α, which was also entered empty-stack from other paths.
-
-**Bug 2 (body drain) — FIXED structure, one refinement needed (IJ-7):**
-`icn_N_bdone: pop2; goto ports.γ` correctly drains the body γ result.
-**BUT:** `bp.ω` (body failure, empty stack) is also routed through `icn_N_bdone`,
-causing `pop2` on an empty stack → `Inconsistent stack height 0 != 2` persists.
-
-**IJ-7 one-line fix** in `ij_emit_suspend`, in the `if (body_node)` block:
+**Confirmed:** bp.ω fix from IJ-6 is already applied at line 521 of `icon_emit_jvm.c`:
 ```c
-// WRONG (current):
-strncpy(bp.ω, body_done, 63);  /* routes empty-stack failure through pop2 */
-
-// CORRECT:
-strncpy(bp.ω, ports.γ, 63);   /* failure has empty stack — jump direct, no pop */
+strncpy(bp.ω, ports.γ, 63);  /* body fail: empty stack → jump direct, no pop */
 ```
-After this change rebuild → jasmin → java T01_gen should print 1 2 3 4 and rung03 passes.
-The exact location is `ij_emit_suspend`, the `IjPorts bp` block inside `if (body_node)`,
-around line 520 of `icon_emit_jvm.c`.
+
+**Build + rung03 x64 ASM:** confirmed 5/5 PASS (ASM backend remains clean).
+
+**JVM t01_gen generates class but produces no output.**
+
+**Diagnosis:** Jasmin for `icn_upto` reveals the while-loop condition check wiring:
+```jasmin
+icn_1_check:
+    lload 4          ; left operand (i)
+    lload 6          ; right operand (n)
+    lcmp
+    ifgt icn_2_β     ; i > n → fail
+    lload 6          ; push n (WHY? this is the "passed value" pushed for condok drain)
+    goto icn_0_condok
+icn_0_condok:
+    pop2             ; drains the pushed n
+```
+The `lload 6; goto icn_0_condok; icn_0_condok: pop2` pattern pushes n then immediately pops it. This is the x64 pattern translated literally: x64 pushes the "passed" right operand for the while condition's success port, and WHILE's `condok` discards it. In JVM the pattern is structurally correct — `pop2` consumes the long pushed by `lload 6`.
+
+**The real issue:** `icn_14_docall` → `invokestatic icn_upto()V`. After upto **suspends** (`icn_upto_sret: return`), `icn_failed=0`, `icn_suspended=1`, `icn_retval=1`. Back in main:
+```jasmin
+icn_14_docall:
+    invokestatic T01_gen/icn_upto()V
+    getstatic T01_gen/icn_failed B
+    ifne icn_14_after_call        ; if failed → done
+    getstatic T01_gen/icn_retval J
+    goto icn_13_call              ; → write → genb → 13β → 14β
+icn_14_after_call:
+    goto icn_main_done
+```
+This looks correct: `icn_failed=0` so `ifne` not taken, retval loaded, goes to write. **But `icn_14_after_call` is reached from the very first `ifne` check.** Hypothesis: `icn_upto` is setting `icn_failed=1` before returning — i.e., it's hitting `icn_upto_done` instead of `icn_upto_sret`.
+
+**Most likely root cause:** The `while i <= n` condition check fires on first entry. `icn_1_check` loads `lload 4` (lc_slot for i) and `lload 6` (rc_slot for n). On first entry these slots hold **0** (zeroed in preamble), not the actual values. The `lconst_0; lstore` preamble zeroes all slots including the binop temp slots used by the LE compare. So `i=0`, `n=0` on first compare → `lcmp` = 0, `ifgt` not taken, proceeds — OK. But `n` (from param `icn_arg_0`) is loaded into `lstore 0` at proc entry, and `i := 1` stores to `lstore 2`. The LE compare uses `lc_slot=4` (i's relay) and `rc_slot=6` (n's relay) which are only populated when the left/right relay labels are hit. **On first entry to `icn_1_check` via `icn_1_α → icn_3_α → lload 2 → icn_1_lrelay → lstore 4` then `icn_1_lstore → icn_2_α → lload 0 → icn_1_rrelay → lstore 6 → icn_1_check`** — so both relays ARE populated before `icn_1_check` fires. This is correct.
+
+**Remaining suspect:** After `icn_0_condok: pop2`, we go to `icn_4_yield`. `icn_5_α: lload 2; goto icn_4_yield`. `icn_4_yield: putstatic icn_retval J` — this correctly stores i=1. Then sets `icn_failed=0`, `icn_suspended=1`, `icn_suspend_id=1`, `goto icn_upto_sret`. `icn_upto_sret: return`. This ALL looks correct.
+
+**IJ-8 action:** Instrument the Jasmin with `getstatic java/lang/System/err` + `invokevirtual println` probes at `icn_upto_fresh`, `icn_4_yield`, `icn_upto_sret`, `icn_upto_done` to determine which path upto actually takes at runtime. The no-output bug MUST be that upto is hitting `done` not `sret`. One candidate: `.limit locals 26` may be insufficient — verify with `javap -v` that slot count matches `ij_nlocals * 2`.
 
 ---
 

@@ -244,3 +244,20 @@ Test puzzle_01–06 (already solved) via -pl -jvm. Then tackle stubs per FRONTEN
 - **5/5 rung03_suspend PASS** — M-ICON-CORPUS-R3 ✅
 
 **Next:** M-ICON-STRING — `ICN_STR` node + `||` concat via `CAT2_*` macros
+
+## IJ-7 (2026-03-24) — Diagnosis session: JVM rung03 no-output bug
+
+**HEAD:** `a3d4a55` (no snobol4x commits — diagnosis only, no fix landed)
+**Date:** 2026-03-24
+
+### Work done
+- Confirmed bp.ω fix (IJ-6) already applied at line 521 of `icon_emit_jvm.c`
+- Confirmed rung03 x64 ASM backend: **5/5 PASS** at HEAD `bab5664`
+- Built icon_driver clean (0 warnings)
+- Generated Jasmin for t01_gen; class assembles and loads but produces **no output**
+- Full Jasmin trace: `icn_0_condok: pop2` pattern is structurally correct; relay labels populate lc/rc slots before `icn_1_check` — wiring is sound per JCON `ir_a_Binop` pattern
+- Diagnosis: upto must be reaching `icn_upto_done` (sets `icn_failed=1`) instead of `icn_upto_sret` (suspends); confirmed by tracing `icn_14_docall → ifne icn_14_after_call → icn_main_done` path
+- Proposed IJ-8 action: instrument Jasmin with stderr probes at `icn_upto_fresh`, `icn_4_yield`, `icn_upto_sret`, `icn_upto_done`; verify `.limit locals` vs actual slot usage via `javap -v`
+
+### Next
+IJ-8: instrument → find exact branch → fix → fire M-IJ-CORPUS-R3

@@ -20,7 +20,7 @@ Each concurrent session owns exactly one row. Update only your row on every push
 | **README** | `main` — M-README-CSHARP-DRAFT ✅ | `00846d3` snobol4csharp | M-README-DEEP-SCAN |
 | **ICON frontend** | `main` I-11 — M-ICON-CORPUS-R3 ✅ rbp fix + 5/5 rung03 PASS | `bab5664` I-11 | M-ICON-STRING |
 | **Prolog JVM** | `main` PJ-13 — M-PJ-RECUR ✅ + M-PJ-BUILTINS ✅; rungs 01-09 PASS | `5197730` PJ-13 | M-PJ-CORPUS-R10 |
-| **Icon JVM** | `main` IJ-6 — Fix1+Fix2+Fix3+Fix2b applied; VerifyErrors dead; no-output bug for IJ-7 | `a3d4a55` IJ-6 | M-IJ-CORPUS-R3 |
+| **Icon JVM** | `main` IJ-7 — bp.ω fix confirmed in; x64 rung03 5/5 PASS confirmed; JVM no-output diagnosed: upto hits done not sret — instrument + fix IJ-8 | `a3d4a55` IJ-7 | M-IJ-CORPUS-R3 |
 | **README v2 sprint** | `main` R-2 | TBD R-2 | M-FEAT-JVM |
 
 **Invariants (check before any work):**
