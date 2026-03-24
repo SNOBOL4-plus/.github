@@ -50,7 +50,7 @@ Matrix:     Feature matrix (correctness) · Benchmark matrix (performance)
 | Snocone | — | — | — | — | ⏳ | ⏳ |
 | Rebus | ✅ | — | — | — | — | — |
 | Icon | ⏳ | — | — | — | — | — |
-| Prolog | ⏳ | ⏳ | — | — | — | — |
+| Prolog | ⏳ | ⏳ | — | — | ⏳ | — |
 | C#/Clojure | — | — | — | — | — | — |
 
 ✅ done · ⏳ active · — planned
@@ -104,6 +104,31 @@ Matrix:     Feature matrix (correctness) · Benchmark matrix (performance)
 | **M-PZ-12** | puzzle_12.pro — Stillwater teachers (hardest: 6×6 + temporal) | ❌ |
 
 Full sprint detail → [FRONTEND-PROLOG.md](FRONTEND-PROLOG.md)
+
+### Prolog JVM Backend — Planned
+
+Path: `-pl -jvm foo.pl` → Prolog IR (E_CHOICE/E_CLAUSE/E_UNIFY/E_CUT nodes, already produced
+by the frontend) → `jvm_emit_prolog()` in `emit_byrd_jvm.c` Byrd box lowering → Jasmin `.j` → `.class`.
+The frontend IR is already complete. The only missing piece is the JVM emitter + driver wire-up.
+Reference: `emit_prolog_choice()` in `emit_byrd_asm.c` (~line 6235) is the model to follow.
+
+| ID | Trigger | Status |
+|----|---------|--------|
+| **M-PJ-WIRE** | `driver/main.c`: `-pl -jvm` routes to `jvm_emit_prolog(prog,f,filename)`; stub compiles null.pl and exits 0 | ❌ |
+| **M-PJ-HELLO** | rung01 hello — `write('hello'), nl` via JVM Byrd box | ❌ |
+| **M-PJ-FACTS** | rung02 facts — deterministic fact lookup, no backtracking | ❌ |
+| **M-PJ-UNIFY** | rung03 unify — head unification, compound terms | ❌ |
+| **M-PJ-ARITH** | rung04 arith — `is/2`, integer arithmetic | ❌ |
+| **M-PJ-BACKTRACK** | rung05 backtrack — `member/2`, β port exercised | ❌ |
+| **M-PJ-LISTS** | rung06 lists — `append/3`, `length/2`, `reverse/2` | ❌ |
+| **M-PJ-CUT** | rung07 cut — `differ/N`, closed-world negation via `!` | ❌ |
+| **M-PJ-RECURSION** | rung08 recursion — fibonacci/2, factorial/2 | ❌ |
+| **M-PJ-BUILTINS** | rung09 builtins — `functor/3`, `arg/3`, `=../2`, type tests | ❌ |
+| **M-PJ-CORPUS** | All 10 rungs PASS via `-pl -jvm` | ❌ |
+| **M-PJ-PUZZLES** | puzzle_01, 02, 05, 06 (solved set) all PASS via `-pl -jvm` | ❌ |
+| **M-PJ-FULL** | All puzzle milestones M-PZ-14..M-PZ-12 PASS via `-pl -jvm` | ❌ |
+
+Full sprint detail → [BACKEND-JVM-PROLOG.md](BACKEND-JVM-PROLOG.md)
 
 ### ICON Frontend — Active
 
