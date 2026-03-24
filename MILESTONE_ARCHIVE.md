@@ -210,3 +210,4 @@ Append-only. Do not edit existing entries.
 | **M-PJ-RECUR** | Rung 8: `fibonacci/2`, `factorial/2` | ✅ PJ-13 |
 | **M-PJ-BUILTINS** | Rung 9: `functor/3`, `arg/3`, `=../2`, type tests | ✅ PJ-13 |
 | **M-ICON-CORPUS-R3** | `bab5664` I-11 | Rung 3: user procedures + generators; rbp save/restore fix; 5/5 PASS |
+| **M-IJ-CORPUS-R3** | `54c301b` IJ-9 | rung03 suspend generators PASS; named vars→static fields; clear suspend_id on done |

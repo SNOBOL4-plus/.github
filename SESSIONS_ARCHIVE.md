@@ -282,3 +282,16 @@ IJ-8: instrument → find exact branch → fix → fire M-IJ-CORPUS-R3
 
 ### Next
 IJ-9: build → instrument `icn_upto` with stderr probes → find exact branch taking `done` not `sret` → fix → fire M-IJ-CORPUS-R3
+
+## IJ-9 — 2026-03-24
+
+**Trigger:** "ICON frontend with JVM backend" → IJ-session (icon_emit_jvm.c)
+**Milestone:** M-IJ-CORPUS-R3 ✅
+**HEAD:** `54c301b` snobol4x main
+
+**Work done:**
+- Diagnosed IJ-7 no-output bug: zero-init loop clobbered param n (slot 0) before `ifne icn_upto_beta`
+- Root fix: named locals/params now use per-proc static fields `icn_pv_PROCNAME_VARNAME` instead of JVM local slots — survive `return`-based yield/resume cycle
+- Second bug: `icn_suspend_id` not cleared at `proc_done`; second call to same generator jumped to beta. Fixed: clear `icn_suspended` + `icn_suspend_id` at `proc_done`
+- Result: 5/5 rung03 PASS (t01_gen, t02_return, t03_fail, t04_gen_filter, t05_gen_compose)
+- rung01 5/6 (t06_paper_expr pre-existing VerifyError — not a regression), rung02 8/8 clean

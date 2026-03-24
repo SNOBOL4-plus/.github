@@ -18,9 +18,9 @@ assembled by `jasmin.jar` into `.class` files.
 
 | Session | Sprint | HEAD | Next milestone |
 |---------|--------|------|----------------|
-| **Icon JVM** | `main` IJ-8 — no code; RULES.md disambiguation fix pushed (b21617a); context exhausted | `a3d4a55` IJ-7 | M-IJ-CORPUS-R3 |
+| **Icon JVM** | `main` IJ-9 — M-IJ-CORPUS-R3 ✅ named vars→static fields; clear suspend_id on done; 5/5 rung03 PASS | `54c301b` IJ-9 | M-IJ-STRING |
 
-### Next session checklist (IJ-9)
+### Next session checklist (IJ-10)
 
 ```bash
 git clone https://TOKEN_SEE_LON@github.com/snobol4ever/snobol4x
@@ -32,14 +32,25 @@ gcc -Wall -Wextra -g -O0 -I. src/frontend/icon/icon_driver.c src/frontend/icon/i
     src/frontend/icon/icon_emit.c src/frontend/icon/icon_emit_jvm.c \
     src/frontend/icon/icon_runtime.c -o /tmp/icon_driver
 # Read FRONTEND-ICON-JVM.md §NOW
-# Read RULES.md §ICON vs IJ DISAMBIGUATION (updated IJ-8)
-# Session trigger: "I'm working on Icon JVM" OR "ICON frontend with JVM backend" → IJ-session
-# rung01 6/6 + rung02 14/14 already pass (confirmed IJ-6)
-# bp.ω fix already applied (line 521: strncpy(bp.ω, ports.γ, 63))
-# Fix IJ-7 no-output bug (see findings below), then fire M-IJ-CORPUS-R3
+# rung02 8/8 + rung03 5/5 confirmed PASS (IJ-9)
+# Implement M-IJ-STRING: ICN_STR ldc push + || via invokevirtual String.concat
+# Then add rung04 string corpus tests, fire M-IJ-STRING
 ```
 
-### IJ-7 findings — no-output bug in t01_gen
+### IJ-9 findings — suspend/resume architecture fix
+
+**Root cause of IJ-7 no-output:** Zero-init loop (needed for JVM verifier) ran *after* param
+load, clobbering `n=4→0`. Fixed by switching named locals/params to per-proc static fields
+(`icn_pv_PROCNAME_VARNAME`) — static fields survive the `return`-based yield/resume cycle.
+
+**Second bug (t05):** `icn_suspend_id` not cleared at `proc_done`, so second call to same
+generator jumped to beta instead of fresh. Fixed: clear both `icn_suspended` and
+`icn_suspend_id` at `proc_done`.
+
+**Pre-existing failure:** t06_paper_expr — VerifyError "Unable to pop operand off an empty
+stack" in `icn_main`. Not related to IJ-9 changes (confirmed by git stash test). Open issue.
+
+### IJ-7 findings — (resolved in IJ-9, kept for reference)
 
 **Confirmed:** bp.ω fix from IJ-6 is already applied at line 521 of `icon_emit_jvm.c`:
 ```c
@@ -81,10 +92,7 @@ This looks correct: `icn_failed=0` so `ifne` not taken, retval loaded, goes to w
 
 **Remaining suspect:** After `icn_0_condok: pop2`, we go to `icn_4_yield`. `icn_5_α: lload 2; goto icn_4_yield`. `icn_4_yield: putstatic icn_retval J` — this correctly stores i=1. Then sets `icn_failed=0`, `icn_suspended=1`, `icn_suspend_id=1`, `goto icn_upto_sret`. `icn_upto_sret: return`. This ALL looks correct.
 
-**IJ-8 action:** Instrument the Jasmin with `getstatic java/lang/System/err` + `invokevirtual println` probes at `icn_upto_fresh`, `icn_4_yield`, `icn_upto_sret`, `icn_upto_done` to determine which path upto actually takes at runtime. The no-output bug MUST be that upto is hitting `done` not `sret`. One candidate: `.limit locals 26` may be insufficient — verify with `javap -v` that slot count matches `ij_nlocals * 2`.
-
 ---
-
 
 ## Key Files
 
