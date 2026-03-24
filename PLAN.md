@@ -12,7 +12,7 @@ Each concurrent session owns exactly one row. Update only your row on every push
 
 | Session | Sprint | HEAD | Next milestone |
 |---------|--------|------|----------------|
-| **TINY backend** | `main` B-275 — M-BEAUTY-SEMANTIC ❌ | `fe86477` B-275 | M-BEAUTY-SEMANTIC |
+| **TINY backend** | `main` B-276 — M-BEAUTY-OMEGA 🔧 | `f721492` B-276 | M-BEAUTY-OMEGA |
 | **TINY NET** | `net-t2` N-248 — M-T2-NET ✅ 110/110 clean | `425921a` N-248 | M-T2-FULL |
 | **TINY JVM** | `jvm-t2` J-213 — M-T2-JVM ✅ 106/106 clean | `8178b5c` J-213 | M-T2-FULL |
 | **TINY frontend** | `main` F-216 — compound emit \\n fix; rung09 PASS ✅ | `128dd2c` F-216 | M-PROLOG-R10 |
@@ -72,9 +72,9 @@ Matrix:     Feature matrix (correctness) · Benchmark matrix (performance)
 | **M-MON-BUG-JVM-WPAT** | JVM pattern datatype emits empty string; fix | ❌ |
 | **M-MONITOR-4DEMO** | roman + wordcount + treebank pass all 5 participants | ❌ |
 | **M-BEAUTY-READWRITE** | ReadLine/WriteLine buffered I/O 3-way PASS | ✅ |
-| **M-BEAUTY-XDUMP** | XDump extended variable dump 3-way PASS | ❌ ← now |
-| **M-BEAUTY-SEMANTIC** | semantic action helpers 3-way PASS | ❌ |
-| **M-BEAUTY-OMEGA** | omega pattern helpers 3-way PASS | ❌ |
+| **M-BEAUTY-XDUMP** | XDump extended variable dump 3-way PASS | ✅ |
+| **M-BEAUTY-SEMANTIC** | semantic action helpers 3-way PASS | ✅ |
+| **M-BEAUTY-OMEGA** | omega pattern helpers 3-way PASS | ❌ ← now (SPITBOL+SO crash: strip UTF-8 from driver comments) |
 | **M-BEAUTY-TRACE** | xTrace control + trace output 3-way PASS | ❌ |
 | **M-BEAUTIFY-BOOTSTRAP** | beauty.sno reads + writes itself; fixed point | ❌ |
 | **M-MONITOR-GUI** | 🌙 HTML/React monitor GUI — diverging cells highlighted | 💭 |

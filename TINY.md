@@ -9,9 +9,10 @@ snobol4x: multiple frontends, multiple backends.
 
 ## NOW
 
-**Sprint:** `main` — Prolog frontend M-PROLOG-R10 sprint
-**HEAD:** `128dd2c` F-216 (main)
-**Milestone:** M-PROLOG-R10 ❌ — rung09 PASS; rung10 puzzle_02 has spurious backtrack output
+**Sprint:** `main` — B-276 (BEAUTY) · F-217 (Prolog) concurrent
+**HEAD:** `f721492` B-276 beauty / `128dd2c` F-216 prolog (main)
+**B-session:** M-BEAUTY-OMEGA ❌ — driver+ref ready (10/10 CSN+SPL); SPITBOL+SO crash: strip UTF-8 from driver comments
+**F-session:** M-PROLOG-R10 ❌ — rung09 PASS; rung10 puzzle_02 has spurious backtrack output
 **Invariants:** 106/106 ASM corpus ALL PASS ✅
 
 **⚡ CRITICAL NEXT ACTION — F-217 (M-PROLOG-R10):**

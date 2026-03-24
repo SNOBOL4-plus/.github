@@ -186,3 +186,6 @@ Append-only. Do not edit existing entries.
 | M-VOL-X | G-VOLUME for snobol4x | ✅ `07a34d7` |
 | M-VOL-JVM | G-VOLUME for snobol4jvm | ✅ README SESSION 2026-03-22 |
 | M-VOL-DOTNET | G-VOLUME for snobol4dotnet | ✅ README SESSION 2026-03-22 |
+
+| **M-BEAUTY-XDUMP** | XDump extended variable dump 3-way PASS | ✅ B-275 `fa0eee9` |
+| **M-BEAUTY-SEMANTIC** | semantic action helpers 3-way PASS | ✅ B-276 `f721492` |

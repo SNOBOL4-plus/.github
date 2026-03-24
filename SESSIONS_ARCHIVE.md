@@ -14956,3 +14956,47 @@ bash /home/claude/snobol4x/setup.sh
 2. Once puzzle_02 passes, run `puzzle_05.pro` (WIP — constraints partially commented).
 3. If all 4 puzzles pass → M-PROLOG-R10 ✅ → update PLAN.md → fire M-PROLOG-CORPUS sweep.
 4. Trigger phrase: `"playing with Prolog frontend"` → F-session → M-PROLOG-R10.
+
+**Repos touched:** snobol4x, .github
+**Commits:** `fa0eee9` sno2c+runtime, `fe86477` semantic driver (.github `2a04df2`)
+
+**Fixes:**
+- `stmt_aref2/aset2`: 2D subscript `arr[i,j]` was ignoring 2nd index; new shims in `snobol4_stmt_rt.c`; `E_IDX` emitter updated for `nchildren>=3`
+- `PROTOTYPE`: was returning bare count `"1"`; now returns `"lo:hi"` matching CSNOBOL4
+- `table_set_descr` + `TBPAIR_t.key_descr`: integer keys preserved through SORT
+- `sort_fn`: stores `key_descr` in col 1 so `DATATYPE(objKey)` returns `'INTEGER'` correctly
+
+**Semantic subsystem:** driver+ref committed (`fe86477`); 8/8 CSN PASS; ASM segfaults on `DATA('link_counter(next,value)')` + `$'#N'` indirect variable — B-276 blocker.
+
+**Milestones fired:** M-BEAUTY-XDUMP ✅
+
+**Next (B-276):** Fix ASM segfault in DATA/indirect var; `DEFDAT_fn`/`NV_GET_fn`/`NV_SET_fn` in `snobol4.c`; fire M-BEAUTY-SEMANTIC ✅; advance to M-BEAUTY-OMEGA.
+
+## Session B-276 — 2026-03-24 — M-BEAUTY-SEMANTIC ✅ + M-BEAUTY-OMEGA (blocked)
+
+**Repos touched:** snobol4x, .github
+**Commits:** `f721492` snobol4x (PLAN.md advance to M-BEAUTY-OMEGA)
+
+**M-BEAUTY-SEMANTIC ✅ (clean pass, no fixes needed):**
+Previous session had logged "ASM segfaults on DATA/indirect" as blocker, but those fixes had already landed in prior commits. Re-ran 3-way monitor this session: CSNOBOL4+SPITBOL+ASM all agree, 8/8 PASS, 1 step. 106/106 corpus clean. Committed PLAN.md advance.
+
+**M-BEAUTY-OMEGA — driver authored, SPITBOL+SO crash diagnosed (not yet fixed):**
+
+Driver `test/beauty/omega/driver.sno` authored: 10 tests for TV/TW/TX/TY/TZ.
+Key design insight: TZ/TY/TV/TW build patterns containing `$ *assign(...)` side-effects. These patterns cannot be directly matched in a standalone driver — `assign()` returns `''`, so `$''` → Error 8 "variable not present". Correct oracle tests are DATATYPE=PATTERN and composability. Used `upr(DATATYPE(...))` for SPITBOL compat (SPITBOL returns lowercase type names).
+
+10/10 CSNOBOL4 oracle lines. 10/10 SPITBOL lines (without SO). `driver.ref` written.
+
+**SPITBOL+SO crash (B-276 open blocker):**
+- SPITBOL runs `instr.sno` cleanly without `monitor_ipc_spitbol.so`
+- SPITBOL segfaults (exit 139, zero output) with SO + live FIFOs
+- Minimal driver (includes only, `OUTPUT = 'loaded'`) works fine with SO
+- Full driver (10 tests + UTF-8 comment lines) crashes during include loading
+- Root-cause hypothesis: UTF-8 multibyte characters (`→`, `←`) in driver comments confuse SPITBOL's preprocessor under the SO
+
+**Next session fix plan:**
+1. Strip all UTF-8 chars from `driver.sno` comments (replace `→` with `->` etc.)
+2. Re-run with SO + fake pipes — expect clean run
+3. If clean: run full 3-way monitor → commit B-276: M-BEAUTY-OMEGA ✅
+4. If still crashes: bisect by adding tests one at a time to find exact trigger
+5. Advance PLAN.md to M-BEAUTY-TRACE (19th and final subsystem)
