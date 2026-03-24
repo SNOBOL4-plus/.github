@@ -9,14 +9,18 @@ snobol4x: multiple frontends, multiple backends.
 
 ## NOW
 
-**Sprint:** `main` — B-287 (E_STAR fix + bootstrap diagnosis)
-**HEAD:** `843b9f3` B-287
-**B-session:** E_STAR value-context bug fixed (pat_ref not stmt_get). Bootstrap still fails: ARBNO takes 0 iters, outer RPOS(0) fails, no backtracking bridge from CALL_PAT_α into engine. Architectural fix needed.
+**Sprint:** `main` — B-288 (E_VART CALL_PAT fix + DATA slot zeroing)
+**HEAD:** `358184a` B-288
+**B-session:** Three root causes of M-BUG-BOOTSTRAP-PARSE fixed: (1) E_VART fallback LIT_VAR_α → inline CALL_PAT with var_register (box-DATA slots). (2) rpat_t/p/s via var_register → r12 DATA block not flat .bss. (3) Named-pattern α-entry zeroes [r12+16..N] to prevent stale ARBNO depth on scan retry. Remaining: *Parse via REF(Parse) scan-retry still fails — shared static DATA template clobbered between scan attempts because P_Parse_β doesn't zero slots. 106/106 ✅.
 **Invariants:** 106/106 ASM corpus ALL PASS ✅
 
-**⚡ CRITICAL NEXT ACTION — B-288:**
+**⚡ CRITICAL NEXT ACTION — B-289:**
 
-Fix M-BUG-BOOTSTRAP-PARSE (continued): CALL_PAT_α is one-shot — no RECEDE signal reaches engine when outer compiled pattern fails after *Parse. ARBNO(*Command) matches 0 iters; downstream RPOS(0) fails; engine never retries with 1+ iters. Fix: integrate *Parse via T_VARREF node driven by outer engine, not isolated match_pattern_at. See B-287 commit for full analysis.
+Fix remaining *Parse scan-retry failure. Root: P_Parse_α zeroes DATA slots but
+P_Parse_β skips zeroing — ARBNO depth left stale when scan retries via β path.
+Fix: emit zeroing also at the REF(Parse) β call site in emit_named_ref (before
+jmp P_Parse_β). Alternatively implement M-T2-INVOKE (blk_alloc per invocation).
+After fix: run 5 reproducer tests → confirm PASS → run beauty bootstrap → diff vs oracle.
 
 **B-286 summary:**
 - D-001: SPITBOL is primary compat target (CSNOBOL4 FENCE issue disqualifies it).

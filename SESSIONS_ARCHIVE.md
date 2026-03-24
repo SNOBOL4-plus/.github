@@ -357,3 +357,11 @@ IJ-9: build → instrument `icn_upto` with stderr probes → find exact branch t
 - Full M-IJ-SCAN implementation plan documented in FRONTEND-ICON-JVM.md §IJ-10 findings (static fields, &subject keyword, ij_emit_scan four-port wiring, dispatch case, run_rung05.sh).
 
 **Next:** IJ-11 — implement ij_emit_scan, &subject keyword, icn_subject/icn_pos globals, fire M-IJ-SCAN.
+
+---
+
+**B-288 (2026-03-24) — M-BUG-BOOTSTRAP-PARSE partial fix; 106/106 ✅**
+(1) Root cause diagnosed via MONITOR: `Cmd = Word Space Word` (concat of E_VARTs) not registered as named pattern — `expr_is_pattern_expr` returns 0. E_VART fallback was `LIT_VAR_α` (string-only `stmt_match_var`) → changed to inline CALL_PAT expansion with `var_register` (box-DATA-aware slots). `Cmd` now dispatches as DT_P at runtime.
+(2) `rpat_t/p/s` slots: `flat_bss_register` → `var_register` so slots land in r12 DATA block at correct offsets; inline macro expansion avoids NASM double-dereference of `r12+N`.
+(3) Named-pattern α-entry zeroing: `P_Parse_α` now emits `mov qword [r12+N], 0` for all mutable slots (offset ≥16) to prevent stale ARBNO depth/cur_before from previous scan attempt corrupting retry.
+(4) Remaining failure: `*Parse` via REF(Parse) scan-retry — P_Parse_β enters `seq_r5_β` directly without zeroing DATA slots; ARBNO depth left stale. Fix in B-289: emit DATA zeroing at β call site in `emit_named_ref` before `jmp P_Parse_β`. 106/106 ✅. HEAD `358184a`.
