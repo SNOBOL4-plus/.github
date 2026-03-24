@@ -15160,3 +15160,23 @@ Updated `demo/beauty.sno` to canonical form. Updated `artifacts/asm/beauty_prog.
 labels not emitted by `emit_byrd_asm.c` for LIT/LIT_VAR nodes. Next session target.
 
 **Commits:** `8e01e2a` snobol4x
+
+---
+
+## Session PJ-1 — 2026-03-24 (Claude Sonnet 4.6)
+
+**Sprint:** Prolog JVM — M-PJ-SCAFFOLD, M-PJ-HELLO
+**Branch:** `main` | **HEAD:** `f7390c6`
+
+### Milestones fired
+- **M-PJ-SCAFFOLD** ✅ — `prolog_emit_jvm.c` created; `-pl -jvm null.pl → null.j → jasmin → exit 0`
+- **M-PJ-HELLO** ✅ — `hello.pl → Hello.class → java → "hello"`
+
+### Work done
+- Created `src/frontend/prolog/prolog_emit_jvm.c` (~970 lines): class header, runtime helpers (trail, deref, unify, term constructors, write), choice/clause/goal/term/arith emitters, public entry point.
+- Wired `driver/main.c`: `-pl -jvm` dispatches to `prolog_emit_jvm()`.
+- Added to `src/Makefile`.
+- Key fixes: duplicate `.field` declaration; missing `checkcast String` before `print(String)V`; double `ldc` in atom emitter; `clause->subject` → `clause->ival/dval`.
+
+### Next
+**M-PJ-FACTS** — rung02 deterministic fact lookup. See FRONTEND-PROLOG-JVM.md §NOW.

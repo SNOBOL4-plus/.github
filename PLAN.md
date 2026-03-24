@@ -19,7 +19,7 @@ Each concurrent session owns exactly one row. Update only your row on every push
 | **DOTNET** | `main` D-164 — 1903/1903 pass 0 fail on Linux | `e1e4d9e` D-164 | TBD |
 | **README** | `main` — M-README-CSHARP-DRAFT ✅ | `00846d3` snobol4csharp | M-README-DEEP-SCAN |
 | **ICON frontend** | `main` I-10 — SESSIONS_ARCHIVE pruned 782KB→15KB; fixes documented, not yet applied | `54031a5` I-7 | M-ICON-CORPUS-R3 |
-| **Prolog JVM** | `main` PJ-1 — planning done; `prolog_emit_jvm.c` not yet created | `e7fc3a2` PJ-0 | M-PJ-SCAFFOLD |
+| **Prolog JVM** | `main` PJ-1 — M-PJ-SCAFFOLD ✅ M-PJ-HELLO ✅; `prolog_emit_jvm.c` created, `-pl -jvm` wired | `f7390c6` PJ-1 | M-PJ-FACTS |
 | **Icon JVM** | `main` IJ-1 — planning done; `icon_emit_jvm.c` not yet created | `e7fc3a2` IJ-0 | M-IJ-SCAFFOLD |
 | **README v2 sprint** | `main` R-2 | TBD R-2 | M-FEAT-JVM |
 
@@ -116,8 +116,8 @@ Reference: `emit_prolog_choice()` in `emit_byrd_asm.c` (~line 6235) is the model
 
 | ID | Trigger | Status |
 |----|---------|--------|
-| **M-PJ-WIRE** | `driver/main.c`: `-pl -jvm` routes to `jvm_emit_prolog(prog,f,filename)`; stub compiles null.pl and exits 0 | ❌ |
-| **M-PJ-HELLO** | rung01 hello — `write('hello'), nl` via JVM Byrd box | ❌ |
+| **M-PJ-WIRE** | `driver/main.c`: `-pl -jvm` routes to `prolog_emit_jvm(prog,f,filename)`; wired ✅ | ✅ |
+| **M-PJ-HELLO** | rung01 hello — `write('hello'), nl` via JVM Byrd box | ✅ |
 | **M-PJ-FACTS** | rung02 facts — deterministic fact lookup, no backtracking | ❌ |
 | **M-PJ-UNIFY** | rung03 unify — head unification, compound terms | ❌ |
 | **M-PJ-ARITH** | rung04 arith — `is/2`, integer arithmetic | ❌ |

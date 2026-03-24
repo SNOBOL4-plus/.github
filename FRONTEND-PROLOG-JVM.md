@@ -18,19 +18,37 @@ and emits Jasmin `.j` files, assembled by `jasmin.jar`.
 
 | Session | Sprint | HEAD | Next milestone |
 |---------|--------|------|----------------|
-| **Prolog JVM** | `main` — planning; `prolog_emit_jvm.c` not yet created | `e7fc3a2` | M-PJ-SCAFFOLD |
+| **Prolog JVM** | `main` PJ-1 — M-PJ-SCAFFOLD ✅ M-PJ-HELLO ✅ | `f7390c6` PJ-1 | M-PJ-FACTS |
 
-### Next session checklist (PJ-1)
+### Session PJ-1 summary (2026-03-24)
+
+- Created `src/frontend/prolog/prolog_emit_jvm.c` (~970 lines):
+  - `pj_emit_class_header()` — `.class`, `.super`, `pj_trail` field, `<clinit>`
+  - `pj_emit_runtime_helpers()` — `pj_trail_mark/push/unwind`, `pj_deref`, `pj_unify`, `pj_term_atom/int/var`, `pj_write`
+  - `pj_emit_choice()` — E_CHOICE → tableswitch α/β/ω Jasmin label chain
+  - `pj_emit_clause()` — head unify + body goals per clause block
+  - `pj_emit_goal()` — write/1, nl/0, writeln/1, true/0, fail/0, halt/0-1, is/2, comparison ops, user calls
+  - `pj_emit_term()` — E_QLIT/E_ILIT/E_VART/E_FNC → Object[] on JVM stack
+  - `pj_emit_arith()` — is/2 RHS arithmetic → long
+  - `prolog_emit_jvm()` — public entry point
+- Wired `driver/main.c`: `-pl -jvm` → `prolog_emit_jvm(prog, out, infile)`
+- Added `prolog_emit_jvm.c` to `src/Makefile` FRONTEND_PROLOG sources
+- Key bugs fixed: duplicate `.field` declaration; `checkcast String` before `print(String)V`; double `ldc` in atom emitter; `clause->subject` → `clause->ival/dval`
+- Confirmed: `null.pl → Null.class → exit 0` ✅; `hello.pl → Hello.class → "hello"` ✅
+
+### Next session checklist (PJ-2)
 
 ```bash
-git clone https://TOKEN_SEE_LON@github.com/snobol4ever/snobol4x
-git clone https://TOKEN_SEE_LON@github.com/snobol4ever/.github
+git clone https://TOKEN@github.com/snobol4ever/snobol4x
+git clone https://TOKEN@github.com/snobol4ever/.github
 # Read FRONTEND-PROLOG-JVM.md §NOW
-# Read FRONTEND-PROLOG.md for IR node vocabulary
-# Create src/frontend/prolog/prolog_emit_jvm.c (see §Design below)
-# Wire into driver/main.c: -pl -jvm flag → prolog_emit_jvm()
-# Test: hello.pl → foo.j → jasmin → java → "hello"
-# Fire M-PJ-SCAFFOLD
+apt-get install -y default-jdk nasm libgc-dev
+cd snobol4x/src && make           # must build clean
+# Run: ./sno2c -pl -jvm test/frontend/prolog/corpus/rung02_facts/facts.pro -o /tmp/facts.j
+# java -jar src/backend/jvm/jasmin.jar /tmp/facts.j -d /tmp/ && java -cp /tmp/ Facts
+# Compare vs: ./sno2c -pl -c facts.pro -o /tmp/facts.c && gcc ... -o /tmp/facts_c && /tmp/facts_c
+# Fix until matching → fire M-PJ-FACTS
+# Then attempt rung03 (unify) → M-PJ-UNIFY
 ```
 
 ---
@@ -184,8 +202,8 @@ All implemented as `static` methods in the emitted class — same pattern as
 
 | ID | Trigger | Depends on | Status |
 |----|---------|-----------|--------|
-| **M-PJ-SCAFFOLD** | `prolog_emit_jvm.c` exists; `-pl -jvm null.pl → null.j` assembles and exits 0; driver wired | — | ❌ |
-| **M-PJ-HELLO** | `hello.pl` → `write('hello'), nl.` → JVM output `hello` | M-PJ-SCAFFOLD | ❌ |
+| **M-PJ-SCAFFOLD** | `prolog_emit_jvm.c` exists; `-pl -jvm null.pl → null.j` assembles and exits 0; driver wired | — | ✅ |
+| **M-PJ-HELLO** | `hello.pl` → `write('hello'), nl.` → JVM output `hello` | M-PJ-SCAFFOLD | ✅ |
 | **M-PJ-FACTS** | Rung 2: deterministic fact lookup, `write(answer)` | M-PJ-HELLO | ❌ |
 | **M-PJ-UNIFY** | Rung 3: head unification, compound terms | M-PJ-FACTS | ❌ |
 | **M-PJ-ARITH** | Rung 4: `is/2` arithmetic — reuse JVM `sno_arith` helpers | M-PJ-UNIFY | ❌ |

@@ -192,3 +192,6 @@ Append-only. Do not edit existing entries.
 | **M-BEAUTY-SEMANTIC** | semantic action helpers 3-way PASS | ✅ B-276 `f721492` |
 
 | **M-BEAUTY-TRACE** | xTrace control + trace output 3-way PASS | ✅ B-277 `22e291c` 2026-03-24 |
+
+| **M-PJ-SCAFFOLD** | `prolog_emit_jvm.c` + driver wire; null.pl exits 0 | ✅ PJ-1 2026-03-24 `f7390c6` |
+| **M-PJ-HELLO** | hello.pl → JVM → "hello" | ✅ PJ-1 2026-03-24 `f7390c6` |
