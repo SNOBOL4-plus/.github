@@ -19,7 +19,7 @@ Each concurrent session owns exactly one row. Update only your row on every push
 | **DOTNET** | `main` D-164 — 1903/1903 pass 0 fail on Linux | `e1e4d9e` D-164 | TBD |
 | **README** | `main` — M-README-CSHARP-DRAFT ✅ | `00846d3` snobol4csharp | M-README-DEEP-SCAN |
 | **ICON frontend** | `main` I-10 — SESSIONS_ARCHIVE pruned 782KB→15KB; fixes documented, not yet applied | `54031a5` I-7 | M-ICON-CORPUS-R3 |
-| **Prolog JVM** | `main` PJ-7 — M-PJ-BACKTRACK ✅ rung05 a/b/c; γ=base+init_cs+1; Greek port names in C+labels | `c6a8bda` PJ-7 | M-PJ-LISTS |
+| **Prolog JVM** | `main` PJ-8 — rung02 PASS ✅ rung05 PASS ✅; omega guard fix in clause dispatch | `d36f0ed` PJ-8 | M-PJ-LISTS |
 | **Icon JVM** | `main` IJ-6 — Fix1+Fix2+Fix3+Fix2b applied; VerifyErrors dead; no-output bug for IJ-7 | `a3d4a55` IJ-6 | M-IJ-CORPUS-R3 |
 | **README v2 sprint** | `main` R-2 | TBD R-2 | M-FEAT-JVM |
 

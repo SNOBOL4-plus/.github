@@ -15513,3 +15513,19 @@ Fix VerifyError: emit `lconst_0; lstore N` for all long slots before suspend_id 
 **All VerifyErrors dead. Class loads and exits 0.**
 
 **Remaining for IJ-7:** no-output bug — first `invokestatic icn_upto()V` returns `icn_failed=1` (never suspends). Suspect: `icn_0_α` (while condition) is entered correctly but the relop or init path fails immediately. Debug: add `javap -c` trace of `icn_upto` fresh path; check `i := 1` stores to slot 2, then `1 <= 4` (lload 2 vs lload 0) evaluates correctly. The `sdrain` for the init stmt now routes to `icn_0_α` — verify that label is the while-condition α and not `icn_upto_done`.
+
+---
+
+## PJ-8 — 2026-03-24
+
+**HEAD:** `d36f0ed` snobol4x main
+
+**Fixed:** rung02 infinite loop. Root cause: `base[nclauses]` uninitialized in `pj_emit_choice()`. cs values beyond last clause (e.g. cs=3 for 3-clause pred) satisfied `cs >= base[nclauses-1]` forever, re-entering last clause infinitely.
+
+**Fix:** `base[nclauses] = base[nclauses-1] + 1`. Omega guard (`cs >= base[nclauses] → omega`) emitted only when last clause has no body user-calls. If last clause is recursive, guard skipped — sub_cs from inner calls makes cs range open-ended.
+
+**Corpus:** rung01 ✅ rung02 ✅ rung03 ✅ rung04 ✅ rung05 ✅ rung06 ❌
+
+**rung06:** `append/3` compound head `[H|R]` in third arg fails silently. `pj_emit_unify_expr` for `E_COMPOUND` likely mishandles fresh output vars in head unification.
+
+**Next:** PJ-9 — diagnose rung06, then M-PJ-LISTS.

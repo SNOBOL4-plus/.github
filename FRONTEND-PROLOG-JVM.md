@@ -19,26 +19,25 @@ and emits Jasmin `.j` files, assembled by `jasmin.jar`.
 
 | Session | Sprint | HEAD | Next milestone |
 |---------|--------|------|----------------|
-| **Prolog JVM** | `main` PJ-7 — M-PJ-BACKTRACK ✅ rung05 a/b/c pass; Greek port names throughout | `c6a8bda` PJ-7 | M-PJ-LISTS |
+| **Prolog JVM** | `main` PJ-8 — rung02 PASS ✅ rung05 PASS ✅; omega guard fix in clause dispatch | `d36f0ed` PJ-8 | M-PJ-LISTS |
 
-### CRITICAL NEXT ACTION (PJ-8)
+### CRITICAL NEXT ACTION (PJ-9)
 
-**rung02 `facts` infinite loop** — pre-existing, not caused by PJ-7. `person(X), write(X), nl, fail ; true` loops forever outputting `person` atoms endlessly. Diagnose first before M-PJ-LISTS work. Suspect: disjunct alt wiring (`disj_alt1 → dg0_g → p_main_0_gamma_0`) causes main to re-enter on every `fail` instead of terminating.
+**rung06 `lists` silent failure** — `append/3` with compound head `[H|R]` in third arg fails silently (exit 1, no output, no JVM exception). Predicate:
+```prolog
+append([H|T], L, [H|R]) :- append(T, L, R).
+```
+Third arg `[H|R]` is compound `.`(H, R) where R is a fresh var created in the head. Suspect: `pj_emit_unify_expr` for `E_COMPOUND` doesn't correctly handle output vars (vars that appear only in the compound, bound via unification). Check `pj_emit_unify` for compound case with fresh var slots.
 
-**M-PJ-LISTS next** — rung06: `append/3`, `length/2`, `reverse/2`. γ formula fix (PJ-7) should handle these; resolve rung02 loop first.
+**rung02 fix (PJ-8)** — `base[nclauses]` was uninitialized. Fixed: `base[nclauses] = base[nclauses-1] + 1`; omega guard emitted only when last clause has no body user-calls.
 
-**Greek port naming convention (PJ-7):**
-- C local vars: `lbl_γ`, `lbl_ω`, `lbl_outer_ω`, `call_α`, `call_ω`, `call_β`, `g_γ`, `g_ω`, `γ_lbl`, `ω_lbl`, `α_lbl`, `α_retry_lbl`
-- Generated Jasmin labels: `_alpha_`, `_alphafail_`, `_beta_`, `_gamma_`, `_omega` (ASCII — Jasmin constraint)
-- No Greek in external C linkage (function names visible to linker)
-
-**Bootstrap PJ-8:**
+**Bootstrap PJ-9:**
 ```bash
 git clone https://TOKEN_SEE_LON@github.com/snobol4ever/snobol4x
 git clone https://TOKEN_SEE_LON@github.com/snobol4ever/.github
 apt-get install -y default-jdk nasm libgc-dev
 make -C snobol4x/src
-# Confirm baseline: rungs 01/03/04/05 PASS, rung02 loops (known bug)
+# Confirm baseline: rungs 01–05 PASS, rung06 fails silently
 ./sno2c -pl -jvm test/frontend/prolog/corpus/rung05_backtrack/backtrack.pro -o /tmp/bt.j
 java -jar src/backend/jvm/jasmin.jar /tmp/bt.j -d /tmp/ && timeout 5 java -cp /tmp Backtrack
 # Expected: a\nb\nc
