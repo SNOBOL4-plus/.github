@@ -15498,3 +15498,18 @@ Fix VerifyError: emit `lconst_0; lstore N` for all long slots before suspend_id 
 **Corpus:** rung01 ✅ rung02 ❌ (pre-existing infinite loop, unrelated) rung03 ✅ rung04 ✅ rung05 ✅
 
 **Next:** PJ-8 — diagnose rung02 infinite loop, then M-PJ-LISTS (rung06).
+
+---
+
+## IJ-6 — Icon JVM — 2026-03-24
+
+**HEAD in:** `e590c4f` IJ-5 | **HEAD out:** `a3d4a55` IJ-6
+
+**Fix 1 ✅** `ij_emit_proc`: `lconst_0/lstore N` preamble for all `ij_nlocals` slots before `suspend_id` dispatch → `Register pair 2/3 wrong type` dead.
+**Fix 2 ✅** `ij_emit_suspend` body γ: route through `icn_N_bdone: pop2; goto ports.γ` drain — body assignments leave long on stack.
+**Fix 2b ✅** `ij_emit_suspend` body ω: `strncpy(bp.ω, ports.γ)` — failure path has empty stack, must NOT go through pop2.
+**Fix 3 ✅** `ij_emit_proc` stmt chain: each stmt γ → `icn_sN_sdrain: pop2; goto next_a` — prevents stale long entering next stmt's α.
+
+**All VerifyErrors dead. Class loads and exits 0.**
+
+**Remaining for IJ-7:** no-output bug — first `invokestatic icn_upto()V` returns `icn_failed=1` (never suspends). Suspect: `icn_0_α` (while condition) is entered correctly but the relop or init path fails immediately. Debug: add `javap -c` trace of `icn_upto` fresh path; check `i := 1` stores to slot 2, then `1 <= 4` (lload 2 vs lload 0) evaluates correctly. The `sdrain` for the init stmt now routes to `icn_0_α` — verify that label is the while-condition α and not `icn_upto_done`.
