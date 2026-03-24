@@ -9,48 +9,46 @@ snobol4x: multiple frontends, multiple backends.
 
 ## NOW
 
-**Sprint:** `main` — B-276 (BEAUTY) · F-222 (Prolog) concurrent
-**HEAD:** `b4507dc` F-222 prolog (main) / `f721492` B-276 beauty (main)
-**B-session:** M-BEAUTY-OMEGA ❌ — driver+ref ready (10/10 CSN+SPL); SPITBOL+SO crash: strip UTF-8 from driver comments
+**Sprint:** `main` — B-277 (BEAUTY) · F-222 (Prolog) concurrent
+**HEAD:** `bd9d6e3` B-277 (snobol4x) / `468c507` B-277 (.github)
+**B-session:** M-BEAUTY-TRACE ❌ — next subsystem after omega ✅
 **F-session:** M-PROLOG-CORPUS ❌ — rung05 bug root-caused; 16 puzzle stubs committed (M-PZ-03..20)
 **Invariants:** 106/106 ASM corpus ALL PASS ✅
 
-**⚡ CRITICAL NEXT ACTION — F-223 (M-PROLOG-CORPUS):**
+**⚡ CRITICAL NEXT ACTION — B-277 (M-BEAUTY-TRACE):**
 
 ```
-BUG: rung05 backtrack FAIL — prints a\nb instead of a\nb\nc.
-ROOT CAUSE: prolog_emit.c emit_body, last-goal user-call branch (~line 692).
-  When last body goal is a user call, emitter does PG(γ) — jumps to clause γ
-  returning the clause index (e.g. 1). Discards inner _cs9 counter.
-  On retry, _start=1 resets _cs9=0, re-finds b instead of advancing to c.
+NEXT: INC=demo/inc bash test/beauty/run_beauty_subsystem.sh trace
 
-FIX (two parts):
-  1. emit_body last-goal branch (~line 692): instead of PG(γ), emit
-       *_tr = _trail; return <clause_idx> + _cs<N>;
-     (encode inner _cs into return value)
-  2. emit_choice switch: add default: case that re-enters last clause's
-     retry loop with _start - nclauses as inner _cs.
+If test/beauty/trace/ does not exist:
+  1. Write test/beauty/trace/driver.sno — exercises T8Trace/T8Pos/xTrace
+  2. Generate oracle: INC=demo/inc snobol4 -f -P256k -Idemo/inc driver.sno > driver.ref
+  3. Write tracepoints.conf with scan-visible DEFINE stubs for T8Trace/T8Pos
+  4. Run 3-way monitor — fix any ASM divergences
+  5. On PASS: corpus check (106/106), commit B-277: M-BEAUTY-TRACE ✅, push
 
-After fix: run all 10 rungs → M-PROLOG-CORPUS fires.
-Then: tackle M-PZ-14 (easiest puzzle stub) → M-PZ-17 → ... in order.
+PATTERN from B-276 (omega):
+  - scan-visible DEFINE stubs needed for functions in -INCLUDE'd files
+  - tracepoints.conf: INCLUDE ^FnName$ (anchored), EXCLUDE local vars
+  - Binary E_ATP (pat @var) now fixed in emit_byrd_asm.c — no related bug expected
+
+After trace: M-BEAUTIFY-BOOTSTRAP sprint begins.
 ```
 
 ---
 
 ## Last Two Sessions (3 lines each)
 
+**B-276 (2026-03-24) — M-BEAUTY-OMEGA ✅:**
+Found+fixed binary E_ATP (`pat @txOfs`) in emit_byrd_asm.c value-context: was OPSYN dispatch, now LHS passthrough + `stmt_at_capture` side-effect. Wrote 15-test omega driver with scan-visible DEFINE stubs for inject_traces.py. 3-way monitor PASS (13 steps), 106/106 corpus. Commit `151a99b` snobol4x, `.github` `468c507`.
+
 **F-222 (2026-03-23) — puzzle stubs + milestones; no source fix:**
 Split puzzles.pro into 16 stub files puzzle_03..20. Added M-PZ-03..20 milestones to PLAN.md ordered easy→hard. Updated FRONTEND-PROLOG.md with full sprint plan and source layout. HEAD `b4507dc`.
-
-**F-221 (2026-03-23) — bug diagnosis only, no commit:**
-Ran all rungs: 1–4 and 6–9 PASS, rung 5 FAIL. Root-caused to `emit_body` last-goal user-call discarding inner `_cs`. Context exhausted before fix applied. HEAD unchanged `5e6b872`.
 
 ---
 
 ## Beauty Subsystem Status
 
 See [BEAUTY.md](BEAUTY.md) for full sequence. Summary:
-- ✅ 1–16: global/is/FENCE/io/case/assign/match/counter/stack/tree/SR/TDump/Gen/Qize/ReadWrite/XDump
-- ❌ 17: semantic ← **now**
-- ❌ 18: omega
-- ❌ 19: trace
+- ✅ 1–18: global/is/FENCE/io/case/assign/match/counter/stack/tree/SR/TDump/Gen/Qize/ReadWrite/XDump/semantic/omega
+- ❌ 19: trace ← **now**

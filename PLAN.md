@@ -12,7 +12,7 @@ Each concurrent session owns exactly one row. Update only your row on every push
 
 | Session | Sprint | HEAD | Next milestone |
 |---------|--------|------|----------------|
-| **TINY backend** | `main` B-276 — M-BEAUTY-OMEGA 🔧 | `f721492` B-276 | M-BEAUTY-OMEGA |
+| **TINY backend** | `main` B-277 — M-BEAUTY-TRACE ❌ | `bd9d6e3` B-277 | M-BEAUTY-TRACE |
 | **TINY NET** | `net-t2` N-248 — M-T2-NET ✅ 110/110 clean | `425921a` N-248 | M-T2-FULL |
 | **TINY JVM** | `jvm-t2` J-213 — M-T2-JVM ✅ 106/106 clean | `8178b5c` J-213 | M-T2-FULL |
 | **TINY frontend** | `main` F-222 — 16 puzzle stubs committed (M-PZ-03..20); rung05 fix pending | `b4507dc` F-222 | M-PROLOG-CORPUS |

@@ -1,5 +1,24 @@
 > Org renamed SNOBOL4-plus → snobol4ever, repos renamed March 2026. Historical entries use old names.
 
+## Session B-276 — M-BEAUTY-OMEGA ✅ (2026-03-24)
+
+**Bug:** Binary `E_ATP` (`pat @txOfs`) in value context in `emit_byrd_asm.c` emitted
+`APPLY_FN_N "@", 2` (OPSYN dispatch) instead of LHS passthrough + cursor side-effect.
+`expr_has_pattern_fn` did not recognise `E_ATP` as a pattern-building node so the
+expression was never registered as a named pattern — fell into the broken OPSYN path.
+
+**Fix:** Added `E_ATP` to `expr_has_pattern_fn` + `expr_is_pattern_expr`; rewrote
+value-context binary `E_ATP` handler to emit LHS value + `stmt_at_capture(varname,
+cursor)` side-effect + restore LHS as result.
+
+**Driver:** 15 tests covering TZ/TY/TX/TV/TW (xTrace=0/1, doParseTree=F/T, LEQ/lwr/upr).
+Scan-visible DEFINE stubs in driver.sno so inject_traces.py registers CALL/RETURN traces
+for functions defined in -INCLUDE'd omega.sno. Anchored tracepoints.conf.
+
+**Results:** 3-way monitor PASS (13 steps) · 106/106 corpus ALL PASS
+**Commits:** snobol4x `151a99b` · .github `468c507` (B-277 PLAN update: `bd9d6e3`/`468c507`)
+**Next:** M-BEAUTY-TRACE (B-277) — final subsystem before M-BEAUTIFY-BOOTSTRAP
+
 ## N-248 (2026-03-22) — M-T2-NET ✅ + M-T2-FULL ✅
 
 **Branch:** net-t2 · **Commit:** `425921a` (base) + `v-post-t2` tag

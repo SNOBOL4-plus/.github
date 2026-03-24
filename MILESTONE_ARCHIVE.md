@@ -77,6 +77,7 @@ Append-only. Do not edit existing entries.
 | M-MONITOR-CORPUS9 | corpus failures through 5-way monitor; 106/106 confirmed | ✅ `a8d6ca0` B-248 |
 | M-MON-BUG-NET-TIMEOUT | NET StreamWriter static-open; no timeout | ✅ `1e9f361` B-256 |
 | M-MON-BUG-ASM-WPAT | ASM VARVAL_fn: PATTERNPATTERN → PATTERN | ✅ `a4a27ab` B-258 |
+| **M-BEAUTY-OMEGA** | omega.sno — omega patterns correct | SEMANTIC | ✅ B-276 `151a99b` |
 | M-BEAUTY-GLOBAL | global.sno 3-way PASS | ✅ `7e925fd` B-261 |
 | M-BEAUTY-IS | is.sno 3-way PASS | ✅ `be215bb` B-262 |
 | M-BEAUTY-FENCE | FENCE.sno 3-way PASS | ✅ `822c58f` B-261 |
