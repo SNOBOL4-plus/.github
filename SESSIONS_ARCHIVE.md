@@ -14916,3 +14916,20 @@ bash /home/claude/snobol4x/setup.sh
 5. Write 5 R3 corpus tests (specs in §I-8 Bug Diagnosis R3 table)
 6. Run full suite, confirm 20/20 pass
 7. Commit + push snobol4x, then update .github and push
+
+## Session I-9 — ICON Frontend: Patch Archaeology
+
+**Date:** 2026-03-23
+**HEAD at start:** `54031a5` I-7
+**HEAD at end:** `54031a5` I-7 (no snobol4x commit — fixes not yet applied)
+
+**What happened:**
+- Confirmed segfault on rung03_suspend/t01_gen.icn still present.
+- Bug 0 (is_gen=0) from lost I-8 transcript was a red herring; current repo is_gen detection is correct.
+- Root bugs: Fix 1 (left_is_value for generator ICN_CALL) and Fix 2 (rsp corruption in jmp trampoline).
+- Developed exact copy-paste patches for both — documented in FRONTEND-ICON.md §NOW.
+- Context window hit 85% before apply+test cycle. Reverted partial edits, pushed doc update only.
+
+**State at handoff:** snobol4x `54031a5` unchanged. .github updated with I-9 patches.
+
+**Next session (I-10):** Apply both patches from FRONTEND-ICON.md §NOW, rebuild, test t01_gen, write 5 R3 tests, fire M-ICON-CORPUS-R3.
