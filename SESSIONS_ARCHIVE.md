@@ -231,3 +231,16 @@ Key bug: JVM VerifyError "inconsistent stack height" — `dup`+branch patterns l
 
 ### Next: M-PJ-CORPUS-R10
 Test puzzle_01–06 (already solved) via -pl -jvm. Then tackle stubs per FRONTEND-PROLOG.md ordering (M-PZ-14 first). Note: `mod` missing from prolog_lower.c arith table — needed before integer-search puzzles.
+
+## I-11 — ICON frontend — M-ICON-CORPUS-R3
+
+**HEAD:** `bab5664` **Date:** 2026-03-24
+
+**Work done:**
+- Applied 3 patches to `icon_emit.c`: `icn_suspend_rbp` BSS slot; yield path saves `rbp`; β resume path restores `rbp` before `jmp [rel icn_suspend_resume]`
+- Root cause fixed: β trampoline was jumping into generator with caller's `rbp`, so `[rbp-8]` read garbage from wrong frame
+- Wrote rung03 corpus: t01_gen (existing) + t02_return, t03_fail, t04_gen_filter, t05_gen_compose
+- Added `run_rung03.sh` runner
+- **5/5 rung03_suspend PASS** — M-ICON-CORPUS-R3 ✅
+
+**Next:** M-ICON-STRING — `ICN_STR` node + `||` concat via `CAT2_*` macros

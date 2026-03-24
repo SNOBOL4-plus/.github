@@ -209,3 +209,4 @@ Append-only. Do not edit existing entries.
 | **M-PJ-LISTS** | Rung 6: `append/3`, `length/2`, `reverse/2` | ✅ PJ-11 `e3c30ab` |
 | **M-PJ-RECUR** | Rung 8: `fibonacci/2`, `factorial/2` | ✅ PJ-13 |
 | **M-PJ-BUILTINS** | Rung 9: `functor/3`, `arg/3`, `=../2`, type tests | ✅ PJ-13 |
+| **M-ICON-CORPUS-R3** | `bab5664` I-11 | Rung 3: user procedures + generators; rbp save/restore fix; 5/5 PASS |

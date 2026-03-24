@@ -18,16 +18,18 @@ feeding the same TINY pipeline. Goal-directed generators map directly to Byrd bo
 
 | Session | Sprint | HEAD | Next milestone |
 |---------|--------|------|----------------|
-| **ICON frontend** | `main` I-10 — HQ docs pruned (SESSIONS_ARCHIVE 812KB→2.8KB, JCON analysis extracted to JCON-ANALYSIS.md); I-9 patches not yet applied | `d66bc06` I-10 | M-ICON-CORPUS-R3 |
+| **ICON frontend** | `main` I-11 — M-ICON-CORPUS-R3 ✅ rbp save/restore fix; 5/5 rung03 PASS | `bab5664` I-11 | M-ICON-STRING |
 
-### Next session checklist (I-11)
+### Next session checklist (I-12)
 
 ```bash
-git clone https://github.com/snobol4ever/snobol4x
-git clone https://github.com/snobol4ever/.github
-# Read FRONTEND-ICON.md §NOW — apply I-9 patches below (Fix 1 + Fix 2 to icon_emit.c)
-# Rebuild icon_driver, test t01_gen → must output 1\n2\n3\n4
-# Write R3 corpus (5 tests), run full suite, fire M-ICON-CORPUS-R3
+git clone https://TOKEN_SEE_LON@github.com/snobol4ever/snobol4x
+git clone https://TOKEN_SEE_LON@github.com/snobol4ever/.github
+bash /home/claude/snobol4x/setup.sh
+# Read FRONTEND-ICON.md §NOW
+# Confirm rung03 5/5 still PASS: bash test/frontend/icon/run_rung03.sh <wrapper>
+# Implement M-ICON-STRING: ICN_STR node + || concat via CAT2_* macros
+# Add rung04 string corpus tests, fire M-ICON-STRING
 ```
 
 **M-ICON-CORPUS-R3 spec:** user procedures with return; user-defined generators with suspend.
@@ -183,7 +185,7 @@ for now.
 | **M-ICON-PROC** | `procedure`/`end`, `local`, `return`, `fail`, call expressions | M-ICON-CORPUS-R1 | ✅ `d736059` I-6 |
 | **M-ICON-SUSPEND** | `suspend E` inside procedure = user-defined generator | M-ICON-PROC | ✅ `d736059` I-6 |
 | **M-ICON-CORPUS-R2** | Rung 2: arithmetic generators, relational filtering | M-ICON-SUSPEND | ✅ `54031a5` I-7 |
-| **M-ICON-CORPUS-R3** | Rung 3: user procedures with return; user-defined generators | M-ICON-CORPUS-R2 | ❌ |
+| **M-ICON-CORPUS-R3** | Rung 3: user procedures with return; user-defined generators | M-ICON-CORPUS-R2 | ✅ `bab5664` I-11 |
 | **M-ICON-STRING** | `ICN_STR`, `\|\|` concat via `CAT2_*` macros | M-ICON-CORPUS-R3 | ❌ |
 | **M-ICON-SCAN** | `E ? E` string scanning; explicit cursor threading | M-ICON-STRING | ❌ |
 | **M-ICON-CSET** | Cset literals; `upto`→`BREAK`, `many`→`SPAN`, membership→`ANY` | M-ICON-SCAN | ❌ |
