@@ -1,11 +1,12 @@
 # FRONTEND-ICON-JVM.md — Tiny-ICON → JVM Backend (L3)
 
-Tiny-ICON frontend targeting JVM bytecode via Jasmin.
-Reuses the existing Icon pipeline (lex → parse → AST) unchanged.
-New layer: `icon_emit_jvm.c` — consumes `IcnNode*` AST and emits Jasmin `.j` files,
-assembled by `jasmin.jar` into `.class` files.
+Icon → JVM backend emitter. The Icon **frontend** (lex → parse → AST) is shared
+and lives in `src/frontend/icon/`; this sprint is about `icon_emit_jvm.c` — the
+**JVM backend emitter** that consumes the `IcnNode*` AST and emits Jasmin `.j` files,
+assembled by `jasmin.jar` into `.class` files. Despite the file's location under
+`src/frontend/icon/`, the work here is backend emission, not parsing.
 
-**Session trigger phrase:** `"I'm working on Icon JVM"`
+**Session trigger phrase:** `"I'm working on Icon JVM"` — also triggered by `"playing with ICON frontend ... with JVM backend"` or any phrasing that combines Icon with JVM.
 **Session prefix:** `IJ` (e.g. IJ-1, IJ-2, IJ-3)
 **Driver flag:** `icon_driver -jvm foo.icn -o foo.j` → `java -jar jasmin.jar foo.j -d .` → `java FooClass`
 **Oracle:** `icon_driver foo.icn -o foo.asm -run` (the x64 ASM backend, rungs 1–2 known good)

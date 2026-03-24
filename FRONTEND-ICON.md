@@ -5,7 +5,7 @@ SNOBOL4 and Icon share a bloodline — Griswold invented both.
 The Byrd Box IR is the bridge: same four ports (α/β/γ/ω), new Icon frontend
 feeding the same TINY pipeline. Goal-directed generators map directly to Byrd boxes.
 
-**Session trigger phrase:** `"I'm playing with ICON"`
+**Session trigger phrase:** `"I'm playing with ICON"` — **x64 ASM only**. If the phrase also mentions "JVM backend" or "JVM", route to FRONTEND-ICON-JVM.md instead.
 **Session prefix:** `I` (e.g. I-1, I-2, I-3)
 **Backend:** x64 ASM only — same NASM/ELF64 pipeline as SNOBOL4
 **Location:** `src/frontend/icon/` in snobol4x
