@@ -14833,3 +14833,17 @@ bash /home/claude/snobol4x/setup.sh
 4. Rebuild: `cd src && make`
 5. Run unit test: `snobol4 /tmp/test_input_fail.sno` → PASS; compile+run via ASM → PASS
 6. Run 3-way monitor: `INC=demo/inc bash test/beauty/run_beauty_subsystem.sh ReadWrite`
+
+## B-274 (2026-03-23) — M-BEAUTY-READWRITE partial + PLAN.md structural fix
+
+**Branch:** main · **HEAD:** 93130ee (snobol4x) · 05c5454 (.github)
+
+**Work done:**
+- `_b_INPUT` n==3 fix in `src/runtime/snobol4/snobol4.c`: 3-arg `INPUT(var, chan, "file[-opts]")` now extracts filename before `[`, calls `fopen`, returns `FAILDESCR` on failure. Previously returned `NULVCL` (success) — steps 4–5 of ReadWrite driver were passing by accident.
+- `snobol4x/PLAN.md` rewritten: 2315 lines → 61 lines. §START only. Session trails moved to `doc/PLAN_sessions_B274.md` and `.github/SESSIONS_ARCHIVE.md`.
+- Root cause of 100KB PLAN.md: every session was appending multi-hundred-line handoff sections instead of updating §START in place. Fixed by convention: PLAN.md = §START only; trails go here.
+- `_b_OUTPUT` n==3 fix NOT yet done — `Write.sno` uses `OUTPUT(.wrOutput, 8, fileName)`.
+
+**Milestones fired:** none (M-BEAUTY-READWRITE still in progress)
+
+**Next session:** Fix `_b_OUTPUT` n==3 → build → `INC=demo/inc bash test/beauty/run_beauty_subsystem.sh ReadWrite` → 8/8 → commit B-274: M-BEAUTY-READWRITE ✅ → advance to M-BEAUTY-XDUMP.
