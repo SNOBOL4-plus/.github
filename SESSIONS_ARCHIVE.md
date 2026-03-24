@@ -261,3 +261,20 @@ Test puzzle_01–06 (already solved) via -pl -jvm. Then tackle stubs per FRONTEN
 
 ### Next
 IJ-8: instrument → find exact branch → fix → fire M-IJ-CORPUS-R3
+
+---
+
+## IJ-8 — 2026-03-24
+
+**No code written.** Session consumed by context overhead (jcon-master + full repo read) and session-type misidentification (I vs IJ confusion).
+
+**What happened:**
+- Cloned snobol4x + .github, extracted jcon-master.zip, read PLAN.md, FRONTEND-ICON.md, FRONTEND-ICON-JVM.md, RULES.md, irgen.icn in full
+- Incorrectly began briefing under I-session (ASM frontend) instead of IJ-session (JVM backend)
+- Root cause: "ICON frontend + JVM backend" phrasing triggered I-session association; "JVM backend" signal was underweighted
+- **Fix:** Added `⚠ ICON vs IJ DISAMBIGUATION` rule to RULES.md (commit b21617a) — "JVM backend" = IJ, always
+
+**No milestones fired. No snobol4x changes.**
+
+### Next
+IJ-9: build → instrument `icn_upto` with stderr probes → find exact branch taking `done` not `sret` → fix → fire M-IJ-CORPUS-R3

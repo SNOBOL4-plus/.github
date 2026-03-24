@@ -18,9 +18,9 @@ assembled by `jasmin.jar` into `.class` files.
 
 | Session | Sprint | HEAD | Next milestone |
 |---------|--------|------|----------------|
-| **Icon JVM** | `main` IJ-7 — bp.ω fix confirmed applied; rung03 x64 ASM 5/5 PASS confirmed; JVM t01_gen no-output bug diagnosed — root cause: `icn_0_condok: pop2` stack discipline | `a3d4a55` IJ-7 | M-IJ-CORPUS-R3 |
+| **Icon JVM** | `main` IJ-8 — no code; RULES.md disambiguation fix pushed (b21617a); context exhausted | `a3d4a55` IJ-7 | M-IJ-CORPUS-R3 |
 
-### Next session checklist (IJ-8)
+### Next session checklist (IJ-9)
 
 ```bash
 git clone https://TOKEN_SEE_LON@github.com/snobol4ever/snobol4x
@@ -32,6 +32,8 @@ gcc -Wall -Wextra -g -O0 -I. src/frontend/icon/icon_driver.c src/frontend/icon/i
     src/frontend/icon/icon_emit.c src/frontend/icon/icon_emit_jvm.c \
     src/frontend/icon/icon_runtime.c -o /tmp/icon_driver
 # Read FRONTEND-ICON-JVM.md §NOW
+# Read RULES.md §ICON vs IJ DISAMBIGUATION (updated IJ-8)
+# Session trigger: "I'm working on Icon JVM" OR "ICON frontend with JVM backend" → IJ-session
 # rung01 6/6 + rung02 14/14 already pass (confirmed IJ-6)
 # bp.ω fix already applied (line 521: strncpy(bp.ω, ports.γ, 63))
 # Fix IJ-7 no-output bug (see findings below), then fire M-IJ-CORPUS-R3
