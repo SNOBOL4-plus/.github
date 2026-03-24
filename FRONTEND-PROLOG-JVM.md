@@ -18,31 +18,31 @@ and emits Jasmin `.j` files, assembled by `jasmin.jar`.
 
 | Session | Sprint | HEAD | Next milestone |
 |---------|--------|------|----------------|
-| **Prolog JVM** | `main` PJ-2 — Proebsting retry loop; ,/2 ;/2 — rung02 prints `brown` only | `7b6af68` PJ-2 | M-PJ-FACTS (fix retry) |
+| **Prolog JVM** | `main` PJ-3 — M-PJ-FACTS ✅ M-PJ-UNIFY ✅ M-PJ-ARITH ✅; rungs 5-9 failing | `cb87932` PJ-3 | M-PJ-BACKTRACK |
 
-### Session PJ-2 summary (2026-03-24)
+### Session PJ-3 summary (2026-03-24)
 
-- Added `pj_is_user_call()` — mirrors `is_user_call()` in prolog_emit.c
-- Added `pj_emit_body()` — Proebsting E2.fail→E1.resume retry loop for user calls
-  - Allocates 3 JVM locals per user call: trail_cm, cs, rv
-  - γ return from predicate is now `Object[1]{Integer(ci)}` so caller can advance cs
-  - Suffix goals wired with ω=retry_lbl
-- `pj_emit_goal`: added `,/2` (flatten + pj_emit_body), `;/2` (disjunction), `->/2` (if-then)
-- `.limit locals` bumped +32 for retry loop temps
-- **Bug remaining:** rung02 `facts.pro` prints `brown` only instead of `brown/jones/smith`
-  - Retry loop structure is correct (verified in generated Jasmin)
-  - Trail unwind on retry reverts X to unbound ✓
-  - Person/1 clause1 (jones) should unify on cs=1 — not happening
-  - **Root cause hypothesis:** `p_person_1` head unification uses `aload 0` (arg0 = X cell ref).
-    After `pj_trail_unwind` restores X to `["var", null]`, clause1 tries to unify X with `atom(jones)`.
-    `pj_unify` checks if arg0 is a var with null slot — but `pj_trail_unwind` sets `arr[1]=null`
-    via `aastore` after `checkcast [Object[]` on the trailed cell. The trailed cell IS the X array.
-    Hypothesis: `pj_trail_unwind` pops the array ref, sets `[1]=null`, but does NOT reset `[0]` back
-    to `"var"` — so after binding to `brown`, `[0]` becomes `"ref"`. After unwind, `[1]=null` but
-    `[0]` is still `"ref"`. So `pj_deref` sees `tag="ref", value=null` → infinite loop or wrong result.
-  - **Fix for PJ-3:** `pj_trail_unwind` must restore BOTH slots: `arr[0]="var"`, `arr[1]=null`.
+- Fixed `pj_trail_unwind`: restores both `[0]="var"` AND `[1]=null` → M-PJ-FACTS ✅ (rung02: brown/jones/smith)
+- Implemented compound term unification in `pj_unify`: functor+arity check, recursive arg loop → M-PJ-UNIFY ✅ (rung03: b a)
+- Implemented `E_FNC` in `pj_emit_term`: flat `Object[]` `[0]="compound",[1]=functor,[2..]=args`
+- Flat n-ary `,/2` and `;/2` in `prolog_lower.c`: right-spine flattened at IR level; emitter uses `goal->children` directly
+- Fixed `pj_emit_goal` `;/2` + `->/2`: proper if-then-else with `cond_ok`/`cond_fail` labels; n-ary else chain
+- Fixed `ldc2_w` `L` suffix (Jasmin rejects it) → M-PJ-ARITH ✅ (rung04: 6/true/false)
+- HEAD: `cb87932`
 
-### Next session checklist (PJ-3)
+### Known bugs for PJ-4 (four failures, rung05–09)
+
+**rung05 backtrack** — `member(X,[a,b,c])` prints `_` instead of `a b c`. Variable `X` is unbound in `write`. Root cause: the Proebsting retry loop passes `cs` state but the *bound value* of `X` in the callee's environment is not visible to the caller. The retry loop allocates a fresh `rv` local for the return value but the caller writes `X` before the callee has had a chance to bind it. Fix: after the `invokestatic` call returns non-null (γ), the callee's bindings are already in the shared trail — `X` should already be bound. Check whether `pj_emit_body` for the user call actually `astore`s the result and whether the *caller's* `X` local and the *callee's* arg slot refer to the same `["var",...]` cell object.
+
+**rung07 cut** — `differ(a,a)` returns `yes` instead of `no`. `E_CUT` is emitted but not sealing beta in the Proebsting retry loop. The `pj_emit_goal` E_CUT case sets `cs = N` (past last clause) for the *current predicate*, but in the retry loop the `cs` local belongs to the *caller's* retry scaffolding for `differ/2`. Need to verify E_CUT actually writes to the retry loop's `cs` local in the surrounding `pj_emit_body` frame.
+
+**rung06 lists** — empty output. `write/1` of a list compound `["compound",".",H,T]` hits the default `_` branch in `pj_write`. Fix: add list-printing to `pj_write`: if tag=`"compound"` and functor=`"."`, print `[H|T]` recursively; if `[]` print `[]`.
+
+**rung08 recursion** — `NumberFormatException: Cannot parse null string` in `p_fib_2`. `pj_emit_arith` E_VART: after `pj_deref`, the result is `["int","6"]`. But `fib/2` head arg slot `N` is the *caller-passed* term. After deref the array `[1]` should be `"6"`. Hypothesis: the head arg local holds a `["var", ref]` cell and `pj_deref` is returning the var cell itself when `ref` is null (i.e. deref doesn't follow into the term properly). Check `pj_deref` — it follows `tag="ref"` chains but stops at `tag="var"`. If the caller passes an atom-int `["int","6"]` directly (not wrapped in a var), deref returns it immediately and `[1]="6"` is correct. But if `N` was unified via a var chain, the deref result might still be a var cell.
+
+**rung09 builtins** — empty output. Likely `functor/3`, `arg/3`, `=../2` not implemented. Check `pj_emit_goal` for these atoms — they fall through to the user-call path and there is no matching predicate class.
+
+### Next session checklist (PJ-4)
 
 ```bash
 git clone https://TOKEN_SEE_LON@github.com/snobol4ever/snobol4x
@@ -50,42 +50,12 @@ git clone https://TOKEN_SEE_LON@github.com/snobol4ever/.github
 apt-get install -y default-jdk nasm libgc-dev
 cd snobol4x/src && make
 # Read FRONTEND-PROLOG-JVM.md §NOW — start here
-# Fix pj_trail_unwind: restore arr[0]="var" AND arr[1]=null (not just arr[1]=null)
-# In prolog_emit_jvm.c, find pj_trail_unwind method emission (~line 130)
-# After: arr[1] = null  →  also add: arr[0] = "var"
-# Test: rung02 → brown/jones/smith → M-PJ-FACTS fires
-# Then attempt rung03 (unify) → M-PJ-UNIFY
-```
-
-### Session PJ-1 summary (2026-03-24)
-
-- Created `src/frontend/prolog/prolog_emit_jvm.c` (~970 lines):
-  - `pj_emit_class_header()` — `.class`, `.super`, `pj_trail` field, `<clinit>`
-  - `pj_emit_runtime_helpers()` — `pj_trail_mark/push/unwind`, `pj_deref`, `pj_unify`, `pj_term_atom/int/var`, `pj_write`
-  - `pj_emit_choice()` — E_CHOICE → tableswitch α/β/ω Jasmin label chain
-  - `pj_emit_clause()` — head unify + body goals per clause block
-  - `pj_emit_goal()` — write/1, nl/0, writeln/1, true/0, fail/0, halt/0-1, is/2, comparison ops, user calls
-  - `pj_emit_term()` — E_QLIT/E_ILIT/E_VART/E_FNC → Object[] on JVM stack
-  - `pj_emit_arith()` — is/2 RHS arithmetic → long
-  - `prolog_emit_jvm()` — public entry point
-- Wired `driver/main.c`: `-pl -jvm` → `prolog_emit_jvm(prog, out, infile)`
-- Added `prolog_emit_jvm.c` to `src/Makefile` FRONTEND_PROLOG sources
-- Key bugs fixed: duplicate `.field` declaration; `checkcast String` before `print(String)V`; double `ldc` in atom emitter; `clause->subject` → `clause->ival/dval`
-- Confirmed: `null.pl → Null.class → exit 0` ✅; `hello.pl → Hello.class → "hello"` ✅
-
-### Next session checklist (PJ-2)
-
-```bash
-git clone https://TOKEN@github.com/snobol4ever/snobol4x
-git clone https://TOKEN@github.com/snobol4ever/.github
-# Read FRONTEND-PROLOG-JVM.md §NOW
-apt-get install -y default-jdk nasm libgc-dev
-cd snobol4x/src && make           # must build clean
-# Run: ./sno2c -pl -jvm test/frontend/prolog/corpus/rung02_facts/facts.pro -o /tmp/facts.j
-# java -jar src/backend/jvm/jasmin.jar /tmp/facts.j -d /tmp/ && java -cp /tmp/ Facts
-# Compare vs: ./sno2c -pl -c facts.pro -o /tmp/facts.c && gcc ... -o /tmp/facts_c && /tmp/facts_c
-# Fix until matching → fire M-PJ-FACTS
-# Then attempt rung03 (unify) → M-PJ-UNIFY
+INC=src/frontend/prolog
+# Helper to test one rung:
+# BASE=backtrack; PRO=test/frontend/prolog/corpus/rung05_${BASE}/${BASE}.pro
+# ./sno2c -pl $PRO -o /tmp/$BASE.c && gcc /tmp/$BASE.c $INC/prolog_atom.c $INC/prolog_unify.c $INC/prolog_builtin.c -I $INC -o /tmp/${BASE}_c && /tmp/${BASE}_c
+# ./sno2c -pl -jvm $PRO -o /tmp/$BASE.j && java -jar src/backend/jvm/jasmin.jar /tmp/$BASE.j -d /tmp/ && java -cp /tmp/ Backtrack
+# Fix in order: rung08 (arith deref) → rung06 (list write) → rung07 (cut) → rung05 (backtrack vars) → rung09 (builtins)
 ```
 
 ---

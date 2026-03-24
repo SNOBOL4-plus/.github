@@ -15274,3 +15274,19 @@ The assign and recursive-call emitters still have stack-across-label violations.
 ### ASM corpus
 15/15 PASS throughout — no regressions.
 
+## Session PJ-3 — 2026-03-24
+
+**Milestones fired:** M-PJ-FACTS ✅  M-PJ-UNIFY ✅  M-PJ-ARITH ✅
+**HEAD at handoff:** `cb87932` on `main`
+
+**What happened:**
+- Fixed `pj_trail_unwind` to restore `[0]="var"` AND `[1]=null` (PJ-2 only reset `[1]`) → M-PJ-FACTS
+- Implemented `E_FNC` compound term building in `pj_emit_term`: flat `Object[]` `[0]="compound",[1]=functor,[2..]=args`
+- Added compound case to `pj_unify`: functor string check + arity (arraylength-2) + recursive arg loop → M-PJ-UNIFY
+- Flattened `,/2` and `;/2` to n-ary IR nodes in `prolog_lower.c` (right-spine walk); removed emitter's local flat[64] buffer
+- Fixed `pj_emit_goal` `;/2`: n-ary disjunction loop; if-then-else via `cond_ok`/`cond_fail` labels
+- Fixed `ldc2_w %ldL` → `ldc2_w %ld` (Jasmin rejects `L` suffix) → M-PJ-ARITH
+- Rungs 5–9 attempted; all fail (see FRONTEND-PROLOG-JVM.md §NOW for root causes)
+
+**State at handoff:** rung01–04 PASS. rung05 (backtrack vars unbound), rung06 (list write), rung07 (cut not sealing), rung08 (arith deref null), rung09 (builtins not implemented).
+**Next session:** PJ-4 — fix rung08 arith deref → rung06 list write → rung07 cut → rung05 backtrack → rung09 builtins → M-PJ-BACKTRACK

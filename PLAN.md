@@ -19,7 +19,7 @@ Each concurrent session owns exactly one row. Update only your row on every push
 | **DOTNET** | `main` D-164 — 1903/1903 pass 0 fail on Linux | `e1e4d9e` D-164 | TBD |
 | **README** | `main` — M-README-CSHARP-DRAFT ✅ | `00846d3` snobol4csharp | M-README-DEEP-SCAN |
 | **ICON frontend** | `main` I-10 — SESSIONS_ARCHIVE pruned 782KB→15KB; fixes documented, not yet applied | `54031a5` I-7 | M-ICON-CORPUS-R3 |
-| **Prolog JVM** | `main` PJ-2 — Proebsting retry; ,/2 ;/2 — rung02 `brown` only; trail_unwind fix needed | `7b6af68` PJ-2 | M-PJ-FACTS |
+| **Prolog JVM** | `main` PJ-3 — M-PJ-FACTS ✅ M-PJ-UNIFY ✅ M-PJ-ARITH ✅ | `cb87932` PJ-3 | M-PJ-BACKTRACK |
 | **Icon JVM** | `main` IJ-1 — M-IJ-SCAFFOLD ✅ M-IJ-HELLO ✅ M-IJ-CORPUS-R1 ✅; rung02 12/14; fact/locals open | `ee2810b` IJ-1 | M-IJ-CORPUS-R2 |
 | **README v2 sprint** | `main` R-2 | TBD R-2 | M-FEAT-JVM |
 
@@ -118,9 +118,9 @@ Reference: `emit_prolog_choice()` in `emit_byrd_asm.c` (~line 6235) is the model
 |----|---------|--------|
 | **M-PJ-WIRE** | `driver/main.c`: `-pl -jvm` routes to `prolog_emit_jvm(prog,f,filename)`; wired ✅ | ✅ |
 | **M-PJ-HELLO** | rung01 hello — `write('hello'), nl` via JVM Byrd box | ✅ |
-| **M-PJ-FACTS** | rung02 facts — deterministic fact lookup, no backtracking | ❌ |
-| **M-PJ-UNIFY** | rung03 unify — head unification, compound terms | ❌ |
-| **M-PJ-ARITH** | rung04 arith — `is/2`, integer arithmetic | ❌ |
+| **M-PJ-FACTS** | rung02 facts — deterministic fact lookup, no backtracking | ✅ |
+| **M-PJ-UNIFY** | rung03 unify — head unification, compound terms | ✅ |
+| **M-PJ-ARITH** | rung04 arith — `is/2`, integer arithmetic | ✅ |
 | **M-PJ-BACKTRACK** | rung05 backtrack — `member/2`, β port exercised | ❌ |
 | **M-PJ-LISTS** | rung06 lists — `append/3`, `length/2`, `reverse/2` | ❌ |
 | **M-PJ-CUT** | rung07 cut — `differ/N`, closed-world negation via `!` | ❌ |
@@ -148,11 +148,11 @@ Full sprint detail → [FRONTEND-ICON.md](FRONTEND-ICON.md)
 
 | ID | Trigger | Status |
 |----|---------|--------|
-| **M-PJ-SCAFFOLD** | `prolog_emit_jvm.c` exists; `-pl -jvm null.pl → null.j` assembles + exits 0 | ❌ |
-| **M-PJ-HELLO** | `hello.pl` → JVM output `hello` | ❌ |
-| **M-PJ-FACTS** | Rung 2: deterministic fact lookup | ❌ |
-| **M-PJ-UNIFY** | Rung 3: head unification, compound terms | ❌ |
-| **M-PJ-ARITH** | Rung 4: `is/2` arithmetic | ❌ |
+| **M-PJ-SCAFFOLD** | `prolog_emit_jvm.c` exists; `-pl -jvm null.pl → null.j` assembles + exits 0 | ✅ |
+| **M-PJ-HELLO** | `hello.pl` → JVM output `hello` | ✅ |
+| **M-PJ-FACTS** | Rung 2: deterministic fact lookup | ✅ |
+| **M-PJ-UNIFY** | Rung 3: head unification, compound terms | ✅ |
+| **M-PJ-ARITH** | Rung 4: `is/2` arithmetic | ✅ |
 | **M-PJ-BACKTRACK** | Rung 5: `member/2` — first backtracking | ❌ |
 | **M-PJ-LISTS** | Rung 6: `append/3`, `length/2`, `reverse/2` | ❌ |
 | **M-PJ-CUT** | Rung 7: `differ/N`, closed-world `!, fail` | ❌ |
