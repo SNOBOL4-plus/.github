@@ -180,3 +180,17 @@ triggers OFNE check on the stored function-result pattern.
 - Rungs 01–06 all PASS. No regressions.
 
 **Next:** PJ-12 → M-PJ-CUT (rung07 cut/differ). See FRONTEND-PROLOG-JVM.md §NOW for bootstrap and cut design notes.
+
+---
+
+## PJ-12 — 2026-03-24
+
+**Milestone:** M-PJ-CUT ✅  
+**Commit:** `bf20b73` snobol4x main  
+**Result:** Rungs 01-07 all PASS via `-pl -jvm`
+
+**What was fixed:** `E_CUT` in `pj_emit_body` was emitting only `goto lbl_γ` — it succeeded but never sealed β. Clause 2 (`_,_ .`) remained reachable after cut+fail, giving wrong `yes` for `differ(a,a)`.
+
+**Fix:** Added three parameters to `pj_emit_body`: `cut_cs_seal` (`base[nclauses]`), `cs_local_for_cut` (JVM local holding predicate's `cs`), and `lbl_pred_ω` (predicate-level omega label). When `E_CUT` fires: (1) `ldc base[nclauses]; istore cs_local` seals β so next dispatch hits omega, (2) remaining body goals emit with `lbl_ω = lbl_pred_ω` so failure after cut skips all clauses. Same seal added to `pj_emit_goal` E_CUT branch.
+
+**Next:** PJ-13 → M-PJ-RECUR (rung08: fibonacci/2, factorial/2)
