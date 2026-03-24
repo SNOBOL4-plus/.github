@@ -19,9 +19,9 @@ assembled by `jasmin.jar` into `.class` files. Despite the file's location under
 
 | Session | Sprint | HEAD | Next milestone |
 |---------|--------|------|----------------|
-| **Icon JVM** | `main` IJ-10 — rung05_scan corpus written; ij_emit_scan not yet implemented | `992a3a5` IJ-10 | M-IJ-SCAN |
+| **Icon JVM** | `main` IJ-11 — M-IJ-SCAN ✅ 5/5 rung05 PASS | `7d68a85` IJ-11 | M-IJ-CSET |
 
-### Next session checklist (IJ-11)
+### Next session checklist (IJ-12)
 
 ```bash
 git clone https://TOKEN_SEE_LON@github.com/snobol4ever/snobol4x
@@ -33,10 +33,32 @@ gcc -Wall -Wextra -g -O0 -I. src/frontend/icon/icon_driver.c src/frontend/icon/i
     src/frontend/icon/icon_emit.c src/frontend/icon/icon_emit_jvm.c \
     src/frontend/icon/icon_runtime.c -o /tmp/icon_driver
 # Read FRONTEND-ICON-JVM.md §NOW
-# Confirm rung01-04 24/24 still PASS before touching code
-# Implement M-IJ-SCAN: ij_emit_scan in icon_emit_jvm.c
-# See §IJ-10 findings below for full implementation plan
+# Confirm rung01-05 29/29 still PASS before touching code
+# Implement M-IJ-CSET: cset literals → BREAK/SPAN/ANY
 ```
+
+### IJ-11 findings — M-IJ-SCAN implementation (done)
+
+**All 5 rung05_scan tests PASS. rung01-04 24/24 still clean. Total: 29/29.**
+
+**What was implemented in `icon_emit_jvm.c`:**
+
+1. **`ij_emit_scan(n, ports, oα, oβ)`** — four-port Byrd-box wiring:
+   - Per-scan static save slots `icn_scan_oldsubj_N` (String) and `icn_scan_oldpos_N` (I)
+   - Global fields `icn_subject` (String) and `icn_pos` (I) declared via `ij_declare_static_str/int`
+   - `<clinit>` emitted (gated on `icn_subject` being in statics) initializing `icn_subject=""`, `icn_pos=0`
+   - α → expr.α; expr.γ: save old subject/pos, install new subject (String from stack), reset pos=0, → body.α
+   - expr.ω → ports.ω; body.γ: restore → ports.γ; body.ω: restore → expr.β (one-shot → ports.ω); β: restore → body.β
+
+2. **`ij_emit_var` `&subject` branch** — checked before regular slot/global lookup:
+   `getstatic icn_subject` → ports.γ
+
+3. **`ij_expr_is_string`** — added `ICN_SCAN` (delegates to body child) and `ICN_VAR/"&subject"` cases.
+   Critical: without these, statement-level drain emits `pop2` instead of `pop` for String-typed scan results → VerifyError.
+
+4. **`run_rung05.sh`** committed alongside code.
+
+**Key bug caught during IJ-11:** `ij_expr_is_string` missing ICN_SCAN caused `pop2` on 1-slot String result → `Unable to pop operand off an empty stack` VerifyError on all 5 tests. Fix: add ICN_SCAN and &subject to the type-inference function.
 
 ### IJ-10 findings — M-IJ-SCAN implementation plan
 

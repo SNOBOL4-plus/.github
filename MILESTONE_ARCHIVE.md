@@ -212,3 +212,4 @@ Append-only. Do not edit existing entries.
 | **M-ICON-CORPUS-R3** | `bab5664` I-11 | Rung 3: user procedures + generators; rbp save/restore fix; 5/5 PASS |
 | **M-IJ-CORPUS-R3** | `54c301b` IJ-9 | rung03 suspend generators PASS; named vars→static fields; clear suspend_id on done |
 | **M-IJ-STRING** | `9932df5` IJ-9 | ICN_STR + || concat; String static fields; pop/pop2 drain; pre-pass type inference; 5/5 rung04 + t06 bonus fix |
+| **M-IJ-SCAN** | `7d68a85` IJ-11 | ij_emit_scan four-port Byrd-box; &subject keyword; icn_subject/icn_pos globals; <clinit> init; ij_expr_is_string ICN_SCAN+&subject; 5/5 rung05 PASS; rung01-04 24/24 clean |

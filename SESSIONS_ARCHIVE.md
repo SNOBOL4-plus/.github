@@ -365,3 +365,18 @@ IJ-9: build → instrument `icn_upto` with stderr probes → find exact branch t
 (2) `rpat_t/p/s` slots: `flat_bss_register` → `var_register` so slots land in r12 DATA block at correct offsets; inline macro expansion avoids NASM double-dereference of `r12+N`.
 (3) Named-pattern α-entry zeroing: `P_Parse_α` now emits `mov qword [r12+N], 0` for all mutable slots (offset ≥16) to prevent stale ARBNO depth/cur_before from previous scan attempt corrupting retry.
 (4) Remaining failure: `*Parse` via REF(Parse) scan-retry — P_Parse_β enters `seq_r5_β` directly without zeroing DATA slots; ARBNO depth left stale. Fix in B-289: emit DATA zeroing at β call site in `emit_named_ref` before `jmp P_Parse_β`. 106/106 ✅. HEAD `358184a`.
+---
+## IJ-11 — 2026-03-24
+
+**Milestone:** M-IJ-SCAN ✅
+
+**Work done:**
+- Implemented `ij_emit_scan()` in `icon_emit_jvm.c`: full four-port Byrd-box wiring per JCON `ir_a_Scan` / JCON-ANALYSIS §`E ? body`. Per-scan static save slots `icn_scan_oldsubj_N`/`icn_scan_oldpos_N`. Global `icn_subject` (String) + `icn_pos` (I) fields. `<clinit>` emitted when scan fields present, initializing `icn_subject=""` and `icn_pos=0`.
+- Added `&subject` branch to `ij_emit_var`: checked before regular slot/global lookup, emits `getstatic icn_subject`.
+- Added `ICN_SCAN` and `ICN_VAR/"&subject"` cases to `ij_expr_is_string`. Critical: missing these caused VerifyError (`pop2` on 1-slot String result) on all 5 tests.
+- Added `case ICN_SCAN: ij_emit_scan(...)` to dispatch.
+- Committed `run_rung05.sh` (5-test runner).
+- **rung05: 5/5 PASS. rung01-04: 24/24 still clean. Total: 29/29.**
+- HEAD: `7d68a85` on `main`.
+
+**Next:** IJ-12 — M-IJ-CSET: cset literals → BREAK/SPAN/ANY.
