@@ -19,7 +19,7 @@ Each concurrent session owns exactly one row. Update only your row on every push
 | **DOTNET** | `main` D-164 — 1903/1903 pass 0 fail on Linux | `e1e4d9e` D-164 | TBD |
 | **README** | `main` — M-README-CSHARP-DRAFT ✅ | `00846d3` snobol4csharp | M-README-DEEP-SCAN |
 | **ICON frontend** | `main` I-11 — M-ICON-CORPUS-R3 ✅ rbp fix + 5/5 rung03 PASS | `bab5664` I-11 | M-ICON-STRING |
-| **Prolog JVM** | `main` PJ-17 — puzzle_07 search done; puzzle_08 multi-solution bug open; 03 dedup open | `e568687` PJ-17 | — |
+| **Prolog JVM** | `main` PJ-18 — M-PJ-PZ08+PZ09 ✅ swipl; JVM blocked on M-PJ-NEQ (\=/2 missing emit) | `fcdd57c` PJ-18 | M-PJ-NEQ |
 | **Icon JVM** | `main` IJ-11 — M-IJ-SCAN ✅ 5/5 rung05 PASS | `7d68a85` IJ-11 | M-IJ-CSET |
 | **Prolog JVM** | `main` PJ-16 — two-clause fail/retry fix; rungs 01-09 PASS | `f575016` PJ-16 | M-PJ-CORPUS-R10 |
 | **Icon JVM** | `main` IJ-11 — M-IJ-SCAN ✅; rung06_cset corpus committed; ij_emit_cset/any/many/upto open | `c166bfe` IJ-11 | M-IJ-CSET || **README v2 sprint** | `main` R-2 | TBD R-2 | M-FEAT-JVM |
@@ -98,7 +98,10 @@ Full sprint detail → [FRONTEND-PROLOG.md](FRONTEND-PROLOG.md)
 | ID | Trigger | Status |
 |----|---------|--------|
 | **M-PJ-CORPUS-R10** | Rung 10: Lon's puzzle corpus PASS | ✅ |
-| **M-PJ-R10-SEARCH** | Rewrite hardcoded puzzles 07-13,15,18-20 as proper Prolog search; swipl+JVM all PASS | ❌ |
+| **M-PJ-R10-SEARCH** | Rewrite hardcoded puzzles as proper Prolog search | ❌ |
+| **M-PJ-PZ08** | puzzle_08 real search — swipl PASS | ✅ |
+| **M-PJ-PZ09** | puzzle_09 real search — swipl PASS | ✅ |
+| **M-PJ-NEQ** | `\=/2` missing from `pj_emit_goal` — add emit with trail-save/unwind | ❌ |
 | **M-PJ-STACK-LIMIT** | Fix `.limit stack` over-estimate in `prolog_emit_jvm.c` — eliminate VerifyError on 5+ clause predicates | ❌ |
 | **M-PJ-DISJ-ARITH** | Fix `(A;B;C)` inline disjunction silent failure in arithmetic body in JVM emitter | ❌ |
 | **M-PJ-ARITY-CAP** | Fix `ClassFormatError` on high-arity predicates (display/16) — pack args or cap arity | ❌ |

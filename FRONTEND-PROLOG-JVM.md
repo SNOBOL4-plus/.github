@@ -19,16 +19,22 @@ and emits Jasmin `.j` files, assembled by `jasmin.jar`.
 
 | Session | Sprint | HEAD | Next milestone |
 |---------|--------|------|----------------|
-| **Prolog JVM** | `main` PJ-17 — puzzle_07 search PASS; puzzle_08 multi-solution open; M-PJ-R10-SEARCH in progress | `e568687` PJ-17 | — |
+| **Prolog JVM** | `main` PJ-18 — M-PJ-PZ08+PZ09 swipl PASS; JVM blocked on M-PJ-NEQ | `fcdd57c` PJ-18 | M-PJ-NEQ |
 
-### CRITICAL NEXT ACTION (PJ-18)
+### CRITICAL NEXT ACTION (PJ-19)
 
-**Next milestone: M-PJ-R10-SEARCH — rewrite hardcoded puzzles as proper Prolog search.**
+**Milestone 1: M-PJ-NEQ — fix `\=/2` missing from `pj_emit_goal` in `prolog_emit_jvm.c`.**
 
-Puzzles 07, 08, 09, 10, 11, 12, 13, 15, 18, 19, 20 currently use hardcoded `write` instead of real search.
-Puzzle 03 has proper search but produces duplicate solutions — needs `once/1` or cut after first solution.
-Pattern to follow: puzzle_01/06 style — domain predicate + `differ/N` + constraint predicates with `!, fail`.
-After each puzzle passes swipl cleanly, run JVM pipeline. Failures → `.xfail` + milestone, never hardcode.
+Bug: `\=` in `pj_is_user_call` builtins array but no emit case → falls to user-call block → `pj_safe_name("\\=")` → `p____2` → `NoSuchMethodError`.
+Fix: insert after `\==/2` block (~line 1287), before `\+/not`. Save trail mark, probe unify into `trail_local+1` scratch, unwind, re-mark, branch inverted. See FRONTEND-PROLOG-JVM.md §NOW for code sketch.
+After fix: confirm puzzle_08 + puzzle_09 JVM PASS.
+
+**Milestone 2: continue puzzle search rewrites (puzzle_10 onwards), one per milestone.**
+
+Discovered gaps so far:
+- `\=/2` — M-PJ-NEQ (emitter fix needed)
+
+Pattern: write real Prolog, run swipl to confirm unique solution, run JVM, log any new gap as milestone, commit, handoff.
 
 **Bootstrap PJ-18:**
 ```bash
@@ -159,6 +165,9 @@ Cut (`!`) in `pj_emit_body` now: (1) stores `base[nclauses]` into `cs_local` (se
 | **M-PJ-RECUR** | Rung 8: `fibonacci/2`, `factorial/2` | ✅ |
 | **M-PJ-BUILTINS** | Rung 9: `functor/3`, `arg/3`, `=../2`, type tests | ✅ |
 | **M-PJ-CORPUS-R10** | Rung 10: Lon's puzzle corpus PASS | ✅ |
+| **M-PJ-PZ08** | puzzle_08 real Prolog search — swipl PASS | ✅ |
+| **M-PJ-PZ09** | puzzle_09 real Prolog search — swipl PASS | ✅ |
+| **M-PJ-NEQ** | `\=/2` emit missing in `pj_emit_goal` — JVM crashes with NoSuchMethodError | ❌ |
 
 **PJ-16 fix note:** True root cause of the `fail/retry` infinite loop was `pj_emit_clause` passing `α_retry_lbl` as `lbl_ω` to `pj_emit_body`. When the outermost body user-call exhausted, `call_ω` jumped to `α_retry_lbl` (clause head-retry), re-running the body from cs=0 forever. Fix: pass `ω_lbl` (next-clause dispatch) as `lbl_ω` to the top-level `pj_emit_body` call. Nested calls unaffected — they receive `call_β` from their own recursive emit site. `pj_is_always_fail()` helper also added for future use.
 

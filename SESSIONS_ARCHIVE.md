@@ -402,3 +402,11 @@ puzzle_03 has proper search but produces duplicates — needs single-solution cu
 ## IJ-11 addendum — 2026-03-24 (rung06 corpus)
 
 Committed rung06_cset corpus (5 tests) to snobol4x `c166bfe`. Full M-IJ-CSET implementation plan written to FRONTEND-ICON-JVM.md §IJ-11 findings. Plan covers: ICN_CSET as String (trivial), any/many/upto as built-in calls using icn_subject/icn_pos, upto generator via direct goto-loop (no tableswitch), cset-var assignment via existing pre-pass type inference. IJ-12 is a clean-start session: build, confirm 29/29, implement per plan, fire M-IJ-CSET.
+---
+## PJ-18 — 2026-03-24
+
+**Work:** Began M-PJ-R10-SEARCH. Rewrote puzzle_08 and puzzle_09 from hardcoded stubs to real idiomatic Prolog search. Both pass swipl oracle with unique solutions. JVM pipeline fails for both: `\=/2` is listed as builtin in `pj_is_user_call` but has no emit case in `pj_emit_goal` — falls through to user-call block, `pj_safe_name("\\=")` produces mangled label `p____2`, JVM throws `NoSuchMethodError`. Logged as M-PJ-NEQ.
+
+**Commits:** snobol4x `fcdd57c`
+
+**Next:** PJ-19 — fix M-PJ-NEQ (`\=/2` emit), then continue puzzle search rewrites one milestone at a time.
