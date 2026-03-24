@@ -15290,3 +15290,20 @@ The assign and recursive-call emitters still have stack-across-label violations.
 
 **State at handoff:** rung01–04 PASS. rung05 (backtrack vars unbound), rung06 (list write), rung07 (cut not sealing), rung08 (arith deref null), rung09 (builtins not implemented).
 **Next session:** PJ-4 — fix rung08 arith deref → rung06 list write → rung07 cut → rung05 backtrack → rung09 builtins → M-PJ-BACKTRACK
+## Session IJ-2 — 2026-03-24 — Icon JVM — n-ary ALT/AND flatten
+
+**HEAD:** `8874da8` on `main`
+**Corpus:** rung01 6/6 ✅ rung02_arith 5/5 ✅ rung02_proc 12/14 (t02_fact, t03_locals open)
+
+### Work done
+- `icn_node_append(parent, child)` added to icon_ast.c/.h
+- `parse_alt` / `parse_and` rewritten to build flat n-ary ICN_ALT / ICN_AND nodes
+  instead of binary left-spine `(((a|b)|c)|d)` — all children visible at once
+- `emit_alt` in icon_emit.c generalized: loops R→L over `nc` children chaining ω-ports
+- New inline `ICN_AND` case in icon_emit.c with irgen.icn `ir_conjunction` wiring
+- Same two fixes mirrored in icon_emit_jvm.c (`ij_emit_alt` + ICN_AND inline)
+- No regression on any previously passing test
+
+### Open for IJ-3
+- t02_fact: icn_retval static field clobbered by recursive call → save/restore in local slot
+- t03_locals: `local` declaration slot offset not applied past param slots

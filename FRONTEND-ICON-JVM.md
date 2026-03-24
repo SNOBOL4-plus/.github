@@ -18,22 +18,38 @@ assembled by `jasmin.jar` into `.class` files.
 
 | Session | Sprint | HEAD | Next milestone |
 |---------|--------|------|----------------|
-| **Icon JVM** | `main` IJ-1 — M-IJ-SCAFFOLD/HELLO/R1 ✅; rung02 12/14; t02_fact recursion + t03_locals stack-height open | `ee2810b` IJ-1 | M-IJ-CORPUS-R2 |
+| **Icon JVM** | `main` IJ-2 — ICN_ALT + ICN_AND flattened to n-ary; emit_and wired in ASM+JVM; 12/14 rung02 pass | `8874da8` IJ-2 | M-IJ-CORPUS-R2 |
 
-### Next session checklist (IJ-1)
+### Next session checklist (IJ-3)
 
 ```bash
 git clone https://TOKEN_SEE_LON@github.com/snobol4ever/snobol4x
 git clone https://TOKEN_SEE_LON@github.com/snobol4ever/.github
 apt-get install -y default-jdk nasm libgc-dev
+make -C snobol4x/src
+# Build icon_driver (see FRONTEND-ICON-JVM.md §Key Files for gcc cmd)
 # Read FRONTEND-ICON-JVM.md §NOW
-# Read icon_emit.h — IcnEmitter interface, IcnPorts, label conventions
-# Read emit_byrd_jvm.c head — Jasmin output helpers to copy verbatim
-# Create src/frontend/icon/icon_emit_jvm.c (see §Design below)
-# Add -jvm flag to icon_driver.c
-# Test: t01_to5.icn → foo.j → jasmin → java → 1\n2\n3\n4\n5
-# Fire M-IJ-SCAFFOLD + M-IJ-HELLO
+# Start at t02_fact (recursion): icn_retval clobbered on recursive call
+#   Fix: before invokestatic icn_fact, save icn_retval into a fresh local slot,
+#        restore after return — see ij_emit_call in icon_emit_jvm.c
+# Then t03_locals: `local` decl slots not allocated past param slots
+#   Fix: in ij_emit_proc, count `local` children and offset slot_base
+# Run corpus: target 14/14 rung02 → fire M-IJ-CORPUS-R2
 ```
+
+### IJ-2 findings — two open bugs for IJ-3
+
+**Bug 1 — t02_fact recursion gives `1` instead of `120`:**
+`icn_retval` is a single static field. Recursive `fact(n-1)` overwrites it before
+the caller reads it. Fix: in `ij_emit_call`, before `invokestatic`, save
+`icn_retval` to a fresh JVM local slot (`lstore N`); after the call, restore
+(`lload N → putstatic icn_retval`). Allocate the save slot via `ij_alloc_local()`.
+
+**Bug 2 — t03_locals gives empty output:**
+`local total` declaration is parsed but slot assignment in `ij_emit_proc` only
+allocates slots for params (`slot = 2*i` for i in 0..nparams-1). Locals
+start at `nparams` but the slot base isn't offset. Fix: after param slots,
+scan proc children for `ICN_LOCAL` nodes and assign `2*(nparams+local_idx)`.
 
 ---
 

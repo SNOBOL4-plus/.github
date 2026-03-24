@@ -19,8 +19,13 @@ Each concurrent session owns exactly one row. Update only your row on every push
 | **DOTNET** | `main` D-164 — 1903/1903 pass 0 fail on Linux | `e1e4d9e` D-164 | TBD |
 | **README** | `main` — M-README-CSHARP-DRAFT ✅ | `00846d3` snobol4csharp | M-README-DEEP-SCAN |
 | **ICON frontend** | `main` I-10 — SESSIONS_ARCHIVE pruned 782KB→15KB; fixes documented, not yet applied | `54031a5` I-7 | M-ICON-CORPUS-R3 |
+<<<<<<< HEAD
 | **Prolog JVM** | `main` PJ-3 — M-PJ-FACTS ✅ M-PJ-UNIFY ✅ M-PJ-ARITH ✅ | `cb87932` PJ-3 | M-PJ-BACKTRACK |
 | **Icon JVM** | `main` IJ-1 — M-IJ-SCAFFOLD ✅ M-IJ-HELLO ✅ M-IJ-CORPUS-R1 ✅; rung02 12/14; fact/locals open | `ee2810b` IJ-1 | M-IJ-CORPUS-R2 |
+=======
+| **Prolog JVM** | `main` PJ-2 — Proebsting retry; ,/2 ;/2 — rung02 `brown` only; trail_unwind fix needed | `7b6af68` PJ-2 | M-PJ-FACTS |
+| **Icon JVM** | `main` IJ-2 — ICN_ALT+ICN_AND n-ary flat; emit_and wired ASM+JVM; 12/14 rung02 pass | `8874da8` IJ-2 | M-IJ-CORPUS-R2 |
+>>>>>>> e3a2db3 (IJ-2 handoff: update PLAN NOW, FRONTEND-ICON-JVM §NOW, SESSIONS_ARCHIVE)
 | **README v2 sprint** | `main` R-2 | TBD R-2 | M-FEAT-JVM |
 
 **Invariants (check before any work):**
