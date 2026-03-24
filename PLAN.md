@@ -19,7 +19,7 @@ Each concurrent session owns exactly one row. Update only your row on every push
 | **DOTNET** | `main` D-164 — 1903/1903 pass 0 fail on Linux | `e1e4d9e` D-164 | TBD |
 | **README** | `main` — M-README-CSHARP-DRAFT ✅ | `00846d3` snobol4csharp | M-README-DEEP-SCAN |
 | **ICON frontend** | `main` I-10 — SESSIONS_ARCHIVE pruned 782KB→15KB; fixes documented, not yet applied | `54031a5` I-7 | M-ICON-CORPUS-R3 |
-| **Prolog JVM** | `main` PJ-5 — base[]+sub_cs encoding ✅ retry_head ✅ outer_omega ✅ — ;/2 left-branch omega routing BUG | `418461a` PJ-5 | M-PJ-BACKTRACK |
+| **Prolog JVM** | `main` PJ-5 — suffix_fail→call_try fix + main() β-loop fix diagnosed | `418461a` PJ-5 | M-PJ-BACKTRACK |
 | **Icon JVM** | `main` IJ-4 — Bug1 fix (binop/relop local slots); α/β/γ/ω port names; warnings clean | `254045e` IJ-4 | M-IJ-CORPUS-R2 |
 | **README v2 sprint** | `main` R-2 | TBD R-2 | M-FEAT-JVM |
 
@@ -86,30 +86,9 @@ Matrix:     Feature matrix (correctness) · Benchmark matrix (performance)
 
 Full sprint detail → [FRONTEND-PROLOG.md](FRONTEND-PROLOG.md)
 
-### Prolog JVM Backend — Planned
+### Prolog JVM — Active
 
-Path: `-pl -jvm foo.pl` → Prolog IR (E_CHOICE/E_CLAUSE/E_UNIFY/E_CUT nodes, already produced
-by the frontend) → `jvm_emit_prolog()` in `emit_byrd_jvm.c` Byrd box lowering → Jasmin `.j` → `.class`.
-The frontend IR is already complete. The only missing piece is the JVM emitter + driver wire-up.
-Reference: `emit_prolog_choice()` in `emit_byrd_asm.c` (~line 6235) is the model to follow.
-
-| ID | Trigger | Status |
-|----|---------|--------|
-| **M-PJ-WIRE** | `driver/main.c`: `-pl -jvm` routes to `prolog_emit_jvm(prog,f,filename)`; wired ✅ | ✅ |
-| **M-PJ-HELLO** | rung01 hello — `write('hello'), nl` via JVM Byrd box | ✅ |
-| **M-PJ-FACTS** | rung02 facts — deterministic fact lookup, no backtracking | ✅ |
-| **M-PJ-UNIFY** | rung03 unify — head unification, compound terms | ✅ |
-| **M-PJ-ARITH** | rung04 arith — `is/2`, integer arithmetic | ✅ |
-| **M-PJ-BACKTRACK** | rung05 backtrack — `member/2`, β port exercised | ❌ |
-| **M-PJ-LISTS** | rung06 lists — `append/3`, `length/2`, `reverse/2` | ❌ |
-| **M-PJ-CUT** | rung07 cut — `differ/N`, closed-world negation via `!` | ❌ |
-| **M-PJ-RECURSION** | rung08 recursion — fibonacci/2, factorial/2 | ❌ |
-| **M-PJ-BUILTINS** | rung09 builtins — `functor/3`, `arg/3`, `=../2`, type tests | ❌ |
-| **M-PJ-CORPUS** | All 10 rungs PASS via `-pl -jvm` | ❌ |
-| **M-PJ-PUZZLES** | puzzle_01, 02, 05, 06 (solved set) all PASS via `-pl -jvm` | ❌ |
-| **M-PJ-FULL** | All puzzle milestones M-PZ-14..M-PZ-12 PASS via `-pl -jvm` | ❌ |
-
-Full sprint detail → [BACKEND-JVM-PROLOG.md](BACKEND-JVM-PROLOG.md)
+Full sprint detail → [BACKEND-JVM-PROLOG.md](BACKEND-JVM-PROLOG.md) · [FRONTEND-PROLOG-JVM.md](FRONTEND-PROLOG-JVM.md)
 
 ### ICON Frontend — Active
 
@@ -123,23 +102,7 @@ Full sprint detail → [BACKEND-JVM-PROLOG.md](BACKEND-JVM-PROLOG.md)
 
 Full sprint detail → [FRONTEND-ICON.md](FRONTEND-ICON.md)
 
-### Prolog JVM Frontend — Active
 
-| ID | Trigger | Status |
-|----|---------|--------|
-| **M-PJ-SCAFFOLD** | `prolog_emit_jvm.c` exists; `-pl -jvm null.pl → null.j` assembles + exits 0 | ✅ |
-| **M-PJ-HELLO** | `hello.pl` → JVM output `hello` | ✅ |
-| **M-PJ-FACTS** | Rung 2: deterministic fact lookup | ✅ |
-| **M-PJ-UNIFY** | Rung 3: head unification, compound terms | ✅ |
-| **M-PJ-ARITH** | Rung 4: `is/2` arithmetic | ✅ |
-| **M-PJ-BACKTRACK** | Rung 5: `member/2` — first backtracking | ❌ |
-| **M-PJ-LISTS** | Rung 6: `append/3`, `length/2`, `reverse/2` | ❌ |
-| **M-PJ-CUT** | Rung 7: `differ/N`, closed-world `!, fail` | ❌ |
-| **M-PJ-RECUR** | Rung 8: fibonacci, factorial | ❌ |
-| **M-PJ-BUILTINS** | Rung 9: `functor/3`, `arg/3`, `=../2`, type tests | ❌ |
-| **M-PJ-CORPUS-R10** | Rung 10: Lon's puzzle corpus PASS | ❌ |
-
-Full sprint detail → [FRONTEND-PROLOG-JVM.md](FRONTEND-PROLOG-JVM.md)
 
 ### Icon JVM Frontend — Active
 
