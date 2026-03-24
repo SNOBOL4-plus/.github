@@ -18,7 +18,7 @@ assembled by `jasmin.jar` into `.class` files.
 
 | Session | Sprint | HEAD | Next milestone |
 |---------|--------|------|----------------|
-| **Icon JVM** | `main` — planning; `icon_emit_jvm.c` not yet created | `e7fc3a2` IJ-0 | M-IJ-SCAFFOLD |
+| **Icon JVM** | `main` IJ-1 — M-IJ-SCAFFOLD/HELLO/R1 ✅; rung02 12/14; t02_fact recursion + t03_locals stack-height open | `ee2810b` IJ-1 | M-IJ-CORPUS-R2 |
 
 ### Next session checklist (IJ-1)
 

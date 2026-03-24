@@ -20,7 +20,7 @@ Each concurrent session owns exactly one row. Update only your row on every push
 | **README** | `main` — M-README-CSHARP-DRAFT ✅ | `00846d3` snobol4csharp | M-README-DEEP-SCAN |
 | **ICON frontend** | `main` I-10 — SESSIONS_ARCHIVE pruned 782KB→15KB; fixes documented, not yet applied | `54031a5` I-7 | M-ICON-CORPUS-R3 |
 | **Prolog JVM** | `main` PJ-2 — Proebsting retry; ,/2 ;/2 — rung02 `brown` only; trail_unwind fix needed | `7b6af68` PJ-2 | M-PJ-FACTS |
-| **Icon JVM** | `main` IJ-1 — planning done; `icon_emit_jvm.c` not yet created | `e7fc3a2` IJ-0 | M-IJ-SCAFFOLD |
+| **Icon JVM** | `main` IJ-1 — M-IJ-SCAFFOLD ✅ M-IJ-HELLO ✅ M-IJ-CORPUS-R1 ✅; rung02 12/14; fact/locals open | `ee2810b` IJ-1 | M-IJ-CORPUS-R2 |
 | **README v2 sprint** | `main` R-2 | TBD R-2 | M-FEAT-JVM |
 
 **Invariants (check before any work):**
@@ -136,7 +136,7 @@ Full sprint detail → [BACKEND-JVM-PROLOG.md](BACKEND-JVM-PROLOG.md)
 
 | ID | Trigger | Status |
 |----|---------|--------|
-| **M-ICON-CORPUS-R3** | Rung 3: user procedures + generators | ❌ |
+| **M-ICON-CORPUS-R3** | Rung 3: user procedures + generators | ✅ |
 | **M-ICON-STRING** | `ICN_STR`, `\|\|` concat | ❌ |
 | **M-ICON-SCAN** | `E ? E` string scanning | ❌ |
 | **M-ICON-CSET** | Cset literals → BREAK/SPAN/ANY | ❌ |
@@ -166,9 +166,9 @@ Full sprint detail → [FRONTEND-PROLOG-JVM.md](FRONTEND-PROLOG-JVM.md)
 
 | ID | Trigger | Status |
 |----|---------|--------|
-| **M-IJ-SCAFFOLD** | `icon_emit_jvm.c` exists; `-jvm null.icn → null.j` assembles + exits 0 | ❌ |
-| **M-IJ-HELLO** | `every write(1 to 5);` → JVM `1\n2\n3\n4\n5` | ❌ |
-| **M-IJ-CORPUS-R1** | All 6 rung01 tests PASS vs ASM oracle | ❌ |
+| **M-IJ-SCAFFOLD** | `icon_emit_jvm.c` exists; `-jvm null.icn → null.j` assembles + exits 0 | ✅ |
+| **M-IJ-HELLO** | `every write(1 to 5);` → JVM `1\n2\n3\n4\n5` | ✅ |
+| **M-IJ-CORPUS-R1** | All 6 rung01 tests PASS vs ASM oracle | ✅ |
 | **M-IJ-PROC** | rung02_proc: user procedures + locals | ❌ |
 | **M-IJ-CORPUS-R2** | rung02 arith_gen 5/5 + proc 3/3 PASS | ❌ |
 | **M-IJ-SUSPEND** | `suspend E` generators via tableswitch resume | ❌ |

@@ -15233,3 +15233,44 @@ produces a segfault — next session target.
 **Commits:** `d7025cf`, `4bc319c` snobol4x
 
 **Next session B-280:** Run `gdb` on beauty_asm to locate segfault. Fix. Diff ASM vs oracle. Fire M-BEAUTIFY-BOOTSTRAP.
+
+## Session IJ-1 — 2026-03-24 — Icon JVM scaffold + rung01/rung02 progress
+
+**Trigger:** "I'm playing with ICON frontend for snobol4x with JVM backend"
+**Branch:** main  **HEAD at close:** ee2810b
+
+### Milestones fired
+- **M-ICON-CORPUS-R3** ✅ — rung03 suspend/generator already passing (15/15 ASM corpus); I-9 patches not needed
+- **M-IJ-SCAFFOLD** ✅ — `icon_emit_jvm.c` created (1165 lines); `-jvm null.icn → null.j → jasmin → exit 0`
+- **M-IJ-HELLO** ✅ — `every write(1 to 5)` → JVM → `1\n2\n3\n4\n5`
+- **M-IJ-CORPUS-R1** ✅ — 6/6 rung01 PASS on JVM
+
+### rung02 status: 12/14
+- rung02_arith_gen: 5/5 ✅
+- rung02_proc: t01_add_proc ✅, t02_fact ❌, t03_locals ❌
+
+### Open bugs for IJ-2
+
+**t02_fact (recursion):** `fact(5)` returns 1 instead of 120.
+Root cause: `icn_retval` is a single static field — recursive calls overwrite it before
+the caller reads it. Fix: pass return values via JVM operand stack (load `icn_retval`
+*before* the recursive `invokestatic` returns, or use a local slot to capture it).
+In `ij_emit_call` for normal procs: after `invokestatic`, immediately do
+`getstatic icn_retval J` → `lstore scratch` before any possibility of overwrite.
+
+**t03_locals (stack height 4 != 2):** `every total := total + (1 to n)` inside `sum_to`.
+Root cause: `ij_emit_assign` loads the stored value back and pushes it as the expression
+result (for chaining). But at the target label of the EVERY body-succeed the stack
+has 2 (from the assign relay) where 0 is expected. Fix: `ij_emit_assign`'s relay label
+must drain the RHS long to the variable slot AND leave stack empty (don't reload).
+The assignment result can be the variable's value loaded afresh if needed by parent.
+
+### Key design insight (for IJ-2)
+JVM discipline: **operand stack must be empty at every label boundary.**
+All values passed across gotos go through static fields.
+The binop/relop/to emitters were fixed this session with relay labels + static staging.
+The assign and recursive-call emitters still have stack-across-label violations.
+
+### ASM corpus
+15/15 PASS throughout — no regressions.
+
