@@ -15,34 +15,34 @@ snobol4x: multiple frontends, multiple backends.
 **F-session:** M-PROLOG-R10 ✅ — all 4 puzzles PASS (01/02/05/06); \+ NAF implemented
 **Invariants:** 106/106 ASM corpus ALL PASS ✅
 
-**⚡ CRITICAL NEXT ACTION — F-221 (M-PROLOG-CORPUS):**
+**⚡ CRITICAL NEXT ACTION — F-222 (M-PROLOG-CORPUS):**
 
-```bash
-cd /home/claude/snobol4x && make -C src
+```
+BUG: rung05 backtrack FAIL — prints a\nb instead of a\nb\nc.
+ROOT CAUSE: prolog_emit.c emit_body, last-goal user-call branch (~line 692).
+  When last body goal is a user call, emitter does PG(γ) — jumps to clause γ
+  returning the clause index (e.g. 1). Discards inner _cs9 counter.
+  On retry, _start=1 resets _cs9=0, re-finds b instead of advancing to c.
 
-# All rung10 puzzles PASS:
-#   puzzle_01: Cashier=smith Manager=brown Teller=jones ✅
-#   puzzle_02: WINNER Carpenter:clark Painter:daw Plumber:fuller ✅
-#   puzzle_05: Accountant=jones Cashier=brown Manager=clark President=smith ✅
-#   puzzle_06: Clark=druggist Jones=grocer Morgan=butcher Smith=policeman ✅
-#
-# M-PROLOG-R10 fires. Next: M-PROLOG-CORPUS — all 10 rungs PASS via -pl (C backend).
-# Compile any puzzle:
-# ./sno2c -pl test/frontend/prolog/corpus/rung10_programs/puzzle_NN.pro -o /tmp/t.c
-# gcc -g -I src/frontend/prolog -o /tmp/t /tmp/t.c \
-#     src/frontend/prolog/prolog_unify.c src/frontend/prolog/prolog_atom.c \
-#     src/frontend/prolog/prolog_builtin.c -lm && /tmp/t
+FIX (two parts):
+  1. emit_body last-goal branch: instead of PG(γ), emit
+       *_tr = _trail; return <clause_idx> + _cs<N>;
+     (encode inner _cs into return value)
+  2. emit_choice switch: add default: case that re-enters last clause's
+     retry loop with _start - nclauses as inner _cs.
+
+After fix: all 10 rungs PASS → M-PROLOG-CORPUS fires.
 ```
 
 ---
 
 ## Last Two Sessions (3 lines each)
 
-**F-220 (2026-03-23) — \+ NAF implemented; puzzle_05 PASS:**
-`\+` in `prolog_emit.c` was a stub (always succeeded). Fixed: copies trail, tries subgoal via `_r` call, unwinds, succeeds iff subgoal failed. Added missing `betterAtChess(brown,smith/jones)` facts to puzzle_05. Single solution prints. M-PROLOG-R10 ✅. HEAD `5e6b872`.
+**F-221 (2026-03-23) — bug diagnosis only, no commit:**
+Ran all rungs: 1–4 and 6–9 PASS, rung 5 FAIL. Root-caused to `emit_body` last-goal user-call discarding inner `_cs`. Context exhausted before fix applied. HEAD unchanged `5e6b872`.
 
-**F-219 (2026-03-23) — missing earnsMore fact added to puzzle_02.pro:**
-`earnsMore(fuller, daw)` was absent. Added. WINNER now prints for `Carpenter:clark Painter:daw Plumber:fuller`. puzzle_01/06 still PASS. HEAD `0c2119a`.
+**F-220 (2026-03-23) — \+ NAF implemented; puzzle_05 PASS:**
+`\+` in `prolog_emit.c` was a stub (always succeeded). Fixed: copies trail, tries subgoal via `_r` call, unwinds, succeeds iff subgoal failed. M-PROLOG-R10 ✅. HEAD `5e6b872`.
 
 ---
 

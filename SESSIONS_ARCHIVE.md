@@ -15008,3 +15008,16 @@ Key design insight: TZ/TY/TV/TW build patterns containing `$ *assign(...)` side-
 **Result:** WINNER prints for `Carpenter:clark Painter:daw Plumber:fuller`. puzzle_01, puzzle_02, puzzle_06 all PASS.
 **Commit:** `0c2119a` snobol4x · HEAD `0c2119a`
 **Next:** F-220 — puzzle_05 constraints (uncomment + implement \+ if needed) to fire M-PROLOG-R10.
+
+## F-221 (2026-03-23) — bug diagnosis, no commit
+
+**Branch:** main · **HEAD unchanged:** `5e6b872`
+
+**Work done:**
+- Built snobol4x clean. Ran rungs 1–10: rungs 1–4 and 6–9 PASS; rung 5 (backtrack/member) FAIL (prints `a\nb` instead of `a\nb\nc`).
+- Root-caused the bug: in `prolog_emit.c` `emit_body`, when the last goal in a clause body is a resumable user call, the emitter does `PG(γ)` — jumps to the clause's γ label returning the clause index (e.g. `1`). This discards the inner `_cs9` counter tracking sub-solutions. On retry, `_start=1` resets `_cs9=0`, re-finding `b` instead of advancing to `c`.
+- No code changes made (context exhausted before fix could be applied).
+
+**Milestones fired:** none
+
+**Fix for F-222:** In `emit_body` last-goal user-call branch (line ~692), instead of `PG(γ)`, emit `*_tr = _trail; return %d + _cs%d - 1;` (clause_idx + inner _cs offset). Add `default:` case in `emit_choice` switch to re-enter last clause's retry loop with `_start - nclauses` as inner _cs. This makes all 10 rungs PASS and fires M-PROLOG-CORPUS.
