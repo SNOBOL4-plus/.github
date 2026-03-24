@@ -9,36 +9,37 @@ snobol4x: multiple frontends, multiple backends.
 
 ## NOW
 
-**Sprint:** `main` — M-BEAUTY-* sprint
-**HEAD:** `fe86477` B-275 (main)
-**Milestone:** M-BEAUTY-SEMANTIC ❌ — driver+ref ready (8/8 CSN); ASM segfaults on DATA/`$'#N'`
+**Sprint:** `main` — Prolog frontend M-PROLOG-R10 sprint
+**HEAD:** `128dd2c` F-216 (main)
+**Milestone:** M-PROLOG-R10 ❌ — rung09 PASS; rung10 puzzle_02 has spurious backtrack output
 **Invariants:** 106/106 ASM corpus ALL PASS ✅
 
-**⚡ CRITICAL NEXT ACTION — B-276 (M-BEAUTY-SEMANTIC):**
+**⚡ CRITICAL NEXT ACTION — F-217 (M-PROLOG-R10):**
 
 ```bash
-cd /home/claude/snobol4ever
-# bootstrap: see snobol4x/PLAN.md §START (clones + setup.sh → 106/106)
+cd /home/claude/snobol4x && make -C src
 
-# BUG: ASM segfaults on semantic/driver.sno
-# Root cause: DATA('link_counter(next,value)') + $'#N' indirect computed variable
-# Fix target: snobol4.c — DEFDAT_fn / NV_GET_fn / NV_SET_fn for DATA object values
-# Debug: compile semantic/driver.sno via -asm, run under ASAN/gdb, find crash site
+# Compile and run each rung10 puzzle:
+# ./sno2c -pl <puzzle.pro> -o /tmp/t.c
+# gcc -g -I src/frontend/prolog -o /tmp/t /tmp/t.c \
+#     src/frontend/prolog/prolog_unify.c src/frontend/prolog/prolog_atom.c \
+#     src/frontend/prolog/prolog_builtin.c -lm && /tmp/t
 
-INC=snobol4x/demo/inc bash snobol4x/test/beauty/run_beauty_subsystem.sh semantic
-# → 8/8 PASS → commit "B-276: M-BEAUTY-SEMANTIC ✅" → advance to M-BEAUTY-OMEGA
-# omega.sno: write driver → oracle → fix ASM → commit
+# puzzle_01: PASS (Cashier=smith Manager=brown Teller=jones)
+# puzzle_02: FAIL — doesEarnMore spurious output; only WINNER line should print
+# puzzle_06: PASS (Clark=druggist Jones=grocer Morgan=butcher Smith=policeman)
+# Fix puzzle_02 constraint/backtrack bug, fire M-PROLOG-R10, advance to M-PROLOG-CORPUS
 ```
 
 ---
 
 ## Last Two Sessions (3 lines each)
 
+**F-216 (2026-03-23) — compound emit \\n fix; rung09 PASS:**
+Bug in `prolog_emit.c` line 185: `\\n` (literal backslash-n) emitted inside GNU statement expression for compound term construction; replaced with `\n`. Rung09 builtins now compile and match expected output exactly. HEAD `128dd2c`.
+
 **B-275 (2026-03-23) — M-BEAUTY-XDUMP ✅:**
 `stmt_aref2/aset2` (2D subscripts); `PROTOTYPE` now returns `lo:hi`; `table_set_descr` preserves integer key type through SORT; `expr_flatten_str` for multi-line DEFINE. Semantic driver+ref committed; ASM segfault on DATA/`$'#N'` is B-276 blocker. HEAD `fe86477`.
-
-**B-274 (2026-03-23) — M-BEAUTY-READWRITE ✅:**
-`expr_flatten_str()` — multi-line DEFINE (E_CONC spec) was silently skipping `Read` as user fn; `fn_Read_γ/ω` now emitted; FRETURN routes correctly. 8/8 ASM PASS. HEAD `eeeb5ad`.
 
 ---
 
