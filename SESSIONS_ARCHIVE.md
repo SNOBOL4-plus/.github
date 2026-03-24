@@ -15409,3 +15409,26 @@ apt-get install -y default-jdk nasm libgc-dev
 cd snobol4x && make -C src
 # Read FRONTEND-PROLOG-JVM.md §NOW → CRITICAL NEXT ACTION for PJ-6 debug steps
 ```
+
+## IJ-5 — 2026-03-24
+
+**Session:** IJ-5 (Icon JVM)
+**HEAD at start:** `254045e` (IJ-4)
+**HEAD at end:** `e590c4f` (IJ-5)
+
+### Accomplished
+- **Bug 3 fixed:** `write(long)` — after `invokevirtual println(J)V`, added `lload scratch` to restore value on JVM stack for γ port / `gbfwd pop2`. Root cause: `write()` returns its argument but the value was consumed by println and not restored.
+- **Bug 2 fixed:** `ij_suspend_ids[k] = id` (node id) not `susp_id`. The tableswitch target label is `icn_{node_id}_resume`; `susp_id` is only the dispatch ordinal 1..N.
+- **Rung03 partial:** Added `icn_suspend_id != 0` dispatch at generator method entry to route to `icn_upto_beta` on resume. No longer times out. VerifyError `Register pair 2/3 contains wrong type` remains — slot type merge issue at beta join point.
+- **M-IJ-CORPUS-R2 fired:** rung01 6/6 + rung02 14/14 all PASS.
+
+### Corpus status
+| Rung | Tests | Status |
+|------|-------|--------|
+| rung01_paper | 6/6 | ✅ PASS |
+| rung02_arith_gen | 5/5 | ✅ PASS |
+| rung02_proc | 3/3 | ✅ PASS |
+| rung03_suspend | 0/1 | ❌ VerifyError slot 2/3 type merge |
+
+### Open for IJ-6
+Fix VerifyError: emit `lconst_0; lstore N` for all long slots before suspend_id dispatch so verifier sees consistent types at `icn_upto_beta` join point. See FRONTEND-ICON-JVM.md §IJ-5 findings for full strategy.

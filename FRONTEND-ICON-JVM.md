@@ -18,9 +18,9 @@ assembled by `jasmin.jar` into `.class` files.
 
 | Session | Sprint | HEAD | Next milestone |
 |---------|--------|------|----------------|
-| **Icon JVM** | `main` IJ-4 — Bug1 fix (binop/relop local slots); α/β/γ/ω port names; warnings clean | `254045e` IJ-4 | M-IJ-CORPUS-R2 |
+| **Icon JVM** | `main` IJ-5 — Bug3 write(long) stack + Bug2 tableswitch label fixed; rung01 6/6 + rung02 14/14 PASS; rung03 VerifyError slot 2/3 open | `e590c4f` IJ-5 | M-IJ-CORPUS-R3 |
 
-### Next session checklist (IJ-5)
+### Next session checklist (IJ-6)
 
 ```bash
 git clone https://TOKEN_SEE_LON@github.com/snobol4ever/snobol4x
@@ -30,35 +30,41 @@ cd snobol4x/src/frontend/icon
 gcc -Wall -Wextra -g -O0 -I. icon_driver.c icon_lex.c icon_parse.c icon_ast.c \
     icon_emit.c icon_emit_jvm.c icon_runtime.c -o /tmp/icon_driver
 # Read FRONTEND-ICON-JVM.md §NOW
-# Run rung01 JVM corpus — pre-existing VerifyError: diagnose write(long) stack issue
-# Run rung02 JVM corpus — target 14/14
-# Fire M-IJ-CORPUS-R2 when 14/14 pass
+# HEAD = e590c4f; rung01 6/6 + rung02 14/14 already pass
+# Fix rung03 VerifyError: slot 2/3 type merge — see IJ-5 findings below
+# Run from repo root: cd snobol4x && /tmp/icon_driver -jvm ... (oracle also needs repo root)
+# Fire M-IJ-CORPUS-R2 (already earned: 14/14) then M-IJ-CORPUS-R3 when rung03 passes
 ```
 
-### IJ-4 findings
+### IJ-5 findings
 
-**Bug 1 — FIXED in IJ-4 (254045e):** `ij_emit_binop` and `ij_emit_relop` now use
-`ij_locals_alloc_tmp()` local slots (`lstore`/`lload`, `istore`/`iload`) instead of
-class-global static fields for operand staging. Recursion no longer clobbers operands.
+**Bug 3 — FIXED (e590c4f):** `write(long)` after `invokevirtual println(J)V` now
+reloads the scratch slot (`lload scratch`) so the value stays on stack for the γ port
+caller. `write()` returns its argument; `gbfwd: pop2` needs it there.
 
-**Port naming — DONE in IJ-4:** All four Byrd Box ports now use Greek letters
-throughout source and generated output:
-- C identifiers: `IjPorts.γ`/`.ω`, `lbl_α()`/`lbl_β()`, `out_α`/`out_β`, `oα`/`oβ`
-- Generated Jasmin labels: `icn_N_α`, `icn_N_β`
-- Generated NASM labels: `icon_N_α`, `icon_N_β` (NASM 2.x accepts UTF-8)
+**Bug 2 — FIXED (e590c4f):** `ij_suspend_ids[k] = id` (node id, not `susp_id`).
+The resume label is `icn_{node_id}_resume`; `susp_id` is only the tableswitch ordinal.
 
-**Warnings — FIXED in IJ-4:** Zero warnings with `-Wall -Wextra`. Fixes:
-- `ij_jmp_if_ok` removed (unused)
-- `buf[128]` → `buf[384]` for classname/field/sig snprintf
-- `va[64]/vb[64]` → `va[80]/vb[80]` for `_noval`/`_nvlb` suffixes
+**Rung03 Bug — OPEN for IJ-6:** VerifyError `Register pair 2/3 contains wrong type`
+in `icn_upto()V`. Root cause: the beta dispatch block (`getstatic icn_suspend_id; ifne
+icn_upto_beta`) creates a control-flow join at `icn_upto_beta` where the JVM verifier
+sees slot 2/3 as uninitialized on the fall-through path but long on paths that went
+through the body. The slot type merge fails.
 
-**Pre-existing Bug 3 — rung01 JVM VerifyError — OPEN for IJ-5:**
-`Unable to pop operand off an empty stack` in `icn_main` for all rung01 tests.
-Confirmed pre-existing (present in IJ-3 HEAD before IJ-4 changes).
-Root cause: `write(long)` call — the `lstore scratch; getstatic stream; lload scratch;
-invokevirtual println(J)V` sequence has a stack accounting error the verifier rejects.
-Diagnose by reading the generated `.j` for `t01_to5.icn` and tracing stack depth at
-each instruction through the `write` call path.
+Fix strategy: initialize all param/local long slots to 0L **before** the suspend_id
+dispatch check, so every path into `icn_upto_beta` has slot 2/3 typed as long:
+```
+lconst_0; lstore 0   ; lconst_0; lstore 2   ; ...   (all used long slots)
+getstatic icn_suspend_id I
+ifne icn_upto_beta
+icn_upto_fresh:
+  getstatic icn_arg_0 J; lstore 0   ; (real param load overwrites)
+  goto first_stmt
+icn_upto_beta:
+  tableswitch ...
+```
+In `ij_emit_proc`, before the suspend_id dispatch, emit `lconst_0; lstore N` for each
+long slot 0..2*(nlocals-1). This ensures verifier type consistency.
 
 ---
 

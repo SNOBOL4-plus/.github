@@ -20,7 +20,7 @@ Each concurrent session owns exactly one row. Update only your row on every push
 | **README** | `main` — M-README-CSHARP-DRAFT ✅ | `00846d3` snobol4csharp | M-README-DEEP-SCAN |
 | **ICON frontend** | `main` I-10 — SESSIONS_ARCHIVE pruned 782KB→15KB; fixes documented, not yet applied | `54031a5` I-7 | M-ICON-CORPUS-R3 |
 | **Prolog JVM** | `main` PJ-5 — Fix1+Fix3 applied; rung05 `a` only — trail unwind bug remains | `8f60b6f` PJ-5 | M-PJ-BACKTRACK |
-| **Icon JVM** | `main` IJ-4 — Bug1 fix (binop/relop local slots); α/β/γ/ω port names; warnings clean | `254045e` IJ-4 | M-IJ-CORPUS-R2 |
+| **Icon JVM** | `main` IJ-5 — rung01 6/6 + rung02 14/14 PASS; rung03 VerifyError slot-type open | `e590c4f` IJ-5 | M-IJ-CORPUS-R3 |
 | **README v2 sprint** | `main` R-2 | TBD R-2 | M-FEAT-JVM |
 
 **Invariants (check before any work):**
@@ -112,7 +112,7 @@ Full sprint detail → [FRONTEND-ICON.md](FRONTEND-ICON.md)
 | **M-IJ-HELLO** | `every write(1 to 5);` → JVM `1\n2\n3\n4\n5` | ✅ |
 | **M-IJ-CORPUS-R1** | All 6 rung01 tests PASS vs ASM oracle | ✅ |
 | **M-IJ-PROC** | rung02_proc: user procedures + locals | ❌ |
-| **M-IJ-CORPUS-R2** | rung02 arith_gen 5/5 + proc 3/3 PASS | ❌ |
+| **M-IJ-CORPUS-R2** | rung02 arith_gen 5/5 + proc 3/3 PASS | ✅ |
 | **M-IJ-SUSPEND** | `suspend E` generators via tableswitch resume | ❌ |
 | **M-IJ-CORPUS-R3** | rung03_suspend PASS | ❌ |
 | **M-IJ-STRING** | `ICN_STR`, `\|\|` concat | ❌ |
