@@ -18,21 +18,82 @@ feeding the same TINY pipeline. Goal-directed generators map directly to Byrd bo
 
 | Session | Sprint | HEAD | Next milestone |
 |---------|--------|------|----------------|
-| **ICON frontend** | `main` I-8 — diagnosis complete, no commit yet | `54031a5` I-7 | M-ICON-CORPUS-R3 |
+| **ICON frontend** | `main` I-9 — two fixes identified, not yet applied | `54031a5` I-7 | M-ICON-CORPUS-R3 |
 
-### Next session checklist (I-9)
+### Next session checklist (I-10)
 
 ```bash
 git clone https://github.com/snobol4ever/snobol4x
 git clone https://github.com/snobol4ever/.github
-# Read FRONTEND-ICON.md §NOW
-# Fix is_gen detection bug in icon_emit.c (see §I-8 Bug Diagnosis below)
-# Then fix left_is_value and rsp save/restore
-# Then write R3 corpus and fire M-ICON-CORPUS-R3
+# Read FRONTEND-ICON.md §NOW — two exact patches below, apply both
+# Rebuild icon_driver, test t01_gen → must output 1\n2\n3\n4
+# Write R3 corpus (5 tests), run full suite, fire M-ICON-CORPUS-R3
 ```
 
 **M-ICON-CORPUS-R3 spec:** user procedures with return; user-defined generators with suspend.
 rung03_suspend already has t01_gen (upto/4). R3 adds t01_return through t05_gen_compose.
+
+### I-9 findings — exact patches for icon_emit.c (apply first thing I-10)
+
+**Fix 1 — `left_is_value` (~line 598 of icon_emit.c):**
+
+Replace:
+```c
+IcnNode *left_child = n->children[0];
+int left_is_value = (left_child->kind == ICN_VAR || left_child->kind == ICN_INT ||
+                     left_child->kind == ICN_STR || left_child->kind == ICN_CALL);
+```
+With:
+```c
+IcnNode *left_child = n->children[0];
+int left_call_is_gen = 0;
+if (left_child->kind == ICN_CALL && left_child->nchildren >= 1) {
+    const char *fn = left_child->children[0]->val.sval;
+    for (int k = 0; k < user_proc_count; k++)
+        if (strcmp(user_procs[k], fn) == 0) { left_call_is_gen = user_proc_is_gen[k]; break; }
+}
+int left_is_value = (left_child->kind == ICN_VAR || left_child->kind == ICN_INT ||
+                     left_child->kind == ICN_STR ||
+                     (left_child->kind == ICN_CALL && !left_call_is_gen));
+```
+
+**Fix 2 — rsp save/restore in `emit_call` is_gen docall block (~line 498):**
+
+In the `if(is_gen){` docall block, declare a `saved_rsp` BSS slot and save/restore around the jmp trampoline. The β resume path also needs a save before jumping back in. Full patch:
+
+```c
+if(is_gen){
+    char after_call[64]; snprintf(after_call,sizeof after_call,"icon_%d_after_call",id);
+    char caller_ret[80]; snprintf(caller_ret,sizeof caller_ret,"icn_%s_caller_ret",fname);
+    char saved_rsp[64]; snprintf(saved_rsp,sizeof saved_rsp,"icn_%d_saved_rsp",id);
+    bss_declare(saved_rsp);
+    E(em,"    mov     byte [rel icn_suspended], 0\n");
+    E(em,"    mov     [rel %s], rsp\n", saved_rsp);
+    E(em,"    lea     rax, [rel %s]\n", after_call);
+    E(em,"    mov     [rel %s], rax\n", caller_ret);
+    E(em,"    jmp     icn_%s\n", fname);
+    Ldef(em,after_call);
+    E(em,"    mov     rsp, [rel %s]\n", saved_rsp);   // ← restore before icn_failed check
+    // ... rest unchanged (movzx icn_failed, etc.)
+```
+
+And in the β path (`Ldef(em,b)` / `if(is_gen)` block, ~line 485), reconstruct the saved_rsp name from `id` and save before jumping:
+
+```c
+/* β: resume if suspended */
+Ldef(em,b);
+if(is_gen){
+    char saved_rsp_b[64]; snprintf(saved_rsp_b,sizeof saved_rsp_b,"icn_%d_saved_rsp",id);
+    E(em,"    ; call β — resume if suspended, fail otherwise\n");
+    E(em,"    movzx   rax, byte [rel icn_suspended]\n");
+    E(em,"    test    rax, rax\n");
+    E(em,"    jz      %s\n", ports.fail);
+    E(em,"    mov     [rel %s], rsp\n", saved_rsp_b);  // ← save before resuming
+    E(em,"    mov     byte [rel icn_suspended], 0\n");
+    E(em,"    jmp     [rel icn_suspend_resume]\n");
+```
+
+**Key insight:** The `saved_rsp_b` in the β block and `saved_rsp` in the docall block use the same BSS slot name (`icn_%d_saved_rsp` with the same `id`). The β save updates it so that after the next yield→`after_call`, `mov rsp, [saved_rsp]` restores correctly again. Both must use the same `id` — which they do since `id` is the node ID assigned to this ICN_CALL.
 
 ---
 

@@ -1,5 +1,4 @@
 > Org renamed SNOBOL4-plus → snobol4ever, repos renamed March 2026. Historical entries use old names.
-> **Access pattern:** `tail -80 SESSIONS_ARCHIVE.md` for last 1–2 sessions. Never read the full file.
 
 ## N-248 (2026-03-22) — M-T2-NET ✅ + M-T2-FULL ✅
 
@@ -14891,30 +14890,29 @@ bash /home/claude/snobol4x/setup.sh
 
 **Next session (F-216):** M-PROLOG-WIRE-ASM — get `-pl -asm` producing working x64. Steps: verify `asm_emit_prolog` entry point wires correctly end-to-end, test `null.pl` → exit 0, then `hello.pl` → fire M-PROLOG-HELLO, climb rung ladder via Byrd box β port.
 
-## Session B-274 — 2026-03-23 — M-BEAUTY-READWRITE ✅
+## Session I-9 — ICON Frontend: Patch Archaeology
 
-**Repos touched:** snobol4x, .github
-**Commits:** `eeeb5ad` (snobol4x), `a829b11` (.github)
+**Date:** 2026-03-23
+**HEAD at start:** `54031a5` I-7 (I-8 was diagnosis-only, no commit)
+**HEAD at end:** `54031a5` I-7 (no snobol4x commit — fixes not yet applied)
 
-**Root cause fixed:** `scan_named_patterns()` in `emit_byrd_asm.c` checked `children[0]->kind == E_QLIT` for DEFINE detection. Multi-line DEFINE via continuation (`+`) produces `E_CONC(E_QLIT, E_QLIT)` — silently skipping `Read` registration. Added `expr_flatten_str()` DFS helper to flatten E_CONC trees; `Read` now registered as user fn; `fn_Read_γ/ω` emitted; FRETURN routes to `fn_Read_ω` not `L_SNO_END`. 8/8 ASM PASS. 106/106 corpus.
+**What happened:**
+- Cloned both repos fresh. Confirmed segfault on rung03_suspend/t01_gen.icn.
+- Reviewed I-8 diagnosis in FRONTEND-ICON.md — three bugs documented.
+- Clarified that "Bug 0" (is_gen=0 / stale binary) from the lost session transcript was a red herring in that session; in the current repo state the is_gen detection is correct. Root bugs are Fix 1 (left_is_value) and Fix 2 (rsp corruption).
+- Developed exact patches for both fixes (see FRONTEND-ICON.md §NOW I-9 findings).
+- Context window reached ~85% before fixes could be applied and tested. Reverted partial edits to avoid pushing broken state.
+- Updated FRONTEND-ICON.md §NOW and PLAN.md with exact copy-paste patches for I-10.
 
-**Milestones fired:** M-BEAUTY-READWRITE ✅
+**State at handoff:**
+- snobol4x: `54031a5` — unchanged, no new commits
+- .github: I-9 doc update committed and pushed
 
-**Next:** M-BEAUTY-XDUMP — debug 2D subscript + PROTOTYPE + integer key type in SORT.
-
-## Session B-275 — 2026-03-23 — M-BEAUTY-XDUMP ✅ + semantic driver
-
-**Repos touched:** snobol4x, .github
-**Commits:** `fa0eee9` sno2c+runtime, `fe86477` semantic driver (.github `2a04df2`)
-
-**Fixes:**
-- `stmt_aref2/aset2`: 2D subscript `arr[i,j]` was ignoring 2nd index; new shims in `snobol4_stmt_rt.c`; `E_IDX` emitter updated for `nchildren>=3`
-- `PROTOTYPE`: was returning bare count `"1"`; now returns `"lo:hi"` matching CSNOBOL4
-- `table_set_descr` + `TBPAIR_t.key_descr`: integer keys preserved through SORT
-- `sort_fn`: stores `key_descr` in col 1 so `DATATYPE(objKey)` returns `'INTEGER'` correctly
-
-**Semantic subsystem:** driver+ref committed (`fe86477`); 8/8 CSN PASS; ASM segfaults on `DATA('link_counter(next,value)')` + `$'#N'` indirect variable — B-276 blocker.
-
-**Milestones fired:** M-BEAUTY-XDUMP ✅
-
-**Next (B-276):** Fix ASM segfault in DATA/indirect var; `DEFDAT_fn`/`NV_GET_fn`/`NV_SET_fn` in `snobol4.c`; fire M-BEAUTY-SEMANTIC ✅; advance to M-BEAUTY-OMEGA.
+**Next session (I-10) start:**
+1. Clone both repos
+2. Read FRONTEND-ICON.md §NOW — two exact patches are there, copy-paste into icon_emit.c
+3. Rebuild: `cd snobol4x/src/frontend/icon && make` (or the gcc one-liner from setup)
+4. Test t01_gen → must output `1\n2\n3\n4` with no segfault
+5. Write 5 R3 corpus tests (specs in §I-8 Bug Diagnosis R3 table)
+6. Run full suite, confirm 20/20 pass
+7. Commit + push snobol4x, then update .github and push
