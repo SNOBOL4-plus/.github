@@ -15307,3 +15307,16 @@ The assign and recursive-call emitters still have stack-across-label violations.
 ### Open for IJ-3
 - t02_fact: icn_retval static field clobbered by recursive call → save/restore in local slot
 - t03_locals: `local` declaration slot offset not applied past param slots
+
+## Session B-280 — 2026-03-24 — DEFINE-body cur_fn scoping fixed; beauty_asm exit 0
+
+**Goal:** M-BEAUTIFY-BOOTSTRAP — fix runtime segfault from B-279, get beauty.sno to self-beautify.
+
+**Work done:**
+- Fixed linker bug: `prog.o` listed twice on gcc link line → duplicate symbols. Fix: glob only.
+- Fixed Bug 2 (cur_fn/body_label): `named_pat_lookup(s->label)` never finds DEFINE-style functions whose body label differs from varname (e.g. `L_nPush_136 ≠ nPush`). Added body_label fallback loop in both real pass and dry-run pass.
+- Fixed Bug 3 (cur_fn/body_end): `cur_fn` leaked past function bodies into main program. Introduced `NamedPat.body_end_idx` + `end_label` (from DEFINE goto target). Pre-scan computes body ranges using `end_label` (precise) or next-body_label fallback. Pre-scan moved before Pass 3 so `dry_cur_fn` clearing in Pass 3 sees correct values.
+- Result: 0 nasm errors, link OK, exit 0. Output: 10/784 lines. "Parse Error" at main02/main05.
+- 106/106 ASM corpus ALL PASS confirmed.
+
+**Next:** Diagnose Parse Error — `Src POS(0) *Parse *Space RPOS(0)` fails. Use monitor to compare Src/Parse values CSNOBOL4 vs ASM. HEAD `a4f44a3`.
