@@ -6,7 +6,7 @@ New layer: `prolog_emit_jvm.c` — consumes `E_CHOICE/E_CLAUSE/E_UNIFY/E_CUT/E_T
 and emits Jasmin `.j` files, assembled by `jasmin.jar`.
 
 **Session trigger phrase:** `"I'm working on Prolog JVM"`
-**Session prefix:** `PJ` (e.g. PJ-1, PJ-2, PJ-3)
+**Session prefix:** `PJ` (e.g. PJ-5, PJ-6, ...)`
 **Driver flag:** `snobol4x -pl -jvm foo.pl → foo.j → java -jar jasmin.jar foo.j`
 **Oracle:** `snobol4x -pl -asm foo.pl` (ASM emitter, rungs 1–9 known good)
 **Design reference:** BACKEND-JVM-PROLOG.md (term encoding, runtime helpers, Jasmin patterns)
@@ -19,35 +19,55 @@ and emits Jasmin `.j` files, assembled by `jasmin.jar`.
 
 | Session | Sprint | HEAD | Next milestone |
 |---------|--------|------|----------------|
-| **Prolog JVM** | `main` PJ-5 — M-PJ-BACKTRACK β-retry bug diagnosed | `418461a` PJ-5 | M-PJ-BACKTRACK |
-
-### Session PJ-5 diagnosis (2026-03-24)
-
-Two bugs confirmed by inspecting generated `/tmp/backtrack.j`:
-
-**Bug 1 — suffix_fail misroutes to `;` else branch instead of retrying ucall:**
-In `pj_emit_body` user-call block, `suffix_fail` does `goto lbl_omega`. But when the
-ucall is inside a `;/2` left branch, `lbl_omega` resolves to `disj2_alt1` (else branch)
-not back to `call_try`. Output: only `a` printed; `b`/`c` skipped.
-Fix: change `JI("goto", lbl_omega)` → `JI("goto", call_try)` in suffix_fail block.
-
-**Bug 2 — `main()` does not loop:**
-`pj_emit_main()` calls `p_main_0(0)` once and discards result. No β-retry loop.
-Fix: emit retry loop — extract cs from `result[0]`, call again while non-null.
+| **Prolog JVM** | `main` PJ-5 — two fixes applied, rung05 still outputs `a` only | `8f60b6f` PJ-5 | M-PJ-BACKTRACK |
 
 ### CRITICAL NEXT ACTION (PJ-6)
 
+**Bug:** `member/2` β-retry outputs `a` only; `b` and `c` not printed.
+
+**What was done in PJ-5:**
+- Fix 1: `pj_emit_body` suffix_fail: `goto lbl_omega` → `goto call_try` (β-retry loop now wired)
+- Fix 3: per-call trail mark saved at `call3_try`; `call3_sfail` now unwinds trail before looping
+- Result: `call3_sfail → pj_trail_unwind → goto call3_try` is structurally correct
+- But output is still `a` only — trail unwind is not restoring `X` properly
+
+**Suspected remaining bug:** `pj_trail_unwind` may not be correctly restoring the var cell.
+The unwind loop does `checkcast [Ljava/lang/Object;` then sets `[0]="var"`, `[1]=null`.
+But the trail stores the **cell itself** via `pj_trail_push` — need to verify the cell stored
+on trail is the same object as `var_locals[0]` (X, local 4 in main's clause).
+
+**Debug steps for PJ-6:**
 ```bash
 git clone https://TOKEN_SEE_LON@github.com/snobol4ever/snobol4x
 git clone https://TOKEN_SEE_LON@github.com/snobol4ever/.github
 apt-get install -y default-jdk nasm libgc-dev
 cd snobol4x && make -C src
-# Fix 1: pj_emit_body suffix_fail: JI("goto", lbl_omega) → JI("goto", call_try)
-# Fix 2: pj_emit_main(): add β-retry loop (load cs from result[0], loop while non-null)
-BASE=backtrack; PRO=test/frontend/prolog/corpus/rung05_${BASE}/${BASE}.pro
-./sno2c -pl -jvm $PRO -o /tmp/$BASE.j && java -jar src/backend/jvm/jasmin.jar /tmp/$BASE.j -d /tmp/
-java -cp /tmp Backtrack   # expected: a\nb\nc
+
+# Step 1: inspect generated Jasmin to verify trail_unwind is called at sfail
+BASE=backtrack; PRO=test/frontend/prolog/corpus/rung05_backtrack/${BASE}.pro
+./sno2c -pl -jvm $PRO -o /tmp/$BASE.j
+grep -A8 "call3_sfail" /tmp/$BASE.j
+
+# Step 2: add stderr debug to pj_trail_unwind in the generated .j manually:
+#   before the unwind loop, emit: getstatic System/err; ldc "UNWIND"; invokevirtual println
+#   confirm it fires on 2nd iteration
+
+# Step 3: check pj_unify — when X (var cell) is bound to atom 'a', is the cell
+#   actually pushed onto pj_trail? Verify pj_trail_push is reached in pj_unify.
+
+# Step 4: if trail is empty on retry, the bind was never trailed.
+#   Check pj_unify: the "bind a → b" path calls pj_trail_push([Ljava/lang/Object;)V
+#   but the stack manipulation may be wrong — verify with javap -c on Backtrack.class
+
+# Expected after fix: a\nb\nc
+java -jar src/backend/jvm/jasmin.jar /tmp/$BASE.j -d /tmp/
+timeout 5 java -cp /tmp Backtrack
 ```
+
+**If trail is confirmed empty on retry:**
+The issue is in `pj_unify` — the `aload_0 checkcast [Ljava/lang/Object;` / trail_push sequence.
+The cell pushed must be the var cell (`a` = `{tag,ref}` Object[]), not something else.
+Compare with BACKEND-JVM-PROLOG.md §Trail + Unification Runtime for the correct Java model.
 
 ---
 
@@ -76,7 +96,7 @@ git clone https://TOKEN_SEE_LON@github.com/snobol4ever/snobol4x
 git clone https://TOKEN_SEE_LON@github.com/snobol4ever/.github
 apt-get install -y default-jdk nasm libgc-dev
 make -C snobol4x/src
-# Read §NOW for current milestone. Start at first ❌.
+# Read §NOW above. Start at CRITICAL NEXT ACTION.
 ```
 
 ---

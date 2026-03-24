@@ -15381,3 +15381,31 @@ The assign and recursive-call emitters still have stack-across-label violations.
   stack` in `write(long)` path — present before IJ-4, not caused by IJ-4 changes.
 
 **Open for IJ-5:** Bug 3 (rung01 VerifyError in write(long)), then M-IJ-CORPUS-R2.
+
+## Session PJ-5 — 2026-03-24 — M-PJ-BACKTRACK (in progress)
+
+**Sprint:** `main` PJ-5
+**HEAD at close:** `8f60b6f` (snobol4x)
+**HQ HEAD at close:** `af205fa` (.github, doc cleanup) → final handoff push below
+
+**Work done:**
+- Diagnosed M-PJ-BACKTRACK root causes by inspecting generated `/tmp/backtrack.j`
+- Fix 1: `pj_emit_body` suffix_fail `goto lbl_omega` → `goto call_try` — β-retry now loops back into ucall instead of falling to `;` else branch
+- Fix 2 (attempted, reverted): outer β-loop in `pj_emit_main()` — caused infinite loop; internal fail-loop is sufficient, no outer loop needed
+- Fix 3: per-call trail mark (`local_tmark`) saved at `call3_try`; `call3_sfail` unwinds trail before looping back
+- HQ doc cleanup: RULES.md 33KB→5KB (stripped playbooks/artifact tables/war stories, kept ~11 real rules); FRONTEND-PROLOG-JVM.md 9.9KB→3.6KB→4.6KB; PLAN.md duplicate PJ milestone tables removed (10.2KB→7.8KB)
+
+**State at handoff:**
+- `call3_sfail → pj_trail_unwind(local_tmark) → goto call3_try` is structurally correct in generated Jasmin
+- Output is still `a` only — `pj_trail_unwind` is not successfully restoring X's var cell
+- Suspected: trail may be empty on retry (var cell never pushed), or unwind stack manipulation is wrong
+- Next: PJ-6 to debug trail push in `pj_unify`, verify cell identity matches what's on trail
+
+**Next session start block:**
+```bash
+git clone https://TOKEN_SEE_LON@github.com/snobol4ever/snobol4x
+git clone https://TOKEN_SEE_LON@github.com/snobol4ever/.github
+apt-get install -y default-jdk nasm libgc-dev
+cd snobol4x && make -C src
+# Read FRONTEND-PROLOG-JVM.md §NOW → CRITICAL NEXT ACTION for PJ-6 debug steps
+```
