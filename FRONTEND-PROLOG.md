@@ -325,6 +325,64 @@ directly analogous to the emit_body fix above.
 4. Then `hello.pl` → M-PROLOG-HELLO fires.
 5. Rungs 1–5: Byrd box β port handles backtracking automatically — no C emitter `_cs` hack needed.
 
+---
+
+## Puzzle Corpus — rung10 Sprint Plan (added 2026-03-23)
+
+`puzzles.pro` has been split into individual stub files, one per puzzle.
+Each stub contains the full problem text as comments and a `main` that prints `'puzzleNN: stub\n'`.
+Milestones are ordered from easiest to hardest based on problem structure:
+
+| ID | File | Puzzle | Why this difficulty |
+|----|------|--------|---------------------|
+| **M-PZ-14** | puzzle_14.pro | Golf scores (Bill/Ed/Tom wives) | Pure arithmetic + 2-couple equal-sum constraint; small search space |
+| **M-PZ-17** | puzzle_17.pro | Country Club dance pairings | Relational constraint, 4 couples, direct deduction from dance snapshot |
+| **M-PZ-15** | puzzle_15.pro | Vernon/Wilson/Yates offices + secretaries | 3 men × floor ordering + secretary assignment; clean deduction chain |
+| **M-PZ-16** | puzzle_16.pro | Train crew relations | 4 roles + family relation reasoning; classic constraint puzzle |
+| **M-PZ-20** | puzzle_20.pro | Pullman car readers | Book-exchange + field assignment; 4×4 with exchange constraint |
+| **M-PZ-13** | puzzle_13.pro | Murder case roles | 6 men × 6 roles; several indirect constraints |
+| **M-PZ-18** | puzzle_18.pro | Shopping day scheduling | Days-of-week + closure rules; temporal constraint reasoning |
+| **M-PZ-19** | puzzle_19.pro | Office floors + professions | Arithmetic floor constraints (5× rule, midpoint rules); requires integer search |
+| **M-PZ-04** | puzzle_04.pro | Milford occupations + salaries | Income doubling chain + $3776 gap; arithmetic + ordering constraints |
+| **M-PZ-09** | puzzle_09.pro | Empire Dept Store positions | 5 men × 5 roles; lunch-hour grouping + bachelor/relation clues |
+| **M-PZ-08** | puzzle_08.pro | Dept Store positions (Ames/Brown/Conroy…) | 5 people × 5 roles; gender + marriage + roommate clues |
+| **M-PZ-11** | puzzle_11.pro | Smith family positions | Family relation reasoning (sister-in-law, blood relative); gender from grocer clue |
+| **M-PZ-07** | puzzle_07.pro | Brown/Clark/Jones/Smith professions | Multi-attribute ordering (age, golf, income, conservatism) all interlocked |
+| **M-PZ-10** | puzzle_10.pro | Five J-names + last names | Father/Son banquet + naming convention + friendship graph; tricky indirect clues |
+| **M-PZ-03** | puzzle_03.pro | Triple engagement party | Age constraints + equal couple-sum + Jim+Jean = Bill+Dorothy; requires integer variables |
+| **M-PZ-12** | puzzle_12.pro | Stillwater High teachers | 6 teachers × 6 subjects; father clue + roommate + "had in class" temporal ordering |
+
+Each milestone trigger: the puzzle file prints the correct solution and exits 0 via `snobol4x -pl -asm`.
+
+### Source layout
+
+```
+test/frontend/prolog/corpus/rung10_programs/
+    puzzle_01.pro   ✅ solved (bank positions)
+    puzzle_02.pro   ✅ solved (trades Clark/Daw/Fuller)
+    puzzle_03.pro   stub — M-PZ-03
+    puzzle_04.pro   stub — M-PZ-04
+    puzzle_05.pro   ✅ solved (bank chess Brown/Clark/Jones/Smith)
+    puzzle_06.pro   ✅ solved (occupations Clark/Jones/Morgan/Smith)
+    puzzle_07.pro   stub — M-PZ-07
+    puzzle_08.pro   stub — M-PZ-08
+    puzzle_09.pro   stub — M-PZ-09
+    puzzle_10.pro   stub — M-PZ-10
+    puzzle_11.pro   stub — M-PZ-11
+    puzzle_12.pro   stub — M-PZ-12
+    puzzle_13.pro   stub — M-PZ-13
+    puzzle_14.pro   stub — M-PZ-14
+    puzzle_15.pro   stub — M-PZ-15
+    puzzle_16.pro   stub — M-PZ-16
+    puzzle_17.pro   stub — M-PZ-17
+    puzzle_18.pro   stub — M-PZ-18
+    puzzle_19.pro   stub — M-PZ-19
+    puzzle_20.pro   stub — M-PZ-20
+    puzzles.pro     source anthology (read-only reference)
+```
+
+---
+
 ### Recommendation for F-213
 
 1. `cd snobol4x && make -C src` — rebuild with emit_body fix

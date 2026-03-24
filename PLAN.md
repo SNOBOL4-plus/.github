@@ -86,6 +86,22 @@ Matrix:     Feature matrix (correctness) · Benchmark matrix (performance)
 | **M-PROLOG-BUILTINS** | `functor/3`, `arg/3`, `=../2`, type tests — rung09 PASS | ✅ |
 | **M-PROLOG-R10** | Lon's word-puzzle solvers — rung10 PASS | ✅ |
 | **M-PROLOG-CORPUS** | All 10 rungs PASS via `-pl -asm` | ❌ |
+| **M-PZ-14** | puzzle_14.pro — golf scores, wives (easiest) | ❌ |
+| **M-PZ-17** | puzzle_17.pro — Country Club dance pairings | ❌ |
+| **M-PZ-15** | puzzle_15.pro — Vernon/Wilson/Yates offices + secretaries | ❌ |
+| **M-PZ-16** | puzzle_16.pro — train crew roles + family relations | ❌ |
+| **M-PZ-20** | puzzle_20.pro — pullman car readers + literary fields | ❌ |
+| **M-PZ-13** | puzzle_13.pro — murder case: 6 men × 6 roles | ❌ |
+| **M-PZ-18** | puzzle_18.pro — shopping day scheduling (temporal) | ❌ |
+| **M-PZ-19** | puzzle_19.pro — office floors + professions (arithmetic) | ❌ |
+| **M-PZ-04** | puzzle_04.pro — Milford occupations + salary chain | ❌ |
+| **M-PZ-09** | puzzle_09.pro — Empire Dept Store 5×5 positions | ❌ |
+| **M-PZ-08** | puzzle_08.pro — Dept Store positions (gender/marriage clues) | ❌ |
+| **M-PZ-11** | puzzle_11.pro — Smith family positions (family relations) | ❌ |
+| **M-PZ-07** | puzzle_07.pro — Brown/Clark/Jones/Smith (4-attribute ordering) | ❌ |
+| **M-PZ-10** | puzzle_10.pro — five J-names + surnames (indirect clues) | ❌ |
+| **M-PZ-03** | puzzle_03.pro — triple engagement party (age + sum constraints) | ❌ |
+| **M-PZ-12** | puzzle_12.pro — Stillwater teachers (hardest: 6×6 + temporal) | ❌ |
 
 Full sprint detail → [FRONTEND-PROLOG.md](FRONTEND-PROLOG.md)
 
