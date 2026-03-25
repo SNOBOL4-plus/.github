@@ -748,3 +748,21 @@ END
 **Milestones fired:** none
 
 **Next:** IJ-20 — implement M-IJ-CORPUS-R11: `||:=` (augop case 35 str path) + `!E` (ICN_BANG new generator) + 5-test rung11 corpus + run_rung11.sh
+
+## PJ-33 — Parser fix + ITE-CUT seal
+
+**Date:** 2026-03-24
+**Milestone:** none fired (bugs reclassified)
+**Result:** 16/20 PASS (unchanged).
+
+**Work done:**
+1. `prolog_parse.c`: `->` operator precedence fixed 900 → 1050 (ISO standard). Fixes `(A,B->C;D)` parse — was parsed as `','(A, ;(->(B,C),D))`, now correctly `';'(->(','(A,B),C),D)`.
+2. `prolog_emit_jvm.c`: ITE-CUT seal emitted after `cond_ok`: `ldc cut_cs_seal; istore cs_local_for_cut`. Confirmed working for simple ITE cases.
+
+**Root cause reclassification:**
+- puzzle_11, 18: output 2x with NO `->` in source — not ITE-CUT. A 2-clause predicate matches twice. Needs trace investigation.
+- puzzle_03: ITE seal now emitted but `equal_sums`/`find_couples` 6-clause predicates still over-generate all permutations.
+- puzzle_12: DISJ-ARITH unchanged.
+
+**HEAD at handoff:** snobol4x `c0987cc`, .github pending push
+**Next:** PJ-34 — trace puzzle_11/18 doubling; fix M-PJ-DISJ-ARITH (puzzle_12).

@@ -19,7 +19,7 @@ Each concurrent session owns exactly one row. Update only your row on every push
 | **DOTNET** | `main` D-164 — 1903/1903 pass 0 fail on Linux | `e1e4d9e` D-164 | TBD |
 | **README** | `main` — M-README-CSHARP-DRAFT ✅ | `00846d3` snobol4csharp | M-README-DEEP-SCAN |
 | **ICON frontend** | `main` I-11 — M-ICON-CORPUS-R3 ✅ rbp fix + 5/5 rung03 PASS | `bab5664` I-11 | M-ICON-STRING |
-| **Prolog JVM** | `main` PJ-32 — M-PJ-BETWEEN ✅ synthetic p_between_3; 16/20 PASS | `5ae0d24` PJ-32 | M-PJ-ITE-CUT |
+| **Prolog JVM** | `main` PJ-33 — parser `->` prec fix (900→1050); ITE-CUT seal ✅; puzzles 11/18 2x bug unrelated to ITE | `c0987cc` PJ-33 | M-PJ-ITE-CUT (11/18 root cause) |
 | **Icon JVM** | `main` IJ-11 — M-IJ-SCAN ✅ 5/5 rung05 PASS | `7d68a85` IJ-11 | M-IJ-CSET |
 | **Prolog JVM** | `main` PJ-16 — two-clause fail/retry fix; rungs 01-09 PASS | `f575016` PJ-16 | M-PJ-CORPUS-R10 |
 | **Icon JVM** | `main` IJ-19 — 54/54 confirmed; rung11 design: `||:=` (TK_AUGCONCAT=35, augop case 35 needs str path) + `!E` (ICN_BANG, new generator) | `8f98dea` IJ-19 | M-IJ-CORPUS-R11 |
