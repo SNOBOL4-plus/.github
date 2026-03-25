@@ -912,3 +912,40 @@ END
 - Fix: when `lbl_cutγ` is NULL, route to `call_ω` instead (treat cutgamma as exhaustion of this call). Change `if (lbl_cutγ && ...)` to `if (pj_callee_has_cut_no_last_ucall(...))` with `cut_dest = lbl_cutγ ? lbl_cutγ : call_ω`.
 
 **SWIPL test suite:** SWI-Prolog ships `library(plunit)` for unit testing. Run `swipl -g "load_test_files([]), run_tests" file.pl`. The puzzle corpus in `rung10_programs/` uses `swipl -q -g halt -t main` as oracle — no formal plunit suite exists for this project yet.
+
+## IJ-23 through IJ-26 — 2026-03-25
+
+**Score:** 69/69 → 89/89 PASS (rungs 01–17)
+**HEAD:** `f10ea77`
+**Branch:** `main`
+
+**Work done:**
+
+### IJ-23 — M-IJ-CORPUS-R14 ✅ `ICN_LIMIT` (`E \ N`)
+- `ij_emit_limit`: per-site statics `icn_N_limit_count J` + `icn_N_limit_max J`. α evaluates N once, resets counter. γ-path increments counter and delivers value. β checks exhaustion without incrementing (off-by-one root cause caught and fixed). Added `ICN_LIMIT` to `ij_expr_is_string` (delegates to child[0]).
+- rung14_limit: 5 tests — `(1 to 10)\3`, alt-limit, zero-limit, large-limit, string-alt-limit.
+
+### IJ-24 — M-IJ-CORPUS-R15 ✅ `ICN_REAL`, `ICN_SWAP`, `ICN_LCONCAT`
+- `ij_emit_real`: `ldc2_w %gd` with decimal-point guard. New `'D'` static type + `ij_declare_static_dbl`/`ij_get_dbl`/`ij_put_dbl`. `ij_expr_is_real` predicate. Pre-pass extended to pre-declare `'D'`-typed var fields.
+- `ij_emit_swap` (`:=:`): read-both-write-crossed with per-site tmp statics; handles long/String/double. `ICN_SWAP` added to `ij_expr_is_string`.
+- `ICN_LCONCAT` (`|||`): aliases to `ij_emit_concat` (Tiny-ICON: no list type). Added to `ij_expr_is_string`.
+- `write()` and `ij_emit_var`/`ij_emit_assign` updated for `'D'` type.
+- rung15_real_swap: 5 tests.
+
+### IJ-25 — M-IJ-CORPUS-R16 ✅ `ICN_SUBSCRIPT` + `if`-cond drain fix
+- `ij_emit_subscript` (`s[i]`, 1-based, negatives from end): caches string in static; `l2i` index; bounds check; `substring(offset, offset+1)`. β re-drives index child's β (enables `every s[1 to N]`).
+- `ij_emit_if` drain fix: `cond_then` now uses `pop` vs `pop2` based on `ij_expr_is_string(cond)`. Previously hardcoded `pop2` caused VerifyError when condition was String-typed.
+- rung16_subscript: 5 tests.
+
+### IJ-26 — M-IJ-CORPUS-R17 ✅ Real arithmetic + type conversion builtins
+- `ij_emit_binop` double support: detects `ij_expr_is_real` on either child → `dstore`/`dload`/`dadd`/`dsub`/`dmul`/`ddiv`/`drem`; promotes long with `l2d` when mixing.
+- `ij_expr_is_real` extended: recurses into binop children; recognises `real()` call.
+- `integer(x)` builtin: `d2l` / `Long.parseLong` / identity.
+- `real(x)` builtin: `l2d` / `Double.parseDouble` / identity.
+- `string(x)` builtin: `Long.toString` / `Double.toString` / identity; added to `ij_expr_is_string`.
+- `ldc2_w` decimal fix: `%g` produces `"2"` for `2.0`; append `.0` when no decimal/exponent present.
+- rung17_real_arith: 5 tests.
+
+**Invariant:** 89/89 JVM corpus PASS throughout (all rungs 01–17).
+**Not done:** real relops (< > = on doubles), mixed int/real relational expressions.
+**Next session:** IJ-27 — M-IJ-CORPUS-R18, real relops + any remaining UNIMPL gaps.
