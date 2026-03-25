@@ -814,3 +814,31 @@ END
 
 **HEAD at handoff:** snobol4x `be2af59` IJ-21, .github updated
 **Next:** IJ-22 — M-IJ-CORPUS-R13: ICN_ALT β-resume indirect-goto gate (JCON §4.5); enables `every s ||:= ("a"|"b"|"c")` patterns
+
+---
+
+## J-216 — 2026-03-25 — M-JVM-STLIMIT-STCOUNT partial
+
+**Session type:** TINY JVM backend
+**HEAD at start:** `ff3e05c` (J-214)
+**HEAD at end:** `a74ccd8` (J-216) — pushed to origin/main
+
+**Work done:**
+- CSNOBOL4 2.3.3 built from tarball (`snobol4-2_3_3_tar.gz`). Smoke-tested OK.
+- `snobol4x` and `x64` cloned fresh. All deps installed (libgc-dev, nasm, default-jdk).
+- Implemented 6 hunks in `emit_byrd_jvm.c`:
+  1. `sno_kw_STLIMIT I` + `sno_kw_STCOUNT I` field declarations
+  2. `clinit`: `iconst_m1` (STLIMIT=-1 unlimited), `iconst_0` (STCOUNT=0)
+  3. `sno_kw_set`: STLIMIT + STCOUNT cases added after STNO
+  4. `sno_kw_get`: STLIMIT + STCOUNT cases added after ANCHOR
+  5. `sno_stcount_tick()` helper: increment STCOUNT, check STLIMIT≥0, exit if exceeded. Stack-safe (no dup — re-fetches STCOUNT). Call inserted at every real statement.
+  6. `Lsig_done` → `Lsig_done_indr` in `sno_indr_get` (label collision fix)
+- STLIMIT VERIFIED: `&STLIMIT=10000` + `:(L)` infinite loop → 10000 lines then `Termination: statement limit`. ✅
+- Global driver still TIMEOUTs. Root cause found: `A[i,1]`/`A[i,2]` 2D subscript emits key `"1"` not `"1,2"`. SORT stores rows as `"1,1"`/`"1,2"`. Fix attempted on `E_ARY` case but used wrong children check — ASM backend shows `nchildren==3` for 2D, not 2. Fix incomplete.
+
+**Bugs found this session:**
+- B1: STLIMIT unimplemented — FIXED ✅
+- B2: `Lsig_done` label collision in `sno_indr_get` — FIXED ✅
+- B3: 2D E_ARY subscript emits single-dim key — WIP, next session
+
+**Next session J-217:** Read `emit_byrd_asm.c` lines 3530-3570 for correct E_ARY nchildren layout → fix 2D key in `emit_byrd_jvm.c` → global driver PASS → fire M-JVM-STLIMIT-STCOUNT + M-JVM-BEAUTY-GLOBAL.

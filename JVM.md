@@ -9,28 +9,46 @@ JVM/Clojure backend: SNOBOL4 → JVM bytecode via multi-stage pipeline.
 
 ## NOW
 
-**Sprint:** `main` J-215 — M-JVM-STLIMIT-STCOUNT (prerequisite for M-JVM-BEAUTY-GLOBAL)
-**HEAD:** `ff3e05c` J-214 (no new commit this session — sprint written, no code yet)
-**Milestone:** M-JVM-STLIMIT-STCOUNT ❌ **NEXT** → M-JVM-BEAUTY-GLOBAL ❌ blocked
+**Sprint:** `main` J-216 — M-JVM-STLIMIT-STCOUNT partial; 2D subscript blocking global driver
+**HEAD:** `a74ccd8` J-216
+**Milestone:** M-JVM-STLIMIT-STCOUNT ❌ BLOCKED → M-JVM-BEAUTY-GLOBAL ❌
 
-**J-215 — M-JVM-STLIMIT-STCOUNT sprint written (2026-03-24):**
-- Ran global driver → exit 124 (TIMEOUT, 15s). Root cause diagnosed: `&STLIMIT` not implemented in JVM backend — `sno_kw_set` silently drops STLIMIT assignments (falls through to `return` after STNO case). No `sno_kw_STLIMIT` field declared. No step counter decremented anywhere. `global.sno` sets `&STLIMIT = 1000000` then loops over SORT(UTF) (100+ entries); loop never terminates.
-- Confirmed: `&STLIMIT = 10000` + infinite `:(L)` loop runs 200K+ iterations in 5s — no enforcement at all.
-- Sprint `M-JVM-STLIMIT-STCOUNT` written (see §STLIMIT Sprint below). Four-hunk fix spec ready.
-- `sno_indr_get` label collision (`Lsig_done` not method-local) also noted — fix in same session.
+**J-216 — STLIMIT implemented, 2D E_ARY subscript bug found (2026-03-25):**
+- Hunks 1-6 done: `sno_kw_STLIMIT`/`sno_kw_STCOUNT` fields, `iconst_m1`/`iconst_0` clinit, sno_kw_set STLIMIT+STCOUNT cases, sno_kw_get STLIMIT+STCOUNT cases, `sno_stcount_tick()` helper (stack-safe, no dup), tick call at every statement, `Lsig_done`→`Lsig_done_indr` label fix.
+- STLIMIT VERIFIED: `&STLIMIT=10000` + `:(L)` loop → 10000 lines then `Termination: statement limit`.
+- 2D subscript bug: `A[i,1]`/`A[i,2]` in G1 loop emits key `"1"` not `"1,2"`. E_ARY in ASM backend uses `nchildren==3`: `children[0]=row, children[1]=col` (see `emit_byrd_asm.c` line ~3536). Fix attempted but used wrong children check. **Do not re-attempt fix from scratch** — read ASM lines 3530-3570 first.
 
-**⚡ CRITICAL NEXT ACTION — J-216 (M-JVM-STLIMIT-STCOUNT):**
+**⚡ CRITICAL NEXT ACTION — J-217:**
 
 ```bash
 cd /home/claude/snobol4ever/snobol4x
-git config user.name "Claude J-216" && git config user.email "J@snobol4ever.dev"
+git config user.name "Claude J-217" && git config user.email "J@snobol4ever.dev"
 git remote set-url origin https://TOKEN_SEE_LON@github.com/snobol4ever/snobol4x
 git checkout main && git pull
-cd src && make -j4
+apt-get install -y default-jdk libgc-dev nasm && cd src && make -j4
 
-# Then implement M-JVM-STLIMIT-STCOUNT per §STLIMIT Sprint below
-# Then verify: timeout 15 java -cp /tmp/cls_global Driver exits 0, not 124
-# Then fire M-JVM-BEAUTY-GLOBAL
+# 1. Read ASM E_ARY 2D layout FIRST
+grep -n "E_ARY\|2D\|nchildren\|children\[1\]\|children\[2\]" src/backend/x64/emit_byrd_asm.c | grep -i "ary\|sub\|2d\|dim" | head -15
+# Then view lines ~3530-3570 of emit_byrd_asm.c
+
+# 2. Fix E_ARY in emit_byrd_jvm.c: emit composite key "row,col" for 2D
+# Look for `case E_ARY:` around line 1198
+
+# 3. Verify
+# A[1,1]=a  A[1,2]=one  A[2,1]=b  A[2,2]=two
+
+# 4. Run global driver → diff clean → fire M-JVM-STLIMIT-STCOUNT + M-JVM-BEAUTY-GLOBAL
+INC=demo/inc
+./sno2c -jvm -I$INC -I./src/frontend/snobol4 test/beauty/global/driver.sno -o /tmp/drv_global.j
+mkdir -p /tmp/cls_global
+java -jar src/backend/jvm/jasmin.jar -d /tmp/cls_global /tmp/drv_global.j
+timeout 30 java -cp /tmp/cls_global Driver > /tmp/jvm_global_out.txt 2>/dev/null
+diff test/beauty/global/driver.ref /tmp/jvm_global_out.txt
+
+# 5. Commit
+git add src/backend/jvm/emit_byrd_jvm.c
+git commit -m "J-217: M-JVM-STLIMIT-STCOUNT + M-JVM-BEAUTY-GLOBAL — 2D subscript fix + global driver PASS"
+git push
 ```
 
 ---
