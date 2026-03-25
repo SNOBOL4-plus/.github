@@ -874,3 +874,19 @@ END
 - Updated PLAN.md, FRONTEND-ICON-JVM.md §NOW, MILESTONE_ARCHIVE.md.
 
 **Next session IJ-23:** M-IJ-CORPUS-R14 — ICN_LIMIT (`E \ N`).
+
+---
+
+## B-292 — 2026-03-25
+
+**Sprint:** M-BEAUTIFY-BOOTSTRAP (JVM track)
+**HEAD start:** `309a2f9` B-291 → **HEAD end:** `acbc71e` B-292
+
+**Work done:**
+1. Setup: cloned snobol4x, .github, x64, snobol4corpus; ran setup.sh → 106/106 ALL PASS. CSNOBOL4 2.3.3 built from ZIP, SPITBOL x64 built, sno2c built.
+2. **Fixed JVM segfault (B-292 commit `acbc71e`):** `emit_byrd_jvm.c:1156` — DATA type constructor loop `for fi in 0..nfields` accessed `e->children[fi]` without checking `fi < e->nchildren`. For `tree(t,v,n)` (3 children, 4 fields), `e->children[3]` = garbage `0x21` (non-NULL) → SIGSEGV. Fix: `fi < e->nchildren &&` guard added. `sno2c -jvm demo/beauty.sno` now emits 872,847-line beauty.j.
+3. **Diagnosed L_io_end missing label:** Jasmin fails with `L_io_end has not been added to the code`. Root cause: `output_->end_label` is NULL (DEFINE has no goto, next stmt OPSYN also has no goto). `jvm_emit_fn_method` body scan runs unbounded for output_, absorbs `io_end` top-level label, emits it as `Lf5_io_end` inside output_ method. But `goto L_io_end` in main() uses unscoped name → label not found in main(). Fix strategy: add next-fn-entry stop condition to `jvm_emit_fn_method` body loop (line 4153) when `fn->end_label` is NULL. See TINY.md §CRITICAL NEXT ACTION.
+
+**Invariant:** 106/106 ASM corpus ALL PASS throughout.
+**Not done:** L_io_end fix, Jasmin assembly, JVM beauty run.
+**Next session:** B-293 — apply fn-body scan fix at emit_byrd_jvm.c:4153; assemble beauty.j; run JVM beauty bootstrap.

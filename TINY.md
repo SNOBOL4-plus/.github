@@ -9,40 +9,30 @@ snobol4x: multiple frontends, multiple backends.
 
 ## NOW
 
-**Sprint:** `main` — B-291 (BSS heap fix; Sprint M5 unblocked)
-**HEAD:** `309a2f9` B-291
-**B-session:** Heap-allocated 4 large BSS statics in emit_byrd_asm.c (named_pats 1.9MB, str_table 2.8MB, call_slots 1.3MB, lit_table 352KB). BSS 8.4MB→2.0MB. sno2c -asm/-jvm beauty.sno no longer segfaults. beauty_asm_bin (1.1MB) builds, runs — produces 10 lines then "Parse Error" (r12 clobber confirmed). TRACE_SET_CAP 64→256. CSNOBOL4 oracle trace: 92,601 events, 784 lines output. ASM trace: silent (TERMINAL= fallback not reaching stderr before crash). 106/106 ✅.
+**Sprint:** `main` — B-292 (JVM nchildren fix ✅; L_io_end missing-label WIP)
+**HEAD:** `acbc71e` B-292
+**B-session:** Fixed JVM segfault: fi < e->nchildren guard in DATA ctor loop (emit_byrd_jvm.c:1156). beauty.sno now emits 872K-line beauty.j without crash. Jasmin still fails: `L_io_end has not been added to the code`. Root cause fully diagnosed (see CRITICAL NEXT ACTION). 106/106 ✅.
 **Invariants:** 106/106 ASM corpus ALL PASS ✅
 
-**⚡ CRITICAL NEXT ACTION — B-292 (M-BEAUTIFY-BOOTSTRAP-ASM-MONITOR):**
+**⚡ CRITICAL NEXT ACTION — B-293 (L_io_end missing-label fix):**
 
-Sprint M5 is now runnable. Two steps to get first divergence:
+**Root cause diagnosed:** `jvm_emit_fn_method` for `output_` (fn5) sweeps source statements until it hits `fn->end_label`. `output_->end_label` is NULL (DEFINE has no goto, next stmt also has no goto). So body scan runs unbounded — absorbs `io_end` label, emitting it as `Lf5_io_end` inside the output_ method instead of `L_io_end` in main(). Meanwhile `goto L_io_end` in main() references the unseen label → Jasmin error.
 
-1. **Get ASM trace stream flowing.** The instrumented beauty_asm_bin crashes before
-   TERMINAL= trace output reaches stderr. Fix: redirect TERMINAL= writes to a file
-   in snobol4.c comm_var, OR run the async monitor (oracle trace already captured:
-   /tmp/csn_trace.txt, 92,601 events). The async approach works immediately:
-   ```bash
-   # Build instrumented ASM binary (beauty_instr.sno already at /tmp/)
-   # Run: beauty_instr_asm < demo/beauty.sno 2>/tmp/asm_trace.txt
-   # diff /tmp/csn_trace.txt /tmp/asm_trace.txt | head -20
-   # First diverging line = exact variable + value where r12 clobber fires
-   ```
-
-2. **Fix the divergence.** The first diverging line names the variable that got
-   corrupted. Per MONITOR.md: CSNOBOL4 + (if SPITBOL working) = living spec for fix.
-   Fix is in emit_byrd_asm.c emit_named_ref — per-invocation DATA block via blk_alloc
-   (M-T2-INVOKE), or zeroing at β call site.
-
-**JVM mid-emission crash (also B-292):**
-Apply nchildren bound fix in emit_byrd_jvm.c line 1133:
+**Fix strategy:** When `fn->end_label` is NULL, terminate body scan at the next function entry label in source order. Add to `jvm_emit_fn_method` body loop (line 4153), after the existing end_label check:
 ```c
-for (int fi = 0; fi < dt->nfields; fi++) {
-    JI("dup", "");
-    char fnesc[256]; jvm_escape_string(dt->fields[fi], fnesc, sizeof fnesc);
-    JI("ldc", fnesc);
-    EXPR_t *arg = (fi < e->nchildren) ? e->children[fi] : NULL;
-    if (arg) jvm_emit_expr(arg); else JI("ldc", "\"\"");
+/* When end_label is NULL, stop at next fn entry */
+if (in_body && !fn->end_label && s->label && strcasecmp(s->label, entry) != 0) {
+    for (int fi2 = 0; fi2 < jvm_fn_count; fi2++) {
+        const JvmFnDef *fn2 = &jvm_fn_table[fi2];
+        const char *e2 = fn2->entry_label ? fn2->entry_label : fn2->name;
+        if (e2 && strcasecmp(s->label, e2) == 0) { in_body = 0; break; }
+    }
+    if (!in_body) break;
+}
+```
+Note: earlier attempt added this to the wrong loop (main() pass at 4451 instead of fn-method pass at 4153). Apply to `jvm_emit_fn_method` loop only.
+
+**After fix:** Jasmin assembles beauty.j → run JVM beauty bootstrap → fire M-BEAUTIFY-BOOTSTRAP.
     ...
 }
 ```
@@ -63,11 +53,12 @@ C backend: ☠️ DEAD — removed from matrix. 99/106, sno2c fails on word*/pat
 
 ## Last Two Sessions (3 lines each)
 
-**B-283 (2026-03-24) — M-BEAUTY-MATCH ✅ + all 19 subsystems ✅; bootstrap ARBNO bug found; 106/106:**
-(1) Rewrote match driver (TxInList→pattern-based); fixed FAIL α-port missing jmp ω; added nPush/nInc/nPop/nTop C wrappers in mock_includes.c.
-(2) All 19 subsystems now PASS 3-way monitor. M-BEAUTY-MATCH ✅ (12 steps).
-(3) M-BEAUTIFY-BOOTSTRAP: ARBNO(*Command) takes 0 iterations via CALL_PAT_α path — XDSAR("Command") likely gets DT_P with NULL PATND_t. HEAD `23c0261`.
+**B-292 (2026-03-25) — JVM nchildren segfault fixed; L_io_end diagnosed; 106/106:**
+(1) Fixed SIGSEGV in emit_byrd_jvm.c:1156 — fi < e->nchildren guard prevents OOB access on tree(t,v,n,c) DATA ctor with <4 args. beauty.sno now emits 872K-line beauty.j.
+(2) Jasmin fails: L_io_end missing. Root cause: output_->end_label NULL → fn body scan unbounded → absorbs io_end top-level label → emits as Lf5_io_end inside output_ method.
+(3) Fix strategy documented in CRITICAL NEXT ACTION. HEAD `acbc71e`.
 
-**B-282 (2026-03-24) — 3 bugs fixed; M-BEAUTY-GLOBAL/IS/ASSIGN PASS; 106/106:**
-(1) stmt_match_descr FAILDESCR guard; stmt_setup_subject stale subject_len_val; E_NAM DT_N fix.
-(2) M-BEAUTY-GLOBAL ✅ M-BEAUTY-IS ✅ M-BEAUTY-ASSIGN ✅. HEAD `c16c575`.
+**B-291 (2026-03-25) — BSS heap fix; Sprint M5 unblocked; 106/106:**
+(1) Heap-allocated 4 large BSS statics (named_pats/str_table/call_slots/lit_table). BSS 8.4MB→2.0MB.
+(2) sno2c -asm/-jvm beauty.sno no longer segfaults. beauty_asm_bin builds, runs 10 lines then Parse Error.
+(3) TRACE_SET_CAP 64→256. Oracle trace: 92,601 events. HEAD `309a2f9`.

@@ -12,7 +12,7 @@ Each concurrent session owns exactly one row. Update only your row on every push
 
 | Session | Sprint | HEAD | Next milestone |
 |---------|--------|------|----------------|
-| **TINY backend** | `main` B-291 — BSS heap fix (8.4MB→2MB); beauty_asm_bin runs; Sprint M5 unblocked | `309a2f9` B-291 | M-BEAUTIFY-BOOTSTRAP-ASM-MONITOR |
+| **TINY backend** | `main` B-292 — JVM nchildren segfault fixed; L_io_end missing-label diagnosed; 106/106 | `acbc71e` B-292 | M-BEAUTIFY-BOOTSTRAP-ASM-MONITOR |
 | **TINY NET** | `net-t2` N-248 — M-T2-NET ✅ 110/110 clean | `425921a` N-248 | M-T2-FULL |
 | **TINY JVM** | `main` J-216 — STLIMIT/STCOUNT fields+init+set+get+tick ✅ VERIFIED (10K loop terminates); 2D E_ARY subscript WIP: nchildren==3 not 2, composite key not yet emitted; global driver still TIMEOUTs | `a74ccd8` J-216 | M-JVM-STLIMIT-STCOUNT → M-JVM-BEAUTY-GLOBAL |
 | **TINY frontend** | `main` F-223 — rung05 encoding fix attempted, reverted clean; see TINY.md | `b4507dc` F-223 | M-PROLOG-CORPUS |
