@@ -19,15 +19,57 @@ and emits Jasmin `.j` files, assembled by `jasmin.jar`.
 
 | Session | Sprint | HEAD | Next milestone |
 |---------|--------|------|----------------|
-| **Prolog JVM** | `main` PJ-38 — 19/20; MAX_VALUE sentinel landed; puzzle_18 still double-prints: `lbl_cutγ` is NULL in callers without own cut | `13f4db6` PJ-38 | M-PJ-CUT-UCALL: propagate cutgamma even when caller has no own cut |
+| **Prolog JVM** | `main` PJ-39 — 19/20; lbl_cutγ NULL guard landed (cut_dest = lbl_cutγ ?: call_ω); puzzle_18 root cause re-diagnosed as trail bug in 2-member+differ+disjunction arm | `dc0f606` PJ-39 | M-PJ-CUT-UCALL: fix trail corruption in nested ucall + disjunction |
 
-### CRITICAL NEXT ACTION (PJ-39)
+### CRITICAL NEXT ACTION (PJ-40)
 
 **JVM baseline: 19/20 PASS. Remaining failures:**
 
-1. **puzzle_18** — answer printed TWICE. PJ-38 landed MAX_VALUE sentinel + `pj_callee_has_cut_no_last_ucall` call-site guard. Guard fires correctly when `lbl_cutγ != NULL` (caller has own cut). But `puzzle/0` has NO `!` in its own body → `any_has_cut=0` for puzzle/0 → `lbl_cutγ` is NULL → guard skipped → cutgamma falls through as success → double print.
+1. **puzzle_18** — answer printed TWICE. PJ-39 landed the `cut_dest` NULL guard. Root cause re-diagnosed in PJ-39: the double-print is NOT a cutgamma propagation issue. It is a **trail management bug** in nested ucall + disjunction context. Reproducer:
+   ```prolog
+   main :- member(X,[a,b]), member(Y,[a,b]), differ(X,Y), write(X-Y), nl, fail ; true.
+   ```
+   JVM outputs `_\n_\n` (unbound vars) instead of `a-b\nb-a`. Single member works fine. Two members + differ inside a disjunction arm corrupts bindings. Trail mark for `dj_β` is saved before the disjunction opens; when the differ-call `call_ω` path fires, something unwinds the trail too early — X and Y appear unbound at write time. Simpler case `member(X,[a,b]), differ(X,b), write(X), nl, fail ; true` works correctly (outputs `a`). The bug requires TWO member calls before differ.
 
-   **Fix (PJ-39):** When `pj_callee_has_cut_no_last_ucall(fn,nargs)` is true but `lbl_cutγ` is NULL, emit a *local* omega jump instead of propagating upward — i.e., treat cutgamma return as failure of this goal (jump to `lbl_ω`). This is semantically correct: cut in a callee with no enclosing cut context means "this choice is deterministic — don't retry". Replace:
+   **Fix approach (PJ-40):** Add trace to generated `.j` for the two-member+differ case. Check: (1) is `dj_β` firing before write? (2) is the trail mark `local_tmark` saved at the right point? (3) does `call_ω` for differ route to `dj_β` via `lbl_ω`, unwinding before write fires?
+
+2. **puzzle_03** — over-generates. Open: M-PJ-DISPLAY-BT.
+
+**Bootstrap PJ-40:**
+```bash
+git clone https://TOKEN_SEE_LON@github.com/snobol4ever/snobol4x
+git clone https://TOKEN_SEE_LON@github.com/snobol4ever/.github
+apt-get install -y --fix-missing default-jdk nasm libgc-dev swi-prolog
+make -C snobol4x/src && cd snobol4x
+# Confirm 19/20: puzzle_03 and puzzle_18 fail
+for i in $(seq -f "%02g" 1 20); do
+  P=puzzle_${i}; C=Puzzle_${i}
+  ./sno2c -pl -jvm test/frontend/prolog/corpus/rung10_programs/${P}.pro -o /tmp/${C}.j 2>/dev/null
+  java -jar src/backend/jvm/jasmin.jar /tmp/${C}.j -d /tmp 2>/dev/null
+  J=$(timeout 15 java -cp /tmp ${C} 2>/dev/null)
+  O=$(timeout 15 swipl -q -g halt -t main test/frontend/prolog/corpus/rung10_programs/${P}.pro 2>/dev/null)
+  [ "$J" = "$O" ] && echo "${P}: PASS" || echo "${P}: FAIL"
+done
+# Reproducer for trail bug:
+cat > /tmp/d3.pro << 'EOF'
+:- initialization(main).
+member(X,[X|_]).
+member(X,[_|T]) :- member(X,T).
+differ(X,X) :- !, fail.
+differ(_,_).
+main :- member(X,[a,b]), member(Y,[a,b]), differ(X,Y), write(X-Y), nl, fail ; true.
+EOF
+./sno2c -pl -jvm /tmp/d3.pro -o /tmp/D3.j && java -jar src/backend/jvm/jasmin.jar /tmp/D3.j -d /tmp
+timeout 5 java -cp /tmp D3  # should print a-b\nb-a; currently prints _\n_\n
+# Fix: investigate trail mark save point and dj_β routing in pj_emit_body disjunction handler
+# Read prolog_emit_jvm.c lines ~1865–1975 (disjunction emitter)
+```
+
+**Changes landed PJ-39:**
+- `pj_callee_has_cut_no_last_ucall` guard: `cut_dest = lbl_cutγ ? lbl_cutγ : call_ω` — routes to call_ω when no enclosing cutgamma label exists.
+- Root cause of puzzle_18 fully re-diagnosed: trail bug in 2-member+differ+disjunction (see above). Score unchanged 19/20.
+
+**Changes landed PJ-38 (for context):**
    ```c
    if (lbl_cutγ && pj_callee_has_cut_no_last_ucall(fn, nargs)) {
    ```
