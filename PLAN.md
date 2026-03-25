@@ -219,3 +219,31 @@ Full trigger specs → [GRIDS.md](GRIDS.md)
 
 *PLAN.md = L1 index only. ~3KB max. No sprint content. No step content. No completed milestone rows. Ever.*
 *Milestone fires → move its row to MILESTONE_ARCHIVE.md, update NOW table, update L2 doc.*
+
+---
+
+## Architectural Roadmap — Shared IR
+
+> Full plan → [SHARED-IR-PLAN.md](SHARED-IR-PLAN.md)
+
+Three frontends (SNOBOL4, Prolog, Icon) should all produce `Program*` (EKind IR)
+and feed the same three backends (x64, JVM, .NET). Currently only SNOBOL4 does this.
+Prolog has `prolog_lower.c` but bypasses shared backends. Icon is fully isolated.
+
+**Phases (deferred — do not begin until Lon signals merge readiness):**
+
+| Phase | Work | Sessions |
+|-------|------|----------|
+| 0 | `icn_lower.c` stub + `-lower` driver flag | 1 |
+| 1 | Rung 1–2 via shared IR on x64 | 2–3 |
+| 2 | Rung 1–2 via shared IR on JVM | 1–2 |
+| 3 | Rung 3–10 on both backends (mechanical port) | 4–6 |
+| 4 | .NET backend for Icon — free ride | 1 |
+| 5 | Prolog unified, parallel emitters deleted | 1–2 |
+
+**Key insight:** The emitters currently never reference each other — each is a hermetic
+translation unit. `icon_emit_jvm.c` lists `emit_byrd_jvm.c` as an oracle in its header
+comment but never `#include`s it. Every IJ-session re-read oracle files during setup
+and manually transliterated patterns. The shared IR eliminates this entirely.
+
+**Do not merge until Lon signals. Keep existing sessions on current tracks.**
