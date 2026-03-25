@@ -19,32 +19,45 @@ and emits Jasmin `.j` files, assembled by `jasmin.jar`.
 
 | Session | Sprint | HEAD | Next milestone |
 |---------|--------|------|----------------|
-| **Prolog JVM** | `main` PJ-33 — `->` prec fix (900→1050); ITE-CUT seal emitted; 16/20 unchanged; 11/18 root cause reclassified | `c0987cc` PJ-33 | M-PJ-ITE-CUT (11/18 2x) |
+| **Prolog JVM** | `main` PJ-31 — all 20 puzzles tracked; JVM baseline 15/20 PASS; 3 emitter bugs identified | `750893e` PJ-31 | M-PJ-BETWEEN |
 
-### CRITICAL NEXT ACTION (PJ-34)
+### CRITICAL NEXT ACTION (PJ-32)
 
-**JVM baseline: 16/20 PASS. Remaining failures — reclassified:**
+**JVM baseline: 15/20 PASS. 5 failures, 3 root causes:**
 
-1. **puzzle_11, 18** — output answer TWICE. No `->` in source. A predicate with 2 clauses both succeeds.
-   - Fix: identify which predicate doubles output; add `!` after first clause or rewrite.
-   - Milestone: **M-PJ-ITE-CUT** (root cause reclassified — not ITE, but determinism bug)
+1. **puzzle_19** — `NoSuchMethodError: p_between_3` — `between/3` not emitted in `pj_emit_goal`.
+   - Fix: add `between/3` case to `pj_emit_goal` in `prolog_emit_jvm.c`.
+   - Emit as: generate integer range via loop with backtrack point (β port).
+   - Milestone: **M-PJ-BETWEEN**
 
-2. **puzzle_03** — over-generates (56L vs 12L). ITE-CUT seal now correct. Over-generation from `equal_sums`/`find_couples` multi-clause backtrack. Source fix needed.
+2. **puzzle_03, 11, 18** — over-generate (ITE `->` does not cut enclosing clause choice point).
+   - swipl cuts the choice point after ITE succeeds; JVM emitter does not.
+   - Fix: in `pj_emit_goal` ITE branch, after the then-branch succeeds, seal the enclosing clause β (like a cut).
+   - Milestone: **M-PJ-ITE-CUT**
 
-3. **puzzle_12** — silent 0L. `(SCo=math ; SCo=history)` plain disjunction fails. Milestone: **M-PJ-DISJ-ARITH**
+3. **puzzle_12** — silent 0L; likely inline disjunction `(SCo=math ; SCo=history)` failing silently.
+   - Milestone: **M-PJ-DISJ-ARITH** (already open)
 
-**Changes landed PJ-33:** `prolog_parse.c` `->` prec 900→1050. `prolog_emit_jvm.c` ITE-CUT seal after `cond_ok`.
-
-**Bootstrap PJ-34:**
+**Bootstrap PJ-32:**
 ```bash
 git clone https://TOKEN_SEE_LON@github.com/snobol4ever/snobol4x
 git clone https://TOKEN_SEE_LON@github.com/snobol4ever/.github
 apt-get install -y --fix-missing default-jdk nasm libgc-dev swi-prolog
-make -C snobol4x/src && cd snobol4x
-# Confirm 16/20 baseline, then:
-# 1. puzzle_11/18: add write-traces to find doubling predicate
-# 2. puzzle_12: inspect plain disj ;/2 handler for (atom=X ; atom=Y) pattern
+make -C snobol4x/src
+cd snobol4x
+# Confirm baseline: 15/20 PASS
+for i in $(seq -f "%02g" 1 20); do
+  PUZZLE=puzzle_${i}; CLS=Puzzle_${i}
+  ORACLE=$(timeout 5 swipl -q -g halt -t main test/frontend/prolog/corpus/rung10_programs/${PUZZLE}.pro 2>/dev/null)
+  ./sno2c -pl -jvm test/frontend/prolog/corpus/rung10_programs/${PUZZLE}.pro -o /tmp/${CLS}.j 2>/dev/null
+  java -jar src/backend/jvm/jasmin.jar /tmp/${CLS}.j -d /tmp 2>/dev/null
+  JVM=$(timeout 10 java -cp /tmp ${CLS} 2>/dev/null)
+  [ "$JVM" = "$ORACLE" ] && echo "${PUZZLE}: PASS" || echo "${PUZZLE}: FAIL"
+done
+# Start with M-PJ-BETWEEN (puzzle_19): add between/3 to pj_emit_goal in prolog_emit_jvm.c
+grep -n "between\|M-PJ-BETWEEN" src/frontend/prolog/prolog_emit_jvm.c | head -10
 ```
+
 **Bootstrap PJ-23:**
 ```bash
 git clone https://TOKEN_SEE_LON@github.com/snobol4ever/snobol4x
@@ -193,9 +206,7 @@ Cut (`!`) in `pj_emit_body` now: (1) stores `base[nclauses]` into `cs_local` (se
 | **M-PJ-STACK-LIMIT** | Dynamic `.limit stack` via term depth walker — fixes VerifyError on deep compound terms | ✅ |
 | **M-PJ-NAF-TRAIL** | `\+` trail: save mark before inner goal, unwind both paths — multi-arg user calls in `\+` | ✅ |
 | **M-PJ-BODYFAIL-TRAIL** | Body-fail trail unwind: `bodyfail_N` trampoline per clause — head bindings now undone on body failure | ✅ |
-| **M-PJ-BETWEEN** | `between/3` — synthetic p_between_3 method emitted before user predicates; cs encodes Low+offset | ✅ |
-| **M-PJ-DISPLAY-BT** | puzzle_03 display/6 over-generation — not_dorothy 2-clause retry; ITE cut leak | ❌ |
-| **M-PJ-ITE-CUT** | ITE (`->`) must cut enclosing clause choice point — fixes puzzle_03/11/18 over-generation | ❌ **NEXT** |
+| **M-PJ-DISPLAY-BT** | puzzle_03 display/6 over-generation — `not_dorothy` 2-clause retry; ITE cut or source fix | ❌ **NEXT** |
 
 **PJ-16 fix note:** True root cause of the `fail/retry` infinite loop was `pj_emit_clause` passing `α_retry_lbl` as `lbl_ω` to `pj_emit_body`. When the outermost body user-call exhausted, `call_ω` jumped to `α_retry_lbl` (clause head-retry), re-running the body from cs=0 forever. Fix: pass `ω_lbl` (next-clause dispatch) as `lbl_ω` to the top-level `pj_emit_body` call. Nested calls unaffected — they receive `call_β` from their own recursive emit site. `pj_is_always_fail()` helper also added for future use.
 
