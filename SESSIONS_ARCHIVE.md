@@ -731,3 +731,20 @@ END
 **Changes:** `icon_emit_jvm.c` — loop label stack + 3 new emitters; rung10_augop corpus (5 tests); run_rung10.sh
 **Result:** 54/54 rung01–10 PASS. HEAD `8f98dea` on main.
 **Next:** M-IJ-CORPUS-R11 — rung11 corpus; candidates: `!E` (bang/list-generator), `||:=` (string augop), nested break via compound-stmt parser fix.
+
+---
+
+## IJ-19 — design session (no code changes) — 2026-03-24
+
+**Trigger:** "playing with snobol4x JVM backend for ICON frontend" + JCON oracle zip
+**HEAD in/out:** `8f98dea` (unchanged — no code changes)
+
+**Work done:**
+- Re-confirmed 54/54 PASS with correct `-jvm` harness (rung01–04 old scripts used ASM invocation).
+- Read JCON-ANALYSIS.md, FRONTEND-ICON-JVM.md, icon_emit_jvm.c fully.
+- Confirmed `TK_AUGCONCAT=35`, `TK_BANG=39`, `ICN_BANG` parsed but not emitted.
+- Designed complete rung11 implementation plan (see FRONTEND-ICON-JVM.md §NOW IJ-20 checklist).
+
+**Milestones fired:** none
+
+**Next:** IJ-20 — implement M-IJ-CORPUS-R11: `||:=` (augop case 35 str path) + `!E` (ICN_BANG new generator) + 5-test rung11 corpus + run_rung11.sh

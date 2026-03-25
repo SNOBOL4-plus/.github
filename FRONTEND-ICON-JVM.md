@@ -19,9 +19,9 @@ assembled by `jasmin.jar` into `.class` files. Despite the file's location under
 
 | Session | Sprint | HEAD | Next milestone |
 |---------|--------|------|----------------|
-| **Icon JVM** | `main` IJ-18 — M-IJ-CORPUS-R10 ✅ augop/break/next; 54/54 PASS | `8f98dea` IJ-18 | M-IJ-CORPUS-R11 |
+| **Icon JVM** | `main` IJ-19 — 54/54 confirmed; rung11 design complete; no code changes | `8f98dea` IJ-19 | M-IJ-CORPUS-R11 |
 
-### Next session checklist (IJ-19)
+### Next session checklist (IJ-20)
 
 ```bash
 git clone https://TOKEN_SEE_LON@github.com/snobol4ever/snobol4x
@@ -32,9 +32,43 @@ gcc -Wall -Wextra -g -O0 -I. src/frontend/icon/icon_driver.c src/frontend/icon/i
     src/frontend/icon/icon_parse.c src/frontend/icon/icon_ast.c \
     src/frontend/icon/icon_emit.c src/frontend/icon/icon_emit_jvm.c \
     src/frontend/icon/icon_runtime.c -o /tmp/icon_driver
-# Confirm 54/54 rung01-10 PASS before touching code
-# Next: M-IJ-CORPUS-R11 — design rung11; candidates: !E (bang), ||:= (string augop), nested break
+# Confirm 54/54 rung01-10 PASS (use JVM harness, not old ASM harness for rung01-04):
+#   JASMIN=src/backend/jvm/jasmin.jar; T=$(mktemp -d)
+#   for rung in rung01_paper rung02_arith_gen rung02_proc rung03_suspend rung04_string ...; do
+#     for icn in test/frontend/icon/corpus/$rung/*.icn; do
+#       /tmp/icon_driver -jvm $icn -o $T/t.j; java -jar $JASMIN $T/t.j -d $T/
+#       cls=$(grep '\.class' $T/t.j|awk '{print $NF}'); java -cp $T/ $cls; done; done
+# M-IJ-CORPUS-R11 implementation plan (IJ-19 design):
+#   1. ||:= (string augop): in ij_emit_augop add case 35: store rhs String to tmp_fld (str),
+#      getstatic lhs str field, getstatic tmp_fld, invokevirtual String.concat, dup, putstatic lhs, goto γ
+#      Use ij_declare_static_str/ij_get_str_field/ij_put_str_field. Lhs var detection: check
+#      ij_expr_is_string(lhs) or look at aug_kind==35 to use str path instead of long path.
+#   2. !E (bang/ICN_BANG): new ij_emit_bang(). For strings: per-call static int icn_N_bang_pos.
+#      α: eval E → String in icn_N_bang_str; reset pos=0; goto check.
+#      check: if pos >= strlen → ω; else charAt(pos) → single-char String; pos++; goto γ.
+#      β: goto check (advance already done at γ, or increment at β entry).
+#      Add case ICN_BANG in dispatch. Add "bang" to ij_expr_is_string → return 1 (char = String).
+#   3. Write run_rung11.sh mirroring run_rung10.sh. 5 tests:
+#      t01_augconcat: s ||:= "x" accumulator
+#      t02_augconcat_loop: every s ||:= ...
+#      t03_bang_str: every write(!s) for short string
+#      t04_bang_every: collect bang results
+#      t05_augconcat_chain: multiple ||:= in sequence
 ```
+
+### IJ-19 findings — design session (no code changes)
+
+**54/54 PASS re-confirmed** with correct JVM harness. Root cause of apparent rung01–04 failures: old harness scripts (`run_rung01.sh` etc.) invoke `icon_driver foo.icn` without `-jvm`, emitting x64 ASM text. The JVM emitter is clean on all 54 tests when invoked as `-jvm`.
+
+**Rung11 design complete (see IJ-20 checklist above).** Two items:
+1. `||:=` — `ij_emit_augop` case 35: swap long path for String path using existing `ij_get/put_str_field` + `String.concat`.
+2. `!E` (ICN_BANG) — new `ij_emit_bang`: per-site static `icn_N_bang_str`(String) + `icn_N_bang_pos`(int); `charAt(pos)` → single-char String; pos++ at γ; β → recheck. Add to dispatch + `ij_expr_is_string`.
+
+**Key facts for IJ-20:**
+- `TK_AUGCONCAT = 35` (confirmed by compiling icon_lex.h)
+- `TK_BANG = 39`; `ICN_BANG` node parsed in `icon_parse.c:224` — children[0] is the operand
+- `ij_get_str_field` / `ij_put_str_field` / `ij_declare_static_str` all available
+- `icn_builtin_charAt` does not yet exist — emit inline: `invokevirtual java/lang/String/substring(II)Ljava/lang/String;` with `(pos, pos+1)` args
 
 ### IJ-18 findings — M-IJ-CORPUS-R10 ✅ (done)
 
