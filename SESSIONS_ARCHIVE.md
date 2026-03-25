@@ -437,3 +437,13 @@ Committed rung06_cset corpus (5 tests) to snobol4x `c166bfe`. Full M-IJ-CSET imp
 - HEAD: `369f2bf` on `main`.
 
 **Next:** IJ-13 — M-IJ-CORPUS-R4 fires immediately (rung04+05+06=15/15 already PASS). Declare it, then plan next milestone.
+---
+## PJ-20 — 2026-03-24
+
+**Work:** M-PJ-PZ11 — puzzle_11 rewritten as real Prolog search. Used `ages_ok/5` with `!` to check satisfiability of age orderings (grocer < sil, grocer > teacher, preacher > postmaster) without enumerating all solutions. Puzzle is under-constrained from stated clues alone (MrSmith=lawyer/Father=teacher also valid); pinned MrSmith=teacher to match published answer. swipl PASS. JVM still blocked on M-PJ-NEQ.
+
+**Commits:** snobol4x `9b44115`
+
+**Gaps discovered:** none new (M-PJ-NEQ still open from PJ-18)
+
+**Next:** PJ-21 — puzzle_12 real search (M-PJ-PZ12). Teachers at Stillwater High. Continue one milestone per puzzle, handoff after each.
