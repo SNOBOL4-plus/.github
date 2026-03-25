@@ -1013,3 +1013,29 @@ M-SCRIPTEN-DEMO sprint begins.
 **Next:** Begin M-SCRIPTEN-DEMO sprint — build `scripten_split.py`, compile
 three blocks of `family.scripten` independently, inject funny linkage.
 Then M-SCRIPTEN-DEMO2 immediately after.
+
+---
+
+## Scripten Planning Session 2 — 2026-03-25
+
+**Session type:** Strategic planning / HQ documentation
+**Branch:** main
+**HEAD at start:** `c11c526`
+**HEAD at end:** `fc01c40`
+
+**Work done:**
+
+1. **Tiny-Prolog vs SWI-Prolog gap analysis** — full comparison across all
+   language features. Identified Tier 1 (findall, atom builtins, retract, sort),
+   Tier 2 (succ/plus, format, string ops, bagof/setof, copy_term, exceptions,
+   extended arith), Tier 3 (DCG — deferred, SNOBOL4 covers parsing).
+
+2. **FRONTEND-PROLOG-JVM.md enhanced** — added "Tiny-Prolog Enhancement Roadmap"
+   section with 11 new milestones (M-PJ-FINDALL through M-PJ-NUMBER-OPS) plus
+   M-PJ-DCG as 💭 future. New corpus rungs rung11–rung21 defined. Sprint order
+   documented. Appended to PJ trigger doc per convention.
+
+**Milestones fired:** none (planning session)
+**HEAD at handoff:** `fc01c40` on origin/main
+**Next:** Begin M-PJ-PZ-ALL-JVM (clear puzzle_18 NAF bug, puzzle_03 over-gen),
+then M-PJ-FINDALL as first enhancement sprint.
