@@ -226,4 +226,5 @@ Append-only. Do not edit existing entries.
 | **M-IJ-CORPUS-R10** | `8f98dea` IJ-18 | augop (+=/*=/-=//=/%=) + break/next emitters + loop label stack; rung10_augop 5/5 PASS; 54/54 rung01-10 PASS |
 
 | **M-IJ-CORPUS-R11** | Rung 11: `||:=` string augop + `!E` bang generator + rung11 5/5; 59/59 total | ✅ IJ-20 `cab96d2` |
+| **M-IJ-CORPUS-R12** | Rung 12: string relops (SEQ/SNE/SLT/SLE/SGT/SGE) + ICN_SIZE (`*s`) + ij_expr_is_string(ICN_IF) VerifyError fix; 64/64 total | ✅ IJ-21 `be2af59` |
 

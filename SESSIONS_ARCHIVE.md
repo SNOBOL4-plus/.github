@@ -794,3 +794,23 @@ END
 
 **HEAD at handoff:** snobol4x `ff3e05c` J-214 (unchanged), .github updated
 **Next:** J-216 — implement M-JVM-STLIMIT-STCOUNT (6 hunks in emit_byrd_jvm.c); verify STLIMIT enforces; run global driver to completion; fix any remaining divergences; fire M-JVM-BEAUTY-GLOBAL
+
+---
+
+## Session IJ-21 — 2026-03-24
+
+**Trigger:** "playing with ICON frontend ... with JVM backend"
+**Session prefix:** IJ
+**Branch:** main
+
+**Work done:**
+- M-IJ-CORPUS-R12 ✅ — three changes to `icon_emit_jvm.c`:
+  1. `ij_expr_is_string(ICN_IF)` fix: added `case ICN_IF:` returning then-branch string-ness. Fixed VerifyError (pop2 vs pop mismatch) when `if` statement wraps a string-producing then-branch.
+  2. `ICN_SIZE` (`*s`) full pipeline: AST enum in `icon_ast.h`, `icn_kind_name()` in `icon_ast.c`, `check(p, TK_STAR)` in `parse_unary()` (before `parse_mul` so prefix wins), `ij_emit_size()` emitting `String.length()` + `i2l` → long.
+  3. String relops (SEQ/SNE/SLT/SLE/SGT/SGE) — `ij_emit_strrelop` was already implemented; first corpus coverage added.
+- rung12_strrelop_size corpus: 5 tests. 64/64 PASS.
+
+**Milestones fired:** M-IJ-CORPUS-R12 ✅
+
+**HEAD at handoff:** snobol4x `be2af59` IJ-21, .github updated
+**Next:** IJ-22 — M-IJ-CORPUS-R13: ICN_ALT β-resume indirect-goto gate (JCON §4.5); enables `every s ||:= ("a"|"b"|"c")` patterns

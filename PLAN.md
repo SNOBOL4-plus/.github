@@ -22,7 +22,7 @@ Each concurrent session owns exactly one row. Update only your row on every push
 | **Prolog JVM** | `main` PJ-34 — M-PJ-DISJ-ARITH ✅ plain disj retry; puzzle_12 PASS; 17/20 | `453d969` PJ-34 | M-PJ-CUT-UCALL (puzzle_11/18 double-output) |
 | **Icon JVM** | `main` IJ-11 — M-IJ-SCAN ✅ 5/5 rung05 PASS | `7d68a85` IJ-11 | M-IJ-CSET |
 | **Prolog JVM** | `main` PJ-16 — two-clause fail/retry fix; rungs 01-09 PASS | `f575016` PJ-16 | M-PJ-CORPUS-R10 |
-| **Icon JVM** | `main` IJ-20 — M-IJ-CORPUS-R11 ✅ ||:= + !E + rung11; 59/59 PASS | `cab96d2` IJ-20 | M-IJ-CORPUS-R12 |
+| **Icon JVM** | `main` IJ-21 — M-IJ-CORPUS-R12 ✅ string relops + ICN_SIZE (*s) + ij_expr_is_string(ICN_IF) fix; 64/64 PASS | `be2af59` IJ-21 | M-IJ-CORPUS-R13 |
 
 | **Icon JVM** | `main` IJ-17 — M-IJ-CORPUS-R9 ✅ until/repeat; 49/49 PASS | `60cf799` IJ-17 | M-IJ-CORPUS-R10 |
 | **README v2 sprint** | `main` R-2 | TBD R-2 | M-FEAT-JVM |
@@ -170,7 +170,8 @@ Full sprint detail → [FRONTEND-ICON.md](FRONTEND-ICON.md)
 | **M-IJ-CORPUS-R9** | Rung 9: until/repeat loop emitters PASS | ✅ |
 | **M-IJ-CORPUS-R10** | Rung 10: augop (+=/*=/-=//=/%=), break, next emitters; 5/5 rung10 PASS | ✅ |
 | **M-IJ-CORPUS-R11** | Rung 11: `||:=` string augop + `!E` bang generator | ✅ |
-| **M-IJ-CORPUS-R12** | Rung 12: next corpus — candidates: `ICN_ALT` β-resume gate fix, string relops (`<<` `==` etc.), `size(*s)` | ❌ **NEXT** |
+| **M-IJ-CORPUS-R12** | Rung 12: string relops + ICN_SIZE (*s) + ij_expr_is_string(ICN_IF) fix; 64/64 PASS | ✅ |
+| **M-IJ-CORPUS-R13** | Rung 13: ICN_ALT β-resume gate (indirect-goto per JCON §4.5); enables `every s ||:= ("a"\|"b"\|"c")` | ❌ **NEXT** |
 
 | **M-IJ-CORPUS-R10** | Rung 10: next rung corpus PASS | ❌ **NEXT** |
 

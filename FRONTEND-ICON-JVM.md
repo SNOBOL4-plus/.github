@@ -19,9 +19,9 @@ assembled by `jasmin.jar` into `.class` files. Despite the file's location under
 
 | Session | Sprint | HEAD | Next milestone |
 |---------|--------|------|----------------|
-| **Icon JVM** | `main` IJ-20 — M-IJ-CORPUS-R11 ✅ `||:=` + `!E` + rung11; 59/59 PASS | `cab96d2` IJ-20 | M-IJ-CORPUS-R12 |
+| **Icon JVM** | `main` IJ-21 — M-IJ-CORPUS-R12 ✅ string relops + ICN_SIZE (*s) + ij_expr_is_string(ICN_IF) fix; 64/64 PASS | `be2af59` IJ-21 | M-IJ-CORPUS-R13 |
 
-### Next session checklist (IJ-21)
+### Next session checklist (IJ-22)
 
 ```bash
 git clone https://TOKEN_SEE_LON@github.com/snobol4ever/snobol4x
@@ -32,18 +32,33 @@ gcc -Wall -Wextra -g -O0 -I. src/frontend/icon/icon_driver.c src/frontend/icon/i
     src/frontend/icon/icon_parse.c src/frontend/icon/icon_ast.c \
     src/frontend/icon/icon_emit.c src/frontend/icon/icon_emit_jvm.c \
     src/frontend/icon/icon_runtime.c -o /tmp/icon_driver
-# Confirm 59/59 PASS (rungs 01-11) using JVM harness with -jvm flag for old scripts
-# Next: M-IJ-CORPUS-R12 — design rung12 candidates:
-#   1. ICN_ALT β-resume gate: after alt yields via icn_N_α, β should resume from that
-#      sub-expression, not always from outermost β. Needs ir_TmpLabel gate (JCON §4.5 |).
-#      Currently every |  always resumes from outermost β — infinite loop when alt β is pumped.
-#      Fix: in ij_emit_alt, add indirect-goto gate temp (bf_slot already exists as iload/istore
-#      pattern in concat). Each alt arm's γ sets gate to its own resume label before goto success.
-#      On β: indirect goto through gate. This enables `every s ||:= ("a"|"b"|"c")` patterns.
-#   2. String relops: << (ICN_SLT), == (ICN_SEQ), ~== (ICN_SNE), <<= (ICN_SLE), >> (ICN_SGT),
-#      >>= (ICN_SGE) — emit as String.compareTo() calls.
-#   3. *s size: ICN_SIZE on String → String.length() as long.
+# Confirm 64/64 PASS (rungs 01-12) before touching code
+# Next: M-IJ-CORPUS-R13 — ICN_ALT β-resume indirect-goto gate (JCON §4.5 | wiring):
+#   Problem: every s ||:= ("a"|"b"|"c") loops infinitely — ICN_ALT β always routes
+#   to outermost β, restarting from first alternative.
+#   Fix: add icn_N_alt_gate static int field per alt site.
+#     α: gate=0, goto E1.α
+#     E1.γ: gate=1 (MoveLabel), goto ports.γ
+#     E2.γ: gate=2 (MoveLabel), goto ports.γ
+#     ...En.γ: gate=n, goto ports.γ
+#     β: IndirectGoto(gate) → iload gate → tableswitch → E1.β / E2.β / ... / En.β
+#   This matches JCON irgen.icn ir_a_Alt + JCON-ANALYSIS.md §'| value alternation'.
+#   Corpus test: every s ||:= ("a"|"b"|"c"); write(s) → "abc"
 ```
+
+### IJ-21 findings — M-IJ-CORPUS-R12 ✅
+
+**64/64 PASS (rung01–12).** HEAD `be2af59`.
+
+**Three changes:**
+
+1. **`ij_expr_is_string(ICN_IF)`** — adds `case ICN_IF:` that checks then-branch type via `ij_expr_is_string(n->children[1])`. Root cause of VerifyError: statement-level drain uses `pop2` for `ICN_IF` nodes, but when then-branch is `write(str)` the `ports.γ` of the `if` node carries a String ref (1 slot) → `pop2` underflows. Fix: return string-ness of then-branch.
+
+2. **`ICN_SIZE` full pipeline** — `ICN_SIZE` added to `icon_ast.h` enum + `icn_kind_name()` in `icon_ast.c`. Parser: `check(p, TK_STAR)` in `parse_unary()` before `parse_mul()` (so unary `*` takes priority over binary multiply when in prefix position). Emitter: `ij_emit_size()` — eval child String, `invokevirtual java/lang/String/length()I`, `i2l` → long at `ports.γ`. One-shot, β → child β → `ports.ω`.
+
+3. **String relops** (`ICN_SEQ/SNE/SLT/SLE/SGT/SGE`) — emitter `ij_emit_strrelop` was already complete from a prior session; rung12 corpus provides the first tests for it.
+
+**rung12_strrelop_size corpus:** 5 tests — t01 `==`, t02 `<<`, t03 `~==`, t04 `>>=`, t05 `*s`.
 
 ### IJ-20 findings — M-IJ-CORPUS-R11 ✅
 
