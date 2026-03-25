@@ -183,8 +183,15 @@ Until then, every session row in PLAN.md remains active and unblocked.
 
 When execution begins: the reorg is **purely mechanical** at each step — no new features,
 no bug fixes, no behavior changes. If a step introduces a regression, it is reverted
-entirely. The test suite (`106/106` ASM corpus + `1903/1903` DOTNET) must be green
-at the end of every milestone. Any regression → rollback, diagnose, fix before continuing.
+entirely. The test suite must be green at the end of every milestone. Any regression → rollback, diagnose, fix before continuing.
+
+| Backend | Invariant | Runner |
+|---------|-----------|--------|
+| x64 ASM | `106/106` | `run_crosscheck_asm_corpus.sh` |
+| JVM | `106/106` | `run_crosscheck_jvm_rung.sh` |
+| .NET | `110/110` | `run_crosscheck_net.sh` |
+
+`snobol4dotnet` is a separate repo and is not part of these invariants.
 
 Session prefix for all reorg work: **`G`** (Grand Master). e.g. G-1, G-2, ...
 
@@ -196,7 +203,7 @@ Session prefix for all reorg work: **`G`** (Grand Master). e.g. G-1, G-2, ...
 
 | ID | Action | Verify |
 |----|--------|--------|
-| **M-G0-FREEZE** | Tag current HEAD of snobol4x as `pre-reorg-freeze`. Record 106/106 ASM corpus, DOTNET 1903/1903. | `git tag pre-reorg-freeze && git push --tags` |
+| **M-G0-FREEZE** | Tag current HEAD of snobol4x as `pre-reorg-freeze`. Record 106/106 ASM, 106/106 JVM, 110/110 NET. | `git tag pre-reorg-freeze && git push --tags` |
 | **M-G0-AUDIT** | Audit all five emitters: document every `emit_<thing>` function signature, every local variable name, every generated label pattern. Produce `doc/EMITTER_AUDIT.md`. | File exists, covers all 5 emitters |
 | **M-G0-IR-AUDIT** | Audit all five frontend IRs: list every node kind used, cross-reference to the target unified enum above. Produce `doc/IR_AUDIT.md` with a mapping table: `frontend × node_kind → unified_EKind`. | File exists |
 
@@ -219,7 +226,7 @@ Session prefix for all reorg work: **`G`** (Grand Master). e.g. G-1, G-2, ...
 | **M-G2-DIRS** | Create new directory skeleton: `src/backend/x64/`, `src/backend/jvm/`, `src/backend/net/`. (These may already exist — confirm and adjust.) | `ls src/backend/` shows all three |
 | **M-G2-MOVE-ASM** | `git mv src/backend/x64/emit_byrd_asm.c src/backend/x64/emit_x64.c`. Update `#include` and `Makefile` references. No content changes. | 106/106 |
 | **M-G2-MOVE-JVM** | `git mv src/backend/jvm/emit_byrd_jvm.c src/backend/jvm/emit_jvm.c`. Update references. No content changes. | 106/106 |
-| **M-G2-MOVE-NET** | `git mv src/backend/net/emit_byrd_net.c src/backend/net/emit_net.c`. Update references. No content changes. | DOTNET 1903/1903 |
+| **M-G2-MOVE-NET** | `git mv src/backend/net/emit_byrd_net.c src/backend/net/emit_net.c`. Update references. No content changes. | 110/110 NET |
 | **M-G2-SCAFFOLD-WASM** | Create `src/backend/wasm/emit_wasm.c` — skeleton only: file header, empty `emit_wasm()` entry point, no IR handling yet. Add to Makefile. | Builds clean |
 | **M-G2-MOVE-ICON-JVM** | `git mv src/frontend/icon/icon_emit_jvm.c src/backend/jvm/emit_jvm_icon.c`. Update references. No content changes. | Icon JVM corpus 99/99 |
 | **M-G2-MOVE-PROLOG-JVM** | `git mv src/frontend/prolog/prolog_emit_jvm.c src/backend/jvm/emit_jvm_prolog.c`. Update references. No content changes. | Prolog JVM 20/20 |
@@ -242,7 +249,7 @@ rename generated label patterns, update comments. No logic changes.
 |----|------|-------------|--------|
 | **M-G3-NAME-X64** | `emit_x64.c` | Local variables → `lbl_alpha/beta/gamma/omega`; macros confirmed as `E()`/`EI()`/`EL()`; functions → `emit_x64_<Kind>` | 106/106 |
 | **M-G3-NAME-JVM** | `emit_jvm.c` | Same; `J()`/`JI()`/`JL()` confirmed; functions → `emit_jvm_<Kind>` | 106/106 |
-| **M-G3-NAME-NET** | `emit_net.c` | Same; `N()`/`NI()`/`NL()` confirmed or renamed; functions → `emit_net_<Kind>` | DOTNET 1903/1903 |
+| **M-G3-NAME-NET** | `emit_net.c` | Same; `N()`/`NI()`/`NL()` confirmed or renamed; functions → `emit_net_<Kind>` | 110/110 NET |
 | **M-G3-NAME-WASM** | `emit_wasm.c` | Establish naming law from scratch: `W()`/`WI()`/`WL()`, `lbl_alpha/beta/gamma/omega`, `emit_wasm_<Kind>`. WASM uses `br_table` for tableswitch (maps to JVM pattern). | Builds clean |
 | **M-G3-NAME-JVM-ICON** | `emit_jvm_icon.c` | `ij_emit_*` → `emit_jvm_icon_*` for Icon-specific; shared node handlers → `emit_jvm_<Kind>` | Icon JVM 99/99 |
 | **M-G3-NAME-JVM-PROLOG** | `emit_jvm_prolog.c` | `pj_emit_*` → `emit_jvm_prolog_*` for Prolog-specific; shared → `emit_jvm_<Kind>` | Prolog JVM 20/20 |
@@ -365,7 +372,7 @@ No logic changes.
 | **M-G7-STYLE-BACKENDS** | Apply style to all backend files. | All corpus tests PASS |
 | **M-G7-STYLE-FRONTENDS** | Apply style to all frontend files. | All corpus tests PASS |
 | **M-G7-STYLE-IR** | Apply style to `src/ir/`. | Builds clean |
-| **M-G7-UNFREEZE** | Lift concurrent-development freeze. Update PLAN.md: resume all session rows from their pre-reorg HEADs. Tag `post-reorg-baseline`. | 106/106; 1903/1903; all frontend corpus PASS |
+| **M-G7-UNFREEZE** | Lift concurrent-development freeze. Update PLAN.md: resume all session rows from their pre-reorg HEADs. Tag `post-reorg-baseline`. | 106/106 ASM; 106/106 JVM; 110/110 NET; all frontend corpus PASS |
 
 ---
 
