@@ -7,6 +7,21 @@ Oldest sessions pruned for context economy. Full git history is the permanent re
 
 ---
 
+## PJ-37 — Prolog JVM — 2026-03-25
+
+**HEAD in:** `1f904e8` PJ-36 | **HEAD out:** `d4abf38` PJ-37
+
+**Work done:**
+- Landed `pj_body_has_cut(EXPR_t *g)` recursive helper in `prolog_emit_jvm.c` — walks `E_FNC` children for nested `E_CUT`, replacing shallow scan in `any_has_cut` loop inside `pj_emit_predicate`.
+- Confirmed 18/20 baseline. Recursive helper correct, no regressions.
+- **puzzle_18 root cause fully re-diagnosed:** cut is inside callee `differ/2`, not in `puzzle/0`'s body. The `any_has_cut` guard fires for the *compiled* predicate only — it cannot protect callers. At the ucall call site in `puzzle/0`, the `ifnull call_ω` only catches null (failure); cutgamma `{cs=2}` is non-null → falls through as success → body prints answer → TWICE. `grep "if_icmpeq" /tmp/Puzzle_18.j` = empty confirms no guard at call site.
+
+**Score:** 18/20 (unchanged — fix targeted wrong layer).
+
+**Next (PJ-38):** Implement `pj_predicate_base_nclauses(fn, arity, prog_root)` and emit call-site cutgamma detection guard in `pj_emit_body` after `ifnull call_ω`. Full spec in FRONTEND-PROLOG-JVM.md §NOW CRITICAL NEXT ACTION.
+
+---
+
 ## IJ-6 — Icon JVM — 2026-03-24
 
 **HEAD in:** `e590c4f` IJ-5 | **HEAD out:** `a3d4a55` IJ-6
