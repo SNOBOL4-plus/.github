@@ -222,3 +222,4 @@ Append-only. Do not edit existing entries.
 | **M-IJ-CORPUS-R5** | `6780ab9` IJ-14 | rung07_control 5/5 PASS; ij_emit_to_by rewritten: forward-only jumps, two lcmp ops; .bytecode 45.0; 39/39 rung01-07 PASS |
 | **M-IJ-CORPUS-R8** | `be1be82` IJ-16 | find/match/tab/move builtins + static helpers; ij_expr_is_string updated; 44/44 rung01-08 PASS |
 | **M-IJ-CORPUS-R9** | `60cf799` IJ-17 | until/repeat emitters; body-drain pop fix; 49/49 rung01-09 PASS |
+| **M-PJ-BETWEEN** | `5ae0d24` PJ-32 | synthetic p_between_3 static method; cs=offset-from-Low; puzzle_19 PASS; 16/20 |

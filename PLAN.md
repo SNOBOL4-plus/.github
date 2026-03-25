@@ -19,7 +19,7 @@ Each concurrent session owns exactly one row. Update only your row on every push
 | **DOTNET** | `main` D-164 — 1903/1903 pass 0 fail on Linux | `e1e4d9e` D-164 | TBD |
 | **README** | `main` — M-README-CSHARP-DRAFT ✅ | `00846d3` snobol4csharp | M-README-DEEP-SCAN |
 | **ICON frontend** | `main` I-11 — M-ICON-CORPUS-R3 ✅ rbp fix + 5/5 rung03 PASS | `bab5664` I-11 | M-ICON-STRING |
-| **Prolog JVM** | `main` PJ-31 — M-PZ-01/02/05/06 added; puzzle_02 rewritten; all 20 real search | `251ae11` PJ-31 | M-PJ-DISPLAY-BT |
+| **Prolog JVM** | `main` PJ-32 — M-PJ-BETWEEN ✅ synthetic p_between_3; 16/20 PASS | `5ae0d24` PJ-32 | M-PJ-ITE-CUT |
 | **Icon JVM** | `main` IJ-11 — M-IJ-SCAN ✅ 5/5 rung05 PASS | `7d68a85` IJ-11 | M-IJ-CSET |
 | **Prolog JVM** | `main` PJ-16 — two-clause fail/retry fix; rungs 01-09 PASS | `f575016` PJ-16 | M-PJ-CORPUS-R10 |
 | **Icon JVM** | `main` IJ-17 — M-IJ-CORPUS-R9 ✅ until/repeat; 49/49 PASS | `60cf799` IJ-17 | M-IJ-CORPUS-R10 |
@@ -128,9 +128,10 @@ Each milestone: write solution in puzzle_NN.pro, verify correct answer via swipl
 | **M-PJ-BODYFAIL-TRAIL** | Fix body-fail trail: `bodyfail_N` trampoline unwinds clause trail on body goal failure | ✅ |
 | **M-PJ-DISPLAY-BT** | puzzle_03 display/6 over-generation — not_dorothy 2-clause retry; ITE cut leak | ❌ |
 | **M-PJ-ITE-CUT** | ITE (`->`) must cut enclosing clause choice point — fixes puzzle_03/11/18 over-generation | ❌ |
-| **M-PJ-BETWEEN** | `between/3` missing from `pj_emit_goal` — fixes puzzle_19 NoSuchMethodError | ❌ |
-| **M-PJ-DISJ-ARITH** | Fix `(A;B;C)` inline disjunction silent failure in arithmetic body in JVM emitter — fixes puzzle_12 0L | ❌ |
+| **M-PJ-BETWEEN** | `between/3` missing from `pj_emit_goal` — add emit with trail-save/unwind | ✅ |
+| **M-PJ-DISPLAY-BT** | puzzle_03 display/6 over-generation — not_dorothy 2-clause retry; ITE cut leak | ❌ |
 | **M-PJ-ARITY-CAP** | Fix `ClassFormatError` on high-arity predicates (display/16) — pack args or cap arity | ❌ |
+| **M-PJ-DISJ-ARITH** | Fix `(A;B;C)` inline disjunction silent failure in arithmetic body — fixes puzzle_12 0L | ❌ |
 | **M-PJ-PZ-ALL-JVM** | All 20 puzzle solutions pass JVM — requires M-PJ-ITE-CUT + M-PJ-BETWEEN + M-PJ-DISJ-ARITH | ❌ |
 
 Full sprint detail → [BACKEND-JVM-PROLOG.md](BACKEND-JVM-PROLOG.md) · [FRONTEND-PROLOG-JVM.md](FRONTEND-PROLOG-JVM.md)
