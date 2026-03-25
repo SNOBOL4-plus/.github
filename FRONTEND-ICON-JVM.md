@@ -19,11 +19,11 @@ assembled by `jasmin.jar` into `.class` files. Despite the file's location under
 
 | Session | Sprint | HEAD | Next milestone |
 |---------|--------|------|----------------|
-| **Icon JVM** | `main` IJ-30 WIP — M-IJ-CORPUS-R21 ❌ ICN_GLOBAL+ICN_INITIAL 2 bugs open; 104/104 baseline intact | `a6808a7` IJ-30 | M-IJ-CORPUS-R21 |
+| **Icon JVM** | `main` IJ-31 — M-IJ-CORPUS-R21 ✅ ICN_GLOBAL type-safe + ICN_INITIAL stack fix; 109/109 PASS | `98322dd` IJ-31 | M-IJ-CORPUS-R22 |
 
 **⚠ Grand Master Reorg plan published — sessions continue normally. See GRAND_MASTER_REORG.md.**
 
-### Next session checklist (IJ-31, post-reorg)
+### Next session checklist (IJ-32)
 
 ```bash
 git clone https://TOKEN_SEE_LON@github.com/snobol4ever/snobol4x
@@ -34,43 +34,32 @@ gcc -Wall -Wextra -g -O0 -I. src/frontend/icon/icon_driver.c src/frontend/icon/i
     src/frontend/icon/icon_parse.c src/frontend/icon/icon_ast.c \
     src/frontend/icon/icon_emit.c src/frontend/icon/icon_emit_jvm.c \
     src/frontend/icon/icon_runtime.c -o /tmp/icon_driver
-# Confirm 104/104 PASS (rungs 01-20) — rung21 is WIP, expect failures
-# Fix bug 1 and bug 2 below, then run rung21 to 5/5 PASS → M-IJ-CORPUS-R21 fires
+# Confirm 109/109 PASS (rungs 01-21) before touching code
+# Next: M-IJ-CORPUS-R22 — design rung22 corpus; see Roadmap §Tier 1 for candidates
+# Recommended: M-IJ-LISTS (list constructor, push/put/get/pop, !L, *L)
 ```
 
-### IJ-30 WIP — M-IJ-CORPUS-R21 ❌ (2 bugs, fix before firing)
+### IJ-31 findings — M-IJ-CORPUS-R21 ✅
 
-**Corpus:** `test/frontend/icon/corpus/rung21_global_initial/` — 5 tests.
-**t01** (long global) ✅ **t05** (multi long global) ✅ — global long vars work.
-**t02** (string global) ❌ **t03** (initial clause) ❌ **t04** (global+initial) ❌
+**109/109 PASS (rung01–21).** HEAD `98322dd`.
+
+Two bugs fixed in `icon_emit_jvm.c`:
 
 **Bug 1 — t02 `NoSuchFieldError: icn_gvar_greeting` as String:**
-Root cause: Pass 0 in `ij_emit_file` calls `ij_declare_static(gname)` (type `J`) for every top-level global before proc emission. Later `ij_declare_static_str` finds the name already registered and skips re-declaration, so the `.field` line is `J` but `putstatic` uses String descriptor → runtime field mismatch.
-**Fix:** Remove `ij_declare_static(gname)` from Pass 0. Instead, track global names in a separate `char ij_global_names[MAX][64]` + `int ij_nglobals` set. Add `ij_is_global(name)` predicate. Modify `ij_locals_find` (or its call sites in assign/var emit) to return -1 for names in the global set — this is already the fallback path that uses `icn_gvar_*`. Type is then inferred naturally on first assignment, same as local vars. No pre-declaration needed.
+
+Root cause had two parts:
+1. Pass 0 called `ij_declare_static(gname)` which pre-declared every global as type `J` (long). Later `ij_declare_static_str` found the name registered and skipped re-declaration, leaving a `J`-typed field but `putstatic` using String descriptor → field type mismatch at runtime.
+2. The proc local-scan loop checked `ICN_GLOBAL` nodes in the proc body and added their vars to `ij_locals` via `ij_locals_add`, making `ij_locals_find` return ≥ 0 for globals and routing them through the local-var path (per-proc static fields) instead of `icn_gvar_*`.
+
+Fix: Added `ij_global_names[MAX_GLOBALS]` / `ij_nglobals` / `ij_register_global()` / `ij_is_global()` registry. Pass 0 now calls `ij_register_global(name)` only — no pre-declared field. Proc local-scan skips `ij_locals_add` for any name where `ij_is_global()` is true. Type is inferred on first assignment, exactly like local vars.
 
 **Bug 2 — t03/t04 `VerifyError: Inconsistent stack height 2 != 4`:**
-Root cause: `ij_emit_initial` emits `lconst_0; goto ports.γ` on both the skip-path and after-body-path. But the body child (e.g. `x := x+1`) already leaves a `long` (2 slots) at its `ports.γ` = `run` label. So run-path stack = 2 (from body) + 2 (lconst_0) = 4. Skip-path stack = 0 + 2 (lconst_0) = 2. Mismatch.
-**Fix:** In `ij_emit_initial`, do NOT push `lconst_0`. The body child's γ already leaves a value; just `goto ports.γ` from `run`. For the skip path (flag already set), emit `lconst_0; goto ports.γ` — OR better: make the whole `initial` block a no-op at statement level by having both paths emit `lconst_0` but drain the body result first. Cleanest fix: wire body's γ to a drain label that does `pop2` (or `pop` if string) then `goto ports.γ` with `lconst_0`; skip path also pushes `lconst_0`. This keeps both paths at stack-height 2 at ports.γ.
 
-**Concrete fix for Bug 2:**
-```c
-/* in ij_emit_initial, replace the body wiring: */
-char body_drain[64];
-snprintf(body_drain, sizeof body_drain, "icn_%d_init_drain", id);
-IjPorts cp;
-strncpy(cp.γ, body_drain, 63);   /* body success → drain its value */
-strncpy(cp.ω, run, 63);           /* body fail → run (same as success) */
-char ca[64], cb[64]; ij_emit_expr(n->children[0], cp, ca, cb);
-JGoto(ca);
-JL(body_drain);
-int bstr = (n->nchildren >= 1) ? ij_expr_is_string(n->children[0]) : 0;
-JI(bstr ? "pop" : "pop2", "");   /* drain body result */
-JL(run);
-/* both run and skip now fall through to: */
-JI("lconst_0", ""); JGoto(ports.γ);
-JL(skip);
-JI("lconst_0", ""); JGoto(ports.γ);
-```
+Root cause: `ij_emit_initial` wired body's γ and ω both to the `run` label. Body success left its result (2 slots for long) on the stack at `run`, then `lconst_0` was pushed (2 more slots) → stack height 4. Skip-path pushed only `lconst_0` → stack height 2. Mismatch.
+
+Fix: Route body's γ to `icn_N_init_drain` label that pops the body result (`pop` for String, `pop2` otherwise), then falls through to `run`. Both `run` (post-drain, body.ω path) and `skip` now push exactly one `lconst_0` before `ports.γ` → stack height 2 on all paths.
+
+**rung21_global_initial corpus (5 tests):** t01 long global, t02 String global, t03 initial clause once-only, t04 global+initial combined, t05 multiple globals.
 
 ### IJ-29 findings — M-IJ-CORPUS-R20 ✅
 
