@@ -19,9 +19,9 @@ assembled by `jasmin.jar` into `.class` files. Despite the file's location under
 
 | Session | Sprint | HEAD | Next milestone |
 |---------|--------|------|----------------|
-| **Icon JVM** | `main` IJ-23 — M-IJ-CORPUS-R14 ✅ ICN_LIMIT (E \ N) limitation operator; 74/74 PASS | `9021c4e` IJ-23 | M-IJ-CORPUS-R15 |
+| **Icon JVM** | `main` IJ-25 — M-IJ-CORPUS-R16 ✅ ICN_SUBSCRIPT s[i] + if-cond String drain fix; 84/84 PASS | `dff0f03` IJ-25 | M-IJ-CORPUS-R17 |
 
-### Next session checklist (IJ-24)
+### Next session checklist (IJ-26)
 
 ```bash
 git clone https://TOKEN_SEE_LON@github.com/snobol4ever/snobol4x
@@ -32,11 +32,24 @@ gcc -Wall -Wextra -g -O0 -I. src/frontend/icon/icon_driver.c src/frontend/icon/i
     src/frontend/icon/icon_parse.c src/frontend/icon/icon_ast.c \
     src/frontend/icon/icon_emit.c src/frontend/icon/icon_emit_jvm.c \
     src/frontend/icon/icon_runtime.c -o /tmp/icon_driver
-# Confirm 74/74 PASS (rungs 01-14) before touching code
-# Next: M-IJ-CORPUS-R15 — design next rung; check icon_ast.h for remaining
-#   unemitted node kinds; candidates: string subscripting, list/table structures,
-#   or any ICN constructs falling through to UNIMPL in the dispatch switch.
+# Confirm 84/84 PASS (rungs 01-16) before touching code
+# Next: M-IJ-CORPUS-R17 — design next rung.
+# Remaining reachable unimplemented: ICN_FIELD (r.f, needs record support — skip).
+# Practical: real arithmetic (dadd/dsub/dmul/ddiv), deeper generator patterns.
 ```
+
+### IJ-25 findings — M-IJ-CORPUS-R16 ✅
+
+**84/84 PASS (rung01–16).** HEAD `dff0f03`.
+
+**`ij_emit_subscript`** — `ICN_SUBSCRIPT` (`s[i]`, 1-based, negatives count from end):
+α: eval string → cache in static; eval index → l2i → 0-based; bounds check → substring → γ (String).
+β: re-drives index child's β (enables `every s[1 to N]`). Negative: offset = length + i.
+
+**`ij_emit_if` drain fix** — `cond_then` uses `pop` vs `pop2` based on `ij_expr_is_string(cond)`.
+Previously hardcoded `pop2` caused VerifyError when condition was String-typed (e.g. `if s[5]`).
+
+**rung16_subscript (5 tests):** basic indexing, literal, oob fail, negative index, every-generator.
 
 ### IJ-23 findings — M-IJ-CORPUS-R14 ✅
 
