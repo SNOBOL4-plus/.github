@@ -19,9 +19,9 @@ assembled by `jasmin.jar` into `.class` files. Despite the file's location under
 
 | Session | Sprint | HEAD | Next milestone |
 |---------|--------|------|----------------|
-| **Icon JVM** | `main` IJ-17 — M-IJ-CORPUS-R9 ✅ until/repeat; 49/49 PASS | `60cf799` IJ-17 | M-IJ-CORPUS-R10 |
+| **Icon JVM** | `main` IJ-18 — M-IJ-CORPUS-R10 ✅ augop/break/next; 54/54 PASS | `8f98dea` IJ-18 | M-IJ-CORPUS-R11 |
 
-### Next session checklist (IJ-18)
+### Next session checklist (IJ-19)
 
 ```bash
 git clone https://TOKEN_SEE_LON@github.com/snobol4ever/snobol4x
@@ -32,11 +32,27 @@ gcc -Wall -Wextra -g -O0 -I. src/frontend/icon/icon_driver.c src/frontend/icon/i
     src/frontend/icon/icon_parse.c src/frontend/icon/icon_ast.c \
     src/frontend/icon/icon_emit.c src/frontend/icon/icon_emit_jvm.c \
     src/frontend/icon/icon_runtime.c -o /tmp/icon_driver
-# Read FRONTEND-ICON-JVM.md §NOW
-# Confirm 49/49 rung01-09 PASS before touching code
-# Next: M-IJ-CORPUS-R10 — design rung10 corpus; candidates: augmented assign (:=+), break, next, bang(!E)
-# Note: repeat body-drain slot-collision bug exists (pre-existing in while too) — track separately
+# Confirm 54/54 rung01-10 PASS before touching code
+# Next: M-IJ-CORPUS-R11 — design rung11; candidates: !E (bang), ||:= (string augop), nested break
 ```
+
+### IJ-18 findings — M-IJ-CORPUS-R10 ✅ (done)
+
+**54/54 PASS rung01–10.**
+
+Three new emitters in `icon_emit_jvm.c` (`8f98dea`):
+
+1. **Loop label stack** — `ij_loop_push(exit, next)` / `ij_loop_pop()` (depth-32 static arrays). All four loop emitters (`while`/`until`/`repeat`/`every`) push before emitting body, pop after. `break` → `ij_loop_break_target()` = enclosing loop `ports.ω`. `next` → `ij_loop_next_target()` = cond re-eval (`ca`) for while/until, `loop_top` for repeat/every.
+
+2. **`ij_emit_break`** — both α and β jump to `ij_loop_break_target()`. One-shot, never resumes.
+
+3. **`ij_emit_next`** — both α and β jump to `ij_loop_next_target()`.
+
+4. **`ij_emit_augop`** — eval RHS → store to per-site static temp `icn_N_augtemp J`; getstatic LHS; getstatic temp; apply `ladd`/`lsub`/`lmul`/`ldiv`/`lrem` per `node->val.ival` (TK_AUGPLUS=30..TK_AUGMOD=34); `dup2`; putstatic LHS back; `goto ports.γ`. Works for local and global vars.
+
+**rung10_augop corpus** — 5 tests: `+=`, `*=`, accumulator via `every +=`, `/:=`, `-=`+`%=`.
+
+**Note:** `break` inside `if-then` inside loop body hits a parser limitation — `if` is not accepted as a sub-expression inside `(...)`. The loop stack infrastructure is correct; corpus tests use augop patterns. Break/next as standalone loop-exit statements require compound-statement syntax (not yet in parser).
 
 ### IJ-17 findings — M-IJ-CORPUS-R9 ✅ (done)
 

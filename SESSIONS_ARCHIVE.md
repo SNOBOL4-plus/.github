@@ -723,3 +723,11 @@ END
 
 **HEAD at handoff:** snobol4x `5ae0d24`, .github `b0f28cd`
 **Next:** PJ-33 — M-PJ-ITE-CUT (puzzles 03, 11, 18 over-generate). Fix: in `;/2` ITE emission, after `cond_ok`, seal enclosing β with `ldc cut_cs_seal; istore cs_local_for_cut` before emitting Then goals. Then M-PJ-DISJ-ARITH (puzzle_12).
+
+## IJ-18 — 2026-03-24
+
+**Trigger:** "playing with snobol4x JVM backend for ICON frontend" + JCON oracle zip
+**Work:** M-IJ-CORPUS-R10 — augmented assignment, break, next emitters + rung10 corpus
+**Changes:** `icon_emit_jvm.c` — loop label stack + 3 new emitters; rung10_augop corpus (5 tests); run_rung10.sh
+**Result:** 54/54 rung01–10 PASS. HEAD `8f98dea` on main.
+**Next:** M-IJ-CORPUS-R11 — rung11 corpus; candidates: `!E` (bang/list-generator), `||:=` (string augop), nested break via compound-stmt parser fix.

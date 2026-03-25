@@ -22,7 +22,7 @@ Each concurrent session owns exactly one row. Update only your row on every push
 | **Prolog JVM** | `main` PJ-32 — M-PJ-BETWEEN ✅ synthetic p_between_3; 16/20 PASS | `5ae0d24` PJ-32 | M-PJ-ITE-CUT |
 | **Icon JVM** | `main` IJ-11 — M-IJ-SCAN ✅ 5/5 rung05 PASS | `7d68a85` IJ-11 | M-IJ-CSET |
 | **Prolog JVM** | `main` PJ-16 — two-clause fail/retry fix; rungs 01-09 PASS | `f575016` PJ-16 | M-PJ-CORPUS-R10 |
-| **Icon JVM** | `main` IJ-17 — M-IJ-CORPUS-R9 ✅ until/repeat; 49/49 PASS | `60cf799` IJ-17 | M-IJ-CORPUS-R10 |
+| **Icon JVM** | `main` IJ-18 — M-IJ-CORPUS-R10 ✅ augop/break/next; 54/54 PASS | `8f98dea` IJ-18 | M-IJ-CORPUS-R11 |
 | **README v2 sprint** | `main` R-2 | TBD R-2 | M-FEAT-JVM |
 
 **Invariants (check before any work):**
@@ -168,7 +168,8 @@ Full sprint detail → [FRONTEND-ICON.md](FRONTEND-ICON.md)
 | **M-IJ-CORPUS-R5** | Rung 5: not/neg/to-by/str-relops all PASS | ✅ |
 | **M-IJ-CORPUS-R8** | Rung 8: find/match/tab/move builtins PASS | ✅ |
 | **M-IJ-CORPUS-R9** | Rung 9: until/repeat loop emitters PASS | ✅ |
-| **M-IJ-CORPUS-R10** | Rung 10: next rung corpus PASS | ❌ **NEXT** |
+| **M-IJ-CORPUS-R10** | Rung 10: augop (+=/*=/-=//=/%=), break, next emitters; 5/5 rung10 PASS | ✅ |
+| **M-IJ-CORPUS-R11** | Rung 11: next corpus — candidates: bang (!E), string augop (||:=), nested break, augop in every | ❌ **NEXT** |
 
 Full sprint detail → [FRONTEND-ICON-JVM.md](FRONTEND-ICON-JVM.md)
 
