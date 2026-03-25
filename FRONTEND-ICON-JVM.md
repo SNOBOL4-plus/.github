@@ -21,7 +21,7 @@ assembled by `jasmin.jar` into `.class` files. Despite the file's location under
 |---------|--------|------|----------------|
 | **Icon JVM** | `main` IJ-30 WIP — M-IJ-CORPUS-R21 ❌ ICN_GLOBAL+ICN_INITIAL 2 bugs open; 104/104 baseline intact | `a6808a7` IJ-30 | M-IJ-CORPUS-R21 |
 
-**⚠ ALL SESSIONS FROZEN — Grand Master Reorg in progress. See GRAND_MASTER_REORG.md.**
+**⚠ Grand Master Reorg plan published — sessions continue normally. See GRAND_MASTER_REORG.md.**
 
 ### Next session checklist (IJ-31, post-reorg)
 

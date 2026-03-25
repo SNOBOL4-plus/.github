@@ -1135,4 +1135,30 @@ completely, inventory existing milestones that overlap, then write the full plan
 
 **Bug 2 (t03/t04):** `VerifyError` inconsistent stack height on `initial` clause — skip path stack=2, body path stack=4. Fix: drain body result before `lconst_0` push (see §NOW for concrete patch).
 
-**NOTE:** All sessions FROZEN — Grand Master Reorg in progress. Resume IJ-31 post-reorg.
+**NOTE:** Grand Master Reorg plan published but sessions continue normally. IJ-31 picks up at rung21 fix.
+
+---
+
+## PJ-39 through PJ-43 — 2026-03-25 (reconstructed from commit log + PLAN.md)
+
+**Sessions missing from archive — reconstructed for continuity.**
+
+### PJ-39 (`dc0f606`, `56850fd`)
+- `lbl_cutγ NULL` guard: `cut_dest = lbl_cutγ ? lbl_cutγ : call_ω` → puzzle_18 double-print fixed.
+- `pj_emit_term` fix for `E_SUB/E_ADD/E_MPY/E_DIV` in term position.
+
+### PJ-40 — reverted (no commit)
+- NAF: tried calling `pj_emit_body` directly → 16/20 regression (lbl_outer_ω wiring wrong). Reverted.
+
+### PJ-41 — reverted (no commit)
+- Conjunction fix (`*next_local` not local `next_local_tmp`) → puzzle_18 dropped to 0 lines. Collided with used frame slots. Reverted. 19/20 preserved.
+
+### PJ-42 (`38e4c39`) — M-PJ-NAF-INNER-LOCALS ✅
+**Score: 20/20.** Blunt zero-sweep at `naf_ok`/`naf_fail`: emit `iconst_0/istore N` for N in `[trail_local+1+n_vars+8 .. +64)`. Zeros entire conjunction-local region unconditionally — safe, no frame layout change. puzzle_18 fixed.
+
+### PJ-43 (no code commit — diagnosis only)
+**Score: 20/20 confirmed.** Root cause for M-PJ-DISPLAY-BT isolated:
+`display/6` gamma cs re-enters `gn` retry chain on external fail-loop.
+Minimal reproducer `chain_bug.pro` (3-line predicate, JVM=3 lines, swipl=1 line).
+Fix target: `p_go_6` gamma_0 cs pack — inspect `iload 3` vs correct cs value.
+Full diagnosis and bootstrap in FRONTEND-PROLOG-JVM.md §NOW (CRITICAL NEXT ACTION PJ-44).
