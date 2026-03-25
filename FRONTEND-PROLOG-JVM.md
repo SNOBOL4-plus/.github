@@ -19,7 +19,7 @@ and emits Jasmin `.j` files, assembled by `jasmin.jar`.
 
 | Session | Sprint | HEAD | Next milestone |
 |---------|--------|------|----------------|
-| **Prolog JVM** | `main` PJ-40 — 19/20; puzzle_18 root-caused as NAF inner-locals leak (conjunction in \+ uses local next_local_tmp, cs slots never zeroed on NAF exit); fix approach documented below | `56850fd` PJ-39b | M-PJ-NAF-INNER-LOCALS: zero inner cs slots on NAF exit |
+| **Prolog JVM** | `main` PJ-41 — 19/20; two fix attempts regressed (PJ-40: 16/20, PJ-41: puzzle_18→0 lines), both reverted; PJ-42 = blunt zero-sweep at naf_ok/naf_fail | `56850fd` PJ-39b | M-PJ-NAF-INNER-LOCALS |
 
 ### CRITICAL NEXT ACTION (PJ-41)
 
@@ -48,7 +48,11 @@ and emits Jasmin `.j` files, assembled by `jasmin.jar`.
    ```
    Then in the NAF handler, `naf_locals_start`/`naf_locals_end` will bracket all inner locals and the zero loop will fire. **Run full 20-puzzle sweep immediately after — this conjunction path is hit everywhere.**
 
-   **PJ-40 regression lesson:** A previous attempt changed the NAF to call `pj_emit_body` directly, passing `*next_local`, which DID advance `next_local`. But it wired `lbl_outer_ω = inner_fail` incorrectly, breaking puzzles 05 and 16. The correct fix is in the conjunction branch of `pj_emit_goal`, not in the NAF caller.
+   **PJ-40 regression:** NAF calling `pj_emit_body` directly → 16/20 (lbl_outer_ω wiring wrong), reverted.
+
+   **PJ-41 regression (NEW):** Conjunction fix (`*next_local` not local `next_local_tmp`) → puzzle_18 dropped to 0 lines. `*next_local` collided with used frame slots. Reverted. 19/20 preserved.
+
+   **PJ-42 fix (NEXT):** Blunt zero-sweep at `naf_ok`/`naf_fail`: emit `iconst_0/istore N` for N in `[trail_local+1+n_vars+8 .. trail_local+1+n_vars+8+64)`. Zeros entire conjunction-local region unconditionally — safe (dead after NAF exits), no frame layout change.
 
    **Reproducer (minimal, still fails at 56850fd):**
    ```bash
