@@ -19,9 +19,59 @@ and emits Jasmin `.j` files, assembled by `jasmin.jar`.
 
 | Session | Sprint | HEAD | Next milestone |
 |---------|--------|------|----------------|
-| **Prolog JVM** | `main` PJ-47 — M-PJ-FINDALL ✅; 5/5 rung11 PASS; 20/20 puzzles intact | `62b3fa0` PJ-47 | M-PJ-ATOM-BUILTINS |
+| **Prolog JVM** | `main` PJ-48 — M-PJ-ATOM-BUILTINS WIP; rung12 corpus+helpers landed; 1 stack bug in pj_atom_chars_2 forward path | `da9cfb7` PJ-48 | M-PJ-ATOM-BUILTINS |
 
-### CRITICAL NEXT ACTION (PJ-48)
+### CRITICAL NEXT ACTION (PJ-49)
+
+**Baseline: 5/5 rung11 PASS. 20/20 puzzle corpus PASS. snobol4x HEAD `da9cfb7`.**
+
+**Next milestone: M-PJ-ATOM-BUILTINS — fix one stack bug, then green rung12**
+
+**THE BUG:** `pj_atom_chars_2` forward path has a spurious `pop` instruction.
+In `prolog_emit_jvm.c` around line ~997, the forward (atom→chars) path is:
+
+```
+; After ifne ac2_reverse (branch check consumes nothing extra):
+; Stack at this point: empty (ifne consumed the boolean, left nothing)
+; BUG: next two lines are wrong:
+    pop                   ← SPURIOUS — nothing to pop, causes VerifyError
+    aload_2               ← correct reload of deref'd term
+; Fix: DELETE the pop line. Keep aload_2.
+```
+
+**Exact fix in `prolog_emit_jvm.c`** — find the `pj_atom_chars_2` method body and delete the `JI("pop", "");` line that precedes the second `JI("aload_2", "");` in the forward path.
+
+Search: `grep -n "pop\|ac2_reverse\|aload_2" src/frontend/prolog/prolog_emit_jvm.c | grep -A3 "ac2_reverse"`
+
+After fix: `make -C src`, then run rung12 sweep, expect 5/5. Confirm 20/20 puzzles intact.
+
+**Bootstrap PJ-49:**
+```bash
+git clone https://TOKEN_SEE_LON@github.com/snobol4ever/snobol4x
+git clone https://TOKEN_SEE_LON@github.com/snobol4ever/.github
+apt-get install -y --fix-missing default-jdk nasm libgc-dev swi-prolog
+make -C snobol4x/src && cd snobol4x
+# Confirm 5/5 rung11 + 20/20 puzzle baseline
+for f in test/frontend/prolog/corpus/rung11_findall/*.pro; do
+  base=$(basename $f .pro); ./sno2c -pl -jvm $f -o /tmp/${base}.j 2>/dev/null
+  java -jar src/backend/jvm/jasmin.jar /tmp/${base}.j -d /tmp 2>/dev/null
+  cls=$(grep "^\.class" /tmp/${base}.j | awk '{print $3}')
+  got=$(timeout 10 java -cp /tmp $cls 2>&1 | grep -v "Picked up")
+  want=$(cat ${f%.pro}.expected)
+  [ "$got" = "$want" ] && echo "$base: PASS" || echo "$base: FAIL"
+done
+# Fix: delete the spurious JI("pop","") in pj_atom_chars_2 forward path
+# Build, run rung12 sweep, expect 5/5
+# Then run 20/20 puzzle sweep to confirm no regressions
+```
+
+**Changes landed PJ-48:**
+- Created `test/frontend/prolog/corpus/rung12_atom_builtins/` with 5 test files + swipl-oracle `.expected` files: `atom_length`, `atom_concat`, `atom_chars`, `atom_codes`, `atom_case` (upcase/downcase/atom_length).
+- Added runtime helper methods to `pj_emit_helpers()`: `pj_atom_name`, `pj_int_val`, `pj_string_to_char_list`, `pj_string_to_code_list`, `pj_char_list_to_string`, `pj_code_list_to_string`, `pj_atom_chars_2`, `pj_atom_codes_2`, `pj_char_code_2`.
+- Added all 9 builtin dispatch cases to `pj_emit_goal()`: `atom_length/2`, `atom_concat/3`, `atom_chars/2`, `atom_codes/2`, `number_chars/2`, `number_codes/2`, `char_code/2`, `upcase_atom/2`, `downcase_atom/2`.
+- One bug remaining: spurious `pop` in `pj_atom_chars_2` forward path causes VerifyError at class load time (affects ALL programs, not just atom_chars users, since helper is always emitted).
+- Score: 0/5 rung12 (all fail with VerifyError). 5/5 rung11, 20/20 puzzles confirmed before the bug was introduced.
+- snobol4x HEAD: `da9cfb7`.
 
 **Baseline: 20/20 puzzle corpus PASS. 5/5 rung11_findall PASS. M-PJ-FINDALL ✅**
 

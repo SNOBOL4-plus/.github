@@ -1413,3 +1413,19 @@ Root cause: `pj_emit_arith()` has no case for `mod` — falls to `default: lcons
 **M-PJ-FINDALL ✅ fired.**
 
 **Next session (PJ-48):** M-PJ-ATOM-BUILTINS — `atom_chars/2`, `atom_codes/2`, `atom_length/2`, `atom_concat/2`, `char_code/2`, `number_chars/2`, `number_codes/2`, `upcase_atom/2`, `downcase_atom/2`. Create `rung12_atom_builtins/`. All JVM String ops.
+
+## PJ-48 — M-PJ-ATOM-BUILTINS WIP (0/5 rung12, 1 bug)
+
+**HEAD:** `da9cfb7` | **Date:** 2026-03-25
+
+**Work done:**
+
+- Created `rung12_atom_builtins/` corpus: 5 test `.pro` files + swipl-oracle `.expected` for `atom_length`, `atom_concat`, `atom_chars`, `atom_codes`, `atom_case` (upcase_atom/downcase_atom/atom_length).
+- Added runtime Jasmin helper methods in `pj_emit_helpers()`: `pj_atom_name`, `pj_int_val`, `pj_string_to_char_list`, `pj_string_to_code_list`, `pj_char_list_to_string`, `pj_code_list_to_string`, `pj_atom_chars_2`, `pj_atom_codes_2`, `pj_char_code_2`.
+- Added all 9 dispatch cases to `pj_emit_goal()`: `atom_length/2`, `atom_concat/3`, `atom_chars/2`, `atom_codes/2`, `number_chars/2`, `number_codes/2`, `char_code/2`, `upcase_atom/2`, `downcase_atom/2`.
+
+**Remaining bug:** Spurious `JI("pop","")` in `pj_atom_chars_2` forward path (line ~997 in `prolog_emit_jvm.c`). The `ifne ac2_reverse` branch check leaves nothing extra on stack; the `pop` that follows causes a JVM VerifyError at class load time for ALL programs (helper always emitted). Fix: delete that one `JI("pop","")` line.
+
+**Score:** 0/5 rung12 (all VerifyError). Context window ~90% — emergency handoff. 5/5 rung11 and 20/20 puzzles confirmed at session start before any edits.
+
+**Next session (PJ-49):** Delete the spurious `pop`. Build. Run rung12 → expect 5/5. Confirm 20/20 puzzles. If all green: fire M-PJ-ATOM-BUILTINS ✅, move to M-PJ-RETRACT or M-PJ-SORT.
