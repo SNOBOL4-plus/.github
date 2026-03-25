@@ -1271,3 +1271,29 @@ The five-level hierarchy is defined but NOT YET ENFORCED by the doc structure. T
 - Several L4 docs are missing entirely: no dedicated doc for Snocone sessions, no BACKEND-NET.md for N-sessions (TINY.md covers it but is 15KB). If a Snocone or NET session starts, it has no L4 home.
 
 **Session start for next G-session:** `tail -80 SESSIONS_ARCHIVE.md` → read this entry → PLAN.md NOW table → RULES.md → then tackle the "still NOT done" list above. Do NOT read GRAND_MASTER_REORG.md unless a G-milestone phase detail is needed.
+
+---
+
+## G-6 continuation — §BUILD/§TEST stubs added
+
+**Commits:** 769a895
+
+**Completed the remaining G-5 mandate:**
+- `§BUILD` and `§TEST` sections added to: FRONTEND-ICON-JVM.md, FRONTEND-PROLOG-JVM.md, FRONTEND-ICON.md, TINY.md
+- Each has 3 commands: build driver, run full corpus, run single-rung/file quick check
+- Sessions no longer need to cold-read TESTING.md to find test commands
+
+**What is genuinely done now (G-5+G-6 combined):**
+1. ✅ RULES.md session-start: `tail -80 SESSIONS_ARCHIVE.md` is step 1
+2. ✅ PLAN.md: 19KB → 5KB
+3. ✅ FRONTEND-ICON-JVM.md: 54KB → 16KB (history stripped)
+4. ✅ FRONTEND-PROLOG-JVM.md: 26KB → 22KB (history stripped)
+5. ✅ FRONTEND-ICON.md: 10KB → 8KB (history stripped)
+6. ✅ §BUILD + §TEST in all active pipeline L4 docs
+
+**Still open:**
+- PLAN.md is 5KB vs 3KB target. The NOW table for 12 sessions + 4D matrix is the irreducible floor. Either accept 5KB or split inactive sessions to a PLAN-INACTIVE.md. Decision deferred to Lon.
+- DOTNET.md has no §BUILD/§TEST yet (D-sessions). Low priority — D-session is Jeff's.
+- JVM.md (snobol4jvm Clojure backend) has no §BUILD/§TEST. Low priority.
+
+**Next G-session:** The doc infrastructure is now healthy. Next G work is execution — wait for Lon's M-G0-FREEZE signal to begin Phase 0. No doc work needed unless a session reports confusion.
