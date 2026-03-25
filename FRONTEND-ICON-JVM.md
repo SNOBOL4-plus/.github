@@ -19,7 +19,7 @@ assembled by `jasmin.jar` into `.class` files. Despite the file's location under
 
 | Session | Sprint | HEAD | Next milestone |
 |---------|--------|------|----------------|
-| **Icon JVM** | `main` IJ-33 — M-IJ-LISTS ✅ 114/114 PASS | `51c7335` IJ-33 | M-IJ-CORPUS-R22 |
+| **Icon JVM** | `main` IJ-34 — M-IJ-TABLE WIP; 114/114 PASS | `ca94be1` IJ-34 | M-IJ-TABLE |
 
 **⚠ Grand Master Reorg plan published — sessions continue normally. See GRAND_MASTER_REORG.md.**
 
@@ -108,6 +108,59 @@ gcc -Wall -Wextra -g -O0 -I. src/frontend/icon/icon_driver.c src/frontend/icon/i
 #   Step 5 — build, confirm 114/114, commit, push → M-IJ-LISTS ✅
 ```
 
+
+### IJ-34 findings — M-IJ-TABLE WIP (HEAD ca94be1)
+
+**114/114 PASS baseline preserved. M-IJ-CORPUS-R22 confirmed ✅.**
+
+**Implemented in `icon_emit_jvm.c`:**
+1. **HashMap static helpers** — `ij_declare_static_table/get/put_table_field`, type tag `'T'`
+2. **`ij_expr_is_table`** — type predicate: `ICN_CALL("table",...)`, assign propagation, var tag `'T'`
+3. **Static field emitter** — `'T'` → `.field public static X Ljava/util/HashMap;`
+4. **`ij_emit_var`** — loads table vars via `ij_get_table_field`
+5. **`ij_emit_assign`** — stores table RHS; `t[k] := v` subscript-LHS branch (WIP — VerifyError, see bugs below)
+6. **Pre-pass** — registers table-typed vars before emit
+7. **Stmt drain** — `is_tbl` counted as ref type (1-slot pop)
+8. **`ij_emit_subscript`** — table branch: `HashMap.get(key_str)` → unbox Long; returns `lconst_0` on missing (default stub)
+9. **`ij_expr_is_string(ICN_SUBSCRIPT)`** — guarded: returns 0 when child is table
+10. **`ij_emit_call` table builtins** — `table(dflt)`, `insert(T,k,v)`, `delete(T,k)`, `member(T,k)`, `key(T)` generator
+11. **rung23 corpus** — 5 tests: basic, default, member, insert/delete, key generator
+
+**rung23 test results (IJ-34):** t01 ✅ t03 ✅ · t02 ❌ t04 ❌ t05 ❌
+
+**Three bugs for IJ-35 to fix:**
+
+**Bug 1 — `t[k] := v` VerifyError (t04):**
+`ij_emit_assign` subscript-LHS branch calls `ij_emit_expr(kexpr,...)` mid-relay, generating code that mixes stack frames. Fix: detect `ICN_ASSIGN(ICN_SUBSCRIPT(t,k), v)` at the TOP of `ij_emit_assign` before any emit, handle the full T→k→v→put flow as one clean chain with early return. Pattern: eval v → store in `v_fld`; eval t → store in `t_fld`; eval k → `Long.toString` → store in `k_fld`; `t_fld.put(k_fld, v_fld)`; reload v as long → γ.
+
+**Bug 2 — default value returns 0 (t02):**
+`table(dflt)` stores default as `icn_%d_tdflt` Object static but the subscript reader uses hardcoded `lconst_0` fallback. Fix: store the default under a sentinel key `"\x00default"` in the HashMap itself, or use a naming convention tied to the var field name. Simplest: when emitting `table(dflt)`, also store dflt under key `""` in the map; subscript miss returns `map.getOrDefault(key, map.get(""))` — but getOrDefault not in Java 7. Better: each table var gets a parallel `<varfield>_dflt J` static; `table(dflt)` stores dflt there; subscript miss loads it.
+
+**Bug 3 — `key(T)` off-by-one (t05, sum=10 not 60):**
+Generator yields only first key. The `if_icmple` (arr.length <= idx → fail) should be `if_icmpge` (idx >= arr.length → fail): `if_icmple` compares `[length, idx]` on stack — but `icmpge` takes `[v1, v2]` and tests `v1 >= v2`. With stack `[length, idx]`: `if_icmple` fires when `length <= idx` which is `idx >= length` — actually that IS correct. The real issue: `arraylength` + `if_icmple` operand order. Stack after `arraylength; iload idx` is `[length, idx]`; `if_icmple` tests `length <= idx` i.e. `idx >= length` → correct. But wait — the current code loads idx SECOND: `...arraylength` then `iload idx_fld` then `if_icmple`. The `if_icmple` pops TWO values: `[..., v1, v2]` → branches if `v1 <= v2`. So `v1=length, v2=idx` → branches if `length <= idx` i.e. idx >= length → correct. Must be a different issue. The β port increments idx THEN checks; but α doesn't emit to `check` via the correct path after the first value. Trace: α→trelay→snapshot→`iconst_0`→put idx→`goto check`. check: load arr; arraylength; load idx; if arr.length <= idx → ω. Then load arr; load idx; aaload; parseLong → γ. β: load idx; +1; put; goto check. This looks correct for the first iteration. The sum=10 (only t[1] value) suggests only key "1" is yielded and parsed correctly, but the others fail. Likely `Long.parseLong` on the string key fails for some keys — perhaps the key was stored differently by `t[k] :=` (broken) vs `t[key]` generator. Since t04 (which uses `t[k] :=`) crashes with VerifyError, t05 which also uses `t[k] :=` likely crashes too; the sum=10 is probably from the partial execution before the VerifyError path.
+
+**Fix order for IJ-35:**
+1. Fix Bug 1 (t[k]:=v) first — it's blocking t04 and t05
+2. Fix Bug 2 (default) — t02 isolated
+3. Verify Bug 3 resolves itself once Bug 1 is fixed
+
+**IJ-35 session checklist:**
+```bash
+git clone https://TOKEN_SEE_LON@github.com/snobol4ever/snobol4x
+git clone https://TOKEN_SEE_LON@github.com/snobol4ever/.github
+apt-get install -y default-jdk nasm libgc-dev
+cd snobol4x
+gcc -Wall -Wextra -g -O0 -I. src/frontend/icon/icon_driver.c src/frontend/icon/icon_lex.c \
+    src/frontend/icon/icon_parse.c src/frontend/icon/icon_ast.c \
+    src/frontend/icon/icon_emit.c src/frontend/icon/icon_emit_jvm.c \
+    src/frontend/icon/icon_runtime.c -o /tmp/icon_driver
+# Confirm 114/114 baseline
+# Fix Bug 1: rewrite ij_emit_assign top — detect ICN_ASSIGN(ICN_SUBSCRIPT(t,k),v) early,
+#   emit: eval_rhs→v_fld; eval_t→t_fld; eval_k→Long.toString→k_fld; put; reload v → γ
+# Fix Bug 2: add per-var-field _dflt J static; table(dflt) stores there; subscript miss loads it
+# Run rung23 — target 5/5 PASS → 119/119 total
+# Commit "IJ-35: M-IJ-TABLE ✅ — 119/119 PASS"
+```
 
 ### IJ-33 findings — M-IJ-LISTS ✅
 

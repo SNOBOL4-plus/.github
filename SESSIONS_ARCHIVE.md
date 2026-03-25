@@ -1327,3 +1327,28 @@ The five-level hierarchy is defined but NOT YET ENFORCED by the doc structure. T
 **Result:** M-IJ-LISTS ✅ — 114/114 PASS (rungs 01–22)
 
 Implemented full list infrastructure: `ij_expr_is_list()`, pre-pass type registration for list vars, `ij_emit_var`/`ij_emit_assign` list branches, statement drain ref-type fix, list builtins (`push`/`put`/`get`/`pop`/`pull`/`list`), `ij_emit_bang` list branch, `ij_emit_size` list branch, `ij_expr_is_string(ICN_BANG)` list fix. rung22 corpus 5/5. Root bugs fixed: pre-pass missing list type → statics table miss at emit time; `pull` `dup`+`ifeq` stack-height inconsistency (pull_fail trampoline); `ij_expr_is_string(ICN_BANG)` returning 1 for list operands.
+
+---
+
+## IJ-34 — 2026-03-25
+
+**Trigger:** "playing with snobol4x JVM backend for ICON frontend" + JCON source zip uploaded.
+**HEAD start:** `51c7335` (IJ-33). **HEAD end:** `ca94be1`.
+**Baseline confirmed:** 114/114 PASS (rungs 01–22) at session start and end.
+
+**Accomplished:**
+- Confirmed M-IJ-CORPUS-R22 ✅ (114/114, rung22 lists all pass — earlier 0/0 was jasmin stdout noise in runner)
+- Implemented full M-IJ-TABLE infrastructure in `icon_emit_jvm.c`:
+  - HashMap static helpers (type tag 'T'), `ij_expr_is_table`, static field emitter extension
+  - `ij_emit_var` / `ij_emit_assign` / pre-pass / stmt-drain all updated for tables
+  - `ij_emit_subscript` table branch (read path)
+  - `ij_emit_call` builtins: `table(dflt)`, `insert(T,k,v)`, `delete(T,k)`, `member(T,k)`, `key(T)` generator
+  - rung23 corpus (5 tests) + run_rung23.sh
+- rung23 results: t01 ✅ t03 ✅ · t02 ❌ t04 ❌ t05 ❌
+
+**Three known bugs (see FRONTEND-ICON-JVM.md §IJ-34 findings for full diagnosis):**
+1. `t[k] := v` → VerifyError: subscript-LHS assign calls ij_emit_expr mid-relay, mixing stack frames
+2. `table(dflt)` default value not threaded to subscript reader (returns lconst_0)
+3. `key(T)` generator: blocked by Bug 1 (t05 uses t[k]:=v)
+
+**Next session (IJ-35):** Fix Bug 1 first (rewrite top of ij_emit_assign for SUBSCRIPT LHS), then Bug 2 (per-var _dflt static), verify 5/5 rung23 → 119/119 total → M-IJ-TABLE ✅.
