@@ -81,12 +81,34 @@ The Byrd-box four-port model (α/β/γ/ω) is emitted as labels + gotos — neve
 
 ---
 
-## ⛔ DOC SIZE — L1/L2/L3 hard limits; replace, never append
+## ⛔ DOC HIERARCHY — Five levels, strict reading discipline
 
-- **PLAN.md (L1):** ~3KB max. NOW table + milestone dashboard rows only. No sprint content, no step content, no completed milestone rows. Ever.
-- **L2 docs** (TINY.md, JVM.md, DOTNET.md, FRONTEND-PROLOG-JVM.md, etc.): 10KB max. §NOW + §CRITICAL NEXT ACTION only for sprint content. Completed session summaries stay in SESSIONS_ARCHIVE.md.
-- **L3 docs** (RULES.md, ARCH.md, TESTING.md, etc.): Reference only — no session state, no step content.
-- When updating: **replace** the relevant section. Never append session summaries to L2 docs beyond §NOW.
+| Level | Files | Size limit | Read when |
+|-------|-------|-----------|-----------|
+| **L1** | `PLAN.md` | 3KB hard | Every session, always — NOW table + milestone IDs only |
+| **L2** | `TINY.md`, `JVM.md`, `DOTNET.md` | 10KB | Your platform session — HEAD, build, §NOW sprint |
+| **L3** | `RULES.md`, `ARCH.md` | 10KB | Every session — invariant, never changes session-to-session |
+| **L4** | `FRONTEND-*.md`, `BACKEND-*.md`, `MONITOR.md`, `TESTING.md`, `BEAUTY.md`, `GRAND_MASTER_REORG.md`, `SCRIPTEN_DEMO*.md`, `PATCHES.md` | No hard limit | **Your pipeline or topic only** — read the one(s) matching your session type, no others |
+| **L5** | `SESSIONS_ARCHIVE.md`, `MILESTONE_ARCHIVE.md` | Unlimited | Post-session append only — never read at session start |
+
+**The session start protocol:**
+1. Read L1 (`PLAN.md`) — find your NOW row and next milestone
+2. Read L3 (`RULES.md` + `ARCH.md`) — if first session on this area; skip if familiar
+3. Read your L2 doc — if your session type has one
+4. Read your L4 doc(s) — the one file matching your frontend×backend or topic
+5. Do not read any other L4 docs. Do not read L5.
+
+**L4 owns all sprint content.** Session state, §NOW, §CRITICAL NEXT ACTION, step-by-step plans — all go in the L4 doc. Never in L1 or L3.
+
+---
+
+
+
+- **L1 PLAN.md:** 3KB max. NOW table + milestone IDs only. No sprint content, no step content, no completed rows. Ever.
+- **L2 docs:** 10KB max. §NOW + §CRITICAL NEXT ACTION only.
+- **L3 docs:** 10KB max. Invariant reference only — no session state, no step content.
+- **L4 docs:** No hard limit. Replace sections; never append. Session summaries → L5 SESSIONS_ARCHIVE.md.
+- When updating: **replace** the relevant section. Never append session summaries beyond §NOW.
 - SESSIONS_ARCHIVE.md is append-only and has no size limit.
 
 ---

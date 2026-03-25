@@ -118,18 +118,7 @@ See [GRAND_MASTER_REORG.md](GRAND_MASTER_REORG.md) for full plan. **Concurrent d
 | **M-G7-STYLE-BACKENDS** | 7 — Style: all backend files conform | ❌ |
 | **M-G7-STYLE-FRONTENDS** | 7 — Style: all frontend files conform | ❌ |
 | **M-G7-UNFREEZE** | 7 — Style: post-reorg-baseline tagged; all sessions resume | ❌ |
-| **M-G8-HOME** | 8 — GenTest: enumerator home repo decision + `doc/GEN_HOME.md` | ❌ |
-| **M-G8-DEPTH** | 8 — GenTest: token-count vs IR-node depth decision + `doc/GEN_DEPTH.md` | ❌ |
-| **M-G8-ORACLE** | 8 — GenTest: differential vs reference-cache oracle + `doc/GEN_ORACLE.md` | ❌ |
-| **M-G8-GRAMMAR** | 8 — GenTest: first language + fragment BNF + `doc/GEN_GRAMMAR.md` | ❌ |
-| **M-G8-ENUM-CORE** | 8 — GenTest: `gen/enumerate.py` core | ❌ |
-| **M-G8-EMIT-SNO** | 8 — GenTest: IR tree → `.sno` serializer | ❌ |
-| **M-G8-RUNNER** | 8 — GenTest: full pipeline + Monitor hook | ❌ |
-| **M-G8-SNOBOL4-N10** | 8 — GenTest: SNOBOL4 pattern N=10, zero divergences | ❌ |
-| **M-G8-SNOBOL4-N25** | 8 — GenTest: SNOBOL4 pattern N=25, zero divergences | ❌ |
-| **M-G8-ICON-N25** | 8 — GenTest: Icon generators N=25, zero divergences | ❌ |
-| **M-G8-PROLOG-N25** | 8 — GenTest: Prolog clause bodies N=25, zero divergences | ❌ |
-| **M-G8-CI** | 8 — GenTest: N=10 slice in CI, < 5 min | ❌ |
+| **M-G8-\* (12)** | 8 — GenTest: grammar-driven exhaustive test generation | ❌ post-G7 |
 
 Full plan → [GRAND_MASTER_REORG.md](GRAND_MASTER_REORG.md)
 
@@ -137,18 +126,12 @@ Full plan → [GRAND_MASTER_REORG.md](GRAND_MASTER_REORG.md)
 
 ### Scripten Demo — Active
 
-**Session trigger phrase:** `"playing with Scripten demo"`
-**L3 docs:** [SCRIPTEN_DEMO.md](SCRIPTEN_DEMO.md) · [SCRIPTEN_DEMO2.md](SCRIPTEN_DEMO2.md)
-**Prerequisites:** IJ rung03 ✅ (`suspend` working) · PJ 20/20 ✅ · snobol4x JVM backend on `main`
+**Trigger:** `"playing with Scripten demo"` → [SCRIPTEN_DEMO.md](SCRIPTEN_DEMO.md) · [SCRIPTEN_DEMO2.md](SCRIPTEN_DEMO2.md)
 
 | ID | Description | Status |
 |----|-------------|--------|
-| **M-SCRIPTEN-DEMO** | Demo #1 — Family Tree: SNOBOL4 parses CSV, Prolog infers relationships, Icon formats report. `run_demo.sh` clean, output matches `family.expected`. | ❌ **NEXT** |
-| **M-SCRIPTEN-DEMO2** | Demo #2 — Puzzle Solver: SNOBOL4 reads S-expressions, Prolog stores constraints, Icon searches with `suspend`. `run_demo2.sh` clean, puzzle1 unique solution confirmed. | ❌ |
-
-**Dependency:** M-SCRIPTEN-DEMO must fire before M-SCRIPTEN-DEMO2 — splitter and funny linkage infrastructure are shared and built once.
-
-Full specs → [SCRIPTEN_DEMO.md](SCRIPTEN_DEMO.md) · [SCRIPTEN_DEMO2.md](SCRIPTEN_DEMO2.md)
+| **M-SCRIPTEN-DEMO** | Demo #1 — Family Tree (SNOBOL4+Prolog+Icon, JVM funny linkage) | ❌ **NEXT** |
+| **M-SCRIPTEN-DEMO2** | Demo #2 — Puzzle Solver (suspend search, Prolog constraints) | ❌ |
 
 ---
 
@@ -297,27 +280,37 @@ Full trigger specs → [GRIDS.md](GRIDS.md)
 
 ---
 
-## L2/L3 Index
+## Doc Index
 
-| File | Level | What |
-|------|-------|------|
-| [TINY.md](TINY.md) | L2 | snobol4x — HEAD, build, active sprint, pivot log |
-| [JVM.md](JVM.md) | L2 | snobol4jvm — HEAD, lein commands, active sprint |
-| [DOTNET.md](DOTNET.md) | L2 | snobol4dotnet — HEAD, dotnet commands, active sprint |
-| [RULES.md](RULES.md) | L3 | Mandatory rules ← **read every session** |
-| [BEAUTY.md](BEAUTY.md) | L3 | beauty.sno subsystem test plan: 19 drivers |
-| [MONITOR.md](MONITOR.md) | L3 | 5-way monitor design and runner |
-| [ARCH.md](ARCH.md) | L3 | Byrd Box model, shared architecture |
-| [SESSIONS_ARCHIVE.md](SESSIONS_ARCHIVE.md) | L3 | Full session history — append-only |
-| [MILESTONE_ARCHIVE.md](MILESTONE_ARCHIVE.md) | L3 | All ✅ completed milestone rows |
-| [FRONTEND-PROLOG.md](FRONTEND-PROLOG.md) | L3 | Prolog frontend sprint detail |
-| [FRONTEND-ICON.md](FRONTEND-ICON.md) | L3 | Icon frontend sprint detail |
-| [FRONTEND-PROLOG-JVM.md](FRONTEND-PROLOG-JVM.md) | L3 | Prolog→JVM frontend sprint detail |
-| [FRONTEND-ICON-JVM.md](FRONTEND-ICON-JVM.md) | L3 | Icon→JVM frontend sprint detail |
-| [TESTING.md](TESTING.md) | L3 | Corpus ladder, oracle index |
-| [PATCHES.md](PATCHES.md) | L3 | Runtime patch audit trail |
+| File | Level | Read when |
+|------|-------|-----------|
+| [RULES.md](RULES.md) | L3 — invariant | Every session |
+| [ARCH.md](ARCH.md) | L3 — invariant | Every session |
+| [TINY.md](TINY.md) | L2 — platform | B/N/J/F sessions |
+| [JVM.md](JVM.md) | L2 — platform | snobol4jvm sessions |
+| [DOTNET.md](DOTNET.md) | L2 — platform | D sessions |
+| [FRONTEND-SNOBOL4.md](FRONTEND-SNOBOL4.md) | L4 — pipeline | SNOBOL4 frontend work |
+| [FRONTEND-ICON.md](FRONTEND-ICON.md) | L4 — pipeline | I sessions |
+| [FRONTEND-ICON-JVM.md](FRONTEND-ICON-JVM.md) | L4 — pipeline | IJ sessions |
+| [FRONTEND-PROLOG.md](FRONTEND-PROLOG.md) | L4 — pipeline | F sessions (Prolog) |
+| [FRONTEND-PROLOG-JVM.md](FRONTEND-PROLOG-JVM.md) | L4 — pipeline | PJ sessions |
+| [FRONTEND-SNOCONE.md](FRONTEND-SNOCONE.md) | L4 — pipeline | Snocone sessions |
+| [FRONTEND-REBUS.md](FRONTEND-REBUS.md) | L4 — pipeline | Rebus sessions |
+| [BACKEND-X64.md](BACKEND-X64.md) | L4 — pipeline | B sessions |
+| [BACKEND-JVM.md](BACKEND-JVM.md) | L4 — pipeline | J sessions |
+| [BACKEND-NET.md](BACKEND-NET.md) | L4 — pipeline | N sessions |
+| [BEAUTY.md](BEAUTY.md) | L4 — topic | beauty.sno sprint |
+| [MONITOR.md](MONITOR.md) | L4 — topic | monitor work |
+| [TESTING.md](TESTING.md) | L4 — topic | test infra work |
+| [GRAND_MASTER_REORG.md](GRAND_MASTER_REORG.md) | L4 — topic | G sessions |
+| [SCRIPTEN_DEMO.md](SCRIPTEN_DEMO.md) | L4 — topic | SD sessions |
+| [SCRIPTEN_DEMO2.md](SCRIPTEN_DEMO2.md) | L4 — topic | SD sessions |
+| [PATCHES.md](PATCHES.md) | L4 — topic | runtime patch work |
+| [SESSIONS_ARCHIVE.md](SESSIONS_ARCHIVE.md) | L5 — archive | post-session append only |
+| [MILESTONE_ARCHIVE.md](MILESTONE_ARCHIVE.md) | L5 — archive | completed milestones |
 
 ---
 
-*PLAN.md = L1 index only. ~3KB max. No sprint content. No step content. No completed milestone rows. Ever.*
-*Milestone fires → move its row to MILESTONE_ARCHIVE.md, update NOW table, update L2 doc.*
+*PLAN.md = L1. 3KB max. NOW table + milestone IDs only. No sprint content. No step content. No completed rows. Ever.*
+*L3 = invariant rules + architecture — read every session. L4 = your pipeline or topic only. L5 = never read at session start.*
+*Milestone fires → move row to MILESTONE_ARCHIVE.md, update NOW table, update L4 doc.*
