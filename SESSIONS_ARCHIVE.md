@@ -631,3 +631,32 @@ All four use static helper methods (same pattern as `any`/`many`/`upto`).
 `tab`/`move` return String (null on failure); `ij_expr_is_string` updated.
 `need_scan_builtins` guard extended to detect `icn_find_s1_N` statics.
 44/44 rung01-08 PASS. Baseline rung01-07 39/39 unchanged.
+
+---
+
+## B-292 — 2026-03-24 — epsilon . *VAR bug found (no fix applied)
+
+**HEAD on entry:** `6f11821` **HEAD on exit:** no commit **Branch:** main
+
+**TL;DR:** `epsilon . *FN()` side-effect does not fire at match time in ASM backend.
+
+**Minimal reproducer:**
+```snobol4
+        ctr = 0
+        Inc = ctr = ctr + 1
+        p = epsilon . *Inc
+        '' *p
+        OUTPUT = 'ctr: ' ctr   * Oracle: 1 / ASM: 0
+END
+```
+
+**Root cause cascade:**
+- beauty.sno builds `Parse = nPush() ARBNO(*Command) ... nPop()`
+- `nPush()` returns `epsilon . *PushCounter()` — a match-time side-effect pattern
+- ASM does not fire `*PushCounter()` at match time → counter stack never initialized → `nTop()` wrong → parse fails → `"Parse Error"` on output line 8
+
+**Fix location:** `src/backend/x64/emit_byrd_asm.c` — the pattern emitter for dot-operator with `E_STAR(E_CALL(...))` RHS. Currently evaluates `*FN()` at build time or builds wrong capture node. Must emit `pat_immed`-style node that executes `FN()` at match time.
+
+**Also found:** `blk_alloc.c` missing from link line in `test/crosscheck/run_crosscheck_asm_prog.sh`.
+
+**Next (B-293):** Fix `epsilon . *FN()` in emit_byrd_asm.c → re-run beauty bootstrap → fire M-BEAUTIFY-BOOTSTRAP.
