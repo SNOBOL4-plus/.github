@@ -219,10 +219,11 @@ Session prefix for all reorg work: **`G`** (Grand Master). e.g. G-1, G-2, ...
 | **M-G2-MOVE-ICON-JVM** | `git mv src/frontend/icon/icon_emit_jvm.c src/backend/jvm/emit_jvm_icon.c`. Update references. No content changes. | Icon JVM corpus 99/99 |
 | **M-G2-MOVE-PROLOG-JVM** | `git mv src/frontend/prolog/prolog_emit_jvm.c src/backend/jvm/emit_jvm_prolog.c`. Update references. No content changes. | Prolog JVM 20/20 |
 | **M-G2-MOVE-ICON-ASM** | `git mv src/frontend/icon/icon_emit.c src/backend/x64/emit_x64_icon.c`. Update references. No content changes. | Icon ASM rung03 5/5 |
-| **M-G2-MOVE-PROLOG-ASM** | Extract Prolog ASM emitter (tail of `emit_x64.c`) into `src/backend/x64/emit_x64_prolog.c`. Include from `emit_x64.c` or compile separately. | Prolog ASM rungs 1–9 PASS |
+| **M-G2-MOVE-PROLOG-ASM** | ⚠ FILE SPLIT — not a `git mv`. The Prolog ASM emitter is currently embedded in the tail of `emit_x64.c`. Extract it into `src/backend/x64/emit_x64_prolog.c`. Either `#include` it from `emit_x64.c` or add as a separate compilation unit in the Makefile. Do this last within Phase 2 — all clean `git mv` moves above must be verified green first. | Prolog ASM rungs 1–9 PASS |
 
 After M-G2: the file layout matches the target architecture. Every emitter sits
-in the backend directory that owns it.
+in the backend directory that owns it. **M-G2-MOVE-PROLOG-ASM must be last** —
+it is a file split, not a rename, and carries the most risk within this phase.
 
 ---
 
