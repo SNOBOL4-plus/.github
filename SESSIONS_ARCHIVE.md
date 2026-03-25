@@ -660,3 +660,28 @@ END
 **Also found:** `blk_alloc.c` missing from link line in `test/crosscheck/run_crosscheck_asm_prog.sh`.
 
 **Next (B-293):** Fix `epsilon . *FN()` in emit_byrd_asm.c → re-run beauty bootstrap → fire M-BEAUTIFY-BOOTSTRAP.
+
+---
+
+## PJ-25 through PJ-30 — Puzzle corpus real-search rewrite
+
+**Sessions:** PJ-25, PJ-26, PJ-27, PJ-28, PJ-29, PJ-30
+**Branch:** main
+**Repo:** snobol4x + .github
+
+**Work done:**
+- Audited all 16 M-PZ puzzle files: identified 7 hardcoded write stubs (puzzle_12, 13, 15, 16, 18, 19, 20).
+- Updated FRONTEND-PROLOG.md milestone table to reflect real-search status vs stub.
+- Rewrote all 7 stubs as genuine Prolog constraint search; all pass swipl.
+- puzzle_15: derived correct answer (Vernon=doctor/Wilson=architect/Yates=lawyer) — original stub had wrong answer.
+- puzzle_18: derived correct answer (Abbott=hardware/Denny=shoe) — original stub had Abbott/Denny swapped.
+- puzzle_20: original stub violated "novelist never reads history"; real search found 4 valid solutions.
+- puzzle_16: uses minimal family-inference (brakeman=art forced from "John older than Art" + uncle reasoning).
+- puzzle_12: 2 valid solutions (Conroy/Eggleston math/history symmetric); accepted both.
+
+**Milestones fired:** M-PZ-14 ✅, M-PZ-15 ✅, M-PZ-16 ✅, M-PZ-12 ✅, M-PZ-13 ✅, M-PZ-18 ✅, M-PZ-19 ✅, M-PZ-20 ✅
+
+**Still open:** M-PJ-DISPLAY-BT (puzzle_03 JVM over-generates; ITE cut leak in pj_emit_goal).
+**Next:** PJ-31 — fix puzzle_03 not_dorothy to single clause; verify JVM 1L. Then puzzle_11 2L issue.
+
+**HEAD at handoff:** snobol4x `8ace0f7`, .github `d8e49fe`

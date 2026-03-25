@@ -19,45 +19,43 @@ and emits Jasmin `.j` files, assembled by `jasmin.jar`.
 
 | Session | Sprint | HEAD | Next milestone |
 |---------|--------|------|----------------|
-| **Prolog JVM** | `main` PJ-24 — two trail bugs fixed; puzzle_03 logic OK; display/6 over-generates | `a77555c` PJ-24 | M-PJ-DISPLAY-BT |
+| **Prolog JVM** | `main` PJ-30 — all 16 M-PZ puzzle stubs replaced with real search; swipl PASS | `8ace0f7` PJ-30 | M-PJ-DISPLAY-BT |
 
-### CRITICAL NEXT ACTION (PJ-25)
+### CRITICAL NEXT ACTION (PJ-31)
 
-**Milestone: M-PJ-DISPLAY-BT — puzzle_03 display/6 over-generation.**
+**Milestone: M-PJ-DISPLAY-BT — puzzle_03 JVM over-generation (ITE cut leak).**
 
-**PJ-24 fixes landed (commit a77555c):**
-1. `\+` trail: save mark before inner goal, unwind on both paths. Mirrored `\=/2` pattern.
-2. Body-fail trail: added `bodyfail_N` trampoline per clause in `pj_emit_choice`. When body goal fails (`dg_omega`), now unwinds clause trail before jumping to next clause. `lbl_outer_ω` (ucall exhaustion) still goes directly to next clause to avoid double-unwind.
+**PJ-25 through PJ-30 work summary:**
+- All 16 M-PZ puzzle milestones: replaced hardcoded write stubs with real Prolog search.
+- puzzle_14,17,04,09,08,11,07,10,03 were already real search; stubs replaced for 12,13,15,16,18,19,20.
+- puzzle_18 stub was wrong (Abbott/Denny swapped); real search found correct answer.
+- puzzle_20 stub was wrong (had novelist reading history); real search found 4 valid solutions.
+- puzzle_03 swipl PASS (1 correct line); JVM still over-generates — M-PJ-DISPLAY-BT still open.
+- puzzle_11 JVM produces 2L vs 1L oracle — also needs investigation after puzzle_03.
 
-**puzzle_03 current state:**
-- Logic search: 12/12 assignments match swipl ✅
-- `display/6` over-generates: 56 JVM lines vs 12 oracle lines.
-- Root cause: `display/6` is called from `puzzle/0` as `display(...), fail`. The `fail` backtracks into `display`, which retries `find_couples` (6 clauses). For most inputs `find_couples` has exactly 1 solution, so `display` exhausts and its `call_ω` fires. `call_ω` routes to `lbl_ω` of the enclosing `pj_emit_body` call — which is `call_β` of `not_dorothy` (the previous user-call). This causes `not_dorothy` to be retried: it has 2 clauses (clause1: `\+`, clause2: ITE), both succeed for valid inputs → double display per assignment.
-- **Fix direction:** `not_dorothy` should be deterministic — its two clauses are redundant (both encode the same constraint). The puzzle source should use `once(not_dorothy(...))` or `not_dorothy` should have a `!` after the ITE clause. Alternatively, fix the puzzle to use a single-clause `not_dorothy`. The JVM emitter is correct; the puzzle source has unintended choice points.
-- **Confirm:** `swipl` also produces 12 lines for puzzle_03 (same trace), meaning swipl somehow avoids the double-execution. Check if swipl's ITE (`->`) cuts the choice point in clause2, preventing retry of `not_dorothy`. If so, the JVM ITE emitter may not be cutting correctly.
+**puzzle_03 JVM issue:**
+- `not_dorothy` has 2 clauses: clause1 uses `\+`, clause2 uses ITE (`->`).
+- swipl's ITE cuts the choice point after clause2 succeeds, preventing `not_dorothy` retry.
+- JVM ITE emitter does not cut the enclosing clause choice point → `not_dorothy` retried → double display.
+- Fix: in `pj_emit_goal`, ITE (`->`) must seal the choice point of the enclosing clause (like a cut after the ITE). Alternatively fix puzzle source to use single-clause `not_dorothy`.
+- Quickest fix: rewrite puzzle_03 `not_dorothy` as a single clause (remove the dead `\+` clause).
 
-**Bootstrap PJ-25:**
+**Bootstrap PJ-31:**
 ```bash
 git clone https://TOKEN_SEE_LON@github.com/snobol4ever/snobol4x
 git clone https://TOKEN_SEE_LON@github.com/snobol4ever/.github
 apt-get install -y --fix-missing default-jdk nasm libgc-dev swi-prolog
 make -C snobol4x/src
-# Confirm baseline: 9/9 rungs PASS
-# Test: does not_dorothy generate 1 or 2 solutions under backtrack?
-cat > /tmp/nd_bt.pro << 'EOF2'
-:- initialization(main).
-not_dorothy(T,D,J,V,B,Ji) :- \+ partner_is(T,D,D,J,V,B,Ji).
-partner_is(T,D,D,_,_,_,_) :- T+D=:=T+D, fail.
-not_dorothy(T,D,J,V,B,Ji) :-
-    ( B+D=:=Ji+J,Ji+J=:=T+V->G_T=V ; B+D=:=Ji+V,Ji+V=:=T+J->G_T=J
-    ; B+J=:=Ji+D,Ji+D=:=T+V->G_T=V ; B+J=:=Ji+V,Ji+V=:=T+D->G_T=D
-    ; B+V=:=Ji+D,Ji+D=:=T+J->G_T=J ; B+V=:=Ji+J,Ji+J=:=T+D->G_T=D
-    ; fail ), G_T=\=D.
-main :- not_dorothy(5,2,6,3,1,4), write(ok), write('\n'), fail ; true.
-EOF2
-# swipl: 1 line "ok". JVM: should also be 1. If 2, ITE cut is leaking.
-# If not_dorothy gives 2 JVM solutions: fix ITE -> cut in pj_emit_goal
-# puzzle_11: add to next session after puzzle_03 PASS
+# Confirm: rungs 01-09 PASS, rung10 puzzles baseline
+cd snobol4x && PUZZLE=puzzle_03; CLS=Puzzle_03
+./sno2c -pl -jvm test/frontend/prolog/corpus/rung10_programs/${PUZZLE}.pro -o /tmp/${CLS}.j
+java -jar src/backend/jvm/jasmin.jar /tmp/${CLS}.j -d /tmp 2>/dev/null
+JVM=$(timeout 10 java -cp /tmp ${CLS} 2>/dev/null)
+ORACLE=$(timeout 5 swipl -q -g halt -t main test/frontend/prolog/corpus/rung10_programs/${PUZZLE}.pro 2>/dev/null)
+echo "Oracle lines: $(echo "$ORACLE" | wc -l)"
+echo "JVM lines:    $(echo "$JVM" | wc -l)"
+# Fix: collapse not_dorothy to single clause in puzzle_03.pro, verify swipl still 1L, JVM 1L.
+# Then tackle puzzle_11 2L vs 1L.
 ```
 
 **Bootstrap PJ-23:**
