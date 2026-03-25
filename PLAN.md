@@ -63,9 +63,9 @@ Matrix:     Feature matrix (correctness) · Benchmark matrix (performance)
 
 ## Milestone Dashboard
 
-### ⚠ Grand Master Reorganization — ALL OTHER MILESTONES FROZEN
+### Grand Master Reorganization — Plan Published, Execution Pending
 
-See [GRAND_MASTER_REORG.md](GRAND_MASTER_REORG.md) for full plan, naming law, folder structure, and success criteria.
+See [GRAND_MASTER_REORG.md](GRAND_MASTER_REORG.md) for full plan. **Concurrent development continues normally. Execution begins when Lon gives the word. No sessions are blocked.**
 
 | ID | Phase | Status |
 |----|-------|--------|
