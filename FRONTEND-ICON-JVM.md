@@ -35,18 +35,49 @@ gcc -Wall -Wextra -g -O0 -I. src/frontend/icon/icon_driver.c src/frontend/icon/i
     src/frontend/icon/icon_emit.c src/frontend/icon/icon_emit_jvm.c \
     src/frontend/icon/icon_runtime.c -o /tmp/icon_driver
 # Confirm 109/109 PASS (rungs 01-21) baseline before touching code
-# IJ-32 scaffold in place: ICN_MAKELIST, ArrayList statics infra, dispatch wired
+# IJ-32 scaffold in place (ae9e611): ICN_MAKELIST emitter, ArrayList statics infra, dispatch wired
+#
+# READ THIS BEFORE CODING — JCON source corrections (from session IJ-32 analysis):
+#
+# 1. list(n,x) MUST create n copies of x (not empty list).
+#    JCON fList.java: vList.New(i, b.Deref()) — n elements all initialized to x.
+#    Impl: eval n→int, eval x→box, loop n times calling ArrayList.add(boxed_x).
+#
+# 2. Unboxing on get/pop/pull: use ij_expr_is_string/ij_expr_is_real inference on
+#    the list's declared static type to choose the right unbox:
+#      long:   checkcast java/lang/Long;   invokevirtual Long/longValue()J
+#      String: checkcast java/lang/String  (no unbox, already String ref)
+#      double: checkcast java/lang/Double; invokevirtual Double/doubleValue()D
+#    Per-site statics table type tag 'L' marks the field as ArrayList.
+#    Track element type separately: new tag 'LE'=long-list, 'LS'=string-list.
+#    OR simpler: at ij_emit_call get/pop/pull site, look up the list var's elem type
+#    from a separate ij_list_elem_types[name] → 'J'/'A'/'D' map populated at push/put.
+#
+# 3. !L bang list branch: use per-site icn_N_bang_idx I static (same as string bang
+#    but calling ArrayList.size() for bounds and ArrayList.get(idx) + unbox for value).
+#    JCON uses vClosure heap object; we use static index — functionally equivalent.
+#
+# 4. *L size list branch: detect list operand via statics type 'L';
+#    call ArrayList.size()I → i2l → long at ports.γ.
+#
 # Complete M-IJ-LISTS:
-# 1. List builtins in ij_emit_call (before "user procedure call" comment ~line 1223):
-#    push(L,v)→L.add(0,box(v))  put(L,v)→L.add(box(v))
-#    get(L)/pop(L)→L.remove(0)→unbox  pull(L)→L.remove(size-1)→unbox
-#    list(n)→new ArrayList() (ignore n for now, Icon list(n) creates empty list)
-# 2. ij_emit_bang list branch: statics type 'L' check;
-#    per-site icn_N_bang_idx I; α stores list+resets idx; check: idx>=size→ω;
-#    get(idx)→unbox→long→γ; idx++; β→check
-# 3. ij_emit_size list branch: ArrayList.size()→i2l
-# 4. Write rung22_lists/ 5 tests, confirm 114/114, commit+push
+#   Step 1 — List builtins in ij_emit_call (before "user procedure call" ~line 1223):
+#     push(L,v): load L; box v; invokevirtual ArrayList/add(0,Object)V; reload L → γ
+#     put(L,v):  load L; box v; invokevirtual ArrayList/add(Object)Z; pop; reload L → γ
+#     get(L)/pop(L): load L; size==0→ω; remove(0) → unbox → γ
+#     pull(L): load L; size==0→ω; remove(size-1) → unbox → γ
+#     list(n,x): eval n→int; eval x→box; new ArrayList; loop add → γ
+#   Step 2 — ij_emit_bang list branch (after string branch)
+#   Step 3 — ij_emit_size list branch
+#   Step 4 — rung22_lists corpus (5 tests):
+#     t01: L:=[1,2,3]; every write(!L)       → 1\n2\n3
+#     t02: L:=[]; push(L,10); push(L,20); write(*L)  → 2
+#     t03: L:=[5,6,7]; write(get(L)); write(get(L))   → 5\n6
+#     t04: L:=[1,2,3]; write(pull(L))        → 3
+#     t05: L:=[]; put(L,4); put(L,5); put(L,6); every write(!L) → 4\n5\n6
+#   Step 5 — build, confirm 114/114, commit, push → M-IJ-LISTS ✅
 ```
+
 
 ### IJ-32 findings — M-IJ-LISTS scaffold (WIP, HEAD ae9e611)
 

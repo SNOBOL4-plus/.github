@@ -1193,3 +1193,13 @@ Full diagnosis and bootstrap in FRONTEND-PROLOG-JVM.md §NOW (CRITICAL NEXT ACTI
 - ArrayList + Object static field helpers added.
 - `ij_emit_makelist`: new ArrayList + box each element + add; dispatch wired.
 - Remaining: list builtins (`push/put/get/pop/pull/list`), `ij_emit_bang` list branch, `ij_emit_size` list branch, rung22 corpus.
+
+### IJ-32b (no code commit — JCON source analysis)
+Deep read of JCON runtime Java source (`vList.java`, `fList.java`, `vDescriptor.java`, `gen_bc.icn`).
+Key corrections to IJ-33 plan:
+- `list(n,x)` must create n copies of x (not empty list) — `vList.New(i, x.Deref())`
+- `get/pop/pull` unbox requires type inference per list element type
+- `!L` bang: JCON uses `vClosure` heap object; our static-index approach is functionally equivalent
+- `ArrayList` (ours) vs `Vector` (JCON) — our choice correct for single-threaded use
+- JCON's `vListVar` provides l-value list slots; Tiny-Icon doesn't need this yet
+IJ-33 checklist updated in FRONTEND-ICON-JVM.md with all corrections.
