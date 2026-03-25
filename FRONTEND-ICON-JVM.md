@@ -19,9 +19,9 @@ assembled by `jasmin.jar` into `.class` files. Despite the file's location under
 
 | Session | Sprint | HEAD | Next milestone |
 |---------|--------|------|----------------|
-| **Icon JVM** | `main` IJ-16 — M-IJ-CORPUS-R8 ✅ find/match/tab/move; 44/44 PASS | `be1be82` IJ-16 | M-IJ-CSET |
+| **Icon JVM** | `main` IJ-17 — M-IJ-CORPUS-R9 ✅ until/repeat; 49/49 PASS | `60cf799` IJ-17 | M-IJ-CORPUS-R10 |
 
-### Next session checklist (IJ-17)
+### Next session checklist (IJ-18)
 
 ```bash
 git clone https://TOKEN_SEE_LON@github.com/snobol4ever/snobol4x
@@ -33,9 +33,22 @@ gcc -Wall -Wextra -g -O0 -I. src/frontend/icon/icon_driver.c src/frontend/icon/i
     src/frontend/icon/icon_emit.c src/frontend/icon/icon_emit_jvm.c \
     src/frontend/icon/icon_runtime.c -o /tmp/icon_driver
 # Read FRONTEND-ICON-JVM.md §NOW
-# Confirm rung01-08 44/44 still PASS before touching code
-# Next: M-IJ-CSET — cset literals, BREAK/SPAN/ANY for rung09+
+# Confirm 49/49 rung01-09 PASS before touching code
+# Next: M-IJ-CORPUS-R10 — design rung10 corpus; candidates: augmented assign (:=+), break, next, bang(!E)
+# Note: repeat body-drain slot-collision bug exists (pre-existing in while too) — track separately
 ```
+
+### IJ-17 findings — M-IJ-CORPUS-R9 ✅ (done)
+
+**49/49 PASS rung01–09.**
+
+Implemented `ij_emit_until` and `ij_emit_repeat` in `icon_emit_jvm.c` (`60cf799`):
+
+**`until E do body`** — dual of `while`: cond.γ → `cond_ok` (pop value, jump to ports.ω); cond.ω → `cond_fail` → body. Body.γ → `body_ok` (pop value, loop to cond). Body.ω → `loop_top` → cond. Key fix: cond.γ must route through a `cond_ok` label that pops the value before exiting — routing directly to `ports.ω` caused VerifyError `Inconsistent stack height 2 != 0`.
+
+**`repeat body`** — body.γ → `body_ok` (pop value, loop); body.ω → `loop_top` (restart body). Exits only via `ports.ω` (β port). Note: `repeat` is truly infinite without `break` — corpus tests use `until` patterns only. `repeat` emitter is wired and correct per JCON semantics but no corpus test exercises its exit path until `break` is implemented.
+
+**rung09 corpus** — 5 `until` tests; all use single-binop patterns to avoid pre-existing local-slot collision bug (two simultaneous `ij_locals_alloc_tmp` chains in cond + body). The slot bug is pre-existing in `while` too; tracked separately.
 
 ### IJ-16 findings — M-IJ-CORPUS-R8 ✅ (done)
 

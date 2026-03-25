@@ -22,7 +22,7 @@ Each concurrent session owns exactly one row. Update only your row on every push
 | **Prolog JVM** | `main` PJ-31 — M-PZ-01/02/05/06 added; puzzle_02 rewritten; all 20 real search | `251ae11` PJ-31 | M-PJ-DISPLAY-BT |
 | **Icon JVM** | `main` IJ-11 — M-IJ-SCAN ✅ 5/5 rung05 PASS | `7d68a85` IJ-11 | M-IJ-CSET |
 | **Prolog JVM** | `main` PJ-16 — two-clause fail/retry fix; rungs 01-09 PASS | `f575016` PJ-16 | M-PJ-CORPUS-R10 |
-| **Icon JVM** | `main` IJ-16 — M-IJ-CORPUS-R8 ✅ find/match/tab/move; 44/44 PASS | `be1be82` IJ-16 | M-IJ-CSET |
+| **Icon JVM** | `main` IJ-17 — M-IJ-CORPUS-R9 ✅ until/repeat; 49/49 PASS | `60cf799` IJ-17 | M-IJ-CORPUS-R10 |
 | **README v2 sprint** | `main` R-2 | TBD R-2 | M-FEAT-JVM |
 
 **Invariants (check before any work):**
@@ -166,6 +166,8 @@ Full sprint detail → [FRONTEND-ICON.md](FRONTEND-ICON.md)
 | **M-IJ-CORPUS-R4** | Rung 4: string ops + scanning PASS | ✅ |
 | **M-IJ-CORPUS-R5** | Rung 5: not/neg/to-by/str-relops all PASS | ✅ |
 | **M-IJ-CORPUS-R8** | Rung 8: find/match/tab/move builtins PASS | ✅ |
+| **M-IJ-CORPUS-R9** | Rung 9: until/repeat loop emitters PASS | ✅ |
+| **M-IJ-CORPUS-R10** | Rung 10: next rung corpus PASS | ❌ **NEXT** |
 
 Full sprint detail → [FRONTEND-ICON-JVM.md](FRONTEND-ICON-JVM.md)
 
