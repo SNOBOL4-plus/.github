@@ -19,9 +19,45 @@ assembled by `jasmin.jar` into `.class` files. Despite the file's location under
 
 | Session | Sprint | HEAD | Next milestone |
 |---------|--------|------|----------------|
-| **Icon JVM** | `main` IJ-19 — 54/54 confirmed; rung11 design complete; no code changes | `8f98dea` IJ-19 | M-IJ-CORPUS-R11 |
+| **Icon JVM** | `main` IJ-20 — M-IJ-CORPUS-R11 ✅ `||:=` + `!E` + rung11; 59/59 PASS | `cab96d2` IJ-20 | M-IJ-CORPUS-R12 |
 
-### Next session checklist (IJ-20)
+### Next session checklist (IJ-21)
+
+```bash
+git clone https://TOKEN_SEE_LON@github.com/snobol4ever/snobol4x
+git clone https://TOKEN_SEE_LON@github.com/snobol4ever/.github
+apt-get install -y default-jdk nasm libgc-dev
+cd snobol4x
+gcc -Wall -Wextra -g -O0 -I. src/frontend/icon/icon_driver.c src/frontend/icon/icon_lex.c \
+    src/frontend/icon/icon_parse.c src/frontend/icon/icon_ast.c \
+    src/frontend/icon/icon_emit.c src/frontend/icon/icon_emit_jvm.c \
+    src/frontend/icon/icon_runtime.c -o /tmp/icon_driver
+# Confirm 59/59 PASS (rungs 01-11) using JVM harness with -jvm flag for old scripts
+# Next: M-IJ-CORPUS-R12 — design rung12 candidates:
+#   1. ICN_ALT β-resume gate: after alt yields via icn_N_α, β should resume from that
+#      sub-expression, not always from outermost β. Needs ir_TmpLabel gate (JCON §4.5 |).
+#      Currently every |  always resumes from outermost β — infinite loop when alt β is pumped.
+#      Fix: in ij_emit_alt, add indirect-goto gate temp (bf_slot already exists as iload/istore
+#      pattern in concat). Each alt arm's γ sets gate to its own resume label before goto success.
+#      On β: indirect goto through gate. This enables `every s ||:= ("a"|"b"|"c")` patterns.
+#   2. String relops: << (ICN_SLT), == (ICN_SEQ), ~== (ICN_SNE), <<= (ICN_SLE), >> (ICN_SGT),
+#      >>= (ICN_SGE) — emit as String.compareTo() calls.
+#   3. *s size: ICN_SIZE on String → String.length() as long.
+```
+
+### IJ-20 findings — M-IJ-CORPUS-R11 ✅
+
+**59/59 PASS (rung01–11).** HEAD `cab96d2`.
+
+**Three changes in `icon_emit_jvm.c`:**
+
+1. **`ij_emit_augop` case 35 (`||:=`)** — moved `aug_kind==35` branch *before* the long-path temp allocation. String path: `ij_declare_static_str` for both lhs and rhs-temp fields; `ij_put/get_str_field` + `String.concat` + `dup` + `putstatic`. Added `ICN_AUGOP` to `ij_expr_is_string` (returns 1 iff `val.ival==35`).
+
+2. **`ij_emit_bang` (new)** — per-site statics `icn_N_bang_str` (String) + `icn_N_bang_pos` (int). α: eval child → store String, reset pos=0, fallthrough to check. check: `String.length()` + `ij_get_int_field(pos)` → `if_icmple ports.ω`; else `substring(pos, pos+1)` → increment pos → goto γ. β: goto check. Added `ICN_BANG: return 1` to `ij_expr_is_string`, `case ICN_BANG` to dispatch.
+
+3. **`ij_emit_every` drain fix** — `bstart` and `gbfwd` labels now use `ij_expr_is_string(gen) ? "pop" : "pop2"` instead of hardcoded `pop2`. Fixes VerifyError when every's generator yields Strings.
+
+**Known open issue (not blocking):** `every s ||:= ("a"|"b"|"c")` loops infinitely — `ICN_ALT` β-resume always routes to outermost β (restarts from second alternative). The indirect-goto gate needed per JCON §4.5 is not yet implemented. Corpus test t02 uses sequential `||:=` instead. Tracked as rung12 item.
 
 ```bash
 git clone https://TOKEN_SEE_LON@github.com/snobol4ever/snobol4x

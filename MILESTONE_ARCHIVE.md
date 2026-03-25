@@ -224,3 +224,5 @@ Append-only. Do not edit existing entries.
 | **M-IJ-CORPUS-R9** | `60cf799` IJ-17 | until/repeat emitters; body-drain pop fix; 49/49 rung01-09 PASS |
 | **M-PJ-BETWEEN** | `5ae0d24` PJ-32 | synthetic p_between_3 static method; cs=offset-from-Low; puzzle_19 PASS; 16/20 |
 | **M-IJ-CORPUS-R10** | `8f98dea` IJ-18 | augop (+=/*=/-=//=/%=) + break/next emitters + loop label stack; rung10_augop 5/5 PASS; 54/54 rung01-10 PASS |
+
+| **M-IJ-CORPUS-R11** | Rung 11: `||:=` string augop + `!E` bang generator + rung11 5/5; 59/59 total | ✅ IJ-20 `cab96d2` |

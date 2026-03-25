@@ -766,3 +766,24 @@ END
 
 **HEAD at handoff:** snobol4x `c0987cc`, .github pending push
 **Next:** PJ-34 — trace puzzle_11/18 doubling; fix M-PJ-DISJ-ARITH (puzzle_12).
+
+---
+
+## IJ-20 — M-IJ-CORPUS-R11 ✅ — 2026-03-24
+
+**HEAD in:** `8f98dea` IJ-19 | **HEAD out:** `cab96d2` IJ-20
+
+**Milestone fired:** M-IJ-CORPUS-R11 ✅ — `||:=` string augop + `!E` bang generator + rung11 corpus
+
+**Changes in `icon_emit_jvm.c`:**
+1. `ij_emit_augop` case 35 (`||:=`): String path moved before long-path temp allocation. Uses `ij_declare_static_str`/`ij_get/put_str_field` + `String.concat` + `dup`. Added `ICN_AUGOP` to `ij_expr_is_string` (returns 1 iff val.ival==35).
+2. `ij_emit_bang` (new): per-site statics `icn_N_bang_str`/`icn_N_bang_pos`; `substring(pos,pos+1)` + pos++; β→check. Added to dispatch + `ij_expr_is_string`.
+3. `ij_emit_every` drain: `bstart`/`gbfwd` now use `ij_expr_is_string(gen) ? "pop" : "pop2"` instead of hardcoded `pop2`.
+
+**Corpus:** `test/frontend/icon/corpus/rung11_bang_augconcat/` (5 tests) + `run_rung11.sh`
+
+**Result:** 59/59 PASS (rung01–11)
+
+**Known open issue:** `ICN_ALT` β-resume gate not implemented — `every s ||:= ("a"|"b"|"c")` loops. Tracked as M-IJ-CORPUS-R12 item.
+
+**Next:** IJ-21 — M-IJ-CORPUS-R12: ALT gate fix + string relops + size(*s)
