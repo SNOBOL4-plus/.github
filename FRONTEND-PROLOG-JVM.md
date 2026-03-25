@@ -19,15 +19,66 @@ and emits Jasmin `.j` files, assembled by `jasmin.jar`.
 
 | Session | Sprint | HEAD | Next milestone |
 |---------|--------|------|----------------|
-| **Prolog JVM** | `main` PJ-39b — 19/20; E_SUB/ADD/MPY/DIV fixed in pj_emit_term; puzzle_18 double-print persists — root cause still under investigation | `56850fd` PJ-39b | M-PJ-CUT-UCALL: fix puzzle_18 double-print |
+| **Prolog JVM** | `main` PJ-40 — 19/20; puzzle_18 root-caused as NAF inner-locals leak (conjunction in \+ uses local next_local_tmp, cs slots never zeroed on NAF exit); fix approach documented below | `56850fd` PJ-39b | M-PJ-NAF-INNER-LOCALS: zero inner cs slots on NAF exit |
 
-### CRITICAL NEXT ACTION (PJ-40)
+### CRITICAL NEXT ACTION (PJ-41)
 
 **JVM baseline: 19/20 PASS. Remaining failures:**
 
-1. **puzzle_18** — answer printed TWICE. PJ-39b fixed write(X-Y) null output (E_SUB in term position). The double-print itself persists. Root cause: `puzzle/0` executes display twice inside its single clause. Likely cause: `main/0`'s `:- initialization(main)` or the JVM entry point calls `p_main_0` twice, OR the disjunction `puzzle ; true` retries after `dj_arm_done` fires. Next step: `grep "p_main_0\|initialization" /tmp/Puzzle_18.j` — check if main is invoked multiple times in the `.j` preamble.
+1. **puzzle_18** — answer printed TWICE. **Root cause confirmed PJ-40: NAF inner-locals leak.**
 
-   **Fix approach (PJ-40):** Inspect generated Puzzle_18.j entry point / static initializer. Verify `p_main_0` is called exactly once. If called twice, fix the initialization block emitter. If called once, trace why `display` fires twice inside puzzle's single execution.
+   **Mechanism:** The `\+` emitter calls `pj_emit_goal` for the inner conjunction. The conjunction branch in `pj_emit_goal` (~line 1276) creates its own `int next_local_tmp = trail_local + 1 + n_vars + 8` — a LOCAL variable, NOT derived from `*next_local`. So inner ucall locals (for member/day_num/open calls inside the NAF) are allocated in a fixed frame region and `*next_local` is never advanced past them. When the NAF exits via `naf_ok` or `naf_fail`, the code can only zero locals in the `[naf_locals_start, naf_locals_end)` range — but since `*next_local` was not advanced, that range is empty. The inner `call20_beta … call25_beta` labels remain live in the outer frame. Outer retry chains can jump into them with stale cs values, causing the NAF conjunction to re-execute.
+
+   **Fix (PJ-41):** In `pj_emit_goal`, conjunction branch (~line 1276), change `next_local_tmp` to use and update `*next_local` instead of a fixed offset:
+   ```c
+   // BEFORE (~line 1276):
+   int next_local_tmp = trail_local + 1 + n_vars + 8;
+   int ics = next_local_tmp++;
+   int sco = next_local_tmp++;
+   pj_emit_body(goal->children, nargs, lbl_γ, lbl_ω, lbl_ω,
+                trail_local, var_locals, n_vars, &next_local_tmp, ics, sco, ...);
+
+   // AFTER:
+   int ics = (*next_local)++;
+   int sco = (*next_local)++;
+   JI("iconst_0", ""); J("    istore %d\n", ics);
+   JI("iconst_0", ""); J("    istore %d\n", sco);
+   pj_emit_body(goal->children, nargs, lbl_γ, lbl_ω, lbl_ω,
+                trail_local, var_locals, n_vars, next_local, ics, sco, ...);
+   ```
+   Then in the NAF handler, `naf_locals_start`/`naf_locals_end` will bracket all inner locals and the zero loop will fire. **Run full 20-puzzle sweep immediately after — this conjunction path is hit everywhere.**
+
+   **PJ-40 regression lesson:** A previous attempt changed the NAF to call `pj_emit_body` directly, passing `*next_local`, which DID advance `next_local`. But it wired `lbl_outer_ω = inner_fail` incorrectly, breaking puzzles 05 and 16. The correct fix is in the conjunction branch of `pj_emit_goal`, not in the NAF caller.
+
+   **Reproducer (minimal, still fails at 56850fd):**
+   ```bash
+   cat > /tmp/nafbug.pro << 'EOF'
+   :- initialization(main).
+   main :- puzzle ; true.
+   member(X,[X|_]).
+   member(X,[_|T]) :- member(X,T).
+   differ(X,X) :- !, fail.
+   differ(_,_).
+   day_num(monday,1). day_num(tuesday,2). day_num(wednesday,3).
+   open(shoe,monday). open(shoe,tuesday). open(bank,tuesday). open(bank,wednesday).
+   next_day(monday,tuesday). next_day(tuesday,wednesday).
+   prev_day(tuesday,monday). prev_day(wednesday,tuesday).
+   store(S) :- member(S,[shoe,bank]).
+   puzzle :-
+       member(Today,[tuesday,wednesday]),
+       store(SAb), store(SDe), differ(SAb,SDe),
+       open(SAb,Today), open(SDe,Today),
+       next_day(Today,Tomorrow), open(SDe,Tomorrow),
+       prev_day(Today,Yesterday), open(SAb,Yesterday),
+       \+ (member(D,[monday,tuesday,wednesday]),
+           day_num(D,N), day_num(Today,NT), N < NT,
+           open(SAb,D), open(SDe,D)),
+       write(Today-SAb-SDe), nl, fail.
+   EOF
+   ./sno2c -pl -jvm /tmp/nafbug.pro -o /tmp/Nafbug.j
+   java -jar src/backend/jvm/jasmin.jar /tmp/Nafbug.j -d /tmp
+   timeout 5 java -cp /tmp Nafbug   # JVM prints extra lines; swipl prints correct subset
+   ```
 
 2. **puzzle_03** — over-generates. Open: M-PJ-DISPLAY-BT.
 
