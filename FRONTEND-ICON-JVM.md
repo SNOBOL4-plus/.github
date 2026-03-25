@@ -668,3 +668,219 @@ make -C snobol4x/src
 
 *FRONTEND-ICON-JVM.md = L3. ~3KB sprint content max per active section.*
 *Completed milestones → MILESTONE_ARCHIVE.md on session end.*
+
+---
+
+## Tiny-Icon Enhancement Roadmap — JCON/Icon Gap Closure
+
+**What we have (IJ-27 baseline, 94/94 PASS, rungs 01–18):**
+All arithmetic, string ops, scanning (`?`), csets, generators (`every`/`suspend`/
+`fail`/`return`), control flow (`if`/`while`/`until`/`repeat`/`break`/`next`),
+alternation (`|`), limitation (`\`), augmented ops, `!E` bang generator,
+string relops, real arithmetic + relops, `*s` size, subscript `s[i]`,
+`write`/`find`/`match`/`tab`/`move`/`any`/`many`/`upto` builtins.
+
+**What JCON and real Icon have that we don't (the gap):**
+
+From the AST nodes present but not yet JVM-emitted:
+`ICN_RECORD`/`ICN_FIELD`, `ICN_GLOBAL`, `ICN_CREATE` (co-expressions),
+`ICN_CASE`, `ICN_POW`, `ICN_SCAN_AUGOP` (`s ?:= pat`), `ICN_SEQ_EXPR`.
+
+From real Icon builtins not yet implemented:
+`list/push/pop/put/get/pull`, `table`, `set/insert/delete/member`,
+`sort/sortf`, `key`, `type`, `copy`, `image`, `char/ord`,
+`left/right/center/repl/reverse/trim/map`,
+`string/integer/real` (already partial), `read`, math builtins.
+
+From JCON IR nodes we have no equivalent for:
+`ir_Create`/`ir_CoRet`/`ir_CoFail` — co-expressions.
+`ir_ScanSwap` — scanning augmented assignment (`s ?:= expr`).
+`ir_MakeList` — list constructor `[a,b,c]`.
+
+---
+
+### Tier 1 — High Impact (unblock real Icon programs immediately)
+
+#### M-IJ-LISTS
+**Feature:** `list/1` constructor, `push/put/get/pop/pull`, list literal `[a,b,c]`
+(`ICN_MakeList`), `*L` size of list.
+**Why first:** Lists are the primary Icon data structure alongside strings.
+Almost every non-trivial Icon program uses lists. `ICN_MakeList` is the list
+literal `[e1,e2,e3]` — maps to a JVM ArrayList. `push`/`put` add to front/back,
+`get`/`pop`/`pull` remove from front/back. `!L` (bang generator) already works
+for strings — extend to lists.
+**Impl:** JVM `ArrayList<Object>` as the list representation. Static field per
+list variable. `ICN_MakeList` emits ArrayList construction + adds.
+Extend `ij_emit_bang` to handle list operands (iterate index 0..size-1).
+**Rung:** `rung19_lists/` — construct, push/put, iterate with `!`, size, get/pop.
+**Sprint:** 1–2 sessions.
+
+#### M-IJ-TABLE
+**Feature:** `table(default)`, `t[key]` subscript for tables,
+`insert/delete/member/key` builtins.
+**Why second:** Tables (hash maps) are Icon's dict. Required for word-frequency
+programs, symbol tables, any associative data. `key(t)` generates all keys —
+natural `every` partner. `member(t,k)` tests membership as a generator (succeeds/
+fails). Table subscript reuses `ICN_SUBSCRIPT` but with String key instead of
+integer index.
+**Impl:** JVM `HashMap<String,Object>`. `table(x)` constructs with default value x.
+`t[k]` subscript: check map, return value or default. `key(t)` generates keys via
+iterator — per-site static index + `keySet().toArray()`.
+**Rung:** `rung20_table/`
+**Sprint:** 1 session.
+
+#### M-IJ-RECORD
+**Feature:** `record` declarations, field access `r.field` (`ICN_RECORD`/`ICN_FIELD`).
+**Why third:** Icon records are user-defined types. Required for any program using
+structured data beyond strings/lists/tables. JCON has `ir_Record` and `ir_Field` —
+maps cleanly to a JVM inner class with public fields.
+**Impl:** Each `record foo(f1,f2,f3)` declaration emits a static inner class
+`class foo { Object f1,f2,f3; }`. Field access `r.f1` emits `getfield`/`putfield`.
+Constructor `foo(v1,v2,v3)` emits `new foo` + field stores.
+**Rung:** `rung21_records/`
+**Sprint:** 1 session.
+
+#### M-IJ-GLOBAL
+**Feature:** `global` variable declarations (`ICN_GLOBAL`), `initial` clause in
+procedures.
+**Why fourth:** Programs with multiple procedures that share state need globals.
+Without them, every procedure is stateless. `initial` blocks initialize static
+state on first call — required for memoization patterns and self-initializing tables.
+**Impl:** Globals become static fields on the main class (same as current
+variable statics, but shared across all procedures). `ICN_GLOBAL` in the parser
+already exists. `initial` block: per-procedure boolean static `proc_N_initialized`
++ branch on first entry.
+**Rung:** `rung22_global_initial/`
+**Sprint:** 1 session.
+
+---
+
+### Tier 2 — Medium Impact
+
+#### M-IJ-BUILTINS-STR
+**Feature:** `left/right/center/repl/reverse/trim/map/char/ord/string`.
+String manipulation builtins present in real Icon and JCON, missing from Tiny-Icon.
+All are straightforward JVM String operations.
+- `repl(s,n)` — repeat string n times (`s.repeat(n)` in Java 11+)
+- `reverse(s)` — reverse string (`new StringBuilder(s).reverse()`)
+- `left/right/center(s,n,fill)` — pad to width
+- `trim(s,cset)` — strip trailing chars in cset
+- `map(s,from,to)` — character translation table
+- `char(i)` — int to one-char string (`String.valueOf((char)i)`)
+- `ord(s)` — first char to int (`s.charAt(0)`)
+**Rung:** `rung23_strbuiltins2/`
+**Sprint:** 1 session. All additive to builtin dispatch.
+
+#### M-IJ-BUILTINS-TYPE
+**Feature:** `type(x)` → type name string, `copy(x)`, `image(x)` → string
+representation, `numeric(x)`.
+`type` returns `"string"/"integer"/"real"/"list"/"table"/"record"`.
+`image` returns a printable representation (useful for debugging).
+`copy` does a shallow copy.
+**Rung:** `rung24_type_image/`
+**Sprint:** 1 session.
+
+#### M-IJ-SORT
+**Feature:** `sort(L)`, `sort(T,i)`, `sortf(L,i)`.
+Sort a list or table. `sort(T,1)` sorts table by keys, `sort(T,2)` by values.
+`sortf(L,i)` sorts list of records by field i.
+**Depends on:** M-IJ-LISTS, M-IJ-TABLE.
+**Rung:** `rung25_sort/`
+**Sprint:** 1 session.
+
+#### M-IJ-POW
+**Feature:** `ICN_POW` — exponentiation operator `x^y`.
+Maps to `Math.pow()`. Simple arithmetic extension.
+**Rung:** extend `rung17_real_arith/` or add `rung17b`.
+**Sprint:** 30 minutes. One new case in `ij_emit_binop`.
+
+#### M-IJ-CASE
+**Feature:** `case E of { pat: expr; ... }` — `ICN_CASE`.
+Icon's `case` is value-based (not pattern matching). Each arm is `value: expr`.
+Maps to a series of equality tests with the JCON indirect-goto dispatch pattern.
+**Rung:** `rung26_case/`
+**Sprint:** 1 session.
+
+#### M-IJ-READ
+**Feature:** `read()`, `reads(n)` — read from stdin.
+`read()` returns the next line (or fails on EOF — generator behavior).
+**Impl:** Wrap `BufferedReader.readLine()`. Failure on null return.
+**Rung:** `rung27_io/`
+**Sprint:** 1 session.
+
+#### M-IJ-SCAN-AUGOP
+**Feature:** `s ?:= expr` — scanning augmented assignment (`ICN_SCAN_AUGOP`).
+Scans s, and if expr succeeds, assigns the matched portion back to s.
+JCON handles this via `ir_ScanSwap`. Currently `ICN_SCAN` (plain `?`) is emitted
+but `?:=` is not.
+**Rung:** extend `rung05_scan/` or add `rung05b`.
+**Sprint:** 1 session.
+
+---
+
+### Tier 3 — Advanced / Future
+
+#### M-IJ-COEXPR (future, no sprint assigned)
+**Feature:** Co-expressions — `create E`, `@C`, `^C`, `activate`.
+`ICN_CREATE` is already in the AST enum (marked "intentionally omitted" in a
+comment in `icon_ast.h`). JCON has `ir_Create`/`ir_CoRet`/`ir_CoFail`.
+Co-expressions are Icon's coroutines — first-class suspended computations that
+can be resumed explicitly with `@`. They are the most powerful and distinctive
+Icon feature beyond basic generators.
+**Why deferred:** Requires JVM thread or continuation infrastructure. Each
+co-expression is a separate execution context. Not trivial on JVM — JCON used
+JVM threads (one thread per co-expression). The Scripten demos don't require
+co-expressions. Revisit after Tier 1+2 complete.
+**When ready:** Follow JCON's `ir_Create` model. Each `create E` spawns a JVM
+thread that blocks waiting for `@` activation. The `@C` operator sends/receives
+values between the current thread and C's thread via a `SynchronousQueue`.
+
+#### M-IJ-MATH
+**Feature:** `atan/sin/cos/exp/log/sqrt` — math builtins.
+Real Icon has these; maps trivially to `java.lang.Math`. Low priority because
+Tiny-Icon already covers the arithmetic needed for the Scripten demos.
+**Sprint:** 30 minutes when needed.
+
+#### M-IJ-MULTIFILE
+**Feature:** Multi-procedure programs across files, `link` declaration.
+Currently each `.icn` file compiles to one self-contained class. `link` would
+allow splitting a program across files and linking them. Required for large
+Icon programs. Design reference: JCON's `ir_Link` + `linker.icn`.
+**Sprint:** 2–3 sessions (significant infrastructure).
+
+---
+
+### Enhancement Milestone Summary
+
+| ID | Feature | Tier | Depends on | Status |
+|----|---------|------|-----------|--------|
+| **M-IJ-LISTS** | `list`, `push/put/get/pop`, `[a,b,c]` literal, `!L` | 1 | — | ❌ |
+| **M-IJ-TABLE** | `table`, `t[k]`, `key/insert/delete/member` | 1 | — | ❌ |
+| **M-IJ-RECORD** | `record` decl, `r.field` access | 1 | — | ❌ |
+| **M-IJ-GLOBAL** | `global` vars, `initial` clause | 1 | — | ❌ |
+| **M-IJ-BUILTINS-STR** | `repl/reverse/left/right/center/trim/map/char/ord` | 2 | — | ❌ |
+| **M-IJ-BUILTINS-TYPE** | `type/copy/image/numeric` | 2 | — | ❌ |
+| **M-IJ-SORT** | `sort/sortf` | 2 | LISTS+TABLE | ❌ |
+| **M-IJ-POW** | `^` exponentiation | 2 | — | ❌ |
+| **M-IJ-CASE** | `case E of { ... }` | 2 | — | ❌ |
+| **M-IJ-READ** | `read()`, `reads(n)` | 2 | — | ❌ |
+| **M-IJ-SCAN-AUGOP** | `s ?:= expr` | 2 | — | ❌ |
+| **M-IJ-COEXPR** | `create E`, `@C` co-expressions | 3 | — | 💭 |
+| **M-IJ-MATH** | `atan/sin/cos/exp/log/sqrt` | 3 | — | 💭 |
+| **M-IJ-MULTIFILE** | `link`, multi-file programs | 3 | — | 💭 |
+
+**Recommended sprint order:**
+M-IJ-CORPUS-R19 (corpus catchup) →
+M-IJ-LISTS → M-IJ-TABLE → M-IJ-RECORD → M-IJ-GLOBAL →
+M-IJ-POW → M-IJ-READ → M-IJ-BUILTINS-STR → M-IJ-BUILTINS-TYPE →
+M-IJ-SORT → M-IJ-CASE → M-IJ-SCAN-AUGOP →
+M-IJ-COEXPR (when ready) → M-IJ-MATH → M-IJ-MULTIFILE.
+
+**Rung numbering:** Enhancement rungs start at rung19.
+`test/frontend/icon/corpus/rung19_lists/` through `rung27_io/`.
+Each rung: 5 tests, `.icn` + `.expected`, oracle = ASM backend.
+
+**Co-expression note:** JCON implements co-expressions with one JVM thread per
+`create`. This is correct but expensive. A future optimization: implement as
+JVM virtual threads (Project Loom, Java 21+) — much cheaper, same semantics.
+
