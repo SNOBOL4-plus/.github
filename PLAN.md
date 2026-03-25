@@ -91,19 +91,19 @@ Each milestone: write solution in puzzle_NN.pro, verify correct answer via swipl
 
 | ID | Puzzle | Status |
 |----|--------|--------|
-| **M-PZ-03** | Triple engagement party — 6 people, age constraints, equal couple sums | ❌ |
-| **M-PZ-04** | Milford occupations — income doubling chain + $3776 gap | ❌ |
-| **M-PZ-07** | Brown/Clark/Jones/Smith — age/golf/income/conservatism ordering | ❌ |
-| **M-PZ-08** | Dept store Ames/Brown/Conroy/Davis/Evans — roommate/bachelor/marriage clues | ❌ |
-| **M-PZ-09** | Empire dept store Allen/Bennett/Clark/Davis/Ewing — lunch hours + cribbage | ❌ |
-| **M-PZ-10** | Five J-names — Father/Son banquet + naming convention + friendship | ❌ |
-| **M-PZ-11** | Smith family — grocer/lawyer/postmaster/preacher/teacher + blood relations | ❌ |
+| **M-PZ-03** | Triple engagement party — 6 people, age constraints, equal couple sums | ✅ swipl PASS; JVM over-generates (M-PJ-DISPLAY-BT open) |
+| **M-PZ-04** | Milford occupations — income doubling chain + $3776 gap | ✅ |
+| **M-PZ-07** | Brown/Clark/Jones/Smith — age/golf/income/conservatism ordering | ✅ |
+| **M-PZ-08** | Dept store Ames/Brown/Conroy/Davis/Evans — roommate/bachelor/marriage clues | ✅ |
+| **M-PZ-09** | Empire dept store Allen/Bennett/Clark/Davis/Ewing — lunch hours + cribbage | ✅ |
+| **M-PZ-10** | Five J-names — Father/Son banquet + naming convention + friendship | ✅ |
+| **M-PZ-11** | Smith family — grocer/lawyer/postmaster/preacher/teacher + blood relations | ✅ swipl PASS; JVM 2L (over-generates) |
 | **M-PZ-12** | Stillwater High — 6 teachers × 6 subjects + father/roommate clues | ✅ |
 | **M-PZ-13** | Murder case — Clayton/Forbes/Graham/Holgate/McFee/Warren × 6 roles | ✅ |
 | **M-PZ-14** | Golf scores — Bill/Ed/Tom wives, two couples same total, Ed's wife beats Bill's | ✅ |
 | **M-PZ-15** | Vernon/Wilson/Yates — architect/doctor/lawyer + 3 secretaries, floor ordering | ✅ |
 | **M-PZ-16** | Train crew Art/John/Pete/Tom — brakeman/conductor/engineer/fireman + family | ✅ |
-| **M-PZ-17** | Country Club dance — Ed/Frank/George/Harry wives, dance exchange snapshot | ❌ |
+| **M-PZ-17** | Country Club dance — Ed/Frank/George/Harry wives, dance exchange snapshot | ✅ |
 | **M-PZ-18** | Luncyville shopping — Abbott/Briggs/Culver/Denny, day constraints per store | ✅ |
 | **M-PZ-19** | Office floors — Allen/Brady/McCoy/Smith, floor arithmetic constraints | ✅ |
 | **M-PZ-20** | Pullman car — Adams/Brown/Clark/Davis, 4 fields, book exchange constraints | ✅ |
