@@ -19,19 +19,41 @@ and emits Jasmin `.j` files, assembled by `jasmin.jar`.
 
 | Session | Sprint | HEAD | Next milestone |
 |---------|--------|------|----------------|
-| **Prolog JVM** | `main` PJ-22 — M-PJ-STACK-LIMIT ✅ dynamic .limit stack; 9/9 rungs + 19/21 puzzles PASS | `cb0b4d0` PJ-22 | M-PJ-DISJ-ARITH |
+| **Prolog JVM** | `main` PJ-23 — M-PJ-DISJ-ARITH in progress; root cause found: `\+` on multi-arg user calls fails silently | `cb0b4d0` PJ-22 (no new commit — diagnosis only) | M-PJ-DISJ-ARITH |
 
-### CRITICAL NEXT ACTION (PJ-23)
+### CRITICAL NEXT ACTION (PJ-24)
 
-**Milestone: M-PJ-DISJ-ARITH — fix `(A;B;C)` inline disjunction silent failure in arithmetic body.**
+**Milestone: M-PJ-DISJ-ARITH — two bugs confirmed, one root-caused.**
 
-Confirmed failing: puzzle_03 (silent output) and puzzle_11 (double-print).
+**puzzle_03 TRUE root cause (PJ-23 finding):**
+- The `(;)` ITE emitter is NOT the bug — tested exhaustively, works correctly.
+- The actual bug is `\+` on **multi-argument user predicate calls** silently failing.
+- `not_dorothy/6` clause 1: `\+ partner_is(T, D, D, J, V, B, Ji)` — `partner_is` always fails, so `\+` should succeed. JVM silently fails instead.
+- Confirmed: `\+ always_fail` (0-arg) works. `\+ pred_with_args(...)` (multi-arg) fails silently.
+- Bug is in `pj_emit_goal` `\+` handler (line ~1374 in `prolog_emit_jvm.c`): it calls `pj_emit_goal` on the inner goal with `inner_ok`/`inner_fail` labels. For multi-arg user calls the user-call path (line ~1614) pushes args then `iconst_0` + `invokestatic` — the return value is an `Object[]` or null. `ifnull` jumps to `lbl_ω` (here: `inner_fail` for `\+`). But the issue is that `pj_emit_goal` for a user call is a **deterministic single-call** — it uses `iconst_0` as the cs argument. Inside `\+`, we need to trail-save, call the predicate, unwind the trail on any path, then route success→lbl_ω and failure→lbl_γ. The trail is NOT being saved/unwound in the `\+` wrapper — any bindings made by the inner call (even if it ultimately fails) pollute the environment.
+- **Fix:** In the `\+` handler, save trail mark before calling inner goal, unwind trail on both `inner_ok` and `inner_fail` paths before routing to `lbl_ω`/`lbl_γ`.
 
-**puzzle_03 root cause:** uses `differ6/6` with `=\=/2` (15 arithmetic inequalities) and `not_dorothy` with a 6-arm `( ; )` disjunction containing `->`. The `(;)` emitter in `pj_emit_goal` may misfire when arms contain `->` soft-cut. JVM emits but produces no output — the disjunction either always fails or short-circuits wrongly.
+**puzzle_11 root cause (unchanged from PJ-22):** double-print — `!` inside `ages_ok` seals `ages_ok`'s own β but `puzzle`'s backtrack through `all_diff5` finds a second valid age-assignment. Fix: add `!` after `ages_ok(...)` call in `puzzle` body, or fix cut propagation across call boundary.
 
-**puzzle_11 root cause:** double-print — solution found twice. `ages_ok` contains a `!` inside a body called from `puzzle`. The `!` seals β for `ages_ok` but the enclosing `puzzle` body continues to backtrack through `all_diff5`, re-binding the position variables and re-finding the same solution. Likely `cut_cs_seal` not propagating correctly across the `ages_ok` call boundary.
-
-**Approach:** write a minimal reproducer for each, confirm swipl vs JVM divergence, then fix `pj_emit_goal` disjunction/cut wiring.
+**Bootstrap PJ-24:**
+```bash
+git clone https://TOKEN_SEE_LON@github.com/snobol4ever/snobol4x
+git clone https://TOKEN_SEE_LON@github.com/snobol4ever/.github
+apt-get install -y default-jdk nasm libgc-dev swi-prolog
+make -C snobol4x/src
+# Confirm baseline: 9/9 rungs PASS, puzzle_03+11 still FAIL
+# Minimal repro for \+ bug:
+cat > /tmp/negtest_args.pro << 'EOF'
+:- initialization(main).
+main :- \+ always_fail(1,2,3), write(ok), write('\n').
+always_fail(_,_,_) :- fail.
+EOF
+# swipl → "ok"; JVM → silent (the bug)
+# Fix: prolog_emit_jvm.c \+ handler ~line 1369
+# Add trail_mark before pj_emit_goal call, unwind on inner_ok AND inner_fail
+# Then re-run puzzle_03 — should pass
+# Then tackle puzzle_11 cut fix
+```
 
 **Bootstrap PJ-23:**
 ```bash

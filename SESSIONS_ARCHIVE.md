@@ -527,3 +527,28 @@ Rewrote `ij_emit_to_by` in `icon_emit_jvm.c` to fix two bugs:
 **Result:** 39/39 PASS rung01-07. M-IJ-CORPUS-R5 ✅. Commit `6780ab9`.
 
 **Next:** M-IJ-CORPUS-R8 — create rung08 corpus, implement next Icon feature.
+
+---
+
+## PJ-23 — 2026-03-24
+
+**Session:** Prolog JVM
+**Branch:** `main`
+**HEAD at end:** `cb0b4d0` (no new commit — diagnosis-only session)
+**Next:** M-PJ-DISJ-ARITH (PJ-24)
+
+### Work done
+
+- Confirmed baseline: 9/9 rungs PASS, puzzle_03 + puzzle_11 FAIL (19/21).
+- Exhaustively tested `(;)` ITE emitter: all patterns correct (single-arm, multi-arm, first-arm-fail, deep-arm-fail, trail unwind, variable binding across arms). The disjunction emitter is NOT the bug.
+- Found true root cause of puzzle_03 silent failure: `\+` on multi-argument user predicate calls silently fails in JVM emitter. `\+ always_fail` (0-arg) works. `\+ pred(A,B,C)` (multi-arg) does not.
+- Root: the `\+` handler in `pj_emit_goal` (~line 1369) does not save/restore trail around the inner call. Any bindings made by the inner predicate before it fails pollute the environment, causing subsequent goals (or the `\+` itself) to misbehave.
+- puzzle_11 root cause unchanged: double-print from `!` inside `ages_ok` not sealing enclosing `puzzle` backtrack through `all_diff5`.
+
+### Fix for PJ-24
+
+In `prolog_emit_jvm.c` `\+` handler (~line 1369–1378):
+1. Emit `invokestatic pj_trail_mark()I`, store in fresh local `naf_mark`.
+2. Call inner goal via `pj_emit_goal` as now.
+3. On `inner_ok`: emit `iload naf_mark; invokestatic pj_trail_unwind(I)V`, then `goto lbl_ω`.
+4. On `inner_fail`: emit `iload naf_mark; invokestatic pj_trail_unwind(I)V`, then `goto lbl_γ`.
