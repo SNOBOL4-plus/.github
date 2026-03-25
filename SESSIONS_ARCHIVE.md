@@ -963,3 +963,53 @@ END
 - Clarified: Icon relops return the **right-hand** operand on success.
 
 **Next:** M-IJ-CORPUS-R19 — candidates: lists/tables, real `to by`, multi-procedure real args.
+
+---
+
+## Scripten Planning Session — 2026-03-25
+
+**Session type:** Strategic planning / HQ documentation
+**Branch:** main
+**HEAD at start:** `bf0527a` (SCRIPTEN.md initial)
+**HEAD at end:** `e2200e6`
+
+**Work done:**
+
+1. **SCRIPTEN.md** — Top-level vision document for Scripten (formerly SCRIPTX).
+   Named the platform: **Scripten** — S/C/R/I/P + TEN (ten times faster, ten times
+   better). File name uppercase per convention (`SCRIPTEN.md`), product name natural
+   case. Covers: current state (18 compiler/runtime combinations, 3500+ tests),
+   three levels (matrix, cross-language assemblies, polyglot fenced files), five
+   deeper planning sessions (Matrix, ABI, Polyglot Parser, Bootstrap, Jupyter),
+   immediate next actions.
+
+2. **SCRIPTEN_DEMO.md** — Demo #1: Family Tree polyglot proof of concept.
+   Three languages, one fenced `.scripten` source file, funny linkage via JVM
+   invokestatic. SNOBOL4: 4 named patterns, one-pass CSV consumer, assertz per row.
+   Prolog: dynamic facts + relational inference (grandparent/2, ancestor/2,
+   sibling/2, cousin/2, generation/2). Icon: generator pipelines over Prolog
+   solution sets using `every`. One new compiler change: ~20 lines in
+   `icon_emit_jvm.c` to detect `Lang.method()` dot syntax and emit cross-class
+   invokestatic. Everything else: Python glue scripts + hand-edited Jasmin stubs.
+   Milestone: M-SCRIPTEN-DEMO.
+
+3. **SCRIPTEN_DEMO2.md** — Demo #2: Puzzle Solver. The paradigm inversion demo.
+   Prolog does NOT search — Icon searches. SNOBOL4 reads puzzle definition in
+   S-expression format using reduced treebank `group()` technique (3 functions
+   instead of 5: do_push_list, do_push_item, do_pop_assert). `do_pop_assert`
+   combines tree-close with assertz in one NRETURN side-effect — parse and
+   database population happen simultaneously in one pattern match. Prolog stores
+   dynamic facts, answers one-hop `valid_assign/2` constraint queries only.
+   Icon does combinatorial search via recursive `suspend` generator (`try_assign`)
+   with Prolog as the constraint oracle. Uses M-IJ-CORPUS-R3 suspend (already ✅).
+   Puzzles 1–5 from existing Prolog corpus. Milestone: M-SCRIPTEN-DEMO2.
+
+**Milestones fired:** none (planning session only)
+
+**PLAN.md:** No NOW row added — Scripten is a new track, row to be added when
+M-SCRIPTEN-DEMO sprint begins.
+
+**HEAD at handoff:** `e2200e6` on origin/main
+**Next:** Begin M-SCRIPTEN-DEMO sprint — build `scripten_split.py`, compile
+three blocks of `family.scripten` independently, inject funny linkage.
+Then M-SCRIPTEN-DEMO2 immediately after.
