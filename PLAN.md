@@ -21,7 +21,7 @@ Each concurrent session owns exactly one row. Update only your row on every push
 | **README** | [FROZEN] `main` — M-README-CSHARP-DRAFT ✅ | `00846d3` | resume post-reorg |
 | **ICON frontend** | [FROZEN] `main` I-11 — rung03 5/5 PASS | `bab5664` I-11 | resume post-reorg |
 | **Prolog JVM** | `main` PJ-43 — **20/20** confirmed; M-PJ-DISPLAY-BT root cause diagnosed — display/6 gamma cs re-enters gn retry on external fail-loop; minimal reproducer isolated | `38e4c39` PJ-43 | M-PJ-DISPLAY-BT: fix gamma cs pack — see PJ-44 bootstrap in FRONTEND-PROLOG-JVM.md |
-| **Icon JVM** | [FROZEN] `main` IJ-29 — M-IJ-CORPUS-R20 ✅ 104/104 PASS | `7f8e3a2` IJ-29 | resume post-reorg |
+| **Icon JVM** | [FROZEN] `main` IJ-30 WIP — rung21 2 bugs open (see FRONTEND-ICON-JVM.md §NOW); 104/104 baseline | `a6808a7` IJ-30 | M-IJ-CORPUS-R21 post-reorg |
 | **README v2 sprint** | [FROZEN] `main` R-2 | TBD R-2 | resume post-reorg |
 
 **Invariants (check before any work):**
