@@ -19,56 +19,42 @@ and emits Jasmin `.j` files, assembled by `jasmin.jar`.
 
 | Session | Sprint | HEAD | Next milestone |
 |---------|--------|------|----------------|
-| **Prolog JVM** | `main` PJ-45 — M-PJ-FINDALL WIP; p_findall_3 + helpers landed; 3/5 rung11 PASS (basic/empty/template); filter+arith open; 20/20 puzzles intact | `9047db4` PJ-45 | M-PJ-FINDALL |
+| **Prolog JVM** | `main` PJ-46 — M-PJ-FINDALL WIP; 4/5 rung11 PASS (basic/empty/template/arith); filter open (E_MOD missing in pj_emit_arith); 20/20 puzzles intact | `aec8159` PJ-46 | M-PJ-FINDALL |
 
-### CRITICAL NEXT ACTION (PJ-46)
+### CRITICAL NEXT ACTION (PJ-47)
 
-**Baseline: 20/20 puzzle corpus PASS. 3/5 rung11_findall PASS.**
+**Baseline: 20/20 puzzle corpus PASS. 4/5 rung11_findall PASS.**
 
-**M-PJ-FINDALL is in progress** — `p_findall_3`, `pj_copy_term`, `pj_eval_arith`, `pj_reflect_call`, `pj_call_goal` all implemented in `prolog_emit_jvm.c`. Two rung11 tests still failing:
+**M-PJ-FINDALL is in progress** — one fix remaining.
 
-**1. `findall_filter` — returns `[1,2,3,4,5]` instead of `[2,4]`**
+**`findall_filter` — returns `[1,2,3,4,5]` instead of `[2,4]`**
 
-Goal: `findall(X, even(X), Xs)` where `even(X) :- num(X), 0 is X mod 2.`
-- `pj_call_goal` for a compound user call (e.g. `even(X)`) calls `pj_reflect_call("even", 1, [X], cs)` which dispatches to `p_even_1(X, cs)`.
-- `p_even_1` drives its internal body backtracking correctly — with cs=0 it finds X=2 (first even), returns `{new_cs}` encoding next retry point.
-- BUT: `pj_call_goal` for a conjunction calls left with cs=0 ALWAYS, ignoring the cs parameter. This is correct for `findall(X, even(X), Xs)` (single user call, not conjunction). The issue is that `pj_call_goal` for a single user call returns `result[0].intValue()` as new_cs — which is the internal cs for the NEXT call to `p_even_1`. But `p_even_1(X, cs=0)` returns the result with X=1 (first num), checks `0 is 1 mod 2` fails, backtracks to num(2), succeeds — **wait, does it actually return X=2 with the right cs?**
-- **Root cause to verify:** Add a diagnostic print inside the loop — print what `pj_call_goal` returns and what `X` is bound to after each call.
+Root cause: `pj_emit_arith()` in `prolog_emit_jvm.c` has no case for `mod` — it falls to `default: lconst_0`. So `0 is X mod 2` emits `pj_unify(["int","0"], ["int","0"])` → always succeeds → all nums pass the filter.
 
-**2. `findall_arith` — returns `[]`**
+Check: `mod` in the IR is represented as `E_FNC` with `sval="mod"` (not a dedicated opcode like E_ADD/E_SUB). Add it to `pj_emit_arith`:
 
-Goal: `findall(Y, (num(X), Y is X*X), Ys)` — conjunction.
-- `pj_call_goal` for conjunction calls left (`num(X)`, cs=0) → succeeds (X bound to 1), then calls right (`Y is X*X`, cs=0) → `pj_eval_arith` evaluates `X*X`. But `X` is a variable term — `pj_eval_arith` tries to dereference it but may fail to extract an integer from an unbound var, causing an exception that's silently caught.
-- **Root cause:** `pj_eval_arith` must deref `X` to get its integer value. If X is a bound var (ref cell pointing to int term), deref gives the int term — but `pj_eval_arith` checks `tag == "int"` on the deref'd result. A var bound via `pj_unify` to an int term becomes a ref cell pointing to `["int", "1"]`. After deref, the tag IS "int" — so it should work. Need to trace with diagnostics.
-- **Also:** conjunction currently returns `iconst_0` (cs=0) on success — meaning `p_findall_3` will call `pj_call_goal(goal, 0)` again → left calls `num(X)` with cs=0 again → X=1 again → same result forever (infinite loop or just 1 result). **Conjunction cs must be advanced.** For `(num(X), Y is X*X)`, the conjunction cs should advance `num`'s cs while keeping `is` deterministic.
-
-**Fix plan for PJ-46:**
-
-For conjunction backtracking, `pj_call_goal` for `","` needs to properly advance the left predicate. Current code always passes cs=0 to left — wrong. The correct approach: encode conjunction state as `left_cs * BIG + right_cs` or use a two-level loop. Simplest fix: **for a conjunction goal, the cs encodes the left sub-cs** (right is always cs=0, deterministic). Change conjunction handling to:
+```c
+case E_FNC:
+    if (e->sval && strcmp(e->sval, "mod") == 0 && e->nchildren >= 2) {
+        pj_emit_arith(e->children[0], var_locals, n_vars);
+        pj_emit_arith(e->children[1], var_locals, n_vars);
+        JI("lrem", "");
+        break;
+    }
+    JI("lconst_0", ""); break;
 ```
-left_new_cs = pj_call_goal(left, cs)    // cs drives left
-if left_new_cs == -1 → return -1
-right_result = pj_call_goal(right, 0)   // right always fresh
-if right_result == -1 → return -1
-return left_new_cs  // caller retries left with left_new_cs
-```
-This threads cs through the left predicate correctly. For `(num(X), Y is X*X)`: cs=0 → num(X=1), Y=1; cs=new_cs → num(X=2), Y=4; etc.
 
-**Bootstrap PJ-46:**
+Also add `//` (integer division) and `rem` while there. After fix: expect 5/5 rung11 PASS → **M-PJ-FINDALL ✅**.
+
+**ALSO verify** no regression: 20/20 puzzle corpus must still PASS (puzzle_12 uses disjunction+arith).
+
+**Bootstrap PJ-47:**
 ```bash
 git clone https://TOKEN_SEE_LON@github.com/snobol4ever/snobol4x
 git clone https://TOKEN_SEE_LON@github.com/snobol4ever/.github
 apt-get install -y --fix-missing default-jdk nasm libgc-dev swi-prolog
 make -C snobol4x/src && cd snobol4x
-# Confirm 20/20 puzzle baseline:
-for i in $(seq -f "%02g" 1 20); do P=puzzle_${i}; C=Puzzle_${i}
-  ./sno2c -pl -jvm test/frontend/prolog/corpus/rung10_programs/${P}.pro -o /tmp/${C}.j 2>/dev/null
-  java -jar src/backend/jvm/jasmin.jar /tmp/${C}.j -d /tmp 2>/dev/null
-  J=$(timeout 15 java -cp /tmp ${C} 2>/dev/null)
-  O=$(timeout 15 swipl -q -g halt -t main test/frontend/prolog/corpus/rung10_programs/${P}.pro 2>/dev/null)
-  [ "$J" = "$O" ] && echo "${P}: PASS" || echo "${P}: FAIL"
-done
-# Confirm 3/5 rung11 baseline (basic/empty/template PASS, filter/arith FAIL):
+# Confirm 4/5 rung11 baseline (filter still fails) and 20/20 puzzles:
 for f in test/frontend/prolog/corpus/rung11_findall/*.pro; do
   base=$(basename $f .pro)
   ./sno2c -pl -jvm $f -o /tmp/${base}.j 2>/dev/null
@@ -78,12 +64,10 @@ for f in test/frontend/prolog/corpus/rung11_findall/*.pro; do
   want=$(cat ${f%.pro}.expected)
   [ "$got" = "$want" ] && echo "$base: PASS" || echo "$base: FAIL (got='$got')"
 done
-# Fix 1: In pj_emit_findall_builtin() pj_call_goal conjunction section (~line 2285),
-#   change left call from "iconst_0" to "iload_1" so cs is passed to left predicate.
-#   Return left_new_cs (not iconst_0) on conjunction success.
-# Fix 2: Verify pj_eval_arith handles ref→int deref correctly by adding a deref
-#   step before the tag check.
-# After fixes: expect 5/5 rung11 PASS → M-PJ-FINDALL ✅
+# Fix: in prolog_emit_jvm.c, find pj_emit_arith (~line 1009).
+# Add E_FNC case for mod (and optionally rem, //) before the default.
+# Verify IR node kind: grep E_FNC prolog_lower.h or check what mod parses to.
+# Build, test 5/5 rung11 + 20/20 puzzles → commit + push → M-PJ-FINDALL ✅
 ```
 
 

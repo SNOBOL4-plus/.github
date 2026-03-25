@@ -1382,3 +1382,21 @@ Scrutinized the entire GRAND_MASTER_REORG.md plan for chunk size and incremental
 - Wait for Lon's signal to execute **M-G0-FREEZE** — tag `pre-reorg-freeze` on snobol4x, record 106/106 ASM + JVM, 110/110 NET.
 - After freeze: M-G0-AUDIT (all 5 emitters → `doc/EMITTER_AUDIT.md`) and M-G0-IR-AUDIT (all 5 frontend IRs → `doc/IR_AUDIT.md`) can proceed in parallel.
 - Do NOT read GRAND_MASTER_REORG.md cold — use `tail -80 SESSIONS_ARCHIVE.md` to find this entry, then read PLAN.md NOW table, then GRAND_MASTER_REORG.md Phase 0 section only.
+
+## PJ-46 — M-PJ-FINDALL WIP (4/5 rung11)
+
+**HEAD:** `aec8159` | **Date:** 2026-03-25
+
+**Work done:**
+
+- **Fix 1 — Conjunction cs threading in `pj_call_goal`:** Left sub-call now receives `iload_1` (incoming cs) instead of hardcoded `iconst_0`. Returns `left_new_cs` so `p_findall_3` advances the left predicate on retry. **`findall_arith` → PASS** (was returning `[]`).
+
+- **Fix 2 — Gamma port for single-clause+ucall predicates:** `p_even_1_gamma_0` (and any nclauses==1 && last_has_ucall predicate) now returns `sub_cs_out_local` (iload 4) instead of `init_cs+1`. Prevents inner ucall restarting from cs=0 on every findall iteration.
+
+**Score:** 4/5 rung11 PASS (`basic`, `empty`, `template`, `arith`). `findall_filter` still failing. 20/20 puzzle corpus intact.
+
+**Remaining bug — `findall_filter` returns `[1,2,3,4,5]` instead of `[2,4]`:**
+
+Root cause: `pj_emit_arith()` has no case for `mod` — falls to `default: lconst_0`. So `0 is X mod 2` compiles to `pj_unify(0, 0)` → always true → all nums pass. Fix is a one-liner: add `E_FNC` case for `sval=="mod"` emitting `lrem`. (Note: `mod` uses `E_FNC` not a dedicated opcode — confirmed by checking what `default:` catches in the emitted .j.)
+
+**Next session (PJ-47):** Add `mod` (and `rem`, `//`) to `pj_emit_arith`. Expect 5/5 rung11 → M-PJ-FINDALL ✅. Then move to M-PJ-ATOM-BUILTINS.
