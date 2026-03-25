@@ -22,7 +22,7 @@ Each concurrent session owns exactly one row. Update only your row on every push
 | **Prolog JVM** | `main` PJ-24 — \\+ trail + body-fail trail fixed; puzzle_03 logic OK; display over-generates | `a77555c` PJ-24 | M-PJ-DISPLAY-BT |
 | **Icon JVM** | `main` IJ-11 — M-IJ-SCAN ✅ 5/5 rung05 PASS | `7d68a85` IJ-11 | M-IJ-CSET |
 | **Prolog JVM** | `main` PJ-16 — two-clause fail/retry fix; rungs 01-09 PASS | `f575016` PJ-16 | M-PJ-CORPUS-R10 |
-| **Icon JVM** | `main` IJ-14 — M-IJ-CORPUS-R5 ✅ 39/39 rung01-07 PASS | `6780ab9` IJ-14 | M-IJ-CORPUS-R8 |
+| **Icon JVM** | `main` IJ-15 — rung08 corpus committed; find/match/tab/move emitter pending | `6f11821` IJ-15 | M-IJ-CORPUS-R8 |
 | **README v2 sprint** | `main` R-2 | TBD R-2 | M-FEAT-JVM |
 
 **Invariants (check before any work):**

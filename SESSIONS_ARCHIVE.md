@@ -586,3 +586,21 @@ In `prolog_emit_jvm.c` `\+` handler (~line 1369–1378):
 2. Get ASM trace stream: redirect TERMINAL= output in comm_var OR just diff csn_trace.txt vs asm_trace.txt async
 3. First diverging trace line names the r12 clobber site → fix emit_named_ref
 4. Fire M-BEAUTIFY-BOOTSTRAP-ASM-MONITOR
+
+---
+
+## IJ-15 — 2026-03-24
+
+**Trigger:** "playing with snobol4x JVM backend for ICON frontend" + jcon-master.zip uploaded.
+**Sprint:** Icon JVM. **HEAD start:** `6780ab9` (IJ-14). **HEAD end:** `6f11821`.
+
+**Work done:**
+- Cloned snobol4x + .github fresh; installed default-jdk + nasm + libgc-dev.
+- Confirmed baseline **39/39 PASS** rung01–07 using `.expected` oracle harness.
+- Harness clarification: `-run` needs `-o` flag + nasm link; correct harness uses `.expected` files directly.
+- Extracted and read JCON-ANALYSIS.md (386 lines); read FRONTEND-ICON-JVM.md §NOW fully.
+- Designed and committed **rung08_strbuiltins** corpus (5 tests: `find` one-shot, `find` generator, `match`, `tab`, `move`).
+- Documented full IJ-16 implementation plan in FRONTEND-ICON-JVM.md §NOW (emitter changes for find/match/tab/move including static helpers, generator pattern for find, String-type inference for tab/move).
+
+**Milestone:** M-IJ-CORPUS-R8 — corpus committed ✅; emitter implementation deferred to IJ-16.
+**Next:** IJ-16 implements find/match/tab/move in `ij_emit_call` + static helpers → fires M-IJ-CORPUS-R8.

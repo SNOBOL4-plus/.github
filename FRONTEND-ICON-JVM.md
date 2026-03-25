@@ -19,9 +19,9 @@ assembled by `jasmin.jar` into `.class` files. Despite the file's location under
 
 | Session | Sprint | HEAD | Next milestone |
 |---------|--------|------|----------------|
-| **Icon JVM** | `main` IJ-14 — M-IJ-CORPUS-R5 ✅ 39/39 rung01-07 PASS | `6780ab9` IJ-14 | M-IJ-CORPUS-R8 |
+| **Icon JVM** | `main` IJ-15 — rung08 corpus committed; emitter work pending | `6f11821` IJ-15 | M-IJ-CORPUS-R8 |
 
-### Next session checklist (IJ-15)
+### Next session checklist (IJ-16)
 
 ```bash
 git clone https://TOKEN_SEE_LON@github.com/snobol4ever/snobol4x
@@ -34,8 +34,60 @@ gcc -Wall -Wextra -g -O0 -I. src/frontend/icon/icon_driver.c src/frontend/icon/i
     src/frontend/icon/icon_runtime.c -o /tmp/icon_driver
 # Read FRONTEND-ICON-JVM.md §NOW
 # Confirm rung01-07 39/39 still PASS before touching code
-# Create rung08 corpus + implement next Icon feature → fire M-IJ-CORPUS-R8
+# Implement find/match/tab/move in ij_emit_call + static helpers → fire M-IJ-CORPUS-R8
 ```
+
+### IJ-15 findings — rung08 corpus designed (in progress)
+
+**Baseline confirmed 39/39 PASS rung01–07 (via .expected oracle files, not ASM -run).**
+
+**Harness note:** `-run` flag requires `-o` + nasm link cycle. Correct harness:
+```bash
+/tmp/icon_driver -jvm foo.icn -o /tmp/foo.j
+java -jar src/backend/jvm/jasmin.jar /tmp/foo.j -d /tmp/
+cls=$(grep -m1 '\.class' /tmp/foo.j | awk '{print $NF}')
+java -cp /tmp/ $cls
+# diff vs test/frontend/icon/corpus/rungNN/foo.expected
+```
+
+**rung08_strbuiltins corpus committed (`6f11821`):** 5 tests for `find`/`match`/`tab`/`move`:
+
+```
+t01_find.icn         find(s1,s2) one-shot → 2\n4
+t02_find_gen.icn     every find("a","banana") → 2\n4\n6
+t03_match.icn        match(s) in scan ctx + fail branch → 4\n0
+t04_tab.icn          "abcdef" ? write(tab(4)) → abc
+t05_move.icn         "abcdef" ? write(move(3)) → abc
+```
+
+**What IJ-16 must implement in `icon_emit_jvm.c`:**
+
+1. **`icn_builtin_find(String s1, String s2, int startpos) → long`** static helper:
+   `s2.indexOf(s1, startpos)` → returns 0-based index; return `(idx+1)` as long, or `-1L` on miss.
+   For **generator** (`every find(...)`): per-call static `icn_find_pos_N` (int) tracks resume position.
+   α: eval args, store s1/s2 in static fields `icn_find_s1_N`/`icn_find_s2_N`, set `icn_find_pos_N=0`, goto check.
+   check: call `icn_builtin_find(s1, s2, pos)` → if -1 → ω; else set `pos = result` (1-based = 0-based+1), push result as long → γ.
+   β: `icn_find_pos_N = result` (advance past last match), goto check.
+
+2. **`icn_builtin_match(String s1, String subj, int pos) → long`** static helper:
+   `subj.startsWith(s1, pos)` → return `pos + s1.length()` (1-based new pos after match), or `-1L`.
+   In `ij_emit_call`: one-shot — call helper with `icn_subject`, `icn_pos`; on -1 → ω; else advance `icn_pos = result-1` (0-based), push result → γ.
+
+3. **`icn_builtin_tab(int n, String subj, int pos) → String`** static helper (or inline):
+   n is 1-based target pos. Returns `subj.substring(pos, n-1)`. Advances `icn_pos = n-1`.
+   In `ij_emit_call`: one-shot — if `n-1 < pos || n-1 > subj.length()` → ω; else return substring, set icn_pos.
+   **String result** → `ij_expr_is_string` must return 1 for `"tab"` call.
+
+4. **`icn_builtin_move(int n, String subj, int pos) → String`** static helper:
+   Returns `subj.substring(pos, pos+n)`. Advances `icn_pos = pos+n`.
+   If `pos+n > subj.length()` → fail.
+   **String result** → `ij_expr_is_string` must return 1 for `"move"` call.
+
+5. **`ij_expr_is_string` additions:** `"tab"` and `"move"` → return 1.
+
+6. **`need_scan_builtins` guard:** tab/move/match/find helpers emit alongside any/many/upto (all gated on `icn_subject` in statics).
+
+**Key position convention (same as rung05–06):** `icn_pos` is 0-based internally. Icon positions are 1-based. `tab(n)` receives n as 1-based; internally uses `n-1` as 0-based end index. `match`/`find` return 1-based new positions.
 
 ### IJ-14 findings — M-IJ-CORPUS-R5 ✅ (done)
 
