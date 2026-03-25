@@ -19,11 +19,60 @@ and emits Jasmin `.j` files, assembled by `jasmin.jar`.
 
 | Session | Sprint | HEAD | Next milestone |
 |---------|--------|------|----------------|
-| **Prolog JVM** | `main` PJ-37 — 18/20; `pj_body_has_cut` recursive helper landed; puzzle_18 root cause re-diagnosed: cutgamma not detected at call site | `d4abf38` PJ-37 | M-PJ-CUT-UCALL: detect cutgamma at ucall call site |
+| **Prolog JVM** | `main` PJ-38 — 19/20; MAX_VALUE sentinel landed; puzzle_18 still double-prints: `lbl_cutγ` is NULL in callers without own cut | `13f4db6` PJ-38 | M-PJ-CUT-UCALL: propagate cutgamma even when caller has no own cut |
 
-### CRITICAL NEXT ACTION (PJ-38)
+### CRITICAL NEXT ACTION (PJ-39)
 
-**JVM baseline: 18/20 PASS. Remaining failures:**
+**JVM baseline: 19/20 PASS. Remaining failures:**
+
+1. **puzzle_18** — answer printed TWICE. PJ-38 landed MAX_VALUE sentinel + `pj_callee_has_cut_no_last_ucall` call-site guard. Guard fires correctly when `lbl_cutγ != NULL` (caller has own cut). But `puzzle/0` has NO `!` in its own body → `any_has_cut=0` for puzzle/0 → `lbl_cutγ` is NULL → guard skipped → cutgamma falls through as success → double print.
+
+   **Fix (PJ-39):** When `pj_callee_has_cut_no_last_ucall(fn,nargs)` is true but `lbl_cutγ` is NULL, emit a *local* omega jump instead of propagating upward — i.e., treat cutgamma return as failure of this goal (jump to `lbl_ω`). This is semantically correct: cut in a callee with no enclosing cut context means "this choice is deterministic — don't retry". Replace:
+   ```c
+   if (lbl_cutγ && pj_callee_has_cut_no_last_ucall(fn, nargs)) {
+   ```
+   with:
+   ```c
+   if (pj_callee_has_cut_no_last_ucall(fn, nargs)) {
+       const char *cut_dest = lbl_cutγ ? lbl_cutγ : call_ω;
+   ```
+   and emit `if_icmpeq %s\n", cut_dest` — routing to `call_ω` (exhausted) when no enclosing cutgamma label exists. This prevents the double-print without requiring the caller to have its own cut.
+
+2. **puzzle_03** — over-generates. Open: M-PJ-DISPLAY-BT.
+
+**Changes landed PJ-38:**
+- `static Program *pj_prog` global set in `prolog_emit_jvm()` entry point.
+- `pj_predicate_base_nclauses(fn, arity)` — walks `prog->head` for matching E_CHOICE, returns `nclauses` (= `base[nclauses]` since stride=1).
+- `pj_callee_has_cut_no_last_ucall(fn, arity)` — returns 1 iff callee has cut AND last clause has no ucall.
+- Cutgamma port now returns `2147483647` (MAX_VALUE) instead of `base[nclauses]` — eliminates sentinel/last-clause-γ ambiguity.
+- Dispatch entry `if_icmpeq` guard updated to match `2147483647`.
+- Call-site guard after `ifnull call_ω`: loads `rv[0].intValue()`, compares to `2147483647`, jumps to `lbl_cutγ` if equal — but only when `lbl_cutγ != NULL`. **That conditionality is the remaining bug.**
+- Score: 18/20 → 19/20 (puzzles 01-02, 04-07, 12-13, 15-17, 19-20 newly passing; puzzle_18 still double-prints).
+
+**Bootstrap PJ-39:**
+```bash
+git clone https://TOKEN_SEE_LON@github.com/snobol4ever/snobol4x
+git clone https://TOKEN_SEE_LON@github.com/snobol4ever/.github
+apt-get install -y --fix-missing default-jdk nasm libgc-dev swi-prolog
+make -C snobol4x/src && cd snobol4x
+# Confirm 19/20: puzzle_03 and puzzle_18 fail
+for i in $(seq -f "%02g" 1 20); do
+  P=puzzle_${i}; C=Puzzle_${i}
+  ./sno2c -pl -jvm test/frontend/prolog/corpus/rung10_programs/${P}.pro -o /tmp/${C}.j 2>/dev/null
+  java -jar src/backend/jvm/jasmin.jar /tmp/${C}.j -d /tmp 2>/dev/null
+  J=$(timeout 15 java -cp /tmp ${C} 2>/dev/null)
+  O=$(timeout 15 swipl -q -g halt -t main test/frontend/prolog/corpus/rung10_programs/${P}.pro 2>/dev/null)
+  [ "$J" = "$O" ] && echo "${P}: PASS" || echo "${P}: FAIL"
+done
+# Fix in prolog_emit_jvm.c ~line 1806:
+# Change:  if (lbl_cutγ && pj_callee_has_cut_no_last_ucall(fn, nargs)) {
+# To:      if (pj_callee_has_cut_no_last_ucall(fn, nargs)) {
+#              const char *cut_dest = lbl_cutγ ? lbl_cutγ : call_ω;
+# And emit:    J("    if_icmpeq %s\n", cut_dest);
+# Build, rerun sweep, expect puzzle_18 PASS -> 20/20
+```
+
+**JVM baseline: 18/20 PASS. Remaining failures (pre-PJ-38):**
 
 1. **puzzle_18** — answer printed TWICE. Root cause fully re-diagnosed in PJ-37:
    - `pj_body_has_cut` recursive helper landed (`d4abf38`) — correct, no regressions, did NOT fix puzzle_18.

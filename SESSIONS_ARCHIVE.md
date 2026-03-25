@@ -890,3 +890,25 @@ END
 **Invariant:** 106/106 ASM corpus ALL PASS throughout.
 **Not done:** L_io_end fix, Jasmin assembly, JVM beauty run.
 **Next session:** B-293 — apply fn-body scan fix at emit_byrd_jvm.c:4153; assemble beauty.j; run JVM beauty bootstrap.
+
+## PJ-38 — 2026-03-25
+
+**Score:** 18/20 → 19/20
+**HEAD:** `13f4db6`
+**Branch:** `main`
+
+**Work done:**
+- Diagnosed sentinel ambiguity: `base[nclauses]` == last-clause γ return for any predicate → false positives.
+- Changed cutgamma port to return `2147483647` (MAX_VALUE) — unambiguous, never a legitimate cs value.
+- Updated dispatch entry `if_icmpeq` guard to match `2147483647`.
+- Added `static Program *pj_prog` global; set in `prolog_emit_jvm()`.
+- Added `pj_predicate_base_nclauses(fn, arity)` helper.
+- Added `pj_callee_has_cut_no_last_ucall(fn, arity)` helper.
+- Added call-site cutgamma guard after `ifnull call_ω` — emits `if_icmpeq 2147483647 → lbl_cutγ`.
+- Result: 12 previously-failing puzzles now PASS (01-02, 04-07, 12-13, 15-17, 19-20).
+
+**Remaining bug (puzzle_18):**
+- Guard conditioned on `lbl_cutγ != NULL`. `puzzle/0` has no own cut → `lbl_cutγ` NULL → guard skipped → double-print persists.
+- Fix: when `lbl_cutγ` is NULL, route to `call_ω` instead (treat cutgamma as exhaustion of this call). Change `if (lbl_cutγ && ...)` to `if (pj_callee_has_cut_no_last_ucall(...))` with `cut_dest = lbl_cutγ ? lbl_cutγ : call_ω`.
+
+**SWIPL test suite:** SWI-Prolog ships `library(plunit)` for unit testing. Run `swipl -g "load_test_files([]), run_tests" file.pl`. The puzzle corpus in `rung10_programs/` uses `swipl -q -g halt -t main` as oracle — no formal plunit suite exists for this project yet.

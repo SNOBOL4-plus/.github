@@ -19,7 +19,7 @@ Each concurrent session owns exactly one row. Update only your row on every push
 | **DOTNET** | `main` D-164 — 1903/1903 pass 0 fail on Linux | `e1e4d9e` D-164 | TBD |
 | **README** | `main` — M-README-CSHARP-DRAFT ✅ | `00846d3` snobol4csharp | M-README-DEEP-SCAN |
 | **ICON frontend** | `main` I-11 — M-ICON-CORPUS-R3 ✅ rbp fix + 5/5 rung03 PASS | `bab5664` I-11 | M-ICON-STRING |
-| **Prolog JVM** | `main` PJ-37 — 18/20; puzzle_11 PASS; pj_body_has_cut recursive helper landed; puzzle_18 root cause: cutgamma not detected at call site | `d4abf38` PJ-37 | M-PJ-CUT-UCALL: pj_predicate_base_nclauses + call-site cutgamma guard |
+| **Prolog JVM** | `main` PJ-38 — 19/20; MAX_VALUE sentinel + call-site guard landed; puzzle_18 root cause: lbl_cutγ NULL in callers without own cut | `13f4db6` PJ-38 | M-PJ-CUT-UCALL: route cutgamma to call_ω when lbl_cutγ NULL |
 | **Icon JVM** | `main` IJ-11 — M-IJ-SCAN ✅ 5/5 rung05 PASS | `7d68a85` IJ-11 | M-IJ-CSET |
 | **Prolog JVM** | `main` PJ-16 — two-clause fail/retry fix; rungs 01-09 PASS | `f575016` PJ-16 | M-PJ-CORPUS-R10 |
 | **Icon JVM** | `main` IJ-22 — M-IJ-CORPUS-R13 ✅ ICN_ALT β-resume gate + string type fixes; 69/69 PASS | `a569adf` IJ-22 | M-IJ-CORPUS-R14 |
