@@ -117,6 +117,18 @@ See [GRAND_MASTER_REORG.md](GRAND_MASTER_REORG.md) for full plan. **Concurrent d
 | **M-G7-STYLE-BACKENDS** | 7 — Style: all backend files conform | ❌ |
 | **M-G7-STYLE-FRONTENDS** | 7 — Style: all frontend files conform | ❌ |
 | **M-G7-UNFREEZE** | 7 — Style: post-reorg-baseline tagged; all sessions resume | ❌ |
+| **M-G8-HOME** | 8 — GenTest: enumerator home repo decision + `doc/GEN_HOME.md` | ❌ |
+| **M-G8-DEPTH** | 8 — GenTest: token-count vs IR-node depth decision + `doc/GEN_DEPTH.md` | ❌ |
+| **M-G8-ORACLE** | 8 — GenTest: differential vs reference-cache oracle + `doc/GEN_ORACLE.md` | ❌ |
+| **M-G8-GRAMMAR** | 8 — GenTest: first language + fragment BNF + `doc/GEN_GRAMMAR.md` | ❌ |
+| **M-G8-ENUM-CORE** | 8 — GenTest: `gen/enumerate.py` core | ❌ |
+| **M-G8-EMIT-SNO** | 8 — GenTest: IR tree → `.sno` serializer | ❌ |
+| **M-G8-RUNNER** | 8 — GenTest: full pipeline + Monitor hook | ❌ |
+| **M-G8-SNOBOL4-N10** | 8 — GenTest: SNOBOL4 pattern N=10, zero divergences | ❌ |
+| **M-G8-SNOBOL4-N25** | 8 — GenTest: SNOBOL4 pattern N=25, zero divergences | ❌ |
+| **M-G8-ICON-N25** | 8 — GenTest: Icon generators N=25, zero divergences | ❌ |
+| **M-G8-PROLOG-N25** | 8 — GenTest: Prolog clause bodies N=25, zero divergences | ❌ |
+| **M-G8-CI** | 8 — GenTest: N=10 slice in CI, < 5 min | ❌ |
 
 Full plan → [GRAND_MASTER_REORG.md](GRAND_MASTER_REORG.md)
 
