@@ -304,7 +304,36 @@ shared kind are replaced.
 
 ---
 
-### Phase 6 — Cross-Matrix Coverage (new pipelines, now cheap)
+### Why WebAssembly — The Browser IDE Vision
+
+WASM is not just a fourth deployment target. It unlocks a browser-native development
+tool that would be unique in the world:
+
+```
+Browser tab — no server, no install, share a URL
+├── Left pane:   source editor (SNOBOL4 / Icon / Prolog / Snocone / Rebus)
+├── Middle pane: live Byrd box graph — α/β/γ/ω ports animated in real time
+├── Right pane:  program output / trace stream
+└── Bottom:      step debugger — &STLIMIT=1 probe mode, variable state at each step
+```
+
+The Byrd box model is **visual by nature** — four ports, wires between nodes,
+backtracking arrows reversing. Animated goal-directed evaluation in a browser would
+be a world-class educational tool for SNOBOL4, Prolog, and Icon simultaneously.
+Nothing like it exists anywhere.
+
+**How it works:** the `scripten` compiler compiles to WASM. The runtime
+(`snobol4.c`, the pattern engine, the Byrd box machinery) also compiles to WASM
+via Emscripten. Both run client-side. The React/HTML monitor GUI (M-MONITOR-GUI,
+currently 💭) becomes buildable once this lands.
+
+**Dependency chain:**
+```
+M-G6-SNOBOL4-WASM → runtime via Emscripten → browser harness → M-MONITOR-GUI
+```
+
+This is the motivating vision for the WASM backend. It turns a compiler project
+into a living, shareable, interactive demonstration of goal-directed evaluation.
 
 With unified IR and three shared backends, adding a new frontend×backend pipeline
 is: wire the frontend's `lower.c` output into the backend's `emit_*.c`.
