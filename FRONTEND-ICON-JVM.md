@@ -19,9 +19,9 @@ assembled by `jasmin.jar` into `.class` files. Despite the file's location under
 
 | Session | Sprint | HEAD | Next milestone |
 |---------|--------|------|----------------|
-| **Icon JVM** | `main` IJ-26 — M-IJ-CORPUS-R17 ✅ real arith + integer()/real()/string(); 89/89 PASS | `f10ea77` IJ-26 | M-IJ-CORPUS-R18 |
+| **Icon JVM** | `main` IJ-27 — M-IJ-CORPUS-R18 ✅ real relops (dcmpl/dcmpg + l2d + ICN_ALT realness); 94/94 PASS | `f976057` IJ-27 | M-IJ-CORPUS-R19 |
 
-### Next session checklist (IJ-27)
+### Next session checklist (IJ-28)
 
 ```bash
 git clone https://TOKEN_SEE_LON@github.com/snobol4ever/snobol4x
@@ -32,10 +32,27 @@ gcc -Wall -Wextra -g -O0 -I. src/frontend/icon/icon_driver.c src/frontend/icon/i
     src/frontend/icon/icon_parse.c src/frontend/icon/icon_ast.c \
     src/frontend/icon/icon_emit.c src/frontend/icon/icon_emit_jvm.c \
     src/frontend/icon/icon_runtime.c -o /tmp/icon_driver
-# Confirm 89/89 PASS (rungs 01-17) before touching code
-# Next: M-IJ-CORPUS-R18 — candidates: real relops (< > = on doubles),
-# mixed int/real expressions, or multi-procedure programs with real args.
+# Confirm 94/94 PASS (rungs 01-18) before touching code
+# Next: M-IJ-CORPUS-R19 — candidates: lists/tables, co-expressions, multi-file,
+# or deeper real arithmetic (real to-by, real subscript). Consult JCON-ANALYSIS.md.
 ```
+
+### IJ-27 findings — M-IJ-CORPUS-R18 ✅
+
+**94/94 PASS (rung01–18).** HEAD `f976057`.
+
+**Changes in `icon_emit_jvm.c`:**
+
+1. **`ij_emit_relop` double support** — detects `is_dbl` (either operand real); uses `dstore`/`dload` instead of `lstore`/`lload`; promotes integer operand with `l2d` at relay; emits `dcmpl` for `<`/`<=`/`=`/`~=` and `dcmpg` for `>`/`>=` (NaN-safe direction), then same `ifge`/`ifgt`/etc. branch tests as integer path.
+
+2. **`ij_expr_is_real` relop extension** — `ICN_LT/LE/GT/GE/EQ/NE` now return `is_real(child[0]) || is_real(child[1])`, so downstream `pop2`/`dload` on relop result uses correct slot width.
+
+3. **`ij_expr_is_real` ICN_ALT extension** — `ICN_ALT` delegates to `children[0]`, matching `ij_expr_is_string` pattern. Fixes VerifyError in `every write(3.0 < (2.5|3.5|4.5))` where every-drain used `pop2` on a double from an alt generator.
+
+4. **Note on Icon relop return value** — all relops return the **right-hand** operand on success (confirmed by paper example `2 < (1 to 4)` → 3,4). The t05 corpus test was initially written with generator on left; corrected to put generator on right.
+
+**rung18_real_relop corpus (5 tests):** real `<`, real `>` (false branch), real `=`, mixed int/real `<`, goal-directed real relop with alt generator.
+
 
 ### IJ-26 findings — M-IJ-CORPUS-R17 ✅
 

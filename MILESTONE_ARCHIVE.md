@@ -230,3 +230,8 @@ Append-only. Do not edit existing entries.
 
 | **M-IJ-CORPUS-R13** | Rung 13: ICN_ALT β-resume indirect-goto gate + ICN_ALT string type + concat left_is_value fix; 69/69 total | ✅ IJ-22 `a569adf` |
 
+| **M-IJ-CORPUS-R14** | Rung 14: ICN_LIMIT (E \ N) limitation operator; counter/max statics, β no-increment fix; 74/74 total | ✅ IJ-23 `9021c4e` |
+| **M-IJ-CORPUS-R15** | Rung 15: ICN_REAL, ICN_SWAP (:=:), ICN_LCONCAT (|||); 79/79 total | ✅ IJ-24 |
+| **M-IJ-CORPUS-R16** | Rung 16: ICN_SUBSCRIPT s[i] + ij_emit_if drain pop/pop2 fix; 84/84 total | ✅ IJ-25 `dff0f03` |
+| **M-IJ-CORPUS-R17** | Rung 17: real arith (dadd/dmul), integer()/real()/string() builtins, ldc2_w decimal fix; 89/89 total | ✅ IJ-26 `f10ea77` |
+| **M-IJ-CORPUS-R18** | Rung 18: real relops (dcmpl/dcmpg + l2d promotion), ICN_ALT realness; 94/94 total | ✅ IJ-27 `f976057` |

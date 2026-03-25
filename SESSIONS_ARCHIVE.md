@@ -949,3 +949,17 @@ END
 **Invariant:** 89/89 JVM corpus PASS throughout (all rungs 01–17).
 **Not done:** real relops (< > = on doubles), mixed int/real relational expressions.
 **Next session:** IJ-27 — M-IJ-CORPUS-R18, real relops + any remaining UNIMPL gaps.
+
+## IJ-27 — 2026-03-25
+
+**Sprint:** M-IJ-CORPUS-R18
+**HEAD:** `f976057` (snobol4x main)
+**Result:** ✅ 94/94 PASS (rung01–18)
+
+**Work done:**
+- `ij_emit_relop`: added `is_dbl` detection; `dstore`/`dload`/`dcmpl`/`dcmpg` for real operands; `l2d` promotion at relay points; `dcmpl` for `<`/`<=`/`=`/`~=`, `dcmpg` for `>`/`>=` (correct NaN semantics).
+- `ij_expr_is_real`: extended to relop nodes (`ICN_LT/LE/GT/GE/EQ/NE`) and `ICN_ALT` (delegates to children[0]).
+- `rung18_real_relop` corpus: 5 tests — real `<`, real `>`, real `=`, mixed int/real `<`, goal-directed real relop with alt generator.
+- Clarified: Icon relops return the **right-hand** operand on success.
+
+**Next:** M-IJ-CORPUS-R19 — candidates: lists/tables, real `to by`, multi-procedure real args.
