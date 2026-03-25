@@ -16,6 +16,7 @@ Format: `PREFIX-NNN` where NNN increments within that namespace only.
 
 | Session type | Prefix | Owns in PLAN.md NOW |
 |---|---|---|
+| Grand Master Reorg | `G` | **GRAND MASTER REORG** row |
 | TINY backend (ASM) | `B` | **TINY backend** row |
 | TINY JVM backend | `J` | **TINY JVM** row |
 | TINY NET backend | `N` | **TINY NET** row |

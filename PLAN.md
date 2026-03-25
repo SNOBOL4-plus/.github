@@ -12,20 +12,17 @@ Each concurrent session owns exactly one row. Update only your row on every push
 
 | Session | Sprint | HEAD | Next milestone |
 |---------|--------|------|----------------|
-| **TINY backend** | `main` B-292 — JVM nchildren segfault fixed; L_io_end missing-label diagnosed; 106/106 | `acbc71e` B-292 | M-BEAUTIFY-BOOTSTRAP-ASM-MONITOR |
-| **TINY NET** | `net-t2` N-248 — M-T2-NET ✅ 110/110 clean | `425921a` N-248 | M-T2-FULL |
-| **TINY JVM** | `main` J-216 — STLIMIT/STCOUNT fields+init+set+get+tick ✅ VERIFIED (10K loop terminates); 2D E_ARY subscript WIP: nchildren==3 not 2, composite key not yet emitted; global driver still TIMEOUTs | `a74ccd8` J-216 | M-JVM-STLIMIT-STCOUNT → M-JVM-BEAUTY-GLOBAL |
-| **TINY frontend** | `main` F-223 — rung05 encoding fix attempted, reverted clean; see TINY.md | `b4507dc` F-223 | M-PROLOG-CORPUS |
-| **DOTNET** | `main` D-164 — 1903/1903 pass 0 fail on Linux | `e1e4d9e` D-164 | TBD |
-| **README** | `main` — M-README-CSHARP-DRAFT ✅ | `00846d3` snobol4csharp | M-README-DEEP-SCAN |
-| **ICON frontend** | `main` I-11 — M-ICON-CORPUS-R3 ✅ rbp fix + 5/5 rung03 PASS | `bab5664` I-11 | M-ICON-STRING |
-| **Prolog JVM** | `main` PJ-42 — **20/20** M-PJ-NAF-INNER-LOCALS ✅ puzzle_18 PASS; puzzle_03 still open | `38e4c39` PJ-42 | M-PJ-DISPLAY-BT |
-| **Icon JVM** | `main` IJ-11 — M-IJ-SCAN ✅ 5/5 rung05 PASS | `7d68a85` IJ-11 | M-IJ-CSET |
-| **Prolog JVM** | `main` PJ-16 — two-clause fail/retry fix; rungs 01-09 PASS | `f575016` PJ-16 | M-PJ-CORPUS-R10 |
-| **Icon JVM** | `main` IJ-29 — M-IJ-CORPUS-R20 ✅ ICN_SECTION s[i:j] + ICN_SEQ_EXPR (E;F); 104/104 PASS | `7f8e3a2` IJ-29 | M-IJ-CORPUS-R21 |
-
-| **Icon JVM** | `main` IJ-17 — M-IJ-CORPUS-R9 ✅ until/repeat; 49/49 PASS | `60cf799` IJ-17 | M-IJ-CORPUS-R10 |
-| **README v2 sprint** | `main` R-2 | TBD R-2 | M-FEAT-JVM |
+| **⚠ GRAND MASTER REORG** | G-1 — ALL SESSIONS FROZEN — see GRAND_MASTER_REORG.md | `pre-reorg-freeze` | M-G0-FREEZE ❌ NEXT |
+| **TINY backend** | [FROZEN] `main` B-292 — 106/106 | `acbc71e` B-292 | resume post-reorg |
+| **TINY NET** | [FROZEN] `net-t2` N-248 — M-T2-NET ✅ 110/110 | `425921a` N-248 | resume post-reorg |
+| **TINY JVM** | [FROZEN] `main` J-216 — STLIMIT ✅; 2D E_ARY WIP | `a74ccd8` J-216 | resume post-reorg |
+| **TINY frontend** | [FROZEN] `main` F-223 — rung05 reverted clean | `b4507dc` F-223 | resume post-reorg |
+| **DOTNET** | [FROZEN] `main` D-164 — 1903/1903 | `e1e4d9e` D-164 | resume post-reorg |
+| **README** | [FROZEN] `main` — M-README-CSHARP-DRAFT ✅ | `00846d3` | resume post-reorg |
+| **ICON frontend** | [FROZEN] `main` I-11 — rung03 5/5 PASS | `bab5664` I-11 | resume post-reorg |
+| **Prolog JVM** | [FROZEN] `main` PJ-42 — 20/20 PASS | `38e4c39` PJ-42 | resume post-reorg |
+| **Icon JVM** | [FROZEN] `main` IJ-29 — M-IJ-CORPUS-R20 ✅ 104/104 PASS | `7f8e3a2` IJ-29 | resume post-reorg |
+| **README v2 sprint** | [FROZEN] `main` R-2 | TBD R-2 | resume post-reorg |
 
 **Invariants (check before any work):**
 - TINY: `106/106` ASM corpus (`run_crosscheck_asm_corpus.sh`) · ALL PASS ✅
@@ -65,6 +62,60 @@ Matrix:     Feature matrix (correctness) · Benchmark matrix (performance)
 ---
 
 ## Milestone Dashboard
+
+### ⚠ Grand Master Reorganization — ALL OTHER MILESTONES FROZEN
+
+See [GRAND_MASTER_REORG.md](GRAND_MASTER_REORG.md) for full plan, naming law, folder structure, and success criteria.
+
+| ID | Phase | Status |
+|----|-------|--------|
+| **M-G0-FREEZE** | 0 — Baseline: tag pre-reorg-freeze, record invariants | ❌ **NEXT** |
+| **M-G0-AUDIT** | 0 — Baseline: `doc/EMITTER_AUDIT.md` covering all 5 emitters | ❌ |
+| **M-G0-IR-AUDIT** | 0 — Baseline: `doc/IR_AUDIT.md` mapping all frontend nodes to unified enum | ❌ |
+| **M-G1-IR-HEADER** | 1 — Unified IR: `src/ir/ir.h` with full EKind enum | ❌ |
+| **M-G1-IR-PRINT** | 1 — Unified IR: `ir_print_node()` debugger | ❌ |
+| **M-G1-IR-VERIFY** | 1 — Unified IR: `ir_verify()` structural checker | ❌ |
+| **M-G2-DIRS** | 2 — Folders: `src/backend/{x64,jvm,net}/` skeleton confirmed | ❌ |
+| **M-G2-MOVE-ASM** | 2 — Folders: `emit_byrd_asm.c` → `emit_x64.c` | ❌ |
+| **M-G2-MOVE-JVM** | 2 — Folders: `emit_byrd_jvm.c` → `emit_jvm.c` | ❌ |
+| **M-G2-MOVE-NET** | 2 — Folders: `emit_byrd_net.c` → `emit_net.c` | ❌ |
+| **M-G2-MOVE-ICON-JVM** | 2 — Folders: `icon_emit_jvm.c` → `backend/jvm/emit_jvm_icon.c` | ❌ |
+| **M-G2-MOVE-PROLOG-JVM** | 2 — Folders: `prolog_emit_jvm.c` → `backend/jvm/emit_jvm_prolog.c` | ❌ |
+| **M-G2-MOVE-ICON-ASM** | 2 — Folders: `icon_emit.c` → `backend/x64/emit_x64_icon.c` | ❌ |
+| **M-G2-MOVE-PROLOG-ASM** | 2 — Folders: Prolog ASM emitter → `backend/x64/emit_x64_prolog.c` | ❌ |
+| **M-G3-NAME-X64** | 3 — Names: `emit_x64.c` naming law applied | ❌ |
+| **M-G3-NAME-JVM** | 3 — Names: `emit_jvm.c` naming law applied | ❌ |
+| **M-G3-NAME-NET** | 3 — Names: `emit_net.c` naming law applied | ❌ |
+| **M-G3-NAME-JVM-ICON** | 3 — Names: `emit_jvm_icon.c` naming law applied | ❌ |
+| **M-G3-NAME-JVM-PROLOG** | 3 — Names: `emit_jvm_prolog.c` naming law applied | ❌ |
+| **M-G3-NAME-X64-ICON** | 3 — Names: `emit_x64_icon.c` naming law applied | ❌ |
+| **M-G4-SHARED-CONC** | 4 — Shared wiring: `E_CONC` in `ir_emit_common.c` | ❌ |
+| **M-G4-SHARED-OR** | 4 — Shared wiring: `E_OR` | ❌ |
+| **M-G4-SHARED-ARBNO** | 4 — Shared wiring: `E_ARBNO` | ❌ |
+| **M-G4-SHARED-CAPTURE** | 4 — Shared wiring: `E_DOT`, `E_DOLLAR` | ❌ |
+| **M-G4-SHARED-ARITH** | 4 — Shared wiring: `E_ADD/SUB/MPY/DIV/MOD` | ❌ |
+| **M-G4-SHARED-ASSIGN** | 4 — Shared wiring: `E_ASSIGN` | ❌ |
+| **M-G4-SHARED-IDX** | 4 — Shared wiring: `E_IDX` | ❌ |
+| **M-G4-SHARED-ICON** | 4 — Shared wiring: Icon generator nodes | ❌ |
+| **M-G4-SHARED-PROLOG** | 4 — Shared wiring: Prolog unification/clause nodes | ❌ |
+| **M-G5-LOWER-SNOBOL4** | 5 — Frontends: snobol4 lower → unified IR confirmed | ❌ |
+| **M-G5-LOWER-SNOCONE** | 5 — Frontends: snocone lower → unified IR | ❌ |
+| **M-G5-LOWER-ICON** | 5 — Frontends: icon lower → unified IR | ❌ |
+| **M-G5-LOWER-PROLOG** | 5 — Frontends: prolog lower → unified IR confirmed | ❌ |
+| **M-G5-LOWER-REBUS** | 5 — Frontends: rebus lower → unified IR | ❌ |
+| **M-G6-ICON-NET** | 6 — Matrix: Icon → .NET rung01 PASS | ❌ |
+| **M-G6-PROLOG-NET** | 6 — Matrix: Prolog → .NET rung01 PASS | ❌ |
+| **M-G6-SNOCONE-JVM** | 6 — Matrix: Snocone → JVM corpus PASS | ❌ |
+| **M-G6-SNOCONE-NET** | 6 — Matrix: Snocone → .NET corpus PASS | ❌ |
+| **M-G6-REBUS-JVM** | 6 — Matrix: Rebus → JVM PASS | ❌ |
+| **M-G6-REBUS-NET** | 6 — Matrix: Rebus → .NET PASS | ❌ |
+| **M-G6-SCRIPTEN-ALL** | 6 — Matrix: Scripten → all 3 backends rung01 PASS | ❌ |
+| **M-G7-STYLE-DOC** | 7 — Style: `doc/STYLE.md` written | ❌ |
+| **M-G7-STYLE-BACKENDS** | 7 — Style: all backend files conform | ❌ |
+| **M-G7-STYLE-FRONTENDS** | 7 — Style: all frontend files conform | ❌ |
+| **M-G7-UNFREEZE** | 7 — Style: post-reorg-baseline tagged; all sessions resume | ❌ |
+
+Full plan → [GRAND_MASTER_REORG.md](GRAND_MASTER_REORG.md)
 
 > Completed milestones → [MILESTONE_ARCHIVE.md](MILESTONE_ARCHIVE.md)
 > One row per **active or future** milestone. ✅ rows move to archive on session end.
