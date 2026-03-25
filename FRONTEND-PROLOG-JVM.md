@@ -19,55 +19,37 @@ and emits Jasmin `.j` files, assembled by `jasmin.jar`.
 
 | Session | Sprint | HEAD | Next milestone |
 |---------|--------|------|----------------|
-| **Prolog JVM** | `main` PJ-46 — M-PJ-FINDALL WIP; 4/5 rung11 PASS (basic/empty/template/arith); filter open (E_MOD missing in pj_emit_arith); 20/20 puzzles intact | `aec8159` PJ-46 | M-PJ-FINDALL |
+| **Prolog JVM** | `main` PJ-47 — M-PJ-FINDALL ✅; 5/5 rung11 PASS; 20/20 puzzles intact | `62b3fa0` PJ-47 | M-PJ-ATOM-BUILTINS |
 
-### CRITICAL NEXT ACTION (PJ-47)
+### CRITICAL NEXT ACTION (PJ-48)
 
-**Baseline: 20/20 puzzle corpus PASS. 4/5 rung11_findall PASS.**
+**Baseline: 20/20 puzzle corpus PASS. 5/5 rung11_findall PASS. M-PJ-FINDALL ✅**
 
-**M-PJ-FINDALL is in progress** — one fix remaining.
+**Next milestone: M-PJ-ATOM-BUILTINS**
 
-**`findall_filter` — returns `[1,2,3,4,5]` instead of `[2,4]`**
+Implement: `atom_chars/2`, `atom_codes/2`, `atom_length/2`, `atom_concat/2`,
+`char_code/2`, `number_chars/2`, `number_codes/2`, `upcase_atom/2`, `downcase_atom/2`.
+All are JVM String operations. Both directions where reversible.
 
-Root cause: `pj_emit_arith()` in `prolog_emit_jvm.c` has no case for `mod` — it falls to `default: lconst_0`. So `0 is X mod 2` emits `pj_unify(["int","0"], ["int","0"])` → always succeeds → all nums pass the filter.
+**Rung:** `test/frontend/prolog/corpus/rung12_atom_builtins/` (create if not present).
+**Impl:** Add cases to builtin dispatch in `pj_emit_goal` and/or `prolog_builtin.c`.
 
-Check: `mod` in the IR is represented as `E_FNC` with `sval="mod"` (not a dedicated opcode like E_ADD/E_SUB). Add it to `pj_emit_arith`:
-
-```c
-case E_FNC:
-    if (e->sval && strcmp(e->sval, "mod") == 0 && e->nchildren >= 2) {
-        pj_emit_arith(e->children[0], var_locals, n_vars);
-        pj_emit_arith(e->children[1], var_locals, n_vars);
-        JI("lrem", "");
-        break;
-    }
-    JI("lconst_0", ""); break;
-```
-
-Also add `//` (integer division) and `rem` while there. After fix: expect 5/5 rung11 PASS → **M-PJ-FINDALL ✅**.
-
-**ALSO verify** no regression: 20/20 puzzle corpus must still PASS (puzzle_12 uses disjunction+arith).
-
-**Bootstrap PJ-47:**
+**Bootstrap PJ-48:**
 ```bash
 git clone https://TOKEN_SEE_LON@github.com/snobol4ever/snobol4x
 git clone https://TOKEN_SEE_LON@github.com/snobol4ever/.github
 apt-get install -y --fix-missing default-jdk nasm libgc-dev swi-prolog
 make -C snobol4x/src && cd snobol4x
-# Confirm 4/5 rung11 baseline (filter still fails) and 20/20 puzzles:
+# Confirm 5/5 rung11 + 20/20 puzzle baseline
 for f in test/frontend/prolog/corpus/rung11_findall/*.pro; do
-  base=$(basename $f .pro)
-  ./sno2c -pl -jvm $f -o /tmp/${base}.j 2>/dev/null
+  base=$(basename $f .pro); ./sno2c -pl -jvm $f -o /tmp/${base}.j 2>/dev/null
   java -jar src/backend/jvm/jasmin.jar /tmp/${base}.j -d /tmp 2>/dev/null
   cls=$(grep "^\.class" /tmp/${base}.j | awk '{print $3}')
   got=$(timeout 10 java -cp /tmp $cls 2>&1 | grep -v "Picked up")
   want=$(cat ${f%.pro}.expected)
-  [ "$got" = "$want" ] && echo "$base: PASS" || echo "$base: FAIL (got='$got')"
+  [ "$got" = "$want" ] && echo "$base: PASS" || echo "$base: FAIL"
 done
-# Fix: in prolog_emit_jvm.c, find pj_emit_arith (~line 1009).
-# Add E_FNC case for mod (and optionally rem, //) before the default.
-# Verify IR node kind: grep E_FNC prolog_lower.h or check what mod parses to.
-# Build, test 5/5 rung11 + 20/20 puzzles → commit + push → M-PJ-FINDALL ✅
+# Then implement rung12_atom_builtins + M-PJ-ATOM-BUILTINS
 ```
 
 
@@ -281,7 +263,7 @@ done
 | **M-PJ-NAF-INNER-LOCALS** | NAF helper method — fix frame aliasing; puzzle_18 PASS | ✅ |
 | **M-PJ-DISPLAY-BT** | puzzle_03 over-generation — workaround: single-clause rewrite + canonical tie-breaking; 20/20 | ✅ |
 | **M-PJ-PZ-ALL-JVM** | All 20 puzzle solutions pass JVM | ✅ |
-| **M-PJ-FINDALL** | `findall/3` — collect all solutions into list | ❌ **NEXT** |
+| **M-PJ-FINDALL** | `findall/3` — collect all solutions into list | ✅ |
 
 **PJ-16 fix note:** True root cause of the `fail/retry` infinite loop was `pj_emit_clause` passing `α_retry_lbl` as `lbl_ω` to `pj_emit_body`. When the outermost body user-call exhausted, `call_ω` jumped to `α_retry_lbl` (clause head-retry), re-running the body from cs=0 forever. Fix: pass `ω_lbl` (next-clause dispatch) as `lbl_ω` to the top-level `pj_emit_body` call. Nested calls unaffected — they receive `call_β` from their own recursive emit site. `pj_is_always_fail()` helper also added for future use.
 

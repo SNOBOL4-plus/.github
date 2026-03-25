@@ -21,7 +21,7 @@ Each concurrent session owns exactly one row. Update only your row on every push
 | **DOTNET** | `main` D-164 — 1903/1903 | `e1e4d9e` D-164 | TBD |
 | **README** | `main` R-2 | `00846d3` | M-README-DEEP-SCAN |
 | **ICON frontend** | `main` I-11 — rung03 ✅ | `bab5664` I-11 | M-ICON-STRING |
-| **Prolog JVM** | `main` PJ-46 — M-PJ-FINDALL WIP; 4/5 rung11 PASS; 20/20 puzzles intact | `aec8159` PJ-46 | M-PJ-FINDALL |
+| **Prolog JVM** | `main` PJ-47 — M-PJ-FINDALL ✅; 5/5 rung11 PASS; 20/20 puzzles intact | `62b3fa0` PJ-47 | M-PJ-ATOM-BUILTINS |
 | **Icon JVM** | `main` IJ-34 — M-IJ-TABLE WIP; 114/114 PASS | `ca94be1` IJ-34 | M-IJ-TABLE |
 | **README v2** | `main` R-2 | TBD | M-FEAT-JVM |
 
@@ -62,7 +62,7 @@ Phases 0–8 · ~80 milestones M-G0-FREEZE → M-G8-CI · **NEXT: M-G0-FREEZE (L
 `M-BEAUTIFY-BOOTSTRAP-ASM-MONITOR` ❌ **NEXT** · `M-BEAUTIFY-BOOTSTRAP` ❌ · `M-MONITOR-4DEMO` ❌
 
 ### Prolog JVM — detail → [FRONTEND-PROLOG-JVM.md](FRONTEND-PROLOG-JVM.md)
-`M-PJ-FINDALL` ❌ **NEXT**
+`M-PJ-FINDALL` ✅ · `M-PJ-ATOM-BUILTINS` ❌ **NEXT**
 
 ### Icon JVM — detail → [FRONTEND-ICON-JVM.md](FRONTEND-ICON-JVM.md)
 `M-IJ-LISTS` ✅ · `M-IJ-CORPUS-R22` ❌ **NEXT**

@@ -239,3 +239,9 @@ Append-only. Do not edit existing entries.
 | **M-IJ-CORPUS-R20** | Rung 20: ICN_SECTION s[i:j] (3-operand, 1-based→0-based, clamp) + ICN_SEQ_EXPR (E;F drain relay); 104/104 total | ✅ IJ-29 `7f8e3a2` |
 | **M-IJ-LISTS** | List constructor [e1..en], push/put/get/pop/pull, !L, *L; rung22 5/5 PASS; 114/114 total | ✅ IJ-33 `51c7335` |
 | **M-IJ-CORPUS-R22** | Rung 22: lists corpus 5/5 PASS (fires with M-IJ-LISTS) | ✅ IJ-33 `51c7335` |
+
+## M-PJ-FINDALL — `findall/3` collect all solutions into list
+
+**Fired:** PJ-47 | **Date:** 2026-03-25 | **HEAD:** `62b3fa0`
+
+Implemented `pj_emit_findall_builtin()` with synthetic helpers `pj_copy_term`, `pj_eval_arith`, `pj_call_goal`, `pj_reflect_call`, `p_findall_3`. Three-session effort (PJ-45/46/47): scaffold + loop (PJ-45), conjunction cs threading + gamma sub_cs_out (PJ-46), E_FNC mod/rem// in `pj_emit_arith` (PJ-47). 5/5 rung11 PASS. 20/20 puzzles intact.

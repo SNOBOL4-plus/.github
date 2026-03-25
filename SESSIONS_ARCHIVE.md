@@ -1400,3 +1400,16 @@ Scrutinized the entire GRAND_MASTER_REORG.md plan for chunk size and incremental
 Root cause: `pj_emit_arith()` has no case for `mod` — falls to `default: lconst_0`. So `0 is X mod 2` compiles to `pj_unify(0, 0)` → always true → all nums pass. Fix is a one-liner: add `E_FNC` case for `sval=="mod"` emitting `lrem`. (Note: `mod` uses `E_FNC` not a dedicated opcode — confirmed by checking what `default:` catches in the emitted .j.)
 
 **Next session (PJ-47):** Add `mod` (and `rem`, `//`) to `pj_emit_arith`. Expect 5/5 rung11 → M-PJ-FINDALL ✅. Then move to M-PJ-ATOM-BUILTINS.
+
+## PJ-47 — M-PJ-FINDALL ✅
+
+**HEAD:** `62b3fa0` | **Date:** 2026-03-25
+
+**Work done:**
+- Added `E_FNC` case to `pj_emit_arith` for `mod`/`rem` (→ `lrem`) and `//` (→ `ldiv`) and `abs` (→ `Math.max`). These were not given dedicated opcodes by the lowerer and fell to `default: lconst_0`, causing `0 is X mod 2` to always evaluate to `0==0` (always true).
+- `findall_filter` now returns `[2,4]` correctly.
+- **5/5 rung11 PASS. 20/20 puzzle corpus intact.**
+
+**M-PJ-FINDALL ✅ fired.**
+
+**Next session (PJ-48):** M-PJ-ATOM-BUILTINS — `atom_chars/2`, `atom_codes/2`, `atom_length/2`, `atom_concat/2`, `char_code/2`, `number_chars/2`, `number_codes/2`, `upcase_atom/2`, `downcase_atom/2`. Create `rung12_atom_builtins/`. All JVM String ops.
