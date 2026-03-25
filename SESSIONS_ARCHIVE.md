@@ -1297,3 +1297,25 @@ The five-level hierarchy is defined but NOT YET ENFORCED by the doc structure. T
 - JVM.md (snobol4jvm Clojure backend) has no §BUILD/§TEST. Low priority.
 
 **Next G-session:** The doc infrastructure is now healthy. Next G work is execution — wait for Lon's M-G0-FREEZE signal to begin Phase 0. No doc work needed unless a session reports confusion.
+
+## PJ-45 — M-PJ-FINDALL WIP
+
+**HEAD:** `9047db4` | **Date:** 2026-03-25
+
+**Work done:**
+- Implemented `pj_emit_findall_builtin()` in `prolog_emit_jvm.c` with 5 new synthetic helpers:
+  - `pj_copy_term` — deep-copy a deref'd term (fresh vars for each solution)
+  - `pj_eval_arith` — arithmetic evaluator (handles +/-/*/mod/unary-)
+  - `pj_call_goal` — goal interpreter (atom/true/fail, conjunction, is/2, user predicates via reflection)
+  - `pj_reflect_call` — reflection dispatch to `p_functor_arity` static methods (uses `getDeclaredMethod` + `setAccessible`)
+  - `p_findall_3` — collects all solutions via loop, builds Prolog list, unifies result
+- Added infix operator printing for `-/2`, `+/2`, `*/2`, `//2` in `pj_term_str`
+- All 5 rung11 test files created in `test/frontend/prolog/corpus/rung11_findall/`
+- 3/5 rung11 PASS: `findall_basic`, `findall_empty`, `findall_template`
+- 20/20 puzzle corpus: no regressions
+
+**Open bugs (2/5 rung11 failing):**
+- `findall_filter`: conjunction cs not threaded through left predicate — always passes cs=0 to left, need `iload_1` instead of `iconst_0`
+- `findall_arith`: same conjunction cs bug + need to verify `pj_eval_arith` handles ref→int deref
+
+**Fix for PJ-46:** In `pj_call_goal` conjunction section, pass `iload_1` (caller's cs) to left call instead of `iconst_0`. Return `left_new_cs` as the result (not `iconst_0`). Two-line change in `pj_emit_findall_builtin()`.

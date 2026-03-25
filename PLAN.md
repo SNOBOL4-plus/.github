@@ -21,7 +21,7 @@ Each concurrent session owns exactly one row. Update only your row on every push
 | **DOTNET** | `main` D-164 — 1903/1903 | `e1e4d9e` D-164 | TBD |
 | **README** | `main` R-2 | `00846d3` | M-README-DEEP-SCAN |
 | **ICON frontend** | `main` I-11 — rung03 ✅ | `bab5664` I-11 | M-ICON-STRING |
-| **Prolog JVM** | `main` PJ-44 — 20/20 ✅ | `b97a20f` PJ-44 | M-PJ-FINDALL |
+| **Prolog JVM** | `main` PJ-45 — M-PJ-FINDALL WIP; 3/5 rung11 PASS; 20/20 puzzles intact | `9047db4` PJ-45 | M-PJ-FINDALL |
 | **Icon JVM** | `main` IJ-32 WIP — 109/109 | `ae9e611` IJ-32 | M-IJ-LISTS |
 | **README v2** | `main` R-2 | TBD | M-FEAT-JVM |
 
