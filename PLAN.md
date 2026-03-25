@@ -126,9 +126,12 @@ Each milestone: write solution in puzzle_NN.pro, verify correct answer via swipl
 | **M-PJ-STACK-LIMIT** | Fix `.limit stack` over-estimate in `prolog_emit_jvm.c` — eliminate VerifyError on 5+ clause predicates | ✅ |
 | **M-PJ-NAF-TRAIL** | Fix `\+` trail corruption — save/unwind on both inner paths | ✅ |
 | **M-PJ-BODYFAIL-TRAIL** | Fix body-fail trail: `bodyfail_N` trampoline unwinds clause trail on body goal failure | ✅ |
-| **M-PJ-DISPLAY-BT** | puzzle_03 display/6 over-generation — not_dorothy 2-clause retry | ❌ |
-| **M-PJ-DISJ-ARITH** | Fix `(A;B;C)` inline disjunction silent failure in arithmetic body in JVM emitter | ❌ |
+| **M-PJ-DISPLAY-BT** | puzzle_03 display/6 over-generation — not_dorothy 2-clause retry; ITE cut leak | ❌ |
+| **M-PJ-ITE-CUT** | ITE (`->`) must cut enclosing clause choice point — fixes puzzle_03/11/18 over-generation | ❌ |
+| **M-PJ-BETWEEN** | `between/3` missing from `pj_emit_goal` — fixes puzzle_19 NoSuchMethodError | ❌ |
+| **M-PJ-DISJ-ARITH** | Fix `(A;B;C)` inline disjunction silent failure in arithmetic body in JVM emitter — fixes puzzle_12 0L | ❌ |
 | **M-PJ-ARITY-CAP** | Fix `ClassFormatError` on high-arity predicates (display/16) — pack args or cap arity | ❌ |
+| **M-PJ-PZ-ALL-JVM** | All 20 puzzle solutions pass JVM — requires M-PJ-ITE-CUT + M-PJ-BETWEEN + M-PJ-DISJ-ARITH | ❌ |
 
 Full sprint detail → [BACKEND-JVM-PROLOG.md](BACKEND-JVM-PROLOG.md) · [FRONTEND-PROLOG-JVM.md](FRONTEND-PROLOG-JVM.md)
 
