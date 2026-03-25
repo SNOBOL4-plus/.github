@@ -91,6 +91,22 @@ Matrix:     Feature matrix (correctness) · Benchmark matrix (performance)
 |----|---------|--------|
 | **M-PROLOG-BUILTINS** | `functor/3`, `arg/3`, `=../2`, type tests — rung09 PASS | ✅ |
 | **M-PROLOG-R10** | Lon's word-puzzle solvers — rung10 PASS | ✅ |
+| **M-PZ-03** | puzzle_03 — triple engagement party — swipl PASS | ✅ |
+| **M-PZ-04** | puzzle_04 — Milford occupations — swipl PASS | ✅ |
+| **M-PZ-07** | puzzle_07 — Brown/Clark/Jones/Smith professions — swipl PASS | ✅ |
+| **M-PZ-08** | puzzle_08 — dept store Ames/Brown/Conroy — swipl PASS | ✅ |
+| **M-PZ-09** | puzzle_09 — Empire dept store — swipl PASS | ✅ |
+| **M-PZ-10** | puzzle_10 — five J-names — swipl PASS | ✅ |
+| **M-PZ-11** | puzzle_11 — Smith family — swipl PASS | ✅ |
+| **M-PZ-12** | puzzle_12 — Stillwater High teachers — swipl PASS | ✅ |
+| **M-PZ-13** | puzzle_13 — murder case — swipl PASS | ✅ |
+| **M-PZ-14** | puzzle_14 — golf scores — swipl PASS | ✅ |
+| **M-PZ-15** | puzzle_15 — Vernon/Wilson/Yates — swipl PASS | ✅ |
+| **M-PZ-16** | puzzle_16 — train crew — swipl PASS | ✅ |
+| **M-PZ-17** | puzzle_17 — Country Club dance — swipl PASS | ✅ |
+| **M-PZ-18** | puzzle_18 — shopping day — swipl PASS | ✅ |
+| **M-PZ-19** | puzzle_19 — office floors — swipl PASS | ✅ |
+| **M-PZ-20** | puzzle_20 — Pullman car readers — swipl PASS | ✅ |
 | **M-PROLOG-CORPUS** | All 10 rungs PASS via `-pl -asm` | ❌ |
 
 Full sprint detail → [FRONTEND-PROLOG.md](FRONTEND-PROLOG.md)

@@ -334,26 +334,26 @@ directly analogous to the emit_body fix above.
 Each stub contains the full problem text as comments and a `main` that prints `'puzzleNN: stub\n'`.
 Milestones are ordered from easiest to hardest based on problem structure:
 
-| ID | File | Puzzle | Why this difficulty |
-|----|------|--------|---------------------|
-| **M-PZ-14** | puzzle_14.pro | Golf scores (Bill/Ed/Tom wives) | Pure arithmetic + 2-couple equal-sum constraint; small search space |
-| **M-PZ-17** | puzzle_17.pro | Country Club dance pairings | Relational constraint, 4 couples, direct deduction from dance snapshot |
-| **M-PZ-15** | puzzle_15.pro | Vernon/Wilson/Yates offices + secretaries | 3 men × floor ordering + secretary assignment; clean deduction chain |
-| **M-PZ-16** | puzzle_16.pro | Train crew relations | 4 roles + family relation reasoning; classic constraint puzzle |
-| **M-PZ-20** | puzzle_20.pro | Pullman car readers | Book-exchange + field assignment; 4×4 with exchange constraint |
-| **M-PZ-13** | puzzle_13.pro | Murder case roles | 6 men × 6 roles; several indirect constraints |
-| **M-PZ-18** | puzzle_18.pro | Shopping day scheduling | Days-of-week + closure rules; temporal constraint reasoning |
-| **M-PZ-19** | puzzle_19.pro | Office floors + professions | Arithmetic floor constraints (5× rule, midpoint rules); requires integer search |
-| **M-PZ-04** | puzzle_04.pro | Milford occupations + salaries | Income doubling chain + $3776 gap; arithmetic + ordering constraints |
-| **M-PZ-09** | puzzle_09.pro | Empire Dept Store positions | 5 men × 5 roles; lunch-hour grouping + bachelor/relation clues |
-| **M-PZ-08** | puzzle_08.pro | Dept Store positions (Ames/Brown/Conroy…) | 5 people × 5 roles; gender + marriage + roommate clues |
-| **M-PZ-11** | puzzle_11.pro | Smith family positions | Family relation reasoning (sister-in-law, blood relative); gender from grocer clue |
-| **M-PZ-07** | puzzle_07.pro | Brown/Clark/Jones/Smith professions | Multi-attribute ordering (age, golf, income, conservatism) all interlocked |
-| **M-PZ-10** | puzzle_10.pro | Five J-names + last names | Father/Son banquet + naming convention + friendship graph; tricky indirect clues |
-| **M-PZ-03** | puzzle_03.pro | Triple engagement party | Age constraints + equal couple-sum + Jim+Jean = Bill+Dorothy; requires integer variables |
-| **M-PZ-12** | puzzle_12.pro | Stillwater High teachers | 6 teachers × 6 subjects; father clue + roommate + "had in class" temporal ordering |
+| ID | File | Puzzle | Status |
+|----|------|--------|--------|
+| **M-PZ-14** | puzzle_14.pro | Golf scores (Bill/Ed/Tom wives) | ✅ swipl PASS |
+| **M-PZ-17** | puzzle_17.pro | Country Club dance pairings | ✅ swipl PASS |
+| **M-PZ-15** | puzzle_15.pro | Vernon/Wilson/Yates offices + secretaries | ✅ swipl PASS |
+| **M-PZ-16** | puzzle_16.pro | Train crew relations | ✅ swipl PASS |
+| **M-PZ-20** | puzzle_20.pro | Pullman car readers | ✅ swipl PASS |
+| **M-PZ-13** | puzzle_13.pro | Murder case roles | ✅ swipl PASS |
+| **M-PZ-18** | puzzle_18.pro | Shopping day scheduling | ✅ swipl PASS |
+| **M-PZ-19** | puzzle_19.pro | Office floors + professions | ✅ swipl PASS |
+| **M-PZ-04** | puzzle_04.pro | Milford occupations + salaries | ✅ swipl PASS |
+| **M-PZ-09** | puzzle_09.pro | Empire Dept Store positions | ✅ swipl PASS |
+| **M-PZ-08** | puzzle_08.pro | Dept Store positions (Ames/Brown/Conroy…) | ✅ swipl PASS |
+| **M-PZ-11** | puzzle_11.pro | Smith family positions | ✅ swipl PASS |
+| **M-PZ-07** | puzzle_07.pro | Brown/Clark/Jones/Smith professions | ✅ swipl PASS |
+| **M-PZ-10** | puzzle_10.pro | Five J-names + last names | ✅ swipl PASS |
+| **M-PZ-03** | puzzle_03.pro | Triple engagement party | ✅ swipl PASS |
+| **M-PZ-12** | puzzle_12.pro | Stillwater High teachers | ✅ swipl PASS |
 
-Each milestone trigger: the puzzle file prints the correct solution and exits 0 via `snobol4x -pl -asm`.
+Each milestone trigger: the puzzle file prints the correct solution and exits 0 via swipl.
 
 ### Source layout
 
@@ -361,24 +361,24 @@ Each milestone trigger: the puzzle file prints the correct solution and exits 0 
 test/frontend/prolog/corpus/rung10_programs/
     puzzle_01.pro   ✅ solved (bank positions)
     puzzle_02.pro   ✅ solved (trades Clark/Daw/Fuller)
-    puzzle_03.pro   stub — M-PZ-03
-    puzzle_04.pro   stub — M-PZ-04
+    puzzle_03.pro   ✅ solved (triple engagement party)
+    puzzle_04.pro   ✅ solved (Milford occupations)
     puzzle_05.pro   ✅ solved (bank chess Brown/Clark/Jones/Smith)
     puzzle_06.pro   ✅ solved (occupations Clark/Jones/Morgan/Smith)
-    puzzle_07.pro   stub — M-PZ-07
-    puzzle_08.pro   stub — M-PZ-08
-    puzzle_09.pro   stub — M-PZ-09
-    puzzle_10.pro   stub — M-PZ-10
-    puzzle_11.pro   stub — M-PZ-11
-    puzzle_12.pro   stub — M-PZ-12
-    puzzle_13.pro   stub — M-PZ-13
-    puzzle_14.pro   stub — M-PZ-14
-    puzzle_15.pro   stub — M-PZ-15
-    puzzle_16.pro   stub — M-PZ-16
-    puzzle_17.pro   stub — M-PZ-17
-    puzzle_18.pro   stub — M-PZ-18
-    puzzle_19.pro   stub — M-PZ-19
-    puzzle_20.pro   stub — M-PZ-20
+    puzzle_07.pro   ✅ solved (professions Brown/Clark/Jones/Smith)
+    puzzle_08.pro   ✅ solved (dept store Ames/Brown/Conroy…)
+    puzzle_09.pro   ✅ solved (Empire dept store)
+    puzzle_10.pro   ✅ solved (five J-names)
+    puzzle_11.pro   ✅ solved (Smith family)
+    puzzle_12.pro   ✅ solved (Stillwater High teachers)
+    puzzle_13.pro   ✅ solved (murder case)
+    puzzle_14.pro   ✅ solved (golf scores)
+    puzzle_15.pro   ✅ solved (Vernon/Wilson/Yates)
+    puzzle_16.pro   ✅ solved (train crew)
+    puzzle_17.pro   ✅ solved (Country Club dance)
+    puzzle_18.pro   ✅ solved (shopping day)
+    puzzle_19.pro   ✅ solved (office floors)
+    puzzle_20.pro   ✅ solved (Pullman car readers)
     puzzles.pro     source anthology (read-only reference)
 ```
 
