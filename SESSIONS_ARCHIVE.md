@@ -1056,3 +1056,45 @@ then M-PJ-FINDALL as first enhancement sprint.
 **Root cause caught mid-session:** `-1.0` literal (unary neg of real) hit `lneg` → VerifyError. Fixed by `ij_expr_is_real(ICN_NEG)` + `dneg` in `ij_emit_neg`.
 
 **Next:** M-IJ-CORPUS-R20 — ICN_SEQ_EXPR (`;` sequence), string section `s[i:j]`, or `ICN_CASE`.
+
+---
+
+## Scripten Planning Session 3 — 2026-03-25
+
+**Session type:** Strategic planning / HQ documentation
+**Branch:** main
+**HEAD at start:** `c6b87d7`
+**HEAD at end:** `7d6f964`
+
+**Work done:**
+
+1. **Tiny-Icon vs JCON vs real Icon gap analysis** — read JCON irgen.icn (43
+   ir_a_* node handlers), real Icon runtime (fstr.r, fstruct.r, fmisc.r, fscan.r),
+   and Tiny-Icon icon_ast.h + icon_emit_jvm.c. Identified 9 unemitted semantic
+   features: RECORD/FIELD, GLOBAL, CREATE (co-expressions), CASE, POW,
+   SCAN_AUGOP, plus missing builtins (list/table/sort/read/str-ops/type).
+
+2. **FRONTEND-ICON-JVM.md enhanced** — added "Tiny-Icon Enhancement Roadmap"
+   section with 14 new milestones (M-IJ-LISTS through M-IJ-MULTIFILE) plus
+   M-IJ-COEXPR/MATH/MULTIFILE as 💭 future. New corpus rungs rung19–rung27
+   defined. Sprint order documented. Co-expression note: Java 21 virtual threads
+   (Project Loom) as the right JVM implementation when ready.
+
+3. **Grand Master Reorganization scoped** — began reading source layout for
+   the unified IR / shared emitter plan. Stopped at 67% context — this plan
+   requires a fresh session with full context to do correctly.
+   Key findings so far:
+   - 5 frontends currently have inconsistent naming: ASM uses P_NAME_alpha/beta/
+     gamma/omega; JVM SNOBOL4 uses Lalpha/Lbeta; Icon JVM uses ports.α/β/γ/ω;
+     Prolog JVM uses lbl_γ/lbl_ω; .NET uses its own conventions
+   - Icon JVM emitter (3158 lines) and Prolog JVM emitter (2622 lines) live under
+     frontend/ rather than backend/ — wrong location for shared emitters
+   - The reorganization needs: unified IR node taxonomy, shared backend dispatch,
+     consistent Greek-letter port naming across all 5×3=15 emitter combinations,
+     folder restructure, Makefile update, and full test suite verification at
+     each incremental step
+
+**Milestones fired:** none (planning session)
+**HEAD at handoff:** `7d6f964` on origin/main
+**Next:** Start fresh session for GRAND_MASTER_REORG.md — read all 5 emitters
+completely, inventory existing milestones that overlap, then write the full plan.
