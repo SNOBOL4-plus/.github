@@ -19,43 +19,43 @@ and emits Jasmin `.j` files, assembled by `jasmin.jar`.
 
 | Session | Sprint | HEAD | Next milestone |
 |---------|--------|------|----------------|
-| **Prolog JVM** | `main` PJ-30 — all 16 M-PZ puzzle stubs replaced with real search; swipl PASS | `8ace0f7` PJ-30 | M-PJ-DISPLAY-BT |
+| **Prolog JVM** | `main` PJ-31 — all 20 puzzles tracked; JVM baseline 15/20 PASS; 3 emitter bugs identified | `750893e` PJ-31 | M-PJ-BETWEEN |
 
-### CRITICAL NEXT ACTION (PJ-31)
+### CRITICAL NEXT ACTION (PJ-32)
 
-**Milestone: M-PJ-DISPLAY-BT — puzzle_03 JVM over-generation (ITE cut leak).**
+**JVM baseline: 15/20 PASS. 5 failures, 3 root causes:**
 
-**PJ-25 through PJ-30 work summary:**
-- All 16 M-PZ puzzle milestones: replaced hardcoded write stubs with real Prolog search.
-- puzzle_14,17,04,09,08,11,07,10,03 were already real search; stubs replaced for 12,13,15,16,18,19,20.
-- puzzle_18 stub was wrong (Abbott/Denny swapped); real search found correct answer.
-- puzzle_20 stub was wrong (had novelist reading history); real search found 4 valid solutions.
-- puzzle_03 swipl PASS (1 correct line); JVM still over-generates — M-PJ-DISPLAY-BT still open.
-- puzzle_11 JVM produces 2L vs 1L oracle — also needs investigation after puzzle_03.
+1. **puzzle_19** — `NoSuchMethodError: p_between_3` — `between/3` not emitted in `pj_emit_goal`.
+   - Fix: add `between/3` case to `pj_emit_goal` in `prolog_emit_jvm.c`.
+   - Emit as: generate integer range via loop with backtrack point (β port).
+   - Milestone: **M-PJ-BETWEEN**
 
-**puzzle_03 JVM issue:**
-- `not_dorothy` has 2 clauses: clause1 uses `\+`, clause2 uses ITE (`->`).
-- swipl's ITE cuts the choice point after clause2 succeeds, preventing `not_dorothy` retry.
-- JVM ITE emitter does not cut the enclosing clause choice point → `not_dorothy` retried → double display.
-- Fix: in `pj_emit_goal`, ITE (`->`) must seal the choice point of the enclosing clause (like a cut after the ITE). Alternatively fix puzzle source to use single-clause `not_dorothy`.
-- Quickest fix: rewrite puzzle_03 `not_dorothy` as a single clause (remove the dead `\+` clause).
+2. **puzzle_03, 11, 18** — over-generate (ITE `->` does not cut enclosing clause choice point).
+   - swipl cuts the choice point after ITE succeeds; JVM emitter does not.
+   - Fix: in `pj_emit_goal` ITE branch, after the then-branch succeeds, seal the enclosing clause β (like a cut).
+   - Milestone: **M-PJ-ITE-CUT**
 
-**Bootstrap PJ-31:**
+3. **puzzle_12** — silent 0L; likely inline disjunction `(SCo=math ; SCo=history)` failing silently.
+   - Milestone: **M-PJ-DISJ-ARITH** (already open)
+
+**Bootstrap PJ-32:**
 ```bash
 git clone https://TOKEN_SEE_LON@github.com/snobol4ever/snobol4x
 git clone https://TOKEN_SEE_LON@github.com/snobol4ever/.github
 apt-get install -y --fix-missing default-jdk nasm libgc-dev swi-prolog
 make -C snobol4x/src
-# Confirm: rungs 01-09 PASS, rung10 puzzles baseline
-cd snobol4x && PUZZLE=puzzle_03; CLS=Puzzle_03
-./sno2c -pl -jvm test/frontend/prolog/corpus/rung10_programs/${PUZZLE}.pro -o /tmp/${CLS}.j
-java -jar src/backend/jvm/jasmin.jar /tmp/${CLS}.j -d /tmp 2>/dev/null
-JVM=$(timeout 10 java -cp /tmp ${CLS} 2>/dev/null)
-ORACLE=$(timeout 5 swipl -q -g halt -t main test/frontend/prolog/corpus/rung10_programs/${PUZZLE}.pro 2>/dev/null)
-echo "Oracle lines: $(echo "$ORACLE" | wc -l)"
-echo "JVM lines:    $(echo "$JVM" | wc -l)"
-# Fix: collapse not_dorothy to single clause in puzzle_03.pro, verify swipl still 1L, JVM 1L.
-# Then tackle puzzle_11 2L vs 1L.
+cd snobol4x
+# Confirm baseline: 15/20 PASS
+for i in $(seq -f "%02g" 1 20); do
+  PUZZLE=puzzle_${i}; CLS=Puzzle_${i}
+  ORACLE=$(timeout 5 swipl -q -g halt -t main test/frontend/prolog/corpus/rung10_programs/${PUZZLE}.pro 2>/dev/null)
+  ./sno2c -pl -jvm test/frontend/prolog/corpus/rung10_programs/${PUZZLE}.pro -o /tmp/${CLS}.j 2>/dev/null
+  java -jar src/backend/jvm/jasmin.jar /tmp/${CLS}.j -d /tmp 2>/dev/null
+  JVM=$(timeout 10 java -cp /tmp ${CLS} 2>/dev/null)
+  [ "$JVM" = "$ORACLE" ] && echo "${PUZZLE}: PASS" || echo "${PUZZLE}: FAIL"
+done
+# Start with M-PJ-BETWEEN (puzzle_19): add between/3 to pj_emit_goal in prolog_emit_jvm.c
+grep -n "between\|M-PJ-BETWEEN" src/frontend/prolog/prolog_emit_jvm.c | head -10
 ```
 
 **Bootstrap PJ-23:**

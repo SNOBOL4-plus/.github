@@ -685,3 +685,28 @@ END
 **Next:** PJ-31 — fix puzzle_03 not_dorothy to single clause; verify JVM 1L. Then puzzle_11 2L issue.
 
 **HEAD at handoff:** snobol4x `8ace0f7`, .github `d8e49fe`
+
+---
+
+## PJ-31 — Add M-PZ-01/02/05/06; JVM baseline audit
+
+**Session:** PJ-31
+**Branch:** main
+**Repos:** snobol4x + .github
+
+**Work done:**
+- Discovered 4 puzzle files (01, 02, 05, 06) missing from milestone tables.
+- puzzle_02 had messy debug output; rewrote as clean constraint search — swipl PASS.
+- puzzle_01, 05, 06 already clean real search — no changes needed.
+- Added M-PZ-01/02/05/06 to PLAN.md and FRONTEND-PROLOG.md.
+- Ran full JVM baseline test: 15/20 PASS.
+- Diagnosed 5 failures → 3 root causes:
+  - puzzle_19: `between/3` missing → M-PJ-BETWEEN (new)
+  - puzzle_03/11/18: ITE `->` not cutting enclosing choice point → M-PJ-ITE-CUT (new)
+  - puzzle_12: inline disjunction silent failure → M-PJ-DISJ-ARITH (existing)
+- Added M-PJ-ITE-CUT, M-PJ-BETWEEN, M-PJ-PZ-ALL-JVM to PLAN.md.
+
+**Milestones fired:** M-PZ-01 ✅, M-PZ-02 ✅, M-PZ-05 ✅, M-PZ-06 ✅
+
+**HEAD at handoff:** snobol4x `251ae11`, .github `750893e`
+**Next:** PJ-32 — fix M-PJ-BETWEEN (add between/3 to pj_emit_goal), then M-PJ-ITE-CUT, then M-PJ-DISJ-ARITH.
