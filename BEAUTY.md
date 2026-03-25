@@ -226,11 +226,11 @@ java -jar src/backend/jvm/jasmin.jar -d /tmp/cls /tmp/out.j
 java -cp /tmp/cls <ClassName>
 ```
 
-**First blocker to fix:** `sno2c -jvm beauty.sno` segfaults — `named_pats[512]` static
-array is ~1.5MB + other large statics. Fix: heap-allocate `named_pats` same as `box_data`.
-After that fix, run `sno2c -jvm beauty.sno` cleanly, then assemble + run.
+**First blocker to fix:** `sno_kw_set` silently drops `&STLIMIT` — no field, no step counter. `global.sno` sets `&STLIMIT = 1000000` then loops SORT(UTF); loop never terminates → timeout. Fix sprint in JVM.md §STLIMIT Sprint. Fire **M-JVM-STLIMIT-STCOUNT** first, then M-JVM-BEAUTY-GLOBAL.
 
 | ID | Subsystem | ASM Status | JVM Status |
+|----|-----------|:----------:|:----------:|
+| **M-JVM-STLIMIT-STCOUNT** | &STLIMIT/&STCOUNT enforce step limit | n/a | ❌ **NEXT** |
 |----|-----------|:----------:|:----------:|
 | **M-JVM-BEAUTY-GLOBAL** | global.sno | ✅ | ❌ |
 | **M-JVM-BEAUTY-IS** | is.sno | ✅ | ❌ |

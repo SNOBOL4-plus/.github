@@ -9,9 +9,220 @@ JVM/Clojure backend: SNOBOL4 → JVM bytecode via multi-stage pipeline.
 
 ## NOW
 
-**Sprint:** `main` J-214 — M-JVM-BEAUTY-GLOBAL (first of 19 JVM beauty milestones)
-**HEAD:** `ff3e05c` J-214
-**Milestone:** M-JVM-BEAUTY-GLOBAL ❌ in progress
+**Sprint:** `main` J-215 — M-JVM-STLIMIT-STCOUNT (prerequisite for M-JVM-BEAUTY-GLOBAL)
+**HEAD:** `ff3e05c` J-214 (no new commit this session — sprint written, no code yet)
+**Milestone:** M-JVM-STLIMIT-STCOUNT ❌ **NEXT** → M-JVM-BEAUTY-GLOBAL ❌ blocked
+
+**J-215 — M-JVM-STLIMIT-STCOUNT sprint written (2026-03-24):**
+- Ran global driver → exit 124 (TIMEOUT, 15s). Root cause diagnosed: `&STLIMIT` not implemented in JVM backend — `sno_kw_set` silently drops STLIMIT assignments (falls through to `return` after STNO case). No `sno_kw_STLIMIT` field declared. No step counter decremented anywhere. `global.sno` sets `&STLIMIT = 1000000` then loops over SORT(UTF) (100+ entries); loop never terminates.
+- Confirmed: `&STLIMIT = 10000` + infinite `:(L)` loop runs 200K+ iterations in 5s — no enforcement at all.
+- Sprint `M-JVM-STLIMIT-STCOUNT` written (see §STLIMIT Sprint below). Four-hunk fix spec ready.
+- `sno_indr_get` label collision (`Lsig_done` not method-local) also noted — fix in same session.
+
+**⚡ CRITICAL NEXT ACTION — J-216 (M-JVM-STLIMIT-STCOUNT):**
+
+```bash
+cd /home/claude/snobol4ever/snobol4x
+git config user.name "Claude J-216" && git config user.email "J@snobol4ever.dev"
+git remote set-url origin https://TOKEN_SEE_LON@github.com/snobol4ever/snobol4x
+git checkout main && git pull
+cd src && make -j4
+
+# Then implement M-JVM-STLIMIT-STCOUNT per §STLIMIT Sprint below
+# Then verify: timeout 15 java -cp /tmp/cls_global Driver exits 0, not 124
+# Then fire M-JVM-BEAUTY-GLOBAL
+```
+
+---
+
+## §STLIMIT Sprint — M-JVM-STLIMIT-STCOUNT
+
+**Goal:** `&STLIMIT` and `&STCOUNT` work correctly in JVM backend. When `&STLIMIT` is set to N, execution terminates after N statements with a SNOBOL4-standard error message. `&STCOUNT` returns current step count.
+
+**File:** `src/backend/jvm/emit_byrd_jvm.c`
+
+### Hunk 1 — Declare `sno_kw_STLIMIT` field (near line 4140 where other kw fields live)
+
+Find:
+```c
+J(".field static sno_kw_STNO I\n");
+```
+Add after:
+```c
+J(".field static sno_kw_STLIMIT I\n");   /* -1 = unlimited */
+J(".field static sno_kw_STCOUNT I\n");   /* current step count */
+```
+
+### Hunk 2 — Initialize in `<clinit>` (near line 4176)
+
+Find:
+```jasmin
+putstatic  Driver/sno_kw_STNO I
+```
+Add after:
+```jasmin
+ldc2_w  -1   ; NOT VALID for int — use:
+iconst_m1
+putstatic  Driver/sno_kw_STLIMIT I
+iconst_0
+putstatic  Driver/sno_kw_STCOUNT I
+```
+*(Use `iconst_m1` not `ldc2_w` — STLIMIT is int (I), not long (J).)*
+
+### Hunk 3 — Handle in `sno_kw_set` (replace the final `Lkws_not_stno: return`)
+
+Find:
+```c
+J("Lkws_not_stno:\n");
+J("    return\n");
+J(".end method\n\n");
+```
+Replace with:
+```c
+J("Lkws_not_stno:\n");
+J("    aload_0\n");
+J("    ldc \"STLIMIT\"\n");
+J("    invokevirtual java/lang/String/equalsIgnoreCase(Ljava/lang/String;)Z\n");
+J("    ifeq Lkws_not_stlimit\n");
+J("    aload_1\n");
+J("    invokestatic java/lang/Integer/parseInt(Ljava/lang/String;)I\n");
+snprintf(sldesc, sizeof sldesc, "%s/sno_kw_STLIMIT I", jvm_classname);
+J("    putstatic %s\n", sldesc);
+J("    return\n");
+J("Lkws_not_stlimit:\n");
+J("    aload_0\n");
+J("    ldc \"STCOUNT\"\n");
+J("    invokevirtual java/lang/String/equalsIgnoreCase(Ljava/lang/String;)Z\n");
+J("    ifeq Lkws_not_stcount\n");
+J("    aload_1\n");
+J("    invokestatic java/lang/Integer/parseInt(Ljava/lang/String;)I\n");
+snprintf(scdesc, sizeof scdesc, "%s/sno_kw_STCOUNT I", jvm_classname);
+J("    putstatic %s\n", scdesc);
+J("    return\n");
+J("Lkws_not_stcount:\n");
+J("    return\n");
+J(".end method\n\n");
+```
+
+### Hunk 4 — `sno_kw_get` must return STLIMIT and STCOUNT
+
+Find the `sno_kw_get` method body. After the existing STNO case (or TRIM case), add:
+```c
+/* &STLIMIT */
+J("    aload_0\n");
+J("    ldc \"STLIMIT\"\n");
+J("    invokevirtual java/lang/String/equalsIgnoreCase(Ljava/lang/String;)Z\n");
+J("    ifeq Lkwg_not_stlimit\n");
+snprintf(sldesc2, sizeof sldesc2, "%s/sno_kw_STLIMIT I", jvm_classname);
+J("    getstatic %s\n", sldesc2);
+J("    invokestatic java/lang/Integer/toString(I)Ljava/lang/String;\n");
+J("    areturn\n");
+J("Lkwg_not_stlimit:\n");
+/* &STCOUNT */
+J("    aload_0\n");
+J("    ldc \"STCOUNT\"\n");
+J("    invokevirtual java/lang/String/equalsIgnoreCase(Ljava/lang/String;)Z\n");
+J("    ifeq Lkwg_not_stcount\n");
+snprintf(scdesc2, sizeof scdesc2, "%s/sno_kw_STCOUNT I", jvm_classname);
+J("    getstatic %s\n", scdesc2);
+J("    invokestatic java/lang/Integer/toString(I)Ljava/lang/String;\n");
+J("    areturn\n");
+J("Lkwg_not_stcount:\n");
+```
+
+### Hunk 5 — Emit `sno_stcount_tick()` helper + call it at every statement
+
+Add a new static helper method (near the other helpers, around line 3187):
+
+```c
+/* sno_stcount_tick() → void
+ * Increments &STCOUNT. If &STLIMIT >= 0 and &STCOUNT > &STLIMIT → terminate. */
+J(".method static sno_stcount_tick()V\n");
+J("    .limit stack 4\n");
+J("    .limit locals 0\n");
+snprintf(scdesc3, sizeof scdesc3, "%s/sno_kw_STCOUNT I", jvm_classname);
+snprintf(sldesc3, sizeof sldesc3, "%s/sno_kw_STLIMIT I", jvm_classname);
+/* increment STCOUNT */
+J("    getstatic %s\n", scdesc3);
+J("    iconst_1\n");
+J("    iadd\n");
+J("    dup\n");
+J("    putstatic %s\n", scdesc3);
+/* check STLIMIT: if STLIMIT < 0, skip (unlimited) */
+J("    getstatic %s\n", sldesc3);
+J("    iflt Lstick_ok\n");
+/* STCOUNT (still on stack) > STLIMIT? */
+J("    getstatic %s\n", sldesc3);
+J("    if_icmple Lstick_ok\n");
+/* exceeded — print message and exit */
+J("    getstatic java/lang/System/err Ljava/io/PrintStream;\n");
+J("    ldc \"Termination: statement limit\"\n");
+J("    invokevirtual java/io/PrintStream/println(Ljava/lang/String;)V\n");
+J("    iconst_1\n");
+J("    invokestatic java/lang/System/exit(I)V\n");
+J("Lstick_ok:\n");
+J("    pop\n");    /* pop the STCOUNT value from stack */
+J("    return\n");
+J(".end method\n\n");
+```
+
+Then in the main statement dispatch loop (where each statement is emitted), insert a call at the top of every statement:
+```c
+/* At the start of jvm_emit_stmt, before anything else: */
+char tickdesc[512];
+snprintf(tickdesc, sizeof tickdesc, "%s/sno_stcount_tick()V", jvm_classname);
+JI("invokestatic", tickdesc);
+```
+
+### Hunk 6 — Fix `sno_indr_get` label collision (same session, low cost)
+
+`Lsig_done` in `sno_indr_get` is not method-local — collides if called multiple times or method-name clash. Rename to `Lsig_done_<unique_counter>` using a `static int _sig_lbl = 0` pattern, same fix as the label-scoping fix in J-214 for `Lf<fnidx>_<label>`.
+
+### Verification sequence
+
+```bash
+cd /home/claude/snobol4ever/snobol4x
+cd src && make -j4
+
+# 1. STLIMIT enforcement test
+cat > /tmp/test_stlimit.sno << 'EOF'
+        &STLIMIT = 10000
+L       OUTPUT = 'looping'  :(L)
+END
+EOF
+./sno2c -jvm /tmp/test_stlimit.sno -o /tmp/stlimit.j
+mkdir -p /tmp/cls_stlimit
+java -jar src/backend/jvm/jasmin.jar -d /tmp/cls_stlimit /tmp/stlimit.j 2>/dev/null
+timeout 5 java -cp /tmp/cls_stlimit Test_stlimit 2>&1 | wc -l
+# Must be << 200000 (should be ~10000 lines then terminate)
+timeout 5 java -cp /tmp/cls_stlimit Test_stlimit 2>&1 | tail -3
+# Must end with: Termination: statement limit
+
+# 2. Corpus invariant (ASM — must not regress)
+CORPUS=/home/claude/snobol4corpus/crosscheck
+bash test/crosscheck/run_crosscheck_asm_corpus.sh 2>&1 | tail -3
+# Must: 106 passed, ALL PASS
+
+# 3. Global driver now completes
+INC=demo/inc
+./sno2c -jvm -I$INC -I./src/frontend/snobol4 test/beauty/global/driver.sno -o /tmp/drv_global.j
+mkdir -p /tmp/cls_global
+java -jar src/backend/jvm/jasmin.jar -d /tmp/cls_global /tmp/drv_global.j 2>/dev/null
+timeout 30 java -cp /tmp/cls_global Driver > /tmp/jvm_global_out.txt 2>/dev/null
+echo "exit: $?"
+diff test/beauty/global/driver.ref /tmp/jvm_global_out.txt
+# Clean diff → M-JVM-BEAUTY-GLOBAL fires
+```
+
+### On M-JVM-STLIMIT-STCOUNT fire
+```bash
+git add src/backend/jvm/emit_byrd_jvm.c
+git commit -m "J-216: M-JVM-STLIMIT-STCOUNT — &STLIMIT/&STCOUNT implemented in JVM backend"
+git push
+```
+Then immediately continue into M-JVM-BEAUTY-GLOBAL fix loop.
+
+---
 
 **J-214 — M-JVM-BEAUTY-GLOBAL in progress (2026-03-24):**
 - PIVOT: M-BEAUTIFY-BOOTSTRAP-JVM launched (BEAUTY.md updated 2026-03-24)

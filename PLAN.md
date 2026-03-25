@@ -14,7 +14,7 @@ Each concurrent session owns exactly one row. Update only your row on every push
 |---------|--------|------|----------------|
 | **TINY backend** | `main` B-291 — BSS heap fix (8.4MB→2MB); beauty_asm_bin runs; Sprint M5 unblocked | `309a2f9` B-291 | M-BEAUTIFY-BOOTSTRAP-ASM-MONITOR |
 | **TINY NET** | `net-t2` N-248 — M-T2-NET ✅ 110/110 clean | `425921a` N-248 | M-T2-FULL |
-| **TINY JVM** | `main` J-214 — M-BEAUTIFY-BOOTSTRAP-JVM pivot; 5 emitter bugs fixed (label scoping, SORT, array_get null, named_pats heap); global driver compile+assemble ✅ runtime incomplete | `ff3e05c` J-214 | M-JVM-BEAUTY-GLOBAL |
+| **TINY JVM** | `main` J-215 — M-JVM-STLIMIT-STCOUNT sprint; global driver TIMEOUT diagnosed: &STLIMIT not implemented → infinite loop; fix spec written; M-JVM-BEAUTY-GLOBAL blocked until M-JVM-STLIMIT fires | `ff3e05c` J-214 | M-JVM-STLIMIT-STCOUNT → M-JVM-BEAUTY-GLOBAL |
 | **TINY frontend** | `main` F-223 — rung05 encoding fix attempted, reverted clean; see TINY.md | `b4507dc` F-223 | M-PROLOG-CORPUS |
 | **DOTNET** | `main` D-164 — 1903/1903 pass 0 fail on Linux | `e1e4d9e` D-164 | TBD |
 | **README** | `main` — M-README-CSHARP-DRAFT ✅ | `00846d3` snobol4csharp | M-README-DEEP-SCAN |

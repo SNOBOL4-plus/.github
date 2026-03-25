@@ -775,3 +775,22 @@ END
 
 **HEAD at handoff:** snobol4x `ff3e05c` J-214, .github (pending push)
 **Next:** J-215 — run global driver to completion; fix remaining runtime divergences; fire M-JVM-BEAUTY-GLOBAL; proceed to M-JVM-BEAUTY-IS
+
+## J-215 — M-JVM-STLIMIT-STCOUNT sprint written; &STLIMIT root cause diagnosed
+
+**Session:** J-215
+**Branch:** main
+**Repos:** .github only (no snobol4x code change this session — sprint written, not yet implemented)
+
+**Work done:**
+- Continued M-JVM-BEAUTY-GLOBAL from J-214. global driver: compile ✅, assemble ✅, run → exit 124 (TIMEOUT, 15s).
+- Diagnosed root cause: `&STLIMIT` is not implemented in JVM backend. `sno_kw_set` in `emit_byrd_jvm.c` handles TRIM/ANCHOR/STNO but falls through silently for STLIMIT. No `sno_kw_STLIMIT` field declared. No step counter decremented. `global.sno` sets `&STLIMIT = 1000000` then runs `G1: i=i+1 / $UTF_Array[i,2] = UTF_Array[i,1] :S(G1)` over SORT(UTF) (~100 entries) — loop never terminates.
+- Confirmed: `&STLIMIT = 10000` + infinite `:(L)` loop ran 200K+ iterations in 5s — zero enforcement.
+- Also noted: `sno_indr_get` has `Lsig_done` label not method-local (same scoping class of bug as J-214 fix) — fix in same session as STLIMIT.
+- Sprint `M-JVM-STLIMIT-STCOUNT` written in full (6 hunks) in JVM.md §STLIMIT Sprint. JVM.md NOW updated. BEAUTY.md prerequisite row added. PLAN.md NOW row updated to J-215.
+- ASM corpus: 106/106 ALL PASS ✅ (no code touched).
+
+**Milestones fired:** none
+
+**HEAD at handoff:** snobol4x `ff3e05c` J-214 (unchanged), .github updated
+**Next:** J-216 — implement M-JVM-STLIMIT-STCOUNT (6 hunks in emit_byrd_jvm.c); verify STLIMIT enforces; run global driver to completion; fix any remaining divergences; fire M-JVM-BEAUTY-GLOBAL
