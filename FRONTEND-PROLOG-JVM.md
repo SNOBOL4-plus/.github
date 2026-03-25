@@ -19,54 +19,32 @@ and emits Jasmin `.j` files, assembled by `jasmin.jar`.
 
 | Session | Sprint | HEAD | Next milestone |
 |---------|--------|------|----------------|
-| **Prolog JVM** | `main` PJ-32 — M-PJ-BETWEEN ✅ synthetic p_between_3; puzzle_19 PASS; 16/20 | `5ae0d24` PJ-32 | M-PJ-ITE-CUT |
+| **Prolog JVM** | `main` PJ-33 — `->` prec fix (900→1050); ITE-CUT seal emitted; 16/20 unchanged; 11/18 root cause reclassified | `c0987cc` PJ-33 | M-PJ-ITE-CUT (11/18 2x) |
 
-### CRITICAL NEXT ACTION (PJ-33)
+### CRITICAL NEXT ACTION (PJ-34)
 
-**JVM baseline: 16/20 PASS. 4 failures, 2 root causes:**
+**JVM baseline: 16/20 PASS. Remaining failures — reclassified:**
 
-1. **puzzle_03, 11, 18** — over-generate (ITE `->` does not cut enclosing clause choice point).
-   - Fix location: `pj_emit_goal`, `;/2` ITE branch (~line 1216 in prolog_emit_jvm.c).
-   - After `cond_ok` fires and Then branch succeeds (reaches `lbl_γ`), the enclosing clause's
-     β choice point is NOT sealed — so the outer retry loop re-enters the clause and tries
-     the ITE again from a different `cond_fail` path.
-   - Fix: after emitting the Then branch, emit a **cut** of the enclosing clause cs
-     (`ldc cut_cs_seal; istore cs_local_for_cut`) so beta sees "exhausted" and skips to omega.
-   - Concretely: after `J("%s:\n", cond_ok)` and before emitting Then goals, seal the
-     enclosing β by storing `cut_cs_seal` into `cs_local_for_cut`. Then emit Then goals
-     routing failure to `lbl_ω` (not to else branches — ITE is committed once cond succeeds).
-   - Milestone: **M-PJ-ITE-CUT**
+1. **puzzle_11, 18** — output answer TWICE. No `->` in source. A predicate with 2 clauses both succeeds.
+   - Fix: identify which predicate doubles output; add `!` after first clause or rewrite.
+   - Milestone: **M-PJ-ITE-CUT** (root cause reclassified — not ITE, but determinism bug)
 
-2. **puzzle_12** — silent 0L; inline `(SCo=math ; SCo=history)` disjunction failing silently.
-   - Milestone: **M-PJ-DISJ-ARITH**
+2. **puzzle_03** — over-generates (56L vs 12L). ITE-CUT seal now correct. Over-generation from `equal_sums`/`find_couples` multi-clause backtrack. Source fix needed.
 
-**Bootstrap PJ-33:**
+3. **puzzle_12** — silent 0L. `(SCo=math ; SCo=history)` plain disjunction fails. Milestone: **M-PJ-DISJ-ARITH**
+
+**Changes landed PJ-33:** `prolog_parse.c` `->` prec 900→1050. `prolog_emit_jvm.c` ITE-CUT seal after `cond_ok`.
+
+**Bootstrap PJ-34:**
 ```bash
 git clone https://TOKEN_SEE_LON@github.com/snobol4ever/snobol4x
 git clone https://TOKEN_SEE_LON@github.com/snobol4ever/.github
 apt-get install -y --fix-missing default-jdk nasm libgc-dev swi-prolog
-make -C snobol4x/src
-cd snobol4x
-# Confirm baseline: 16/20 PASS (puzzle_19 now PASS; 03,11,12,18 still fail)
-for i in $(seq -f "%02g" 1 20); do
-  PUZZLE=puzzle_${i}; CLS=Puzzle_${i}
-  ORACLE=$(timeout 5 swipl -q -g halt -t main test/frontend/prolog/corpus/rung10_programs/${PUZZLE}.pro 2>/dev/null)
-  ./sno2c -pl -jvm test/frontend/prolog/corpus/rung10_programs/${PUZZLE}.pro -o /tmp/${CLS}.j 2>/dev/null
-  java -jar src/backend/jvm/jasmin.jar /tmp/${CLS}.j -d /tmp 2>/dev/null
-  JVM=$(timeout 15 java -cp /tmp ${CLS} 2>/dev/null)
-  [ "$JVM" = "$ORACLE" ] && echo "${PUZZLE}: PASS" || echo "${PUZZLE}: FAIL"
-done
-# Start with M-PJ-ITE-CUT: find ITE emission in prolog_emit_jvm.c
-grep -n '";".*nargs\|ite.*ok\|cond_ok\|if-then-else' src/frontend/prolog/prolog_emit_jvm.c | head -10
-# The fix: in the ITE branch of ;/2 emission, after cond_ok label,
-# seal the enclosing β BEFORE emitting Then goals:
-#   J("    ldc %d\n", cut_cs_seal);
-#   J("    istore %d\n", cs_local_for_cut);
-# This commits the ITE once condition succeeds — no backtrack into else branches.
-# Note: cut_cs_seal and cs_local_for_cut are parameters of pj_emit_goal.
-# If -1 (no enclosing choice), skip the seal.
+make -C snobol4x/src && cd snobol4x
+# Confirm 16/20 baseline, then:
+# 1. puzzle_11/18: add write-traces to find doubling predicate
+# 2. puzzle_12: inspect plain disj ;/2 handler for (atom=X ; atom=Y) pattern
 ```
-
 **Bootstrap PJ-23:**
 ```bash
 git clone https://TOKEN_SEE_LON@github.com/snobol4ever/snobol4x
