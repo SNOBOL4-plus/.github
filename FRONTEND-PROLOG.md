@@ -336,6 +336,8 @@ Milestones are ordered from easiest to hardest based on problem structure:
 
 | ID | File | Puzzle | Status |
 |----|------|--------|--------|
+| **M-PZ-01** | puzzle_01.pro | Bank positions Brown/Jones/Smith | ✅ real search — swipl PASS |
+| **M-PZ-02** | puzzle_02.pro | Clark/Daw/Fuller occupations | ✅ real search — swipl PASS |
 | **M-PZ-14** | puzzle_14.pro | Golf scores (Bill/Ed/Tom wives) | ✅ real search — swipl PASS + JVM PASS |
 | **M-PZ-17** | puzzle_17.pro | Country Club dance pairings | ✅ real search — swipl PASS; JVM PASS |
 | **M-PZ-15** | puzzle_15.pro | Vernon/Wilson/Yates offices + secretaries | ✅ real search — swipl PASS |
@@ -345,6 +347,8 @@ Milestones are ordered from easiest to hardest based on problem structure:
 | **M-PZ-18** | puzzle_18.pro | Shopping day scheduling | ✅ real search — swipl PASS |
 | **M-PZ-19** | puzzle_19.pro | Office floors + professions | ✅ real search — swipl PASS |
 | **M-PZ-04** | puzzle_04.pro | Milford occupations + salaries | ✅ real search — swipl PASS; JVM PASS |
+| **M-PZ-05** | puzzle_05.pro | First National Bank chess/proximity | ✅ real search — swipl PASS |
+| **M-PZ-06** | puzzle_06.pro | Clark/Jones/Morgan/Smith occupations | ✅ real search — swipl PASS |
 | **M-PZ-09** | puzzle_09.pro | Empire Dept Store positions | ✅ real search — swipl PASS; JVM PASS |
 | **M-PZ-08** | puzzle_08.pro | Dept Store positions (Ames/Brown/Conroy…) | ✅ real search — swipl PASS; JVM PASS |
 | **M-PZ-11** | puzzle_11.pro | Smith family positions | ✅ real search — swipl PASS; JVM 2L (over-generates) |

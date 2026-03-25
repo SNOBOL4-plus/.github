@@ -19,7 +19,7 @@ Each concurrent session owns exactly one row. Update only your row on every push
 | **DOTNET** | `main` D-164 — 1903/1903 pass 0 fail on Linux | `e1e4d9e` D-164 | TBD |
 | **README** | `main` — M-README-CSHARP-DRAFT ✅ | `00846d3` snobol4csharp | M-README-DEEP-SCAN |
 | **ICON frontend** | `main` I-11 — M-ICON-CORPUS-R3 ✅ rbp fix + 5/5 rung03 PASS | `bab5664` I-11 | M-ICON-STRING |
-| **Prolog JVM** | `main` PJ-30 — M-PZ-20 ✅ real search; all hardcoded stubs replaced | `8ace0f7` PJ-30 | M-PZ-03 |
+| **Prolog JVM** | `main` PJ-31 — M-PZ-01/02/05/06 added; puzzle_02 rewritten; all 20 real search | `251ae11` PJ-31 | M-PJ-DISPLAY-BT |
 | **Icon JVM** | `main` IJ-11 — M-IJ-SCAN ✅ 5/5 rung05 PASS | `7d68a85` IJ-11 | M-IJ-CSET |
 | **Prolog JVM** | `main` PJ-16 — two-clause fail/retry fix; rungs 01-09 PASS | `f575016` PJ-16 | M-PJ-CORPUS-R10 |
 | **Icon JVM** | `main` IJ-16 — M-IJ-CORPUS-R8 ✅ find/match/tab/move; 44/44 PASS | `be1be82` IJ-16 | M-IJ-CSET |
@@ -91,8 +91,12 @@ Each milestone: write solution in puzzle_NN.pro, verify correct answer via swipl
 
 | ID | Puzzle | Status |
 |----|--------|--------|
+| **M-PZ-01** | Bank positions — Brown/Jones/Smith, cashier/manager/teller | ✅ |
+| **M-PZ-02** | Clark/Daw/Fuller — carpenter/painter/plumber, earnings + heard-of clues | ✅ |
 | **M-PZ-03** | Triple engagement party — 6 people, age constraints, equal couple sums | ✅ swipl PASS; JVM over-generates (M-PJ-DISPLAY-BT open) |
 | **M-PZ-04** | Milford occupations — income doubling chain + $3776 gap | ✅ |
+| **M-PZ-05** | First National Bank — Brown/Clark/Jones/Smith, chess + proximity clues | ✅ |
+| **M-PZ-06** | Clark/Jones/Morgan/Smith — butcher/druggist/grocer/policeman | ✅ |
 | **M-PZ-07** | Brown/Clark/Jones/Smith — age/golf/income/conservatism ordering | ✅ |
 | **M-PZ-08** | Dept store Ames/Brown/Conroy/Davis/Evans — roommate/bachelor/marriage clues | ✅ |
 | **M-PZ-09** | Empire dept store Allen/Bennett/Clark/Davis/Ewing — lunch hours + cribbage | ✅ |
