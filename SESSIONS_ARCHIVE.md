@@ -1319,3 +1319,11 @@ The five-level hierarchy is defined but NOT YET ENFORCED by the doc structure. T
 - `findall_arith`: same conjunction cs bug + need to verify `pj_eval_arith` handles ref→int deref
 
 **Fix for PJ-46:** In `pj_call_goal` conjunction section, pass `iload_1` (caller's cs) to left call instead of `iconst_0`. Return `left_new_cs` as the result (not `iconst_0`). Two-line change in `pj_emit_findall_builtin()`.
+
+## IJ-33 — M-IJ-LISTS
+
+**Date:** 2026-03-25  
+**HEAD:** `51c7335` snobol4x  
+**Result:** M-IJ-LISTS ✅ — 114/114 PASS (rungs 01–22)
+
+Implemented full list infrastructure: `ij_expr_is_list()`, pre-pass type registration for list vars, `ij_emit_var`/`ij_emit_assign` list branches, statement drain ref-type fix, list builtins (`push`/`put`/`get`/`pop`/`pull`/`list`), `ij_emit_bang` list branch, `ij_emit_size` list branch, `ij_expr_is_string(ICN_BANG)` list fix. rung22 corpus 5/5. Root bugs fixed: pre-pass missing list type → statics table miss at emit time; `pull` `dup`+`ifeq` stack-height inconsistency (pull_fail trampoline); `ij_expr_is_string(ICN_BANG)` returning 1 for list operands.

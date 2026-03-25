@@ -22,7 +22,7 @@ Each concurrent session owns exactly one row. Update only your row on every push
 | **README** | `main` R-2 | `00846d3` | M-README-DEEP-SCAN |
 | **ICON frontend** | `main` I-11 — rung03 ✅ | `bab5664` I-11 | M-ICON-STRING |
 | **Prolog JVM** | `main` PJ-45 — M-PJ-FINDALL WIP; 3/5 rung11 PASS; 20/20 puzzles intact | `9047db4` PJ-45 | M-PJ-FINDALL |
-| **Icon JVM** | `main` IJ-32 WIP — 109/109 | `ae9e611` IJ-32 | M-IJ-LISTS |
+| **Icon JVM** | `main` IJ-33 — M-IJ-LISTS ✅ 114/114 PASS | `51c7335` IJ-33 | M-IJ-CORPUS-R22 |
 | **README v2** | `main` R-2 | TBD | M-FEAT-JVM |
 
 **Invariants:** TINY `106/106` (`run_crosscheck_asm_corpus.sh`) · DOTNET `1903/1903` (`dotnet test`)
@@ -65,7 +65,7 @@ Phases 0–8 · 54 milestones M-G0-FREEZE → M-G8-CI · **NEXT: M-G0-FREEZE (Lo
 `M-PJ-FINDALL` ❌ **NEXT**
 
 ### Icon JVM — detail → [FRONTEND-ICON-JVM.md](FRONTEND-ICON-JVM.md)
-`M-IJ-LISTS` ❌ **NEXT** · `M-IJ-CORPUS-R22` ❌
+`M-IJ-LISTS` ✅ · `M-IJ-CORPUS-R22` ❌ **NEXT**
 
 ### ICON frontend (ASM) — detail → [FRONTEND-ICON.md](FRONTEND-ICON.md)
 `M-ICON-STRING` ❌ **NEXT** · `M-ICON-SCAN` ❌ · `M-ICON-CSET` ❌ · `M-ICON-CORPUS-R4` ❌

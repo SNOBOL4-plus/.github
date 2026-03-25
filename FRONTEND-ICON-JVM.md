@@ -19,7 +19,7 @@ assembled by `jasmin.jar` into `.class` files. Despite the file's location under
 
 | Session | Sprint | HEAD | Next milestone |
 |---------|--------|------|----------------|
-| **Icon JVM** | `main` IJ-32 WIP — M-IJ-LISTS scaffold; ICN_MAKELIST + ArrayList infra committed; 109/109 baseline | `ae9e611` IJ-32 | M-IJ-LISTS |
+| **Icon JVM** | `main` IJ-33 — M-IJ-LISTS ✅ 114/114 PASS | `51c7335` IJ-33 | M-IJ-CORPUS-R22 |
 
 **⚠ Grand Master Reorg plan published — sessions continue normally. See GRAND_MASTER_REORG.md.**
 
@@ -44,7 +44,7 @@ diff <(icon_driver foo.icn -o /tmp/t.asm -run 2>/dev/null) \
      <(icon_driver -jvm foo.icn -o /tmp/t.j && java -jar src/backend/jvm/jasmin.jar /tmp/t.j -d /tmp && java -cp /tmp FooClass 2>/dev/null)
 ```
 
-### Next session checklist (IJ-33)
+### Next session checklist (IJ-34)
 
 ```bash
 git clone https://TOKEN_SEE_LON@github.com/snobol4ever/snobol4x
@@ -55,8 +55,17 @@ gcc -Wall -Wextra -g -O0 -I. src/frontend/icon/icon_driver.c src/frontend/icon/i
     src/frontend/icon/icon_parse.c src/frontend/icon/icon_ast.c \
     src/frontend/icon/icon_emit.c src/frontend/icon/icon_emit_jvm.c \
     src/frontend/icon/icon_runtime.c -o /tmp/icon_driver
-# Confirm 109/109 PASS (rungs 01-21) baseline before touching code
-# IJ-32 scaffold in place (ae9e611): ICN_MAKELIST emitter, ArrayList statics infra, dispatch wired
+# Confirm 114/114 PASS (rungs 01-22) baseline before touching code
+# M-IJ-CORPUS-R22 fires with M-IJ-LISTS already done — 114/114 IS the milestone
+# Mark M-IJ-CORPUS-R22 ✅ immediately, then proceed to M-IJ-TABLE
+#
+# M-IJ-TABLE plan (from FRONTEND-ICON-JVM.md §Tier 1):
+#   table(default), t[k] subscript, key/insert/delete/member builtins
+#   JVM: HashMap<String,Object>. table(x) constructs with default x.
+#   t[k]: ICN_SUBSCRIPT with string key — check map, return value or default.
+#   key(t) generator: per-site static index + keySet().toArray().
+#   Corpus: test/frontend/icon/corpus/rung23_table/ (5 tests)
+```
 #
 # READ THIS BEFORE CODING — JCON source corrections (from session IJ-32 analysis):
 #
@@ -99,6 +108,24 @@ gcc -Wall -Wextra -g -O0 -I. src/frontend/icon/icon_driver.c src/frontend/icon/i
 #   Step 5 — build, confirm 114/114, commit, push → M-IJ-LISTS ✅
 ```
 
+
+### IJ-33 findings — M-IJ-LISTS ✅
+
+**114/114 PASS (rung01–22).** HEAD `51c7335`.
+
+**New in `icon_emit_jvm.c`:**
+
+1. **`ij_expr_is_list()`** — type predicate (forward-declared at line ~381). Handles `ICN_MAKELIST`, `ICN_ASSIGN` with list RHS, `ICN_CALL` for `push`/`put`/`list`, and vars with statics type tag `'L'`.
+2. **Pre-pass** — extended forward-scan loop to call `ij_declare_static_list(fld)` for list-typed assignments. Required so `ij_expr_is_list` sees the type during reverse-order emit.
+3. **`ij_emit_var`** — detects `is_list`, loads via `ij_get_list_field`.
+4. **`ij_emit_assign`** — detects `is_list`, stores/restores via `ij_put/get_list_field`; drains with `pop` not `pop2`.
+5. **Statement drain** — `stmt_is_ref = stmt_is_str || stmt_is_list`; uses `pop` for both ref types.
+6. **List builtins in `ij_emit_call`**: `push(L,v)`, `put(L,v)`, `get(L)`/`pop(L)`, `pull(L)`, `list(n,x)`.
+   - `pull` uses `pull_fail` trampoline to pop the dup'd `size` int before jumping to `ports.ω` (avoids "Inconsistent stack height 0 != 1").
+7. **`ij_emit_bang` list branch** — `store`/`chk` labels; iterates by index; unboxes `Long.longValue()J`.
+8. **`ij_emit_size` list branch** — `ArrayList.size()I` when child is list.
+9. **`ij_expr_is_string(ICN_BANG)`** — returns 0 when child is a list.
+10. **rung22 corpus** — 5 tests: `!L`, `push`+`*L`, `get`, `pull`, `put`+`!L`.
 
 ### IJ-32 findings — M-IJ-LISTS scaffold (WIP, HEAD ae9e611)
 

@@ -237,3 +237,5 @@ Append-only. Do not edit existing entries.
 | **M-IJ-CORPUS-R18** | Rung 18: real relops (dcmpl/dcmpg + l2d promotion), ICN_ALT realness; 94/94 total | ✅ IJ-27 `f976057` |
 | **M-IJ-CORPUS-R19** | Rung 19: ICN_POW (^) via Math.pow + real to-by (dneg fix, is_dbl flag); 99/99 total | ✅ IJ-28 `2574281` |
 | **M-IJ-CORPUS-R20** | Rung 20: ICN_SECTION s[i:j] (3-operand, 1-based→0-based, clamp) + ICN_SEQ_EXPR (E;F drain relay); 104/104 total | ✅ IJ-29 `7f8e3a2` |
+| **M-IJ-LISTS** | List constructor [e1..en], push/put/get/pop/pull, !L, *L; rung22 5/5 PASS; 114/114 total | ✅ IJ-33 `51c7335` |
+| **M-IJ-CORPUS-R22** | Rung 22: lists corpus 5/5 PASS (fires with M-IJ-LISTS) | ✅ IJ-33 `51c7335` |
