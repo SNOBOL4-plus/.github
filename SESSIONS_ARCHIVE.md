@@ -429,3 +429,20 @@ If garbage vtype persists: r12 is still being clobbered somewhere else (e.g. use
 
 ### Next action
 Rebuild beauty from B-289, run, check if garbage `vtype=139...` gone. See SESSIONS_ARCHIVE full entry for exact rebuild commands.
+**Next:** IJ-13 — M-IJ-CORPUS-R4 fires immediately (rung04+05+06=15/15 already PASS). Declare it, then plan next milestone.
+---
+
+## IJ-13 — 2026-03-24
+
+**Milestones:** M-IJ-CORPUS-R4 ✅; M-IJ-CORPUS-R5 ❌ open (t03_to_by VerifyError)
+
+**Work done:**
+- M-IJ-CORPUS-R4 fires: rung04+rung05+rung06 = 15/15 PASS; 34/34 total.
+- Implemented ICN_NOT, ICN_NEG, ICN_TO_BY (broken), ICN_SEQ/SNE/SLT/SLE/SGT/SGE.
+- every/while/until/repeat drain fix: stmt loop skips sdrain for loop nodes.
+- .bytecode 50.0 directive added (insufficient for JVM 21 StackMapTable requirement).
+- rung07_control corpus committed (5 tests); run_rung07.sh committed.
+- rung07: 4/5 PASS. t03_to_by FAIL: JVM 21 verifier requires StackMapTable for backward branches; Jasmin 2.x doesn't emit them. Logic correct under -noverify.
+- HEAD: `6174c9f` on `main`.
+
+**IJ-14 fix:** Rewrite ij_emit_to_by using forward-only α/β dispatch (same pattern as ij_emit_to) — α evaluates start/end/step and yields first value; β advances and re-checks. No backward branch. Full plan in FRONTEND-ICON-JVM.md §IJ-13 findings.

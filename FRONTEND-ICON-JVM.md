@@ -19,9 +19,9 @@ assembled by `jasmin.jar` into `.class` files. Despite the file's location under
 
 | Session | Sprint | HEAD | Next milestone |
 |---------|--------|------|----------------|
-| **Icon JVM** | `main` IJ-12 — M-IJ-CSET ✅ 5/5 rung06 PASS; 34/34 total | `369f2bf` IJ-12 | M-IJ-CORPUS-R4 |
+| **Icon JVM** | `main` IJ-13 — M-IJ-CORPUS-R4 ✅; rung07 4/5; t03_to_by VerifyError open | `6174c9f` IJ-13 | M-IJ-CORPUS-R5 |
 
-### Next session checklist (IJ-13)
+### Next session checklist (IJ-14)
 
 ```bash
 git clone https://TOKEN_SEE_LON@github.com/snobol4ever/snobol4x
@@ -34,8 +34,60 @@ gcc -Wall -Wextra -g -O0 -I. src/frontend/icon/icon_driver.c src/frontend/icon/i
     src/frontend/icon/icon_runtime.c -o /tmp/icon_driver
 # Read FRONTEND-ICON-JVM.md §NOW
 # Confirm rung01-06 34/34 still PASS before touching code
-# Implement M-IJ-CORPUS-R4 per §IJ-12 findings below
+# Fix t03_to_by VerifyError per §IJ-13 findings → fire M-IJ-CORPUS-R5
 ```
+
+### IJ-13 findings — t03_to_by VerifyError fix plan
+
+**Root cause:** JVM 21 requires StackMapTable attributes for backward-branch loops in
+all class files. Jasmin 2.x never emits StackMapTable. The `.bytecode 50.0` directive
+is accepted by Jasmin but the JVM 21 verifier still requires stack map frames for
+backward branches (`Expecting a stackmap frame at branch target`). Logic is correct:
+`java -noverify -cp /tmp/ T03_to_by` → `1 4 7 10` ✓.
+
+**Fix strategy — rewrite `ij_emit_to_by` using the suspend/resume static-field pattern
+(same as `ij_emit_to`) to avoid backward branches in emitted Jasmin:**
+
+Instead of emitting a loop label that's jumped back to, use the same α/β port dispatch
+that `ij_emit_to` uses: α evaluates start/end/step once and yields the first value;
+β advances I and checks bounds, yielding next value or failing. No backward branch.
+
+**Concrete implementation:**
+```
+α: eval start → store I_f; eval end → store end_f; eval step → store step_f
+   → check (same as β-check below)
+
+β: I_f += step_f → check
+
+check (no backward branch — jumped to from two forward paths):
+   if step_f > 0: if I_f > end_f → ports.ω; else push I_f → ports.γ
+   if step_f < 0: if I_f < end_f → ports.ω; else push I_f → ports.γ
+   if step_f = 0: ports.ω
+```
+
+Key: `check` is a label jumped to from α and from β — both are **forward** jumps
+from the perspective of the JVM (α and β appear before check in the instruction stream).
+No backward edges → no StackMapTable needed.
+
+The structure matches `ij_emit_to` exactly; just add the step field and direction check.
+
+**Also check:** rung01-03 `every` tests pass, so the every-drain fix (skip sdrain for
+ICN_EVERY/WHILE/UNTIL/REPEAT) is safe. Confirm 34/34 baseline before touching to_by.
+
+### IJ-13 findings — what was implemented (done)
+
+**M-IJ-CORPUS-R4 ✅ — rung04+05+06 = 15/15 PASS. 34/34 total.**
+
+New features in `icon_emit_jvm.c` (`6174c9f`):
+
+1. **`ICN_NOT`** (`ij_emit_not`): child success → fail; child fail → succeed + push `lconst_0`
+2. **`ICN_NEG`** (`ij_emit_neg`): eval child, emit `lneg`, → ports.γ
+3. **`ICN_TO_BY`** (`ij_emit_to_by`): step generator — BROKEN (VerifyError, see above)
+4. **`ICN_SEQ/SNE/SLT/SLE/SGT/SGE`** (`ij_emit_strrelop`): `String.compareTo()` + branch; pushes `lconst_0` on success
+5. **every/while/repeat/until drain fix**: stmt loop skips sdrain for loop nodes (they never fire ports.γ with a value)
+6. **`.bytecode 50.0`** directive emitted (insufficient for JVM 21 backward branches)
+7. **rung07_control corpus**: 5 tests; `run_rung07.sh` committed
+8. **rung07 result**: 4/5 PASS (t01_not, t02_neg, t04_seq, t05_repeat_break ✅; t03_to_by ❌)
 
 ### IJ-12 findings — M-IJ-CORPUS-R4 plan
 

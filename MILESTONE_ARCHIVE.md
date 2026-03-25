@@ -214,5 +214,6 @@ Append-only. Do not edit existing entries.
 | **M-IJ-STRING** | `9932df5` IJ-9 | ICN_STR + || concat; String static fields; pop/pop2 drain; pre-pass type inference; 5/5 rung04 + t06 bonus fix |
 | **M-IJ-SCAN** | `7d68a85` IJ-11 | ij_emit_scan four-port Byrd-box; &subject keyword; icn_subject/icn_pos globals; <clinit> init; ij_expr_is_string ICN_SCAN+&subject; 5/5 rung05 PASS; rung01-04 24/24 clean |
 | **M-IJ-CSET** | `369f2bf` IJ-12 | ICN_CSET=ij_emit_str; any/many/upto builtins via static helpers; ICN_AND left-to-right relay drain fix; user-proc guard; 5/5 rung06 PASS; 34/34 total |
+| **M-IJ-CORPUS-R4** | `6174c9f` IJ-13 | rung04+05+06=15/15 PASS; ICN_NOT/NEG/SEQ/SNE/SLT/SLE/SGT/SGE added; every-drain fix; 34/34 total |
 
 | **M-PJ-CORPUS-R10** | Rung 10: Lon's puzzle corpus PASS | ✅ PJ-17 `e14bed2` |
