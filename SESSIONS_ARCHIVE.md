@@ -1203,3 +1203,39 @@ Key corrections to IJ-33 plan:
 - `ArrayList` (ours) vs `Vector` (JCON) — our choice correct for single-threaded use
 - JCON's `vListVar` provides l-value list slots; Tiny-Icon doesn't need this yet
 IJ-33 checklist updated in FRONTEND-ICON-JVM.md with all corrections.
+
+---
+
+## G-1 through G-5 — Grand Master Planning Session
+
+**Date:** 2026-03-25  **Commits:** G-1 `8fec586` through G-5 `ae55e9a`
+
+**What was done:** Full Grand Master Reorganization plan authored and published.
+
+G-1: Authored GRAND_MASTER_REORG.md — 7-phase plan (Phases 0–7), 54 milestones covering folder restructure, unified IR, naming unification, shared wiring extraction, frontend lower-to-IR, new matrix pipelines, style pass. WASM browser IDE vision added. PLAN.md NOW table updated.
+
+G-2: Fixed invariants — removed snobol4dotnet 1903/1903 from reorg scope. Correct invariants are snobol4x only: 106/106 ASM, 106/106 JVM, 110/110 NET.
+
+G-3: Added Phase 8 — grammar-driven exhaustive test generation. 4 design-decision milestones (M-G8-HOME, M-G8-DEPTH, M-G8-ORACLE, M-G8-GRAMMAR) must produce doc/GEN_*.md decision records before any code. 11 implementation milestones follow. Key insight: IR-tree enumeration bypasses parser, tests emitters directly, exhaustive coverage to N=25 tokens via differential oracle (CSNOBOL4+SPITBOL agree = correct). Integrates with existing 5-way Monitor — no new infra needed.
+
+G-4: Added SD (Scripten Demo) session type. M-SCRIPTEN-DEMO (family tree: SNOBOL4+Prolog+Icon JVM funny linkage) and M-SCRIPTEN-DEMO2 (puzzle solver: suspend search + Prolog constraints) added to PLAN.md. Trigger phrase: "playing with Scripten demo". Full specs already exist in SCRIPTEN_DEMO.md and SCRIPTEN_DEMO2.md (L4).
+
+G-5: Introduced five-level doc hierarchy to fix session bloat/confusion problem. L3=invariant (RULES.md+ARCH.md, read every session), L4=pipeline or topic (read ONLY your one file), L5=archive (never read at session start). RULES.md now has explicit session-start protocol. PLAN.md doc index updated with Level + "Read when" columns. Phase 8 collapsed to 1 summary row in PLAN.md. Scripten Demo prose trimmed.
+
+**THE UNFINISHED WORK — critical for next G-session:**
+
+The five-level hierarchy is defined but NOT YET ENFORCED by the doc structure. The problem that caused session spam is still present in the L4 docs themselves:
+
+1. TESTING.md and MONITOR.md are currently L4 "topic" docs but sessions have been reading them as required cold-start reading. They need to be reference-only — each L4 pipeline doc needs a §TESTING section with the 3 commands specific to that pipeline, so sessions never need to cold-read TESTING.md.
+
+2. Several L4 pipeline docs are MISSING entirely. The matrix has 15 frontend×backend combinations but only ~6 L4 docs exist (FRONTEND-ICON-JVM.md, FRONTEND-PROLOG-JVM.md, FRONTEND-ICON.md, FRONTEND-PROLOG.md, FRONTEND-SNOBOL4.md, FRONTEND-SNOCONE.md). Missing: BACKEND-X64.md detail, BACKEND-JVM.md detail, BACKEND-NET.md detail, and combined pipeline docs for Snocone×JVM, Snocone×NET, Rebus×*, etc.
+
+3. The existing L4 docs contain cross-cutting content that belongs in ARCH.md or nowhere. Sessions read the wrong doc and paste content into PLAN.md.
+
+**Next G-session mandate:** Full restructure. For each active frontend×backend combination:
+- Create or trim the L4 doc to contain ONLY: §NOW (current milestone + next action), §BUILD (3 commands to build), §TEST (3 commands to run the corpus for this pipeline), §KNOWN-GAPS (xfail list). Nothing else.
+- Strip cross-cutting architecture from L4 docs into ARCH.md or delete it.
+- Add §TESTING stub to each L4 doc so TESTING.md is never cold-read.
+- Verify PLAN.md stays under 3KB after the restructure.
+
+**Session start for next G-session:** Read PLAN.md + RULES.md + ARCH.md + this SESSIONS_ARCHIVE entry. Do NOT read GRAND_MASTER_REORG.md until you need Phase details. Do NOT read TESTING.md or MONITOR.md at session start.
