@@ -19,56 +19,62 @@ and emits Jasmin `.j` files, assembled by `jasmin.jar`.
 
 | Session | Sprint | HEAD | Next milestone |
 |---------|--------|------|----------------|
-| **Prolog JVM** | `main` PJ-75 — M-PJ-LINKER ✅ | `a316544` PJ-75 | M-PJ-SWI-BASELINE |
+| **Prolog JVM** | `main` PJ-76 — 8 plunit bugs fixed; SWI baseline partial | `d6c63ad` PJ-76 | M-PJ-SWI-BASELINE |
 
-### CRITICAL NEXT ACTION (PJ-76)
+### CRITICAL NEXT ACTION (PJ-77)
 
-**PJ-75 findings: M-PJ-LINKER complete. Raw SWI plunit files now compile directly.**
+**PJ-76 findings: 8 bugs fixed in plunit linker/shim. Corpus 107/107. SWI files now run.**
 
-**What was done this session (PJ-75):**
-- `prolog_emit_jvm.c`: full plunit linker implemented (~521 lines added)
-  - `pj_linker_has_plunit()` — detects `use_module(library(plunit))`
-  - `pj_plunit_shim_src[]` — plunit.pl shim embedded as C string literal
-  - `pj_linker_emit_plunit_shim()` — parse+lower+emit shim via prolog_parse/prolog_lower
-  - `pj_linker_emit_db_stub()` — proper DB-query stubs for pj_suite/1 and pj_test/4
-  - `pj_linker_scan()` — scans test/1 and test/2 E_CHOICE nodes, assigns to suite[0]
-  - `pj_linker_emit_main_assertz()` — assertz pj_suite/pj_test facts in main()
-  - `pj_linker_emit_bridge()` — bridge predicates suite_name/0 :- test(name)
-  - `begin_tests`/`end_tests` added to meta-directive skip list
-  - `main()` stack limit raised to 32
-- **Key fix:** prolog_lower batches E_CHOICE nodes separately from directives — scanner
-  uses two-pass approach: pass 1 collects suites from begin_tests directives, pass 2
-  assigns all test/N clauses to suite[0] (correct for single-suite files)
-- **Result:** `test_list.pl` raw SWI file: 10/11 pass without wrap_swi.py
-- `member_fail` failure is pre-existing (member/2 shim semantics, same as wrap pipeline)
-- All 34 corpus rungs: 0 regressions
+**What was done PJ-76 (commits PJ-76a/b/c):**
+1. `pj_linker_emit_main_assertz` moved before directive loop (was after → 0/0/0 always)
+2. `pj_linker_emit_bridge` now dispatches `p_test_2(name,opts,cs)` for `test/2` (was always `p_test_1`)
+3. Bare-goal opts (`X==3`) wrapped as `true(Opts)` compound at assertz time
+4. `run_suite/1` — added `!` after format to prevent double header print on retry
+5. `E_VART` as goal → now calls `pj_call_goal` with `-1`-as-fail convention (was `goto lbl_γ`)
+6. `p_main_0` call guarded by `has_main0` scan (plunit-only files crashed)
+7. Auto `run_tests` emitted in `main()` when plunit file has no `:- run_tests` directive
+8. `run_tests/1` accepts list of suites; `run_suites_list/1` helper added to shim
+- **Corpus:** 107/107 pass, 0 regressions throughout
+- SWI test files provided as `swipl-devel-master.zip` — extract to `/tmp/swipl-devel-master/`
 
-**PJ-76 task: M-PJ-SWI-BASELINE — run full SWI test suite**
-1. Fetch test files from `https://raw.githubusercontent.com/SWI-Prolog/swipl-devel/master/src/Tests/core/TEST.pl`
-2. Run each through `sno2c -pl -jvm` directly (no wrap_swi.py)
-3. Record pass/fail/skip baseline for each test file
-4. Fix `member_fail` semantics in plunit shim (member/2 should be deterministic after first solution)
-5. Fix `test/2` opts: bare-goal opts like `X==3` need `true(X==3)` wrapping at scan time in linker
+**SWI baseline so far (tests/core/):**
+- `test_list.pl` — 0p/1f: `true(Expr)` opts variable-sharing gap (known, see below)
+- `test_exception.pl` — 0p/5f/1s: throw/catch semantics gaps
+- `test_arith/unify/dcg/misc.pl` — compile errors (parse gaps)
+
+**PJ-77 task: M-PJ-SWI-BASELINE continued**
+
+**Task 1 — CRITICAL: `true(Expr)` opts variable-sharing fix**
+- Problem: `test(name, X==y) :- Body` — bridge emits `pj_term_var()` for `X` in opts, disconnected from `X` in `Body`
+- Fix: store body `EXPR_t*` in `PjTestInfo`; in bridge emit body+check in same JVM scope
+- In `pj_linker_scan`: add `body_expr` field to `PjTestInfo`, set to `cl->body` (the clause body nodes)
+- In `pj_linker_emit_bridge` for test/2 with `true(Expr)` opts: instead of calling `p_test_2`, inline `pj_emit_body(body_exprs) + pj_emit_goal(expr_check)`
+- This gives X the same JVM local slot in body and check
+
+**Task 2 — parse gaps (fix one at a time, re-run after each)**
+- `:- else. / :- endif.` — add to meta-directive skip list in `pj_emit_main` (line ~7230)
+- `f()` zero-arity compound — parser sees `f(` then `)` → fix `prolog_parse.c` term parser
+- `-atom` as arg (e.g. `style_check(-no_effect)`) — prefix `-` on atom: fix unary minus to accept atoms
+- `div` as infix in opts (`A == X div Y`) — `div` already in op table? check `prolog_lex.c`
+- `:-` inside list term — parser needs to handle `:-` as a term functor
+
+**Task 3 — throw/catch semantics (test_exception.pl)**
+- `throw:error` (no exception) — inspect what test body does; likely `catch` swallowing
+- `throw:ground/unbound/not/non_unify` — likely same root cause
 
 ```bash
 git clone https://TOKEN@github.com/snobol4ever/snobol4x
 git clone https://TOKEN@github.com/snobol4ever/.github
 apt-get install -y --fix-missing default-jdk nasm libgc-dev swi-prolog
 make -C snobol4x/src
+# SWI test files: unzip swipl-devel-master.zip to /tmp/
 # Read §NOW above. Start at CRITICAL NEXT ACTION.
 ```
 
 **Key files:**
-- `snobol4x/src/frontend/prolog/prolog_emit_jvm.c` — linker at line ~6708 (`pj_linker_*`)
-- `snobol4x/test/frontend/prolog/plunit.pl` — shim embedded in C string (keep in sync)
-- `snobol4x/test/frontend/prolog/wrap_swi.py` — legacy fallback (demote, keep for reference)
-- Fetch URL: `https://raw.githubusercontent.com/SWI-Prolog/swipl-devel/master/src/Tests/core/TEST.pl`
-
-**SWI suite status:**
-test_list ✅ 10/1/0 (raw .pl, linker), test_acyclic ✅ 51/0/1, test_unify ✅ 11/0/0,
-test_occurs_check ✅ 6/0/3, test_copy_term ⏳, test_exception ⏳, test_op ⏳,
-test_sort ⏳, test_string ⏳, test_arith ⏳, test_format ⏳, test_write ⏳,
-test_read ⏳, test_dcg ⏳, test_bips ⏳, test_misc ⏳
+- `snobol4x/src/frontend/prolog/prolog_emit_jvm.c` — linker ~line 6995 (`pj_linker_*`)
+- `snobol4x/test/frontend/prolog/plunit.pl` — shim (keep in sync with C string literal)
+- SWI tests: `swipl-devel-master/tests/core/test_*.pl` (58 files)
 
 ## Milestone Table
 
