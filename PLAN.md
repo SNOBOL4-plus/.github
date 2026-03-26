@@ -13,7 +13,7 @@ Each concurrent session owns exactly one row. Update only your row on every push
 | Session | Sprint | HEAD | Next milestone |
 |---------|--------|------|----------------|
 | **⚠ GRAND MASTER REORG** | G-7 — FRONTEND-PROLOG-JVM.md trimmed 12KB→4.6KB; §NOW bloat + Roadmap removed | `eb9f2ec` G-7 | M-G0-FREEZE (Lon schedules) |
-| **⭐ Scripten Demo** | SD-4 WIP — ij_prepass_types + string relop fix landed; VerifyError root cause confirmed: contiguous relay labels with mixed J/String types merge at v45 verifier; fix: emit unreachable break between adjacent differently-typed relay labels | `406eff6` SD-4 | M-SCRIPTEN-DEMO |
+| **⭐ Scripten Demo** | SD-6 WIP — table subscript String key/value partial fix landed (`377ff1a`); ts_got branch still does checkcast Long/longValue() — needs String-valued table detection; fix: check if table default/values are String-typed, use checkcast String at ts_got | `377ff1a` SD-6 | M-SCRIPTEN-DEMO |
 | **TINY backend** | `main` B-292 — 106/106 | `acbc71e` B-292 | M-BEAUTIFY-BOOTSTRAP-ASM-MONITOR |
 | **TINY NET** | `net-t2` N-248 — 110/110 | `425921a` N-248 | M-T2-FULL |
 | **TINY JVM** | `main` J-216 — STLIMIT/STCOUNT ✅ | `a74ccd8` J-216 | M-JVM-STLIMIT-STCOUNT |

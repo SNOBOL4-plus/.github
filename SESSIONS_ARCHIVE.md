@@ -2172,3 +2172,33 @@ Contiguous AND relay labels with mixed J/String stack types. The v45 type-infere
 **Context window at handoff: ~78%.**
 
 **Next session (SD-5):** Fix AND relay contiguous-label type merge. See SCRIPTEN_DEMO.md §NOW.
+
+---
+
+## SD-5 — AND relay jump-over fix
+
+**Date:** 2026-03-26. **HEAD at handoff:** `2daaed9`.
+
+**Fix:** In `ij_emit_and` and `ij_emit_seq_expr`, emit `JGoto(ca2)` before the relay label block. The v45 type-inference verifier treats bytecode-adjacent labels as potentially reachable via fall-through even through unconditional gotos, merging stack types. Relay labels with mixed J/String types produced Object at merge → `putstatic J` failed. Jump-over ensures each relay label is reachable only via its own explicit goto.
+
+**rung28–30: 15/15 ✅. family_icon: still VerifyError (table dup2/dup mismatch).**
+
+**Context window at handoff: ~88%.**
+
+---
+
+## SD-6 — table subscript String key/value (partial)
+
+**Date:** 2026-03-26. **HEAD at handoff:** `377ff1a`.
+
+**Fixes:**
+1. `ij_emit_assign` table-subscript `v_relay`: `dup`/`ij_put_str_field` for String RHS instead of `dup2`/`ij_put_long`; pass String directly as Object to `HashMap.put`; return String at γ.
+2. `ij_emit_subscript` table-read `krelay`: `dup`/`ij_put_str_field` for String key instead of `dup2`/`Long.toString`.
+
+**Remaining:** `ts_got` and null branches still do `checkcast Long/longValue()J` — ClassCastException when table stores String values. Fix: detect String-valued table (`_dflt` typed `'A'`), use `checkcast String` at ts_got.
+
+**rung28–30: 15/15 ✅.**
+
+**Context window at handoff: ~94%.**
+
+**Next session (SD-7):** Fix `ts_got`/null branch for String-valued tables. See SCRIPTEN_DEMO.md §NOW.

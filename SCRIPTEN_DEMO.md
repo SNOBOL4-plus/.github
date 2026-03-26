@@ -14,69 +14,23 @@ that the idea works end-to-end.
 
 | Session | Sprint | HEAD | Next milestone |
 |---------|--------|------|----------------|
-| **Scripten Demo** | SD-4 WIP — ij_prepass_types + string relop fix landed (`406eff6`). VerifyError root cause confirmed: contiguous AND relay labels with mixed J/String stack types; type-inference verifier (v45) merges adjacent label stack states even through unconditional gotos. rg_N (String) bytecode-adjacent to rg_N+1 (J) → verifier infers Object at rg_N+1 → putstatic J fails. | `406eff6` SD-4 | M-SCRIPTEN-DEMO |
+| **Scripten Demo** | SD-6 WIP — partial table String fix landed (`377ff1a`). Remaining: `ts_got` branch does `checkcast Long/longValue()J` but String-valued tables store String objects → ClassCastException. Fix: detect String-valued table, use `checkcast String` at ts_got and null branch. | `377ff1a` SD-6 | M-SCRIPTEN-DEMO |
 
-### CRITICAL NEXT ACTION (SD-5)
+### CRITICAL NEXT ACTION (SD-7)
 
-**Blocker: VerifyError — contiguous relay label type merging in ICN_AND drain block.**
+**Blocker: ClassCastException — table subscript read returns Long but table stores Strings.**
 
-**Root cause (confirmed via javap type-inference analysis):**
+**Root cause:** `t := table("0")` creates a String-valued table. `t[key]` lookup does `checkcast java/lang/Long; invokevirtual Long/longValue()J` on whatever `HashMap.get` returns. When the stored value is a String (`"0"` or `"1"`), this throws `ClassCastException`.
 
-AND relay labels are emitted contiguously:
-```jasmin
-icn_16_and_rg_1:
-    putstatic icn_16_and_drain_1 Ljava/lang/String;
-    goto icn_25_α
-icn_16_and_rg_2:
-    putstatic icn_16_and_drain_2 J
-    goto icn_29_α
-```
-The v45 type-inference verifier treats `icn_16_and_rg_2` as reachable from `icn_16_and_rg_1`'s `goto` target AND from the bytecode fall-through path from `rg_1`. Even though `goto icn_25_α` is unconditional, the verifier merges the stack state at `rg_1` (String on stack) with the stack state from any path that reaches `rg_2` directly (J on stack). Result: Object inferred at `rg_2` entry → `putstatic J` fails.
+**The fix:** In `ij_emit_subscript` table-read path, detect whether the table's default/stored values are String-typed. If so:
+- `ts_got` branch: `checkcast java/lang/String` → return String at γ (not `longValue()J`)
+- null branch: load `{varfld}_dflt`, `checkcast String`, return String at γ
 
-**The fix (SD-5):** In `ij_emit_and`'s relay trampoline emit loop (lines ~5280-5310), before each `JL(relay_g[i])`, emit a sentinel that forces the verifier to see an empty stack. Two options:
+Detection: check `ij_static_types` for `{varfld}_dflt` — if it's `'A'` (String), the table is String-valued. Or more directly: `ij_expr_is_string(dflt_expr)` when the table was declared as `table(str_literal)`.
 
-**Option A — preferred:** Emit `goto relay_g[i]` trampoline from a private label, placing the actual relay body after an unreachable gap:
-```c
-char tramp[80]; snprintf(tramp, sizeof tramp, "icn_%d_and_rt_%d", cid, i);
-JGoto(tramp);               /* jump over the gap */
-JI("nop", "");              /* unreachable — breaks verifier fall-through */
-JL(relay_g[i]);             /* verifier now sees only explicit goto paths */
-```
-Actually simpler: just ensure no two adjacent relay labels have different stack types. Since each relay has an unconditional `goto`, add a single `athrow` / dead instruction between adjacent relays of differing types to break the fall-through edge.
+**File:** `snobol4x/src/frontend/icon/icon_emit_jvm.c` — `ij_emit_subscript` table path, around `ts_got` label (after `ij_emit_subscript` line ~5020–5035).
 
-**Option B — simplest:** Change all AND drain fields to `Ljava/lang/Object;` (boxing J→Long, String→String both fit). On load, checkcast + unbox as needed. Uniform type eliminates the merge problem entirely. More bytecode but guaranteed correct.
-
-**Option C — targeted:** Only emit the unreachable-break between relays where `child_is_ref[i] != child_is_ref[i+1]`. Add to `ij_emit_and` relay loop:
-```c
-if (i > 0) {
-    int prev_ref = child_is_ref_arr[i-1];
-    int curr_ref = child_is_ref;
-    if (prev_ref != curr_ref) {
-        /* break verifier fall-through between differently-typed adjacent relays */
-        char gap[80]; snprintf(gap, sizeof gap, "icn_%d_and_gap_%d", cid, i);
-        JGoto(gap);   /* dead code — verifier sees stack as empty at relay_g[i] */
-        JL(gap);      /* gap label — only reachable via this goto, empty stack */
-    }
-}
-JL(relay_g[i]);
-```
-Wait — this doesn't help because `gap` and `relay_g[i]` are still adjacent. **Correct version:** emit the relay body at a non-adjacent location, reachable only by goto:
-```c
-/* Emit all relay bodies AFTER a single unconditional goto past all of them */
-JGoto(ca2);  /* jump to AND alpha — skip relay block entirely */
-for (int i = 0; i < nc-1; i++) {
-    JL(relay_g[i]);
-    if (child_is_ref[i]) ij_put_str_field(drain_flds[i]);
-    else                  ij_put_long(drain_flds[i]);
-    JGoto(cca[i+1]);
-}
-JL(ca2); JGoto(cca[0]);
-```
-This is the correct fix: the relay block is only reachable via explicit `goto relay_g[i]` labels, so the verifier sees each relay with the stack state delivered by that single goto. No fall-through merging.
-
-**rung28-30 invariant: 15/15 PASS throughout.**
-
-**Bootstrap SD-5:**
+**Bootstrap SD-7:**
 ```bash
 cd /home/claude && git clone https://TOKEN@github.com/snobol4ever/snobol4x
 git clone https://TOKEN@github.com/snobol4ever/.github
@@ -86,14 +40,11 @@ cd snobol4x && gcc -Wall -g -O0 -I src/frontend/icon \
     src/frontend/icon/icon_parse.c src/frontend/icon/icon_ast.c \
     src/frontend/icon/icon_emit.c src/frontend/icon/icon_emit_jvm.c \
     src/frontend/icon/icon_runtime.c -o /tmp/icon_driver_jvm
-# Verify rung28-30: 15/15 (see run_icon_jvm_rungs.sh pattern above)
-# Apply Option C fix to ij_emit_and relay loop
-# Re-test family_icon.icn - VerifyError should be gone
-# Then run full demo pipeline
-```
-
-
----
+# Verify rung28-30: 15/15
+# Apply ts_got String fix
+# Test: java -cp /tmp/td_test Td3 should print hello|world without exception
+# Then test family_icon.icn
+```---
 
 ## The Demo Program: Family Tree
 
