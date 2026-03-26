@@ -1612,3 +1612,27 @@ Toplevel `:- Goal` directives are parsed as `E_DIRECTIVE` but `pj_emit_main()` i
 **Score:** rung24: 4 pass, 0 fail, 1 xfail. Old 65/65 unaffected.
 
 **Remaining bug (IJ-38 / M-IJ-RECORD-PROCARG):** `sum(q)` where `q` is a record. `ij_emit_call` user-proc path passes args as longs — param var `icn_pv_sum_p` declared `J`. Pre-pass only detects `ASSIGN(VAR, record_call)`, not call-arg passing. Fix: in `ij_emit_call` user-proc arg-store loop, detect record-type arg and store `icn_retval_obj` into `icn_pv_{proc}_{param}` Object field; pre-declare that field as `O`.
+
+## PJ-53 — M-PJ-ASSERTZ ✅
+
+**HEAD start:** `d4f8ac4` (PJ-52) → **HEAD end:** `8929f4e`
+**Date:** 2026-03-25
+
+**Accomplished:**
+
+1. **Root cause of ClassCastException identified and fixed — deeper than PJ-52 description.**
+   PJ-52 §NOW attributed the crash to `iinc` on uninitialized local slot 40. Investigation revealed the actual crash was `checkcast java/lang/Integer` in the *caller* (`p_main_0`): the dynamic DB walker and pure-dynamic stubs were both returning `pj_term_atom("true")` on success — an `Object[]` with `"true"` (String) in slot `[0]`. Callers expect slot `[0]` = `Integer(next_cs)`.
+
+2. **Three fixes applied to `prolog_emit_jvm.c`:**
+   - `db_idx_local_slot = locals_needed - 2` (replaces hardcoded `arity + 40`), declared at `locals_needed` site
+   - `iconst_0; istore db_idx_local_slot` emitted right after `.limit locals` at method entry (verifier types slot as int)
+   - **Omega-port walker success return:** now emits `Object[1+arity]{ Integer(base[nclauses]+db_idx+1), arg0..N }` instead of `pj_term_atom("true")`
+   - **Pure-dynamic stub success return:** now emits `Object[1+dyn_arity]{ Integer(idx+1), arg0..N }` instead of `pj_term_atom("true")`
+
+3. **`run_prolog_jvm_rung.sh` test runner added** to `test/frontend/prolog/`. Mirrors `run_crosscheck_jvm_rung.sh` but for `.pro`/`.expected` pairs using `-pl -jvm` flags.
+
+**Score:** 5/5 rung11 ✅ · 5/5 rung12 ✅ · 5/5 rung13 ✅ — **M-PJ-ASSERTZ ✅ FIRES.**
+
+**Context window at handoff: ~85%.**
+
+**Next session (PJ-54):** M-PJ-RETRACT — implement `retract/1`, create rung14 corpus (5 tests), get 5/5 rung14. See FRONTEND-PROLOG-JVM.md §NOW for full plan.

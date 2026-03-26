@@ -19,33 +19,32 @@ and emits Jasmin `.j` files, assembled by `jasmin.jar`.
 
 | Session | Sprint | HEAD | Next milestone |
 |---------|--------|------|----------------|
-| **Prolog JVM** | `main` PJ-52 — stack-height+key-encoding fixed; ClassCastException String→Integer in p_main_0 | `d4f8ac4` PJ-52 | M-PJ-ASSERTZ |
+| **Prolog JVM** | `main` PJ-53 — M-PJ-ASSERTZ ✅ 5/5 rung13 | `8929f4e` PJ-53 | M-PJ-RETRACT |
 
-### CRITICAL NEXT ACTION (PJ-53)
+### CRITICAL NEXT ACTION (PJ-54)
 
-**Baseline: 5/5 rung11 ✅. 5/5 rung12 ✅. snobol4x HEAD `d4f8ac4`.**
+**Baseline: 5/5 rung11 ✅. 5/5 rung12 ✅. 5/5 rung13 ✅. snobol4x HEAD `8929f4e`.**
 
-**THE BUG:** `ClassCastException: String cannot be cast to Integer` at `p_main_0`. The dynamic DB walker uses `db_idx_local = arity + 40` as an int local. For `p_main_0` (arity=0), local 40 is uninitialized (null reference). `iinc 40 1` on a null slot → ClassCastException.
+**Next milestone: M-PJ-RETRACT — implement `retract/1`, get 5/5 rung14.**
 
-**Fix:** In `pj_emit_choice` omega-port walker, change:
-```c
-int db_idx_local = arity + 4 + 32 + 4;  // WRONG
-```
-to:
-```c
-int db_idx_local = locals_needed - 2;
-int db_term_local = locals_needed - 1;
-```
-Bump `locals_needed += 2` beforehand. Also add `iconst_0; istore db_idx_local` at method entry (after `.limit locals`) so the JVM verifier knows the slot is an int.
+**Plan:**
+- Add `pj_db_retract(String key, int idx)` helper: removes entry at index `idx` from the ArrayList for `key` in `pj_db`. Returns the removed `Object[]` term, or null if out-of-range.
+- Add `retract/1` dispatch in `pj_emit_goal`: call `pj_db_retract_key` to get key, call `pj_db_retract`, unify head with returned term.
+- Backtracking: `retract/1` is choice-point-aware — on retry, increment idx and try next entry.
+- Create rung14 corpus: 5 `.pro` + `.expected` covering: basic retract, retract with unification, retract-all via backtracking, retract from mixed DB, retract nonexistent (fail).
+- Verify 5/5 rung11–rung13 no regressions.
 
+**Bootstrap PJ-54:**
 ```bash
-# In pj_emit_choice: fix db_idx_local formula + add iconst_0/istore init
-# Build → rung13 5/5 → rung11+rung12 no regressions
-# Commit snobol4x; update §NOW + PLAN.md + SESSIONS_ARCHIVE; push both repos
+git clone https://TOKEN@github.com/snobol4ever/snobol4x
+git clone https://TOKEN@github.com/snobol4ever/.github
+apt-get install -y default-jdk nasm libgc-dev swi-prolog
+make -C snobol4x/src
+# Read §NOW above. Implement retract/1.
+# bash test/frontend/prolog/run_prolog_jvm_rung.sh test/frontend/prolog/corpus/rung14_retract
+# Confirm rung11–rung13 no regressions
+# Commit snobol4x, update §NOW + PLAN.md + SESSIONS_ARCHIVE.md, push both repos
 ```
-
----
-
 ## Milestone Table
 
 | ID | Trigger | Status |

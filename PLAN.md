@@ -21,7 +21,7 @@ Each concurrent session owns exactly one row. Update only your row on every push
 | **DOTNET** | `main` D-164 — 1903/1903 | `e1e4d9e` D-164 | TBD |
 | **README** | `main` R-2 | `00846d3` | M-README-DEEP-SCAN |
 | **ICON frontend** | `main` I-11 — rung03 ✅ | `bab5664` I-11 | M-ICON-STRING |
-| **Prolog JVM** | `main` PJ-52 — M-PJ-ASSERTZ WIP; stack-height+key-encoding fixed; ClassCastException String->Integer in p_main_0 remains | `d4f8ac4` PJ-52 | M-PJ-ASSERTZ |
+| **Prolog JVM** | `main` PJ-53 — M-PJ-ASSERTZ ✅ 5/5 rung13 | `8929f4e` PJ-53 | M-PJ-RETRACT |
 | **Icon JVM** | `main` IJ-37 — M-IJ-RECORD 4/5 PASS (t03 xfail: proc arg) | `90bd967` IJ-37 | M-IJ-RECORD-PROCARG |
 
 **Invariants:** TINY `106/106` (`run_crosscheck_asm_corpus.sh`) · DOTNET `1903/1903` (`dotnet test`)
@@ -61,7 +61,7 @@ Phases 0–8 · ~80 milestones M-G0-FREEZE → M-G8-CI · **NEXT: M-G0-FREEZE (L
 `M-BEAUTIFY-BOOTSTRAP-ASM-MONITOR` ❌ **NEXT** · `M-BEAUTIFY-BOOTSTRAP` ❌ · `M-MONITOR-4DEMO` ❌
 
 ### Prolog JVM — detail → [FRONTEND-PROLOG-JVM.md](FRONTEND-PROLOG-JVM.md)
-`M-PJ-FINDALL` ✅ · `M-PJ-ATOM-BUILTINS` ✅ · `M-PJ-ASSERTZ` ❌ **NEXT** · `M-PJ-RETRACT` ❌
+`M-PJ-FINDALL` ✅ · `M-PJ-ATOM-BUILTINS` ✅ · `M-PJ-ASSERTZ` ✅ · `M-PJ-RETRACT` ❌ **NEXT**
 
 ### Icon JVM — detail → [FRONTEND-ICON-JVM.md](FRONTEND-ICON-JVM.md)
 `M-IJ-LISTS` ✅ · `M-IJ-TABLE` ✅ · `M-IJ-CORPUS-R22` ❌ **NEXT**
