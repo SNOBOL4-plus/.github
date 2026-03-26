@@ -19,20 +19,20 @@ assembled by `jasmin.jar` into `.class` files. Despite the file's location under
 
 | Session | Sprint | HEAD | Next milestone |
 |---------|--------|------|----------------|
-| **Icon JVM** | `main` IJ-39 — M-IJ-GLOBAL ✅ rung25 7/7 | `e4f0f7e` IJ-39 | M-IJ-POW |
+| **Icon JVM** | `main` IJ-40 — M-IJ-POW ✅ rung26 5/5 | `90c759e` IJ-40 | M-IJ-READ |
 
-### CRITICAL NEXT ACTION (IJ-40)
+### CRITICAL NEXT ACTION (IJ-41)
 
-**Baseline: 77/77 JVM rungs (rung05–25) PASS. 0 xfail.**
+**Baseline: 82/82 JVM rungs (rung05–26) PASS. 0 xfail.**
 
-**M-IJ-GLOBAL is complete.** Next milestone: **M-IJ-POW** — `^` exponentiation operator.
+**M-IJ-POW is complete.** Next milestone: **M-IJ-READ** — `read()` and `reads(n)` builtins.
 
 Features needed:
-- `x ^ y` — integer and real exponentiation (emit `Math.pow`, cast result back to long for int operands)
-- Parser: `^` is right-associative, higher precedence than `*`
+- `read()` — read one line from stdin, return string; fail on EOF
+- `reads(n)` — read n bytes from stdin, return string; fail on EOF
 
 ```bash
-# Bootstrap IJ-40:
+# Bootstrap IJ-41:
 git clone https://TOKEN_SEE_LON@github.com/snobol4ever/snobol4x
 git clone https://TOKEN_SEE_LON@github.com/snobol4ever/.github
 apt-get install -y default-jdk nasm libgc-dev
@@ -41,8 +41,8 @@ gcc -Wall -Wextra -g -O0 -I. src/frontend/icon/icon_driver.c src/frontend/icon/i
     src/frontend/icon/icon_parse.c src/frontend/icon/icon_ast.c \
     src/frontend/icon/icon_emit.c src/frontend/icon/icon_emit_jvm.c \
     src/frontend/icon/icon_runtime.c -o /tmp/icon_driver
-bash test/frontend/icon/run_rung25.sh /tmp/icon_driver   # expect 7/0/0 baseline
-# Add rung26_pow corpus, implement M-IJ-POW, commit "IJ-40: M-IJ-POW ✅"
+bash test/frontend/icon/run_rung26.sh /tmp/icon_driver   # expect 5/0/0 baseline
+# Add rung27_read corpus, implement M-IJ-READ, commit "IJ-41: M-IJ-READ ✅"
 ```
 
 ---
@@ -191,12 +191,12 @@ gcc -Wall -Wextra -g -O0 -I. src/frontend/icon/icon_driver.c src/frontend/icon/i
 | M-IJ-NULL-TEST | `\E` (non-null test) and `/E` (null/failure test) unary ops | ❌ |
 | **M-IJ-BLOCK-BODY** | `{ stmt; stmt }` compound body in `while`/`every`/`if` — Scripten dep | ❌ |
 | M-IJ-GLOBAL | `global` vars, `initial` clause | ✅ |
-| **M-IJ-POW** | `^` exponentiation (int+real) | ❌ **NEXT** |
+| M-IJ-POW | `^` exponentiation (int+real) | ✅ |
+| **M-IJ-READ** | `read()`, `reads(n)` | ❌ **NEXT** |
 | M-IJ-BUILTINS-STR | `repl/reverse/left/right/center/trim/map/char/ord` | ❌ |
 | M-IJ-BUILTINS-TYPE | `type/copy/image/numeric` | ❌ |
 | M-IJ-SORT | `sort/sortf` (depends: LISTS+TABLE) | ❌ |
 | M-IJ-CASE | `case E of { ... }` | ❌ |
-| M-IJ-READ | `read()`, `reads(n)` | ❌ |
 | M-IJ-SCAN-AUGOP | `s ?:= expr` | ❌ |
 | M-IJ-COEXPR | `create E`, `@C` co-expressions | 💭 |
 | M-IJ-MATH | `atan/sin/cos/exp/log/sqrt` | 💭 |
