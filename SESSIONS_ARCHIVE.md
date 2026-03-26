@@ -2470,3 +2470,23 @@ Key contrast: pattern-driven stack (SNOBOL4) vs list-as-stack (Icon) vs DCG (Pro
 Key contrast: SORTCHARS+TABLE (SNOBOL4) vs canonical+table (Icon) vs msort+assert (Prolog).
 
 **Context window at handoff: ~59%.**
+
+---
+
+## SD-20 -- M-SD-DEMO10 ✅  **SCRIP DEMO LADDER COMPLETE**
+
+**Date:** 2026-03-26. **HEAD (snobol4x):** `ebe6d87`.
+
+- `demo/scrip/demo10/anagram.md`: detect anagram groups in a word list.
+- SNOBOL4: `BSORT` on char `ARRAY` → canonical key; `TABLE` groups words by key;
+  `CONVERT(T,'ARRAY')` iterates entries; `BREAK(' ')` filters solo groups.
+- Icon: `sort(chars-list)` → key; `table()` of lists; `sort(t)` for ordered iteration.
+- Prolog: `msort` on char list; `group_pairs_by_key`; `length/2` filters singletons.
+- Words: eat tea tan ate nat bat. Expected: `eat tea ate` / `tan nat`. swipl PASS.
+
+**Full ladder result: demo1–demo10, all swipl PASS, 0 FAIL.**
+
+**Next: M-SCRIP-DEMO** — family tree polyglot (SNOBOL4+Icon+Prolog in one .md file).
+Blocked pending StackMapTable work in Icon JVM backend.
+
+**Context window at handoff: ~64%.**
