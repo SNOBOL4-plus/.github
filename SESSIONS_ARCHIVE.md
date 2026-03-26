@@ -2396,3 +2396,23 @@ Key contrast: labeled goto loop (SNOBOL4) vs `suspend` generator (Icon) vs `fib/
 Key contrast: TABLE bitset (SNOBOL4) vs list+every (Icon) vs exclude/sieve (Prolog).
 
 **Context window at handoff: ~36%.**
+
+---
+
+## SD-16 -- M-SD-DEMO6 ✅
+
+**Date:** 2026-03-26. **HEAD (snobol4x):** `72de264`.
+
+- `demo/scrip/demo6/sieve.md`: Sieve of Eratosthenes, primes to 50.
+- SNOBOL4: `ARRAY(LIMIT, 1)` as bitset; `OUTER`/`INNER`/`PRINT`/`PLOOP` labeled-goto loops.
+  `DIFFER(A<I>)` skips composites cleanly. `IDENT(OUT)` handles first-element no-space.
+  Note: spec said TABLE but ARRAY is correct -- TABLE is for associative lookup.
+- Icon: list subscript marks composites; two `every` passes (mark then collect).
+- Prolog: `is_prime/2` trial division against accumulated prime list; `sieve/4` recursion;
+  `atomic_list_concat` for clean space-separated output.
+- Expected: `2 3 5 7 11 13 17 19 23 29 31 37 41 43 47`. swipl PASS.
+
+**Next (SD-17): M-SD-DEMO7** -- `demo7/caesar.md`.
+Key contrast: `MAP` built-in (SNOBOL4) vs `map()` with char translation (Icon) vs `maplist+rot13_char` (Prolog).
+
+**Context window at handoff: ~44%.**
