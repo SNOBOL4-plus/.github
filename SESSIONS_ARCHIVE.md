@@ -1986,3 +1986,17 @@ Replace all `| 1` fallthrough no-ops in `family_icon.icn` with `| (i := i)` (lon
 **Context window at handoff: ~49%.**
 
 **Next session (PJ-67):** M-PJ-COPY-TERM — `copy_term/2`. See FRONTEND-PROLOG-JVM.md §NOW.
+
+---
+
+## PJ-67 — M-PJ-COPY-TERM ✅
+
+**Date:** 2026-03-26. **Repos:** snobol4x (main). **HEAD at handoff:** `87b8c4f`.
+
+**Baseline entering:** 38/38 rung11–rung25 ✅. **Baseline at handoff:** 43/43 rung11–rung26 ✅.
+
+**M-PJ-COPY-TERM:** Wired existing `pj_copy_term` helper as `copy_term/2` dispatch. Added `pj_alc_sep(Object list, String sep) → String` helper for list-concat-with-separator. Added dispatch for: `string_to_atom/2` (alias for `pj_atom_string_2`), `atomic_list_concat/2` (empty sep via `pj_alc_sep`), `atomic_list_concat/3` (sep via `pj_alc_sep`), `concat_atom/2` (alias for `atomic_list_concat/2`). Created rung26_copy_concat, 5/5 PASS, 0 regressions.
+
+**Context window at handoff: ~59%.**
+
+**Next session (PJ-68):** M-PJ-AGGREGATE — `aggregate_all/3`, `nb_getval/2`, `nb_setval/2`. See FRONTEND-PROLOG-JVM.md §NOW.
