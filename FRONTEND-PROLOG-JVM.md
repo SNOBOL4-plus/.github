@@ -72,7 +72,9 @@ make -C snobol4x/src
 | **M-PJ-PZ-ALL-JVM** | All 20 puzzle solutions pass JVM | ✅ |
 | **M-PJ-FINDALL** | `findall/3` — collect all solutions into list | ✅ |
 | **M-PJ-ATOM-BUILTINS** | atom_chars/length/concat/codes/char_code etc. | ✅ |
-| **M-PJ-ASSERTZ** | `assertz/1`, `asserta/1` — dynamic DB (Scripten dep) | ❌ **NEXT** |
+| **M-PJ-ASSERTZ** | `assertz/1`, `asserta/1` — dynamic DB (Scripten dep) | ✅ |
+| **M-PJ-RETRACT** | `retract/1` — dynamic DB removal | ❌ **NEXT** |
+| **M-PJ-ATOP** | `@<`/`@>`/`@=<`/`@>=` as parser infix operators — Scripten dep | ❌ |
 
 ---
 

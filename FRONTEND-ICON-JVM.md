@@ -187,7 +187,9 @@ gcc -Wall -Wextra -g -O0 -I. src/frontend/icon/icon_driver.c src/frontend/icon/i
 | M-IJ-CORPUS-R22 | 114/114 PASS rungs 01–22 | ✅ |
 | **M-IJ-TABLE** | `table`, `t[k]`, `key/insert/delete/member` | ✅ |
 | **M-IJ-RECORD** | `record` decl, `r.field` access, record proc args | ✅ |
-| **M-IJ-GLOBAL** | `global` vars, `initial` clause | ❌ **NEXT** |
+| **M-IJ-NULL-TEST** | `\E` (non-null test) and `/E` (null/failure test) unary ops — Scripten dep | ❌ **NEXT** |
+| **M-IJ-BLOCK-BODY** | `{ stmt; stmt }` compound body in `while`/`every`/`if` — Scripten dep | ❌ |
+| M-IJ-GLOBAL | `global` vars, `initial` clause | ❌ |
 | M-IJ-BUILTINS-STR | `repl/reverse/left/right/center/trim/map/char/ord` | ❌ |
 | M-IJ-BUILTINS-TYPE | `type/copy/image/numeric` | ❌ |
 | M-IJ-SORT | `sort/sortf` (depends: LISTS+TABLE) | ❌ |

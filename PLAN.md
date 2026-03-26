@@ -51,14 +51,14 @@ Backends:   x64 ASM · JVM bytecode · .NET MSIL · WebAssembly
 
 ## Milestone Dashboard
 
+### ⭐⭐ Icon JVM — detail → [FRONTEND-ICON-JVM.md](FRONTEND-ICON-JVM.md)
+`M-IJ-LISTS` ✅ · `M-IJ-TABLE` ✅ · `M-IJ-RECORD` ✅ · `M-IJ-RECORD-PROCARG` ✅ · `M-IJ-NULL-TEST` ❌ **NEXT** · `M-IJ-BLOCK-BODY` ❌ · `M-IJ-GLOBAL` ❌ · `M-IJ-BUILTINS-STR` ❌ · `M-IJ-SORT` ❌
+
+### ⭐⭐ Prolog JVM — detail → [FRONTEND-PROLOG-JVM.md](FRONTEND-PROLOG-JVM.md)
+`M-PJ-FINDALL` ✅ · `M-PJ-ATOM-BUILTINS` ✅ · `M-PJ-ASSERTZ` ✅ · `M-PJ-RETRACT` ❌ **NEXT** · `M-PJ-ATOP` ❌
+
 ### ⭐ Scripten Demo — detail → [SCRIPTEN_DEMO.md](SCRIPTEN_DEMO.md) · [SCRIPTEN_DEMO2.md](SCRIPTEN_DEMO2.md)
 `M-SCRIPTEN-DEMO` ❌ **NEXT** · `M-SCRIPTEN-DEMO2` ❌
-
-### ⭐ Icon JVM — detail → [FRONTEND-ICON-JVM.md](FRONTEND-ICON-JVM.md)
-`M-IJ-LISTS` ✅ · `M-IJ-TABLE` ✅ · `M-IJ-RECORD-PROCARG` ❌ **NEXT** · `M-IJ-CORPUS-R22` ❌
-
-### ⭐ Prolog JVM — detail → [FRONTEND-PROLOG-JVM.md](FRONTEND-PROLOG-JVM.md)
-`M-PJ-FINDALL` ✅ · `M-PJ-ATOM-BUILTINS` ✅ · `M-PJ-ASSERTZ` ✅ · `M-PJ-RETRACT` ❌ **NEXT**
 
 ### TINY backend — detail → [BEAUTY.md](BEAUTY.md) · [BACKEND-X64.md](BACKEND-X64.md)
 `M-BEAUTIFY-BOOTSTRAP-ASM-MONITOR` ❌ **NEXT** · `M-BEAUTIFY-BOOTSTRAP` ❌ · `M-MONITOR-4DEMO` ❌
