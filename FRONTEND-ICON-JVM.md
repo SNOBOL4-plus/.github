@@ -19,9 +19,15 @@ assembled by `jasmin.jar` into `.class` files. Despite the file's location under
 
 | Session | Sprint | HEAD | Next milestone |
 |---------|--------|------|----------------|
-| **Icon JVM** | `main` IJ-53 — M-IJ-RECURSION ✅ | `f1dc530` IJ-53 | M-IJ-INITIAL |
+| **Icon JVM** | `main` IJ-54 — M-IJ-INITIAL ✅ | `d029d7c` IJ-54 | *(assess next)* |
 
-### IJ-53 findings — M-IJ-RECURSION ✅ (HEAD f1dc530)
+### IJ-54 findings — M-IJ-INITIAL ✅ (HEAD d029d7c)
+
+**rung25: 7/7 PASS. All rung02/04/05–35 clean. Zero regressions.**
+
+**Root cause:** `ij_static_needs_callsave()` was restoring `icn_pv_<callee>_*` fields back to their pre-call values after return, undoing callee-side mutations (e.g. `x := x + 1` after `initial x := 10`).
+
+**Fix:** exclude `icn_pv_<other_proc>_*` from save/restore — only save the caller's own `icn_pv_<ij_cur_proc>_*` locals plus scratch intermediates (`icn_N_binop_*`, etc.).
 
 **Baseline: rung02_proc 3/3, rung02_arith_gen 5/5, rung04_string 5/5, rung35_table_str 2/2. All rung05–35 unaffected. Zero regressions.**
 
