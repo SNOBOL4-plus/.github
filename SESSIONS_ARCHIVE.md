@@ -1961,3 +1961,101 @@ Specifically: the ICN_EVERY β-tableswitch dispatches into the ICN_AND sub-chain
 **Remaining blocker:** 8 stack-height conflicts. ICN_EVERY β-tableswitch re-enters ICN_AND sub-chain at different stack depth than fresh α-entry.
 
 **Next (SD-3):** Drain stale stack at β-resume dispatch. HEAD at handoff: snobol4x `973a68a`. Context: ~77%.
+## IJ-45 — M-IJ-SORT WIP (handoff, not committed)
+
+**Date:** 2026-03-26. **Repos:** snobol4x (working tree only — not pushed). **HEAD unchanged:** `fe87efc`.
+
+**Baseline entering:** 102/102 (rung05–30). **Baseline at handoff:** unchanged (no commit made).
+
+**Work done in working tree (`icon_emit_jvm.c`):**
+
+1. **`sort(L)` dispatch** in `ij_emit_call`: one-shot builtin. Evals child list via relay, stores in static list field, calls `icn_builtin_sort(Ljava/util/ArrayList;)Ljava/util/ArrayList;`, pushes result → `ports.γ`. β → `ports.ω`.
+
+2. **`sortf(L, f)` dispatch**: evals list then field index, `l2i` converts long→int, calls `icn_builtin_sortf(Ljava/util/ArrayList;I)Ljava/util/ArrayList;`, result → `ports.γ`.
+
+3. **`icn_builtin_sort` Jasmin helper**: insertion sort on `Long`-boxed ArrayList elements. Uses `lstore 4`/`lload 4` — **BUT emitted as `lstore_4`/`lload_4` (bug, see below)**.
+
+4. **`icn_builtin_sortf` Jasmin helper**: insertion sort using `java.lang.reflect.Field` to access record fields by 1-based index. `compareTo(Long)` for comparison.
+
+5. **rung31_sort corpus**: 5 tests — `t01_sort_basic`, `t02_sort_every`, `t03_sort_already_sorted`, `t04_sortf_field1`, `t05_sortf_field2`. All `.icn` use correct semicolon syntax.
+
+6. **`run_rung31.sh`**: runner script that also compiles `$*.j` record inner classes.
+
+**Blocking bug (NOT fixed — context exhausted):**
+
+`icn_builtin_sort` helper emits `lstore_4` and `lload_4`. Jasmin assembler rejects underscore shorthand for locals ≥ 4. Must change to `lstore 4` / `lload 4` in two `J(...)` lines in the sort helper emission block (~line 5930 in `icon_emit_jvm.c`). One-minute fix.
+
+**rung31 result at handoff:** 0/5 FAIL (all fail due to Jasmin parse errors from `lstore_4`/`lload_4`).
+
+**Context window at handoff: ~90%.**
+
+**Next session (IJ-46):**
+1. Apply one-line fix: `lstore_4` → `lstore 4`, `lload_4` → `lload 4` in sort helper emission.
+2. Rebuild, confirm rung31 5/5 PASS.
+3. Confirm prior rungs 102/102 unchanged.
+4. Commit `IJ-45: M-IJ-SORT ✅`, push snobol4x.
+5. Update FRONTEND-ICON-JVM.md §NOW, PLAN.md, MILESTONE_ARCHIVE.md, SESSIONS_ARCHIVE.md.
+6. Push .github.
+
+---
+
+## PJ-65 — M-PJ-STRING-IO ✅
+
+**Date:** 2026-03-26. **Repos:** snobol4x (main). **HEAD at handoff:** `42df550`.
+
+**Baseline entering:** 20/20 rung11–rung23 ✅. **Baseline at handoff:** 35/35 rung11–rung24 ✅.
+
+**M-PJ-STRING-IO:** Added `pj_atom_string_2` and `pj_number_string_2` JVM helper methods to `prolog_emit_jvm.c`. Added 6 dispatch blocks in `pj_emit_goal`: `atom_string/2` (bidirectional via helper), `number_string/2` (bidirectional via helper), `string_concat/3` (alias for atom_concat), `string_length/2` (alias for atom_length), `string_upper/2` (alias for upcase_atom), `string_lower/2` (alias for downcase_atom). All 6 registered in builtin whitelist. Created rung24_string_io with 5 tests. 5/5 PASS, 0 regressions.
+
+**Note:** `apt-get install` requires `--fix-missing` in this container environment.
+
+**Context window at handoff: ~40%.**
+
+**Next session (PJ-66):** M-PJ-TERM-STRING — `term_to_atom/2`, `term_string/2`, `with_output_to(string(S),Goal)`. See FRONTEND-PROLOG-JVM.md §NOW.
+
+---
+
+## PJ-66 — M-PJ-TERM-STRING ✅
+
+**Date:** 2026-03-26. **Repos:** snobol4x (main). **HEAD at handoff:** `a1163f4`.
+
+**Baseline entering:** 35/35 rung11–rung24 ✅. **Baseline at handoff:** 38/38 rung11–rung25 ✅.
+
+**M-PJ-TERM-STRING:** Added `pj_term_to_atom_2` JVM helper (calls `pj_term_str` → box atom → unify). Added dispatch for `term_to_atom/2` and `term_string/2` (both call same helper). Both forward-only (Term bound); reverse direction (atom→term parse) deferred — requires JVM-side Prolog parser. Created rung25_term_string with 3 tests. 3/3 PASS, 0 regressions.
+
+**Context window at handoff: ~49%.**
+
+**Next session (PJ-67):** M-PJ-COPY-TERM — `copy_term/2`. See FRONTEND-PROLOG-JVM.md §NOW.
+
+---
+
+## PJ-67 — M-PJ-COPY-TERM ✅
+
+**Date:** 2026-03-26. **Repos:** snobol4x (main). **HEAD at handoff:** `87b8c4f`.
+
+**Baseline entering:** 38/38 rung11–rung25 ✅. **Baseline at handoff:** 43/43 rung11–rung26 ✅.
+
+**M-PJ-COPY-TERM:** Wired existing `pj_copy_term` helper as `copy_term/2` dispatch. Added `pj_alc_sep(Object list, String sep) → String` helper for list-concat-with-separator. Added dispatch for: `string_to_atom/2` (alias for `pj_atom_string_2`), `atomic_list_concat/2` (empty sep via `pj_alc_sep`), `atomic_list_concat/3` (sep via `pj_alc_sep`), `concat_atom/2` (alias for `atomic_list_concat/2`). Created rung26_copy_concat, 5/5 PASS, 0 regressions.
+
+**Context window at handoff: ~59%.**
+
+**Next session (PJ-68):** M-PJ-AGGREGATE — `aggregate_all/3`, `nb_getval/2`, `nb_setval/2`. See FRONTEND-PROLOG-JVM.md §NOW.
+
+---
+
+## IJ-45 — M-IJ-SORT WIP (emergency handoff, ~85% context)
+
+**Date:** 2026-03-26. **HEAD at handoff:** snobol4x `b2868c8`.
+
+**Baseline entering:** 102/102 rung05–rung30 PASS. rung14 2 pre-existing xfail unchanged.
+
+**Bugs fixed (all in `icon_emit_jvm.c`):**
+1. `lstore_4`/`lload_4` → `lstore 4`/`lload 4` (Jasmin rejects underscore form for locals ≥ 4)
+2. `sort`/`sortf` added to `ij_expr_is_list` ICN_CALL branch (variables assigned from sort were typed `J`)
+3. `ij_expr_is_record_list()` added; `ij_expr_is_record` extended for `!(record-list)`; `ij_emit_bang` list branch forks on record vs scalar list
+
+**Result:** 3/5 rung31 PASS (t01–t03). t04/t05 (sortf with records) still fail.
+
+**Remaining bug:** `p` in `every p := !S do write(p.x)` pre-declared as `J` not `Object`. `ij_expr_is_record_list` VAR branch checks statics for `_elem_0 'O'` but those entries don't exist at Pass 1b time.
+
+**NEXT:** Add **Pass 1c** in `ij_emit_proc` after Pass 1b (~line 5545): walk all `ICN_ASSIGN(VAR v, rhs)` where `ij_expr_is_record_list(rhs)` is true (AST-only: MAKELIST with record elements, `sortf(...)`, or `sort` of record list) → `ij_declare_static_obj("icn_gvar_v")`. Expect 5/5 rung31. Then confirm 102/102 prior rungs. Then commit `IJ-45: M-IJ-SORT ✅`.

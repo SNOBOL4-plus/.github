@@ -19,22 +19,15 @@ and emits Jasmin `.j` files, assembled by `jasmin.jar`.
 
 | Session | Sprint | HEAD | Next milestone |
 |---------|--------|------|----------------|
-| **Prolog JVM** | `main` PJ-64 — baseline 20/20 rung11–rung23 ✅ | `e897666` PJ-64 | M-PJ-STRING-IO |
+| **Prolog JVM** | `main` PJ-68 — M-PJ-AGGREGATE ✅ 5/5 rung27 | `e8edd82` PJ-68 | M-PJ-NEXT |
 
-### CRITICAL NEXT ACTION (PJ-65)
+### CRITICAL NEXT ACTION (PJ-69)
 
-**Baseline: 20/20 rung11–rung23 ✅. snobol4x HEAD `e897666`.**
+**Baseline: 5/5 rung27 ✅, 5/5 rung26 ✅, rung11–rung27 all green. snobol4x HEAD `e8edd82`.**
 
-**Next milestone: M-PJ-STRING-IO — implement `atom_string/2`, `number_string/2`, `string_concat/3`, `string_length/2`, `string_lower/2`, `string_upper/2`.**
+**Next milestone: next queued milestone after M-PJ-AGGREGATE.**
 
-**Implementation plan:**
-1. Create `test/frontend/prolog/corpus/rung24_string_io/` — 5 test cases (t01–t05), `.pro` + `.expected`
-2. Add JVM helper methods + `pj_emit_goal` dispatch in `prolog_emit_jvm.c` following `atom_concat`/`atom_chars` pattern
-3. Register names in builtin whitelist (`prolog_builtin.c` / whitelist array near line 2941)
-4. Build, run rung24 to green, confirm rung11–23 no regressions
-5. Commit snobol4x, update §NOW + PLAN.md, push both repos
-
-**Bootstrap PJ-65:**
+**Bootstrap PJ-69:**
 ```bash
 git clone https://TOKEN_SEE_LON@github.com/snobol4ever/snobol4x
 git clone https://TOKEN_SEE_LON@github.com/snobol4ever/.github
@@ -80,6 +73,10 @@ make -C snobol4x/src
 | **M-PJ-CHAR-TYPE** | `char_type/2` — alpha/alnum/digit/space/upper/lower/to_upper/to_lower/ascii | ✅ |
 | **M-PJ-WRITE-CANONICAL** | `writeq/1`, `write_canonical/1`, `print/1`; atom quoting + symbolic token rules | ✅ |
 | **M-PJ-SUCC-ARITH** | `max/min/sign/truncate/msb`; bitwise `/\ \/ xor >> <<`; `** ^`; prefix `\`; parser op table | ✅ |
+| **M-PJ-STRING-IO** | `atom_string/2`, `number_string/2`, `string_concat/3`, `string_length/2`, `string_lower/2`, `string_upper/2`; rung24 5/5 | ✅ |
+| **M-PJ-TERM-STRING** | `term_to_atom/2`, `term_string/2` (forward); rung25 3/3 | ✅ |
+| **M-PJ-COPY-TERM** | `copy_term/2`, `string_to_atom/2`, `atomic_list_concat/2,3`, `concat_atom/2`; rung26 5/5 | ✅ |
+| **M-PJ-AGGREGATE** | `aggregate_all/3` (count/sum/max/min/bag/set), `nb_setval/2`, `nb_getval/2`, `succ_or_zero/2`; rung27 5/5 | ✅ |
 
 ---
 
@@ -88,7 +85,7 @@ make -C snobol4x/src
 ```bash
 git clone https://TOKEN_SEE_LON@github.com/snobol4ever/snobol4x
 git clone https://TOKEN_SEE_LON@github.com/snobol4ever/.github
-apt-get install -y default-jdk nasm libgc-dev
+apt-get install -y --fix-missing default-jdk nasm libgc-dev swi-prolog
 make -C snobol4x/src
 # Read §NOW above. Start at CRITICAL NEXT ACTION.
 ```

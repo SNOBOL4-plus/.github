@@ -21,8 +21,8 @@ Each concurrent session owns exactly one row. Update only your row on every push
 | **DOTNET** | `main` D-164 — 1903/1903 | `e1e4d9e` D-164 | TBD |
 | **README** | `main` R-2 | `00846d3` | M-README-DEEP-SCAN |
 | **ICON frontend** | `main` I-11 — rung03 ✅ | `bab5664` I-11 | M-ICON-STRING |
-| **Prolog JVM** | `main` PJ-64 — baseline 20/20 rung11–rung23 ✅ | `e897666` PJ-64 | M-PJ-STRING-IO |
-| **Icon JVM** | `main` IJ-44 — M-IJ-BUILTINS-MISC ✅ rung30 5/5 | `fe87efc` IJ-44 | M-IJ-SORT |
+| **Prolog JVM** | `main` PJ-68 — M-PJ-AGGREGATE ✅ 5/5 rung27 | `e8edd82` PJ-68 | M-PJ-NEXT |
+| **Icon JVM** | `main` IJ-45 — M-IJ-SORT WIP; fix `lstore_4`→`lstore 4` then commit | `fe87efc` IJ-44 | M-IJ-SORT |
 
 **Invariants:** TINY `106/106` (`run_crosscheck_asm_corpus.sh`) · DOTNET `1903/1903` (`dotnet test`)
 
@@ -55,7 +55,7 @@ Backends:   x64 ASM · JVM bytecode · .NET MSIL · WebAssembly
 `M-IJ-LISTS` ✅ · `M-IJ-TABLE` ✅ · `M-IJ-RECORD` ✅ · `M-IJ-RECORD-PROCARG` ✅ · `M-IJ-GLOBAL` ✅ · `M-IJ-POW` ✅ · `M-IJ-READ` ✅ · `M-IJ-BUILTINS-STR` ✅ · `M-IJ-BUILTINS-TYPE` ✅ · `M-IJ-BUILTINS-MISC` ✅ · `M-IJ-SORT` ❌ **NEXT**
 
 ### ⭐⭐ Prolog JVM — detail → [FRONTEND-PROLOG-JVM.md](FRONTEND-PROLOG-JVM.md)
-`M-PJ-FINDALL` ✅ · `M-PJ-ATOM-BUILTINS` ✅ · `M-PJ-ASSERTZ` ✅ · `M-PJ-RETRACT` ✅ · `M-PJ-ABOLISH` ✅ · `M-PJ-ATOP` ✅ · `M-PJ-SORT` ✅ · `M-PJ-SUCC-PLUS` ✅ · `M-PJ-FORMAT` ✅ · `M-PJ-NUMBER-VARS` ✅ · `M-PJ-CHAR-TYPE` ✅ · `M-PJ-WRITE-CANONICAL` ✅ · `M-PJ-SUCC-ARITH` ✅ · `M-PJ-STRING-IO` ❌ **NEXT**
+`M-PJ-FINDALL` ✅ · `M-PJ-ATOM-BUILTINS` ✅ · `M-PJ-ASSERTZ` ✅ · `M-PJ-RETRACT` ✅ · `M-PJ-ABOLISH` ✅ · `M-PJ-ATOP` ✅ · `M-PJ-SORT` ✅ · `M-PJ-SUCC-PLUS` ✅ · `M-PJ-FORMAT` ✅ · `M-PJ-NUMBER-VARS` ✅ · `M-PJ-CHAR-TYPE` ✅ · `M-PJ-WRITE-CANONICAL` ✅ · `M-PJ-SUCC-ARITH` ✅ · `M-PJ-STRING-IO` ✅ · `M-PJ-TERM-STRING` ✅ · `M-PJ-COPY-TERM` ✅ · `M-PJ-AGGREGATE` ✅ **DONE** · next **NEXT**
 
 ### ⭐ Scripten Demo — detail → [SCRIPTEN_DEMO.md](SCRIPTEN_DEMO.md) · [SCRIPTEN_DEMO2.md](SCRIPTEN_DEMO2.md) · [SCRIPTEN_DEMO3.md](SCRIPTEN_DEMO3.md)
 `M-SCRIPTEN-DEMO` ❌ **NEXT** · `M-SCRIPTEN-DEMO2` ❌ · `M-SCRIPTEN-DEMO3` ❌ *(concept)*
