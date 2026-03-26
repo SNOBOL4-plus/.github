@@ -2673,3 +2673,55 @@ REPLACE, IDENT, DIFFER, CONVERT, LT, GT, LE, EQ, LGT, ANY, LEN, POS, RPOS, DATA)
 
 Read FRONTEND-ICON-JVM.md §NOW Bootstrap IJ-57. Fix Stream A (parse gaps) first to maximize compile coverage, then Stream B (backend bugs) to get passes.
 
+
+---
+
+## SD-27 — M-SD-3 roman in progress + HQ restructure proposal
+
+**Date:** 2026-03-26
+**snobol4x HEAD at close:** `51e38fc`
+**Context window at handoff:** ~73%
+
+### Work completed
+
+**roman.md (demo/scrip/demo3/):**
+- Icon block: added explicit semicolons throughout (SCRIP dialect rule)
+- SNOBOL4 ✅ · SWIPL ✅ · ICONT ✅ · SNO2C-JVM ✅ · PROLOG-JVM ✅ · ICON-JVM ❌
+
+**ICON-JVM blocker identified:**
+- `vals[i]` → `Bad type in putfield/putstatic` VerifyError in `icn_main`
+- Minimal repro: `vals := [10,5,1]; i := 1; write(vals[i]);`
+- Fix location: `ij_emit_subscript()` in `icon_emit_jvm.c` — list subscript path
+- Does NOT affect: string subscript, table subscript, `!L` bang generator
+- Documented in FRONTEND-ICON-JVM.md §NOW
+
+**Mandate violation caught:**
+- Session nearly rewrote roman.md Icon block to work around emitter bug
+- Caught before execution
+- Rule added to RULES.md: ⛔ SCRIP DEMO PROGRAMS ARE THE SPEC
+- Memory updated
+
+**HQ restructure designed (not yet landed — stomped by IJ-57/PJ-78a concurrent push):**
+- Three-axis model: REPO-* × FRONTEND-* × BACKEND-* → SESSION-frontend-backend.md
+- PLAN.md trimmed to 2.3KB (was 6.4KB over hard limit)
+- SESSION-*.md for all frontend×backend combos
+- FRONTEND-*/BACKEND-* stripped to pure reference (no §NOW)
+- ARCH-*.md for all deep reference (18 files + ARCH-index.md catalog)
+- All work in git history: commits 5b36bb3 through ad7a4ab
+- Schedule landing via M-G0-FREEZE when all sessions idle
+
+### Next session (SD-28)
+
+1. Fix `icon_emit_jvm.c` `ij_emit_subscript()` — list subscript path emits wrong type before `putstatic`
+2. Re-run: `SNO2C=snobol4x/sno2c ICON_DRIVER=snobol4x/icon_driver JASMIN=snobol4x/src/backend/jvm/jasmin.jar bash demo/scrip/run_demo.sh demo/scrip/demo3/`
+3. All 6 green → fire M-SD-3
+
+**Bootstrap SD-28:**
+```bash
+git clone https://TOKEN_SEE_LON@github.com/snobol4ever/snobol4x
+git clone https://TOKEN_SEE_LON@github.com/snobol4ever/.github
+cd snobol4x && make -C src
+apt-get install -y default-jdk swi-prolog icont
+export JAVA_TOOL_OPTIONS=""
+# Read FRONTEND-ICON-JVM.md §NOW — fix ij_emit_subscript() list path
+```
