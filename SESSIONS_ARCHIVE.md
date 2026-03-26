@@ -2362,3 +2362,20 @@ BREAK/SPAN for word boundaries, subject replacement for consumption,
 Key contrast: `REVERSE` built-in (SNOBOL4) vs subscript walk (Icon) vs `reverse/2` (Prolog).
 
 **Context window at handoff: ~28%.**
+
+---
+
+## SD-14 -- M-SD-DEMO4 ✅
+
+**Date:** 2026-03-26. **HEAD (snobol4x):** `62b0077`.
+
+- `demo/scrip/demo4/palindrome.md`: three-section palindrome detector.
+- SNOBOL4: `IDENT(S, REVERSE(S))` — exact palin.sno idiom; `REPLACE(S, &LCASE, &UCASE)` normalises case. One comparison, no loop.
+- Icon: subscript walk inward (`s[i]` / `s[j]`), `map()` for lowercase.
+- Prolog: `reverse(Cs, Cs)` — unification IS the test; one clause, one cut.
+- Input: racecar/hello/level. Expected: yes/no/yes. swipl PASS.
+
+**Next (SD-15): M-SD-DEMO5** -- `demo5/fib.md`.
+Key contrast: labeled goto loop (SNOBOL4) vs `suspend` generator (Icon) vs `fib/2` rule (Prolog).
+
+**Context window at handoff: ~32%.**
