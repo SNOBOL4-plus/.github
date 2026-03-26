@@ -2293,3 +2293,28 @@ rung23 arrived 5/5 — already resolved in IJ-51. Confirmed 136/136 JVM rungs gr
 **Next (IJ-53): M-IJ-RECURSION** — save/restore `icn_pv_<curproc>_*` in `ij_emit_call` do_call block.
 
 **Context window at handoff: ~90%.**
+
+---
+
+## SD-11 — M-SD-DEMO1 ✅
+
+**Date:** 2026-03-26. **HEAD (snobol4x):** `fcbd6a8`.
+
+**Work done:**
+- Created `demo/scrip/demo1/hello.scrip`: three-section polyglot Hello World.
+  SNOBOL4 idiom: `OUTPUT = 'Hello, World!'`. Icon idiom: `write("Hello, World!")`.
+  Prolog idiom: `write('Hello, World!'), nl` under `:- initialization(main, main)`.
+- Created `demo/scrip/demo1/hello.expected`: `Hello, World!\n`
+- Created `demo/scrip/scrip_split.py`: fence splitter. Reads triple-backtick blocks,
+  writes `snobol4.sno` / `icon.icn` / `prolog.pro` to OUTDIR, prints manifest.
+- Created `demo/scrip/run_demo.sh`: wires SNOBOL4 / swipl / icont. Graceful SKIP
+  for missing backends (0 FAIL when binary absent). Invocation: `swipl -q -f FILE -t halt`.
+
+**Results:** swipl PASS. snobol4 SKIP (no binary). icont SKIP (no binary).
+Full 3-way pass pending: Lon to provide csnobol4 tarball at `/mnt/user-data/uploads/snobol4-2_3_3_tar.gz` + `apt install icont`.
+
+**Next session (SD-12):** M-SD-DEMO2 — `demo/scrip/demo2/wordcount.scrip`.
+Key contrast: SNOBOL4 `SPAN` patterns vs Icon `!str` generator vs Prolog DCG.
+Input: a short text string (or stdin). Output: word count integer.
+
+**Context window at handoff: ~12%.**
