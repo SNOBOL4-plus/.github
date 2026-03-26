@@ -2451,3 +2451,22 @@ Key contrast: Gimpel BSORT/HSORT insertion-sort idiom (SNOBOL4) vs `isort` (Icon
 Key contrast: pattern-driven stack (SNOBOL4) vs list-as-stack (Icon) vs DCG (Prolog).
 
 **Context window at handoff: ~54%.**
+
+---
+
+## SD-19 -- M-SD-DEMO9 ✅
+
+**Date:** 2026-03-26. **HEAD (snobol4x):** `2e3aaba`.
+
+- `demo/scrip/demo9/rpn.md`: RPN calculator. Expression: `5 1 2 + 4 * + 3 -` = 14.
+- SNOBOL4: pattern-driven scan; `SPAN(DIGITS)` for numbers, `LEN(1)` for operators;
+  Gimpel `DATA('LINK(NEXT,VAL)')` stack with `PUSH`/`POP`; `IDENT` dispatches operator.
+- Icon: list-as-stack; `put()`/`pull()`; `tab(many(&digits))` scanner; `case` dispatch.
+- Prolog: `rpn/3` with explicit stack accumulator; `eval/4` operator clauses;
+  tokens passed as mixed number/atom list -- no string parsing needed.
+- Expected: `14`. swipl PASS.
+
+**Next (SD-20): M-SD-DEMO10** -- `demo10/anagram.md`.
+Key contrast: SORTCHARS+TABLE (SNOBOL4) vs canonical+table (Icon) vs msort+assert (Prolog).
+
+**Context window at handoff: ~59%.**
