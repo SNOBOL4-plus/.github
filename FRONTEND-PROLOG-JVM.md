@@ -19,23 +19,26 @@ and emits Jasmin `.j` files, assembled by `jasmin.jar`.
 
 | Session | Sprint | HEAD | Next milestone |
 |---------|--------|------|----------------|
-| **Prolog JVM** | `main` PJ-56 — M-PJ-ATOP ✅ 5/5 rung16 | `033f34f` PJ-56 | (TBD) |
+| **Prolog JVM** | `main` PJ-57 — M-PJ-SORT ✅ 5/5 rung17 | `d0b58bb` PJ-57 | M-PJ-SUCC-PLUS |
 
-### CRITICAL NEXT ACTION (PJ-57)
+### CRITICAL NEXT ACTION (PJ-58)
 
-**Baseline: 5/5 rung11–rung16 ✅. snobol4x HEAD `033f34f`.**
+**Baseline: 5/5 rung11–rung17 ✅. snobol4x HEAD `d0b58bb`.**
 
-**Next milestone: TBD — awaiting direction.**
+**Next milestone: M-PJ-SUCC-PLUS — implement `succ/2`, `plus/3`.**
 
-**Key finding from PJ-56:** `@<` etc. lex as graphic atoms automatically; only `BIN_OPS` table entry + `pj_emit_goal` dispatch needed. `pj_term_str` provides lexicographic ordering sufficient for atom/number term ordering.
+**Key finding from PJ-57:** `sort/2`/`msort/2` use a self-contained insertion-sort helper (`pj_sort_list`) over an ArrayList. The `pj_list_to_arraylist` + `pj_arraylist_to_list` helpers are reusable for future list-manipulation builtins.
 
-**Bootstrap PJ-57:**
+**Bootstrap PJ-58:**
 ```bash
 git clone https://TOKEN@github.com/snobol4ever/snobol4x
 git clone https://TOKEN@github.com/snobol4ever/.github
 apt-get install -y default-jdk nasm libgc-dev swi-prolog
 make -C snobol4x/src
-# Read §NOW above. Start at CRITICAL NEXT ACTION.
+# Read §NOW above. Implement succ/2 and plus/3.
+# bash test/frontend/prolog/run_prolog_jvm_rung.sh test/frontend/prolog/corpus/rung18_succ_plus
+# Confirm rung11–rung17 no regressions
+# Commit snobol4x, update §NOW + PLAN.md + SESSIONS_ARCHIVE.md, push both repos
 ```
 ## Milestone Table
 
@@ -67,6 +70,8 @@ make -C snobol4x/src
 | **M-PJ-ASSERTZ** | `assertz/1`, `asserta/1` — dynamic DB (Scripten dep) | ✅ |
 | **M-PJ-RETRACT** | `retract/1` — peek-then-remove, 5/5 rung14 | ✅ |
 | **M-PJ-ATOP** | `@<`/`@>`/`@=<`/`@>=` as parser infix operators — Scripten dep | ✅ |
+| **M-PJ-SORT** | `sort/2`, `msort/2` — insertion sort, optional dedup | ✅ |
+| **M-PJ-SUCC-PLUS** | `succ/2`, `plus/3` — successor/addition builtins | ❌ **NEXT** |
 | **M-PJ-ABOLISH** | `abolish/1` — remove entire predicate from DB | ✅ |
 
 ---

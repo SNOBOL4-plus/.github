@@ -1762,3 +1762,23 @@ Replace all `| 1` fallthrough no-ops in `family_icon.icn` with `| (i := i)` (lon
 **Context window at handoff: ~55%.**
 
 **Next session (PJ-57):** Awaiting direction. See FRONTEND-PROLOG-JVM.md §NOW.
+
+---
+
+## PJ-57 — M-PJ-SORT
+
+**HEAD start:** `033f34f` (PJ-56) → **HEAD end:** `d0b58bb`
+
+**Accomplished:**
+
+- **`pj_list_to_arraylist(Object list) → ArrayList`** — walks pj cons list into Java ArrayList (reusable for future list builtins).
+- **`pj_arraylist_to_list(ArrayList) → Object`** — rebuilds pj cons list from ArrayList (tail-first loop).
+- **`pj_sort_list(Object list, int dedup) → Object`** — insertion sort over ArrayList using `pj_term_str` for key comparison; `dedup=1` removes consecutive equal elements after sorting.
+- **`sort/2` and `msort/2` dispatch** in `pj_emit_goal`: deref list, call `pj_sort_list` with dedup flag, unify result.
+- **rung17_sort corpus** (5 tests): sort with dedup, msort without dedup, empty list, already sorted, multiple duplicates.
+
+**Score:** 5/5 rung17 ✅. rung11–16: 30/30 no regressions. **M-PJ-SORT ✅ FIRES.**
+
+**Context window at handoff: ~65%.**
+
+**Next session (PJ-58):** M-PJ-SUCC-PLUS — `succ/2`, `plus/3`. See FRONTEND-PROLOG-JVM.md §NOW.
