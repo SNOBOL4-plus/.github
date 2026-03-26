@@ -1918,3 +1918,35 @@ Replace all `| 1` fallthrough no-ops in `family_icon.icn` with `| (i := i)` (lon
 **Context window at handoff: ~26%.**
 
 **Next session (PJ-65):** M-PJ-STRING-IO — create rung24, implement 6 string builtins. See FRONTEND-PROLOG-JVM.md §NOW.
+
+---
+
+## SD-2 (Scripten Demo) — Session 2026-03-26
+
+**Date:** 2026-03-26. **Repos:** snobol4x (main). **HEAD at start:** `a5f01c8`.
+
+**Goal:** Fix "Expecting to find long on stack" VerifyError in `icn_main` for `family_icon.icn`.
+
+**Root cause traced:**  
+Java 21 type-inference verifier rejects `icn_main` due to stack-height inconsistencies at merge points. The Byrd-box emitter emits `lstore`/`lload` and `pop2`/`pop` at label boundaries reachable from multiple paths (ICN_EVERY β-tableswitch resumes) with different stack heights.
+
+**Fixes applied (`icon_emit_jvm.c`):**
+1. `ij_emit_relop`: replaced JVM-local `lstore`/`lload` relay with `putstatic`/`getstatic` static fields (`icn_N_relop_lc/rc`). Safe to reach on any stack state.
+2. `ij_emit_binop`: same fix (`icn_N_binop_lc/rc/bf`).
+3. ICN_AND `relay_g` drain: replaced `pop2`/`pop` with `putstatic :J`/`:String`/`:D` to static drain fields (`icn_N_and_drain_K`). Per-child type detection via `ij_expr_is_string`/`ij_expr_is_real`.
+4. `ij_emit_alt`: original `pop2; lconst_0` behavior preserved (attempts to change it broke semantics).
+
+**rung28-30 (IJ builtins):** 15/15 PASS — no regressions confirmed.
+
+**Remaining blocker:** The `icn_main` VerifyError persists. Analysis reveals 8 stack-height conflicts remain, stemming from ICN_AND `relay_g` labels reachable from ICN_EVERY β-tableswitch paths at different heights. The root of the remaining conflict is:
+- ICN_ALT `cg[i]` emits `pop2; lconst_0` before `goto relay_g[k]`, arriving at height base+2
+- Direct child eval arrives at relay_g[k] at height base+2  
+- BUT: the "base" is different between the two paths — accumulated from the ICN_AND chain's relay sequence when entered from inside ICN_EVERY's β-resume vs. the fresh α-entry path
+
+Specifically: the ICN_EVERY β-tableswitch dispatches into the ICN_AND sub-chain at a different depth than the normal α-entry, creating a 2-slot base mismatch that propagates through all relay drains. Full architectural fix needed: ensure all `relay_g` labels are only reachable from paths with identical base stack height.
+
+**HEAD at handoff:** `a5f01c8` (no new commit — changes are in working tree, unstaged).
+
+**Context window at handoff: ~77%.**
+
+**Next session (SD-3):** Fix remaining 8 stack-height conflicts. Key insight: the ICN_EVERY β-tableswitch resume path enters the ICN_AND chain's α port at a different stack depth than the normal entry. Fix: in `ij_emit_every`, ensure the β-resume dispatch drains any stale stack before re-entering the generator's α. See `SCRIPTEN_DEMO.md` §NOW for details.
