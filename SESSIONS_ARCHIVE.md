@@ -1805,6 +1805,38 @@ Replace all `| 1` fallthrough no-ops in `family_icon.icn` with `| (i := i)` (lon
 
 **Next:** IJ-42 — M-IJ-BUILTINS-STR (`repl`/`reverse`/`left`/`right`/`center`/`trim`/`map`/`char`/`ord`)
 
+## SD-1 — ICN_ALT stack normalization + pipeline unblock
+
+**HEAD start:** `8ec4bac` (SD-0) → **HEAD end:** `c6ef225`
+**Date:** 2026-03-25
+
+**Goal:** Unblock M-SCRIPTEN-DEMO by fixing JVM VerifyError chain in `family_icon.icn` pipeline.
+
+**Work done:**
+
+- **`inject_linkage.py` filename fix:** Script referenced `FamilyProlog.j`, `FamilySnobol4.j`, `FamilyIcon.j` (CamelCase) but compiler emits `Family_prolog.j`, `Family_snobol4.j`, `Family_icon.j` (underscore). Fixed lines 319–321. Prolog + SNOBOL4 + Icon all inject clean.
+
+- **`family_icon.icn` `| 1` fix:** Replaced all `| 1` fallthrough no-ops with `| (i := i)` (long-typed). This was the originally documented blocker from SD-0.
+
+- **Pipeline to assembly ✅:** All four classes (`Family_prolog.class`, `Family_snobol4.class`, `Family_icon.class`, `ScriptenFamily.class`) assemble clean with Jasmin.
+
+- **ICN_ALT stack normalization in `icon_emit_jvm.c`:**
+  - Root cause diagnosed: `(write(...) | (i := i))` inside AND chain → `write()` leaves String ref (1 slot), `(i := i)` leaves long (2 slots). Both paths converge at same AND trampoline label → JVM type-inference verifier rejects.
+  - Fix: `ij_emit_alt` `cg[]` relay now pops child value (type-correct: `pop` for String, `pop2` for long) then pushes `lconst_0` sentinel. `ports.γ` always receives exactly one long from any ALT arm.
+  - `ij_expr_is_string(ICN_ALT)` → always 0 (normalized to long).
+  - `ij_expr_is_string(ICN_AND)` → last child's type (new case).
+  - AND trampoline: `pop2` for ICN_ALT children (uniform).
+
+**Remaining blocker:** VerifyError `"Register pair N/N+1 contains wrong type"` in `icn_main`. Root cause: comparator relay emit (`lrelay`/`rrelay`) stores a long into a slot pair only on one control path; the type-inference verifier sees that slot as uninitialized-or-other-type on the other path. Fix: zero-initialize all comparator relay slots (`lconst_0; lstore N`) at `icn_main` method entry, before any branching. This is ~5 lines in the relop/cmp emitter or at the method-header emit site.
+
+**Context window at handoff: ~55%.**
+
+**Next session (SD-2):**
+1. Fix register-pair VerifyError: in `ij_emit_cmp` or method-header emit, zero-init all local slots used as relay temporaries at method entry.
+2. Verify `java ScriptenFamily < family.csv` produces output (even stub output — linkage stubs return empty strings).
+3. Wire real linkage: `inject_linkage.py` stubs need actual `invokestatic` to Prolog entry points — verify the injected `.j` files contain real calls not just `return ""`.
+4. Get `family.expected` output, write `scripten_split.py`, `run_demo.sh`, `README.md`.
+5. `run_demo.sh` clean → commit `SD-2: M-SCRIPTEN-DEMO ✅`.
 ---
 
 ## PJ-58 — M-PJ-SUCC-PLUS

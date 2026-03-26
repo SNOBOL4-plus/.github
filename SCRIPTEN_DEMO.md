@@ -14,50 +14,55 @@ that the idea works end-to-end.
 
 | Session | Sprint | HEAD | Next milestone |
 |---------|--------|------|----------------|
-| **Scripten Demo** | SD-0 — M-IJ-STRING-RETVAL ✅; last blocker: `| 1` VerifyError in icn_main | `8ec4bac` SD-0 | M-SCRIPTEN-DEMO |
+| **Scripten Demo** | SD-1 — all 4 classes assemble clean; last blocker: register-pair VerifyError in comparator relay slots | `c6ef225` SD-1 | M-SCRIPTEN-DEMO |
 
-### CRITICAL NEXT ACTION (SD-1)
+### CRITICAL NEXT ACTION (SD-2)
 
-**Blocker: `M-IJ-STRING-RETVAL` — Icon JVM emitter stores string procedure returns via `putstatic icn_retval J` but `ldc "string"` pushes a String ref, causing JVM VerifyError.**
+**Blocker: `"Register pair N/N+1 contains wrong type"` VerifyError in `icn_main`.**
 
-**Root cause:** `ij_emit_str` in `icon_emit_jvm.c` emits `ldc "..."` then `goto ret_store` which does `putstatic icn_retval J`. String refs and longs are incompatible JVM types. Fix: string values must go through `icn_retval_obj` (`Ljava/lang/Object;`) with a parallel string-retval path, or the emitter must use `invokestatic` to pack the string into a long index.
+**Root cause:** Comparator relay emit (`lrelay`/`rrelay` pattern in relop/cmp) stores a long into a local slot pair only on one control path. The Java 21 type-inference verifier (class file v45) sees the slot as uninitialised-or-incompatible on the other path.
 
-**Fix path (SD-1):**
-1. Fix `icon_emit_jvm.c` — string literals and string procedure returns use `putstatic icn_retval_obj` (not `icn_retval J`); callers read back via `getstatic icn_retval_obj` + `checkcast String`.
-2. Rebuild `/tmp/icon_driver_jvm` and confirm `write(get_str())` works.
-3. Recompile `demo/scripten/family_icon.icn` → `FamilyIcon.j` assembles + runs standalone with stub strings.
-4. Run `inject_linkage.py` on all three `.j` files.
-5. Write `ScriptenFamily.j` driver, `scripten_split.py`, `run_demo.sh`, `family.expected`.
-6. `run_demo.sh` clean → M-SCRIPTEN-DEMO ✅ fires.
+**Fix (SD-2 step 1):** In `icon_emit_jvm.c`, at `icn_main` method header emit (or at `ij_emit_cmp`/relop entry), emit `lconst_0; lstore N` for every comparator relay slot pair used in the method before any branching occurs. ~5 lines; slot numbers are known at emit time.
 
-**Bootstrap SD-1:**
+**Fix path (SD-2):**
+1. Fix register-pair VerifyError in `icon_emit_jvm.c` — zero-init comparator relay slots at method entry.
+2. Rebuild `icon_driver_jvm`, recompile `family_icon.icn`, confirm `java ScriptenFamily < family.csv` runs without VerifyError.
+3. Verify injected `.j` files contain real `invokestatic` calls (not just `return ""`).
+4. Capture actual output, write `demo/scripten/family.expected`.
+5. Write `demo/scripten/scripten_split.py`, `demo/scripten/run_demo.sh`, `demo/scripten/README.md`.
+6. `run_demo.sh` clean, diff against `family.expected` → commit `SD-2: M-SCRIPTEN-DEMO ✅`.
+
+**Bootstrap SD-2:**
 ```bash
-git clone https://TOKEN@github.com/snobol4ever/snobol4x
-git clone https://TOKEN@github.com/snobol4ever/.github
+git clone https://TOKEN_SEE_LON@github.com/snobol4ever/snobol4x
+git clone https://TOKEN_SEE_LON@github.com/snobol4ever/.github
 apt-get install -y default-jdk nasm libgc-dev
 cd snobol4x/src && make -j4
-gcc -Wall -Wextra -g -O0 -I. src/frontend/icon/icon_driver.c \
-    src/frontend/icon/icon_lex.c src/frontend/icon/icon_parse.c \
-    src/frontend/icon/icon_ast.c src/frontend/icon/icon_emit.c \
-    src/frontend/icon/icon_emit_jvm.c src/frontend/icon/icon_runtime.c \
-    -o /tmp/icon_driver_jvm
-# Fix | 1 VerifyError: replace all '| 1' with '| (i := i)' in family_icon.icn
-# Then recompile, re-inject, run ScriptenFamily < family.csv
-# Write family.expected, run_demo.sh, scripten_split.py, README.md
-# Commit: SD-1: M-SCRIPTEN-DEMO ✅
-# Then: compile all three demo blocks, run inject_linkage.py, assemble, run
+gcc -Wall -Wextra -g -O0 -I src/frontend/icon \
+    src/frontend/icon/icon_driver.c src/frontend/icon/icon_lex.c \
+    src/frontend/icon/icon_parse.c src/frontend/icon/icon_ast.c \
+    src/frontend/icon/icon_emit.c src/frontend/icon/icon_emit_jvm.c \
+    src/frontend/icon/icon_runtime.c -o /tmp/icon_driver_jvm
+# Fix register-pair VerifyError (see above), then:
+./sno2c -jvm        demo/scripten/family_snobol4.sno  -o /tmp/sd/Family_snobol4.j
+./sno2c -pl -jvm    demo/scripten/family_prolog.pro    -o /tmp/sd/Family_prolog.j
+/tmp/icon_driver_jvm -jvm demo/scripten/family_icon.icn -o /tmp/sd/Family_icon.j
+cp demo/scripten/ScriptenFamily.j /tmp/sd/
+python3 demo/scripten/inject_linkage.py /tmp/sd/
+java -jar src/backend/jvm/jasmin.jar /tmp/sd/*.j -d /tmp/sd/classes
+java -cp /tmp/sd/classes ScriptenFamily < demo/scripten/family.csv
 ```
 
-**Files already done (commit a9de763):**
+**Files done (commit c6ef225):**
 - `demo/scripten/family.csv` ✅
 - `demo/scripten/family_snobol4.sno` ✅ — compiles + assembles clean
-- `demo/scripten/family_prolog.pro` ✅ — compiles + assembles clean (6923 lines)
-- `demo/scripten/family_icon.icn` ✅ — compiles; assembles fails on string-retval VerifyError
-- `demo/scripten/inject_linkage.py` ✅ — written; untested pending string-retval fix
+- `demo/scripten/family_prolog.pro` ✅ — compiles + assembles clean
+- `demo/scripten/family_icon.icn` ✅ — `| (i:=i)` fix applied; compiles + assembles clean
+- `demo/scripten/inject_linkage.py` ✅ — filename fix applied; all 3 blocks inject clean
+- `demo/scripten/ScriptenFamily.j` ✅ — hand-written driver
 
 **Files still needed:**
 - `demo/scripten/scripten_split.py`
-- `demo/scripten/ScriptenFamily.j`
 - `demo/scripten/run_demo.sh`
 - `demo/scripten/family.expected`
 - `demo/scripten/README.md`
