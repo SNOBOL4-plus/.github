@@ -13,7 +13,7 @@ Each concurrent session owns exactly one row. Update only your row on every push
 | Session | Sprint | HEAD | Next milestone |
 |---------|--------|------|----------------|
 | **⚠ GRAND MASTER REORG** | G-7 — FRONTEND-PROLOG-JVM.md trimmed 12KB→4.6KB; §NOW bloat + Roadmap removed | `eb9f2ec` G-7 | M-G0-FREEZE (Lon schedules) |
-| **Scripten Demo** | SD-0 — not started | — | M-SCRIPTEN-DEMO |
+| **⭐ Scripten Demo** | SD-0 — family_snobol4.sno ✅ family_prolog.pro ✅ family_icon.icn 🔧 | — | M-SCRIPTEN-DEMO |
 | **TINY backend** | `main` B-292 — 106/106 | `acbc71e` B-292 | M-BEAUTIFY-BOOTSTRAP-ASM-MONITOR |
 | **TINY NET** | `net-t2` N-248 — 110/110 | `425921a` N-248 | M-T2-FULL |
 | **TINY JVM** | `main` J-216 — STLIMIT/STCOUNT ✅ | `a74ccd8` J-216 | M-JVM-STLIMIT-STCOUNT |
@@ -51,20 +51,20 @@ Backends:   x64 ASM · JVM bytecode · .NET MSIL · WebAssembly
 
 ## Milestone Dashboard
 
-### Grand Master Reorg — all ❌ — detail → [GRAND_MASTER_REORG.md](GRAND_MASTER_REORG.md)
-Phases 0–8 · ~80 milestones M-G0-FREEZE → M-G8-CI · **NEXT: M-G0-FREEZE (Lon schedules)**
-
-### Scripten Demo — detail → [SCRIPTEN_DEMO.md](SCRIPTEN_DEMO.md)
+### ⭐ Scripten Demo — detail → [SCRIPTEN_DEMO.md](SCRIPTEN_DEMO.md) · [SCRIPTEN_DEMO2.md](SCRIPTEN_DEMO2.md)
 `M-SCRIPTEN-DEMO` ❌ **NEXT** · `M-SCRIPTEN-DEMO2` ❌
+
+### ⭐ Icon JVM — detail → [FRONTEND-ICON-JVM.md](FRONTEND-ICON-JVM.md)
+`M-IJ-LISTS` ✅ · `M-IJ-TABLE` ✅ · `M-IJ-RECORD-PROCARG` ❌ **NEXT** · `M-IJ-CORPUS-R22` ❌
+
+### ⭐ Prolog JVM — detail → [FRONTEND-PROLOG-JVM.md](FRONTEND-PROLOG-JVM.md)
+`M-PJ-FINDALL` ✅ · `M-PJ-ATOM-BUILTINS` ✅ · `M-PJ-ASSERTZ` ✅ · `M-PJ-RETRACT` ❌ **NEXT**
 
 ### TINY backend — detail → [BEAUTY.md](BEAUTY.md) · [BACKEND-X64.md](BACKEND-X64.md)
 `M-BEAUTIFY-BOOTSTRAP-ASM-MONITOR` ❌ **NEXT** · `M-BEAUTIFY-BOOTSTRAP` ❌ · `M-MONITOR-4DEMO` ❌
 
-### Prolog JVM — detail → [FRONTEND-PROLOG-JVM.md](FRONTEND-PROLOG-JVM.md)
-`M-PJ-FINDALL` ✅ · `M-PJ-ATOM-BUILTINS` ✅ · `M-PJ-ASSERTZ` ✅ · `M-PJ-RETRACT` ❌ **NEXT**
-
-### Icon JVM — detail → [FRONTEND-ICON-JVM.md](FRONTEND-ICON-JVM.md)
-`M-IJ-LISTS` ✅ · `M-IJ-TABLE` ✅ · `M-IJ-CORPUS-R22` ❌ **NEXT**
+### Grand Master Reorg — all ❌ — detail → [GRAND_MASTER_REORG.md](GRAND_MASTER_REORG.md)
+Phases 0–8 · ~80 milestones M-G0-FREEZE → M-G8-CI · **NEXT: M-G0-FREEZE (Lon schedules)**
 
 ### ICON frontend (ASM) — detail → [FRONTEND-ICON.md](FRONTEND-ICON.md)
 `M-ICON-STRING` ❌ **NEXT** · `M-ICON-SCAN` ❌ · `M-ICON-CSET` ❌ · `M-ICON-CORPUS-R4` ❌
