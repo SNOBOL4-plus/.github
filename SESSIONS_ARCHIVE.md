@@ -2551,74 +2551,29 @@ REPLACE, IDENT, DIFFER, CONVERT, LT, GT, LE, EQ, LGT, ANY, LEN, POS, RPOS, DATA)
 
 ---
 
-## SD-21 — M-SCRIP-DEMO ✅  HANDOFF
+## IJ-53–IJ-55 — M-IJ-RECURSION · M-IJ-INITIAL · M-IJ-STRRET-GEN ✅
 
-**Date:** 2026-03-26. **HEAD (snobol4x):** `3bba8e2`. **HEAD (.github):** see push below.
+**Date:** 2026-03-26. **HEAD (snobol4x):** `d64d752`. **HEAD (.github):** `cbbbfbd`.
 
-**M-SCRIP-DEMO FIRED.** Ten polyglot SCRIP demos, 30/30 across all three backends.
+**Baseline entering session:** 136/136 (rung05–35). `fact(5)=1` (recursion bug). rung32 t03 xfail. rung25 t03/t07 failing.
 
-**This session (SD-21) summary:**
-- Installed csnobol4 2.3.3 (from tarball) + icont 9.4.3 (apt).
-- All 10 SNOBOL4 sections converted to `&CASE = 1` mode: UPPERCASE built-ins, `snake_case` variables/functions/labels.
-- Fixed every SNOBOL4 bug that only surfaces under real csnobol4:
-  - `EQ(a<i>,1)` not `DIFFER` for numeric flag testing
-  - Split `i = i + 1 / GT(i,n)` into two statements (assignment-on-RHS-success trap)
-  - `POS(0)` anchoring for all patterns in RPN scanner
-  - Renamed `push` label to avoid function/label namespace collision
-  - Rewrote `b_sort` as standard insertion sort (`GT(k,lo)+LGT(a<k-1>,v)`) — Gimpel BSORT_RO path had silent data loss
-- Final result: 30/30.
+**IJ-53 — M-IJ-RECURSION:**
+- Root cause broader than diagnosed: not just `icn_pv_*` but ALL class-level scratch statics (`icn_N_binop_lc/rc`, `icn_N_relop_lc/rc`) trampled by recursive calls.
+- Fix: `ij_static_needs_callsave(idx)` — save/restore all `'J'` statics except globals, args, retval, control, and other procs' `icn_pv_*` — at every user-proc call site.
+- `.limit locals` bumped by `2*ij_nstatics`.
+- 4 harness scripts: rung02_arith_gen, rung02_proc, rung04_string, rung35_table_str.
 
-**Next session:** M-SCRIP-DEMO2 (puzzle solver) or M-IJ-RECURSION (unblocks JVM wiring).
+**IJ-54 — M-IJ-INITIAL:**
+- Root cause: callsave restore overwrote callee's `icn_pv_<callee>_*` on return, resetting `initial`-initialised vars each call.
+- Fix: exclude `icn_pv_<other_proc>_*` from callsave — only save caller's own `icn_pv_<ij_cur_proc>_*` plus scratch.
+- 6 harness scripts: rung08/09/12/18/20/21.
+- rung25: 7/7 ✅.
 
-**Context window at handoff: ~90%.**
+**IJ-55 — M-IJ-STRRET-GEN:**
+- Root cause: β path for non-generator procs jumped unconditionally to `ports.ω`; `every write(tag("a"|"b"|"c"))` exited after first value.
+- Fix: non-gen proc β → `arg_betas[nargs-1]` when `nargs > 0`, re-pumping arg generator chain.
+- Removed `t03_strret_every.xfail`. rung32: 5/5 ✅.
 
----
+**Final baseline: 153/153 PASS, 0 xfail. All corpus dirs have harness scripts.**
 
-## SD-22 -- HQ update: real milestone structure
-
-**Date:** 2026-03-26. **No code change.**
-
-Corrected the purpose of the demo ladder. The 10 demos are **product milestones** —
-each fires when it passes through the snobol4ever backends (x64 ASM, JVM, .NET),
-not the reference interpreters. Reference interpreters (csnobol4, swipl, icont)
-established `.expected` output only. They are not the product.
-
-New milestone namespace: `M-SD-X64-N`, `M-SD-JVM-N`, `M-SD-NET-N` (N=1..10).
-30 total milestones. Product demo fires when all 30 are green.
-
-Updated: `SCRIP_DEMOS.md` (full rewrite), `PLAN.md` NOW row (next = M-SD-X64-1).
-
-**Next session (SD-23):** Wire `sno2c -asm` into `run_demo.sh`; run demo1/hello
-through x64 backend; fire M-SD-X64-1.
-
-**Context window at handoff: ~93%.**
-
----
-
-## SD-22b -- HQ correction: three frontends, one JVM backend
-
-**Date:** 2026-03-26. **No code change.**
-
-Corrected framing: the demo ladder tests three **frontends** (SNOBOL4, Icon, Prolog)
-against one **backend** (JVM). Not x64/JVM/.NET — those are backend options for
-SNOBOL4 only. The Scrip demo specifically showcases the JVM backend with all three
-language frontends. 10 milestones (M-SD-1 through M-SD-10), one per demo.
-Each fires when all three frontends compile correctly through JVM and match .expected.
-
-Updated: SCRIP_DEMOS.md, PLAN.md NOW row (next = M-SD-1).
-
-**Context window at handoff: ~94%.**
-
----
-
-## SD-23 -- Handoff note: linker comes after ladder
-
-**Date:** 2026-03-26. **No code change.**
-
-Confirmed plan sequence:
-1. M-SD-1 through M-SD-10 — each demo passes all three JVM frontends (SNOBOL4, Icon, Prolog) independently. Ladder proves each frontend compiles correctly in isolation.
-2. Linker milestone (M-SCRIP-DEMO2 or new milestone) — wire three JVM classes together into one execution. SNOBOL4 parses, Prolog reasons, Icon reports. This is the funny linkage demo from SCRIP_DEMO.md.
-
-**Next session (SD-24):** M-SD-1 — wire snobol4jvm + icon_driver -jvm + sno2c -pl -jvm into run_demo.sh; run hello.md through all three JVM frontends; fire M-SD-1.
-
-**Context window at handoff: ~95%.**
+**Context window at handoff: ~63%.**
