@@ -2318,3 +2318,21 @@ Key contrast: SNOBOL4 `SPAN` patterns vs Icon `!str` generator vs Prolog DCG.
 Input: a short text string (or stdin). Output: word count integer.
 
 **Context window at handoff: ~12%.**
+
+---
+
+## SD-12 -- M-SD-DEMO2 ✅
+
+**Date:** 2026-03-26. **HEAD (snobol4x):** `0c1fc58`.
+
+- `demo/scrip/demo2/wordcount.md`: three-section polyglot word counter.
+  Input string: "the quick brown fox jumps over the lazy dog". Expected output: `9`.
+- SNOBOL4: `SPAN(&LCASE &UCASE)` loop with counter variable.
+- Icon: string scanning `s ? { tab(upto(&letters)) / tab(many(&letters)) }`.
+- Prolog: DCG `whites//0` + `word//1` + `words//1`; `phrase/3` + `length/2`.
+- swipl PASS. snobol4/icont SKIP.
+
+**Next (SD-13): M-SD-DEMO3** -- `demo3/roman.md`. Integer to Roman numerals.
+Key contrast: table-driven goto (SNOBOL4) vs `suspend` generator (Icon) vs arithmetic rules (Prolog).
+
+**Context window at handoff: ~18%.**
