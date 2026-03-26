@@ -53,17 +53,17 @@ Each milestone fires when:
 
 | Milestone | Status |
 |-----------|--------|
-| M-SD-DEMO1 | ❌ **NEXT** — file exists, needs runtime wiring in run_demo.sh |
-| M-SD-DEMO2 | ❌ |
-| M-SD-DEMO3 | ❌ |
-| M-SD-DEMO4 | ❌ |
-| M-SD-DEMO5 | ❌ |
-| M-SD-DEMO6 | ❌ |
-| M-SD-DEMO7 | ❌ |
-| M-SD-DEMO8 | ❌ |
-| M-SD-DEMO9 | ❌ |
-| M-SD-DEMO10 | ❌ |
-| M-SCRIP-DEMO (family tree) | ❌ blocked — StackMapTable work needed |
+| M-SD-DEMO1  | ✅ |
+| M-SD-DEMO2  | ✅ |
+| M-SD-DEMO3  | ✅ |
+| M-SD-DEMO4  | ✅ |
+| M-SD-DEMO5  | ✅ |
+| M-SD-DEMO6  | ✅ |
+| M-SD-DEMO7  | ✅ |
+| M-SD-DEMO8  | ✅ |
+| M-SD-DEMO9  | ✅ |
+| M-SD-DEMO10 | ✅ |
+| **M-SCRIP-DEMO** | ✅ **FIRED SD-21** — 30/30 all backends |
 
 ---
 

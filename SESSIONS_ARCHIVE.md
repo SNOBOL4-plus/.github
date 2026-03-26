@@ -2548,3 +2548,26 @@ REPLACE, IDENT, DIFFER, CONVERT, LT, GT, LE, EQ, LGT, ANY, LEN, POS, RPOS, DATA)
 **Next: M-SCRIP-DEMO** — family tree polyglot. Blocked on StackMapTable work in Icon JVM backend.
 
 **Context window at handoff: ~82%.**
+
+---
+
+## SD-21 — M-SCRIP-DEMO ✅  HANDOFF
+
+**Date:** 2026-03-26. **HEAD (snobol4x):** `3bba8e2`. **HEAD (.github):** see push below.
+
+**M-SCRIP-DEMO FIRED.** Ten polyglot SCRIP demos, 30/30 across all three backends.
+
+**This session (SD-21) summary:**
+- Installed csnobol4 2.3.3 (from tarball) + icont 9.4.3 (apt).
+- All 10 SNOBOL4 sections converted to `&CASE = 1` mode: UPPERCASE built-ins, `snake_case` variables/functions/labels.
+- Fixed every SNOBOL4 bug that only surfaces under real csnobol4:
+  - `EQ(a<i>,1)` not `DIFFER` for numeric flag testing
+  - Split `i = i + 1 / GT(i,n)` into two statements (assignment-on-RHS-success trap)
+  - `POS(0)` anchoring for all patterns in RPN scanner
+  - Renamed `push` label to avoid function/label namespace collision
+  - Rewrote `b_sort` as standard insertion sort (`GT(k,lo)+LGT(a<k-1>,v)`) — Gimpel BSORT_RO path had silent data loss
+- Final result: 30/30.
+
+**Next session:** M-SCRIP-DEMO2 (puzzle solver) or M-IJ-RECURSION (unblocks JVM wiring).
+
+**Context window at handoff: ~90%.**

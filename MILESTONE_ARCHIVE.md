@@ -294,3 +294,6 @@ rung23 5/5 · 136/136 total · HEAD `6fe0f2b` · resolved on arrival (IJ-51 code
 
 ## PJ-75 — M-PJ-LINKER ✅  2026-03-26
 test_list 10/1/0 (raw SWI .pl, no wrap_swi.py) · HEAD `a316544` · plunit linker in `prolog_emit_jvm.c`: `pj_linker_has_plunit`, `pj_plunit_shim_src[]` embedded C string, `pj_linker_emit_plunit_shim` (parse+lower+emit via prolog_parse/prolog_lower), `pj_linker_emit_db_stub` (proper DB-query loop for pj_suite/1 + pj_test/4), `pj_linker_scan` (two-pass: suites from begin_tests directives, tests from E_CHOICE nodes assigned to suite[0]), `pj_linker_emit_main_assertz` (assertz pj_suite/pj_test facts in main()), `pj_linker_emit_bridge` (bridge predicates suite_name/0). begin_tests/end_tests added to meta-directive skip list. main() stack limit → 32. All 34 corpus rungs: 0 regressions.
+
+## SD-21 — M-SCRIP-DEMO ✅  2026-03-26
+30/30 (demo1–10 × snobol4+swipl+icont) · HEAD `3bba8e2` · Ten polyglot demos: hello/wordcount/roman/palindrome/fib/sieve/caesar/sort/rpn/anagram. Each `.md` file has three fenced blocks (SNOBOL4, Icon, Prolog); `scrip_split.py` dispatches to csnobol4/icont/swipl; all produce identical `.expected` output. `&CASE=1` snake_case style throughout. Key bugs fixed: unanchored SPAN, I=I+1 GT infinite loop, BSORT RO path data loss, label/function namespace collision.
