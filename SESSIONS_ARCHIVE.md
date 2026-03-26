@@ -1876,16 +1876,45 @@ Replace all `| 1` fallthrough no-ops in `family_icon.icn` with `| (i := i)` (lon
 
 **VerifyError 2 — "Expecting to find long on stack" — OPEN:**
 - Different error — progress. Slot-type conflict is gone.
-- Zero-init and slot regions are correct (verified by inspection).
 - Pure stack-discipline issue: something leaves a non-long on the operand stack at a label boundary where a long is expected.
-- Most likely location: `ij_emit_section` `lo_relay` / `hi_relay` — these do `l2i` (converting long→int) then `istore lo_slot`, but a control-flow join point upstream may see inconsistent stack depths/types.
-- Next action: `javap -c Family_icon.class | grep -n .` to get bytecode offsets, find the byte offset from the VerifyError message detail, cross-reference to `.j` label, fix in `icon_emit_jvm.c`.
+- Most likely location: `ij_emit_section` `lo_relay` / `hi_relay` — these do `l2i` then `istore lo_slot`, but a CF join point upstream may see inconsistent stack depths/types.
+- Next action: `javap -c Family_icon.class` to find byte offset, cross-reference to `.j` label, fix in `icon_emit_jvm.c`.
 
 **Context window at handoff: ~92%.**
 
 **Next session (SD-3):**
 1. `javap -c -p Family_icon.class` — find exact byte offset of stack error in `icn_main`
-2. Cross-reference to `.j` file label — identify which relay/relay-join has wrong stack type
+2. Cross-reference to `.j` label — identify which relay/relay-join has wrong stack type
 3. Fix in `icon_emit_jvm.c` (likely `ij_emit_section` lo/hi relay, or a sec→cmp hand-off)
 4. Rebuild → run → if clean: write `family.expected`, `scripten_split.py`, `run_demo.sh`, `README.md`
 5. `run_demo.sh` diff clean → commit `SD-3: M-SCRIPTEN-DEMO ✅` → update NOW table in PLAN.md
+
+---
+
+## IJ-43 + IJ-44 — M-IJ-BUILTINS-TYPE ✅ + M-IJ-BUILTINS-MISC ✅
+
+**Date:** 2026-03-25. **Repos:** snobol4x (main). **HEAD at handoff:** `fe87efc`.
+
+**Baseline entering:** 92/92 (rung05–28). **Baseline at handoff:** 102/102 (rung05–30).
+
+**IJ-43 (M-IJ-BUILTINS-TYPE):** `type(x)` compile-time string constant; `copy(x)` identity; `image(x)` via toString; `numeric(s)` with `.catch` exception handler + `Long.MIN_VALUE` sentinel. rung29 5/5 ✅.
+
+**IJ-44 (M-IJ-BUILTINS-MISC):** `abs`, `max`, `min` (varargs relay chain with static tmp field), `sqrt` (always real), `seq` (infinite generator, α/β ports, static cur+step fields). `ij_expr_is_real` extended. Helper name fixes: `_long→(default)`, `_real→_dbl`. rung30 5/5 ✅.
+
+**Context window at handoff: ~78%.**
+
+**Next session (IJ-45):** M-IJ-SORT — `sort(L)` and `sortf(L,field)`. See FRONTEND-ICON-JVM.md §NOW.
+
+---
+
+## PJ-64 — Baseline verification, no milestone fired
+
+**Date:** 2026-03-26. **Repos:** snobol4x (main, no changes). **HEAD at handoff:** `e897666`.
+
+**Baseline entering:** 20/20 rung11–rung23 ✅. **Baseline at handoff:** 20/20 ✅ (confirmed).
+
+**Work done:** Cloned repos, installed deps (`--fix-missing`), built snobol4x clean, verified 20/20 baseline across rung11–rung23. Confirmed M-PJ-STRING-IO (`atom_string/2`, `number_string/2`, `string_concat/3`, `string_length/2`, `string_lower/2`, `string_upper/2`) is fully absent from both `prolog_emit_jvm.c` and `prolog_builtin.c`. No rung24 yet. Documented implementation plan in §NOW.
+
+**Context window at handoff: ~26%.**
+
+**Next session (PJ-65):** M-PJ-STRING-IO — create rung24, implement 6 string builtins. See FRONTEND-PROLOG-JVM.md §NOW.

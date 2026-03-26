@@ -19,24 +19,28 @@ and emits Jasmin `.j` files, assembled by `jasmin.jar`.
 
 | Session | Sprint | HEAD | Next milestone |
 |---------|--------|------|----------------|
-| **Prolog JVM** | `main` PJ-58 — M-PJ-SUCC-PLUS ✅ 5/5 rung18 | `937ef92` PJ-58 | M-PJ-FORMAT |
+| **Prolog JVM** | `main` PJ-64 — baseline 20/20 rung11–rung23 ✅ | `e897666` PJ-64 | M-PJ-STRING-IO |
 
-### CRITICAL NEXT ACTION (PJ-59)
+### CRITICAL NEXT ACTION (PJ-65)
 
-**Baseline: 5/5 rung11–rung18 ✅. snobol4x HEAD `937ef92`.**
+**Baseline: 20/20 rung11–rung23 ✅. snobol4x HEAD `e897666`.**
 
-**Next milestone: M-PJ-FORMAT — implement `format/1`, `format/2` (basic: `~w`, `~a`, `~n`, `~d`, `~i`).**
+**Next milestone: M-PJ-STRING-IO — implement `atom_string/2`, `number_string/2`, `string_concat/3`, `string_length/2`, `string_lower/2`, `string_upper/2`.**
 
-**Bootstrap PJ-59:**
+**Implementation plan:**
+1. Create `test/frontend/prolog/corpus/rung24_string_io/` — 5 test cases (t01–t05), `.pro` + `.expected`
+2. Add JVM helper methods + `pj_emit_goal` dispatch in `prolog_emit_jvm.c` following `atom_concat`/`atom_chars` pattern
+3. Register names in builtin whitelist (`prolog_builtin.c` / whitelist array near line 2941)
+4. Build, run rung24 to green, confirm rung11–23 no regressions
+5. Commit snobol4x, update §NOW + PLAN.md, push both repos
+
+**Bootstrap PJ-65:**
 ```bash
-git clone https://TOKEN@github.com/snobol4ever/snobol4x
-git clone https://TOKEN@github.com/snobol4ever/.github
-apt-get install -y default-jdk nasm libgc-dev swi-prolog
+git clone https://TOKEN_SEE_LON@github.com/snobol4ever/snobol4x
+git clone https://TOKEN_SEE_LON@github.com/snobol4ever/.github
+apt-get install -y --fix-missing default-jdk nasm libgc-dev swi-prolog
 make -C snobol4x/src
-# Read §NOW above. Implement format/1 and format/2.
-# bash test/frontend/prolog/run_prolog_jvm_rung.sh test/frontend/prolog/corpus/rung19_format
-# Confirm rung11–rung18 no regressions
-# Commit snobol4x, update §NOW + PLAN.md + SESSIONS_ARCHIVE.md, push both repos
+# Read §NOW above. Start at CRITICAL NEXT ACTION.
 ```
 
 ## Milestone Table
@@ -71,8 +75,11 @@ make -C snobol4x/src
 | **M-PJ-ATOP** | `@<`/`@>`/`@=<`/`@>=` as parser infix operators — Scripten dep | ✅ |
 | **M-PJ-SORT** | `sort/2`, `msort/2` — insertion sort, optional dedup | ✅ |
 | **M-PJ-SUCC-PLUS** | `succ/2`, `plus/3` — successor/addition builtins | ✅ |
-| **M-PJ-FORMAT** | `format/1`, `format/2` — ~w ~a ~n ~d ~i directives | ❌ **NEXT** |
-| **M-PJ-ABOLISH** | `abolish/1` — remove entire predicate from DB | ✅ |
+| **M-PJ-FORMAT** | `format/1`, `format/2` — ~w ~a ~n ~d ~i directives | ✅ |
+| **M-PJ-NUMBER-VARS** | `numbervars/3` — name unbound vars as A,B,...Z,A1,...; `$VAR` write support | ✅ |
+| **M-PJ-CHAR-TYPE** | `char_type/2` — alpha/alnum/digit/space/upper/lower/to_upper/to_lower/ascii | ✅ |
+| **M-PJ-WRITE-CANONICAL** | `writeq/1`, `write_canonical/1`, `print/1`; atom quoting + symbolic token rules | ✅ |
+| **M-PJ-SUCC-ARITH** | `max/min/sign/truncate/msb`; bitwise `/\ \/ xor >> <<`; `** ^`; prefix `\`; parser op table | ✅ |
 
 ---
 

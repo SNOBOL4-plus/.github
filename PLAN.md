@@ -21,8 +21,8 @@ Each concurrent session owns exactly one row. Update only your row on every push
 | **DOTNET** | `main` D-164 — 1903/1903 | `e1e4d9e` D-164 | TBD |
 | **README** | `main` R-2 | `00846d3` | M-README-DEEP-SCAN |
 | **ICON frontend** | `main` I-11 — rung03 ✅ | `bab5664` I-11 | M-ICON-STRING |
-| **Prolog JVM** | `main` PJ-58 — M-PJ-SUCC-PLUS ✅ 5/5 rung18 | `937ef92` PJ-58 | M-PJ-FORMAT |
-| **Icon JVM** | `main` IJ-41 — M-IJ-READ ✅ rung27 5/5 | `d94e728` IJ-41 | M-IJ-BUILTINS-STR |
+| **Prolog JVM** | `main` PJ-64 — baseline 20/20 rung11–rung23 ✅ | `e897666` PJ-64 | M-PJ-STRING-IO |
+| **Icon JVM** | `main` IJ-44 — M-IJ-BUILTINS-MISC ✅ rung30 5/5 | `fe87efc` IJ-44 | M-IJ-SORT |
 
 **Invariants:** TINY `106/106` (`run_crosscheck_asm_corpus.sh`) · DOTNET `1903/1903` (`dotnet test`)
 
@@ -52,10 +52,10 @@ Backends:   x64 ASM · JVM bytecode · .NET MSIL · WebAssembly
 ## Milestone Dashboard
 
 ### ⭐⭐ Icon JVM — detail → [FRONTEND-ICON-JVM.md](FRONTEND-ICON-JVM.md)
-`M-IJ-LISTS` ✅ · `M-IJ-TABLE` ✅ · `M-IJ-RECORD` ✅ · `M-IJ-RECORD-PROCARG` ✅ · `M-IJ-GLOBAL` ✅ · `M-IJ-POW` ✅ · `M-IJ-READ` ✅ · `M-IJ-BUILTINS-STR` ❌ **NEXT** · `M-IJ-BUILTINS-TYPE` ❌ · `M-IJ-SORT` ❌
+`M-IJ-LISTS` ✅ · `M-IJ-TABLE` ✅ · `M-IJ-RECORD` ✅ · `M-IJ-RECORD-PROCARG` ✅ · `M-IJ-GLOBAL` ✅ · `M-IJ-POW` ✅ · `M-IJ-READ` ✅ · `M-IJ-BUILTINS-STR` ✅ · `M-IJ-BUILTINS-TYPE` ✅ · `M-IJ-BUILTINS-MISC` ✅ · `M-IJ-SORT` ❌ **NEXT**
 
 ### ⭐⭐ Prolog JVM — detail → [FRONTEND-PROLOG-JVM.md](FRONTEND-PROLOG-JVM.md)
-`M-PJ-FINDALL` ✅ · `M-PJ-ATOM-BUILTINS` ✅ · `M-PJ-ASSERTZ` ✅ · `M-PJ-RETRACT` ✅ · `M-PJ-ABOLISH` ✅ · `M-PJ-ATOP` ✅ · `M-PJ-SORT` ✅ · `M-PJ-SUCC-PLUS` ✅ · `M-PJ-FORMAT` ❌ **NEXT**
+`M-PJ-FINDALL` ✅ · `M-PJ-ATOM-BUILTINS` ✅ · `M-PJ-ASSERTZ` ✅ · `M-PJ-RETRACT` ✅ · `M-PJ-ABOLISH` ✅ · `M-PJ-ATOP` ✅ · `M-PJ-SORT` ✅ · `M-PJ-SUCC-PLUS` ✅ · `M-PJ-FORMAT` ✅ · `M-PJ-NUMBER-VARS` ✅ · `M-PJ-CHAR-TYPE` ✅ · `M-PJ-WRITE-CANONICAL` ✅ · `M-PJ-SUCC-ARITH` ✅ · `M-PJ-STRING-IO` ❌ **NEXT**
 
 ### ⭐ Scripten Demo — detail → [SCRIPTEN_DEMO.md](SCRIPTEN_DEMO.md) · [SCRIPTEN_DEMO2.md](SCRIPTEN_DEMO2.md) · [SCRIPTEN_DEMO3.md](SCRIPTEN_DEMO3.md)
 `M-SCRIPTEN-DEMO` ❌ **NEXT** · `M-SCRIPTEN-DEMO2` ❌ · `M-SCRIPTEN-DEMO3` ❌ *(concept)*
