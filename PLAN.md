@@ -21,7 +21,7 @@ Each concurrent session owns exactly one row. Update only your row on every push
 | **DOTNET** | `main` D-164 — 1903/1903 | `e1e4d9e` D-164 | TBD |
 | **README** | `main` R-2 | `00846d3` | M-README-DEEP-SCAN |
 | **ICON frontend** | `main` I-11 — rung03 ✅ | `bab5664` I-11 | M-ICON-STRING |
-| **Prolog JVM** | `main` PJ-54 — M-PJ-RETRACT ✅ 5/5 rung14 | `5d947a1` PJ-54 | M-PJ-ABOLISH |
+| **Prolog JVM** | `main` PJ-55 — M-PJ-ABOLISH ✅ 5/5 rung15 | `db82779` PJ-55 | M-PJ-ATOP |
 | **Icon JVM** | `main` IJ-37 — M-IJ-RECORD 4/5 PASS (t03 xfail: proc arg) | `90bd967` IJ-37 | M-IJ-RECORD-PROCARG |
 
 **Invariants:** TINY `106/106` (`run_crosscheck_asm_corpus.sh`) · DOTNET `1903/1903` (`dotnet test`)
@@ -55,7 +55,7 @@ Backends:   x64 ASM · JVM bytecode · .NET MSIL · WebAssembly
 `M-IJ-LISTS` ✅ · `M-IJ-TABLE` ✅ · `M-IJ-RECORD` ✅ · `M-IJ-RECORD-PROCARG` ✅ · `M-IJ-STRING-RETVAL` ✅ · `M-IJ-NULL-TEST` ❌ **NEXT** · `M-IJ-BLOCK-BODY` ❌ · `M-IJ-GLOBAL` ❌ · `M-IJ-BUILTINS-STR` ❌ · `M-IJ-SORT` ❌
 
 ### ⭐⭐ Prolog JVM — detail → [FRONTEND-PROLOG-JVM.md](FRONTEND-PROLOG-JVM.md)
-`M-PJ-FINDALL` ✅ · `M-PJ-ATOM-BUILTINS` ✅ · `M-PJ-ASSERTZ` ✅ · `M-PJ-RETRACT` ❌ **NEXT** · `M-PJ-ATOP` ❌
+`M-PJ-FINDALL` ✅ · `M-PJ-ATOM-BUILTINS` ✅ · `M-PJ-ASSERTZ` ✅ · `M-PJ-RETRACT` ✅ · `M-PJ-ABOLISH` ✅ · `M-PJ-ATOP` ❌ **NEXT**
 
 ### ⭐ Scripten Demo — detail → [SCRIPTEN_DEMO.md](SCRIPTEN_DEMO.md) · [SCRIPTEN_DEMO2.md](SCRIPTEN_DEMO2.md) · [SCRIPTEN_DEMO3.md](SCRIPTEN_DEMO3.md)
 `M-SCRIPTEN-DEMO` ❌ **NEXT** · `M-SCRIPTEN-DEMO2` ❌ · `M-SCRIPTEN-DEMO3` ❌ *(concept)*

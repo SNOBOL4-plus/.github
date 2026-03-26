@@ -19,29 +19,31 @@ and emits Jasmin `.j` files, assembled by `jasmin.jar`.
 
 | Session | Sprint | HEAD | Next milestone |
 |---------|--------|------|----------------|
-| **Prolog JVM** | `main` PJ-54 — M-PJ-RETRACT ✅ 5/5 rung14 | `5d947a1` PJ-54 | M-PJ-ABOLISH |
+| **Prolog JVM** | `main` PJ-55 — M-PJ-ABOLISH ✅ 5/5 rung15 | `db82779` PJ-55 | M-PJ-ATOP |
 
-### CRITICAL NEXT ACTION (PJ-55)
+### CRITICAL NEXT ACTION (PJ-56)
 
-**Baseline: 5/5 rung11 ✅. 5/5 rung12 ✅. 5/5 rung13 ✅. 5/5 rung14 ✅. snobol4x HEAD `5d947a1`.**
+**Baseline: 5/5 rung11–rung15 ✅. snobol4x HEAD `db82779`.**
 
-**Next milestone: M-PJ-ABOLISH — implement `abolish/1`, get 5/5 rung15.**
+**Next milestone: M-PJ-ATOP — implement `@<`/`@>`/`@=<`/`@>=`, get 5/5 rung16.**
+
+**Key finding from PJ-55:** `abolish(foo/1)` passes a `/(Name,Arity)` compound; key extraction needs `pj_atom_name` + `pj_int_val`, not raw Java casts.
 
 **Plan:**
-- Add `pj_db_abolish(String key)` helper: removes the entire ArrayList for `key` from `pj_db` (or no-op if absent).
-- Add `abolish/1` dispatch in `pj_emit_goal`: call `pj_db_assert_key` on arg, call `pj_db_abolish`, goto lbl_γ (always succeeds).
-- Create rung15 corpus: 5 `.pro` + `.expected` covering: abolish existing predicate, abolish then query (fail), abolish nonexistent (succeed), abolish then re-assert, abolish one of two predicates.
-- Verify rung11–rung14 no regressions.
+- Register `@<`, `@>`, `@=<`, `@>=` as infix operators in the Prolog parser.
+- Add dispatch in `pj_emit_goal`: deref both args, call `pj_term_str`, `String.compareTo`, branch on result.
+- Create rung16 corpus: 5 tests covering each operator and mixed ordering.
+- Verify rung11–rung15 no regressions.
 
-**Bootstrap PJ-55:**
+**Bootstrap PJ-56:**
 ```bash
 git clone https://TOKEN@github.com/snobol4ever/snobol4x
 git clone https://TOKEN@github.com/snobol4ever/.github
 apt-get install -y default-jdk nasm libgc-dev swi-prolog
 make -C snobol4x/src
-# Read §NOW above. Implement abolish/1.
-# bash test/frontend/prolog/run_prolog_jvm_rung.sh test/frontend/prolog/corpus/rung15_abolish
-# Confirm rung11–rung14 no regressions
+# Read §NOW above. Implement @</>/=</>=.
+# bash test/frontend/prolog/run_prolog_jvm_rung.sh test/frontend/prolog/corpus/rung16_atop
+# Confirm rung11–rung15 no regressions
 # Commit snobol4x, update §NOW + PLAN.md + SESSIONS_ARCHIVE.md, push both repos
 ```
 ## Milestone Table
@@ -73,8 +75,8 @@ make -C snobol4x/src
 | **M-PJ-ATOM-BUILTINS** | atom_chars/length/concat/codes/char_code etc. | ✅ |
 | **M-PJ-ASSERTZ** | `assertz/1`, `asserta/1` — dynamic DB (Scripten dep) | ✅ |
 | **M-PJ-RETRACT** | `retract/1` — peek-then-remove, 5/5 rung14 | ✅ |
-| **M-PJ-ATOP** | `@<`/`@>`/`@=<`/`@>=` as parser infix operators — Scripten dep | ❌ |
-| **M-PJ-ABOLISH** | `abolish/1` — remove entire predicate from DB | ❌ **NEXT** |
+| **M-PJ-ATOP** | `@<`/`@>`/`@=<`/`@>=` as parser infix operators — Scripten dep | ❌ **NEXT** |
+| **M-PJ-ABOLISH** | `abolish/1` — remove entire predicate from DB | ✅ |
 
 ---
 

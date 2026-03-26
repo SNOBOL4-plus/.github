@@ -1720,3 +1720,25 @@ Toplevel `:- Goal` directives are parsed as `E_DIRECTIVE` but `pj_emit_main()` i
 
 **Next session (SD-1) — one action to unblock:**
 Replace all `| 1` fallthrough no-ops in `family_icon.icn` with `| (i := i)` (long-typed no-op assignment), or restructure without `|` fallthrough. Then: recompile → re-inject → reassemble → run → get output → write `family.expected` → write `run_demo.sh` + `scripten_split.py` + `README.md` → commit `M-SCRIPTEN-DEMO ✅`.
+
+---
+
+## PJ-55 — M-PJ-ABOLISH
+
+**HEAD start:** `5d947a1` (PJ-54) → **HEAD end:** `db82779`
+
+**Accomplished:**
+
+- **`pj_db_abolish(String key) → void`** JVM helper: `HashMap.remove(key)` — no-op if key absent.
+
+- **`pj_db_abolish_key(Object slashTerm) → String`** JVM helper: takes `/(Name,Arity)` compound (arr[2]=Name pj-atom, arr[3]=Arity pj-int), extracts via `pj_atom_name` + `pj_int_val`, builds `"Name/Arity"` key. **Key finding:** compound args are `Object[]` pj terms — direct `checkcast String`/`Long` crashes; must use pj accessor helpers.
+
+- **`abolish/1` dispatch in `pj_emit_goal`** (after retract block): build term, call `pj_db_abolish_key`, call `pj_db_abolish`, goto `lbl_γ` (always succeeds).
+
+- **rung15_abolish corpus** (5 tests): abolish existing (query gone), abolish then query fail, abolish nonexistent (succeed), abolish then re-assert, abolish one of two predicates.
+
+**Score:** 5/5 rung15 ✅. rung11–14: 20/20 no regressions. **M-PJ-ABOLISH ✅ FIRES.**
+
+**Context window at handoff: ~45%.**
+
+**Next session (PJ-56):** M-PJ-ATOP — `@<`/`@>`/`@=<`/`@>=`. See FRONTEND-PROLOG-JVM.md §NOW.
