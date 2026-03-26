@@ -13,7 +13,7 @@ Each concurrent session owns exactly one row. Update only your row on every push
 | Session | Sprint | HEAD | Next milestone |
 |---------|--------|------|----------------|
 | **⚠ GRAND MASTER REORG** | G-7 — FRONTEND-PROLOG-JVM.md trimmed 12KB→4.6KB; §NOW bloat + Roadmap removed | `eb9f2ec` G-7 | M-G0-FREEZE (Lon schedules) |
-| **⭐ Scrip Demo** | SD-21: 30/30 ✅ — all 10 demos × 3 backends; &CASE=1 snake_case | `3bba8e2` SD-21 | M-SCRIP-DEMO |
+| **⭐ Scrip Demo** | SD-21: ref interpreters 30/30 ✅ — next: wire snobol4ever x64/JVM/.NET backends | `3bba8e2` SD-21 | M-SD-X64-1 |
 | **TINY backend** | `main` B-292 — 106/106 | `acbc71e` B-292 | M-BEAUTIFY-BOOTSTRAP-ASM-MONITOR |
 | **TINY NET** | `net-t2` N-248 — 110/110 | `425921a` N-248 | M-T2-FULL |
 | **TINY JVM** | `main` J-216 — STLIMIT/STCOUNT ✅ | `a74ccd8` J-216 | M-JVM-STLIMIT-STCOUNT |

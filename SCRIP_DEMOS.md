@@ -1,22 +1,27 @@
 # SCRIP_DEMOS.md — The Demo Ladder
 
 Ten self-contained Scrip programs. Same algorithm in SNOBOL4, Icon, Prolog.
-Same input, same output, three idioms. Each is a unit test for the Scrip
-unified compiler.
+Same input, same output, three idioms. Each demo is a **product milestone** —
+it fires when all three snobol4ever backends produce the correct output.
+
+**Backends:** snobol4x x64 ASM · snobol4x JVM · snobol4x .NET
+
+Reference interpreters (csnobol4, swipl, icont) were used to establish
+`.expected` output only. They are not the product.
 
 ---
 
 ## The Ladder
 
 | # | File | Algorithm | Key contrast |
-|---|------|-----------|--------------|
+|---|------|-----------|--------------| 
 | DEMO1 | `hello.md` | Hello World | `OUTPUT =` vs `write()` vs `write/1` |
 | DEMO2 | `wordcount.md` | Count words | SPAN patterns vs `!str` generator vs DCG |
 | DEMO3 | `roman.md` | Integer → Roman numerals | Table-driven goto vs `suspend` vs arithmetic rules |
 | DEMO4 | `palindrome.md` | Is string a palindrome? | `REVERSE` vs subscript walk vs `reverse/2` |
 | DEMO5 | `fib.md` | Fibonacci first 10 | Labeled goto vs `suspend` generator vs `fib/2` rule |
-| DEMO6 | `sieve.md` | Primes to 50 (Sieve) | TABLE bitset vs list+every vs `exclude/sieve` |
-| DEMO7 | `caesar.md` | ROT13 cipher | `MAP` vs `map()` vs `maplist+rot13_char` |
+| DEMO6 | `sieve.md` | Primes to 50 (Sieve) | ARRAY bitset vs list+every vs trial division |
+| DEMO7 | `caesar.md` | ROT13 cipher | `REPLACE` parallel strings vs `map()` vs `maplist` |
 | DEMO8 | `sort.md` | Sort 8 integers | Insertion sort vs `isort` vs `msort/2` |
 | DEMO9 | `rpn.md` | RPN calculator | Pattern-driven stack vs list-as-stack vs DCG |
 | DEMO10 | `anagram.md` | Detect anagrams | SORTCHARS+TABLE vs canonical+table vs `msort+assert` |
@@ -25,27 +30,30 @@ unified compiler.
 
 ## Milestone Map
 
+Each milestone fires when `run_demo.sh demoN` passes through all three
+**snobol4ever backends** and output matches `.expected`.
+
 ```
-M-SD-DEMO1   hello       ← NEXT
-M-SD-DEMO2   wordcount
-M-SD-DEMO3   roman
-M-SD-DEMO4   palindrome
-M-SD-DEMO5   fib
-M-SD-DEMO6   sieve
-M-SD-DEMO7   caesar
-M-SD-DEMO8   sort
-M-SD-DEMO9   rpn
-M-SD-DEMO10  anagram
-             ↓
-M-SCRIP-DEMO   family tree (funny linkage) — was DEMO1, now DEMO4
-M-SCRIP-DEMO2  puzzle solver              — was DEMO2, now DEMO5
-M-SCRIP-DEMO3  tiny compiler              — concept
+Phase 1 — reference interpreters (COMPLETE):
+  M-SD-DEMO1–10 ✅  csnobol4 + swipl + icont, 30/30
+
+Phase 2 — snobol4ever backends (NEXT):
+  M-SD-X64-1    hello      x64 ASM
+  M-SD-X64-2    wordcount  x64 ASM
+  M-SD-X64-3    roman      x64 ASM
+  M-SD-X64-4    palindrome x64 ASM
+  M-SD-X64-5    fib        x64 ASM
+  M-SD-X64-6    sieve      x64 ASM
+  M-SD-X64-7    caesar     x64 ASM
+  M-SD-X64-8    sort       x64 ASM
+  M-SD-X64-9    rpn        x64 ASM
+  M-SD-X64-10   anagram    x64 ASM
+
+  M-SD-JVM-1 … M-SD-JVM-10    JVM backend
+  M-SD-NET-1 … M-SD-NET-10    .NET backend
 ```
 
-Each milestone fires when:
-1. `demo/scrip/demoN/NAME.md` exists in snobol4x
-2. `run_demo.sh demoN` passes — all three backends match `.expected`
-3. Session note added to `SESSIONS_ARCHIVE.md`
+**Product demo fires when:** all 30 milestones (10 × 3 backends) green.
 
 ---
 
@@ -53,19 +61,20 @@ Each milestone fires when:
 
 | Milestone | Status |
 |-----------|--------|
-| M-SD-DEMO1  | ✅ |
-| M-SD-DEMO2  | ✅ |
-| M-SD-DEMO3  | ✅ |
-| M-SD-DEMO4  | ✅ |
-| M-SD-DEMO5  | ✅ |
-| M-SD-DEMO6  | ✅ |
-| M-SD-DEMO7  | ✅ |
-| M-SD-DEMO8  | ✅ |
-| M-SD-DEMO9  | ✅ |
-| M-SD-DEMO10 | ✅ |
-| **M-SCRIP-DEMO** | ✅ **FIRED SD-21** — 30/30 all backends |
+| M-SD-DEMO1–10 (reference) | ✅ COMPLETE — 30/30 csnobol4+swipl+icont |
+| M-SD-X64-1   | ❌ **NEXT** — wire sno2c -asm into run_demo.sh; run hello through x64 backend |
+| M-SD-X64-2–10 | ❌ |
+| M-SD-JVM-1–10 | ❌ |
+| M-SD-NET-1–10 | ❌ |
 
 ---
+
+## Milestone firing condition
+
+Each `M-SD-{BACKEND}-N` fires when:
+1. `run_demo.sh demoN` invokes the snobol4ever backend (not reference interpreter)
+2. Output matches `demo/scrip/demoN/NAME.expected`
+3. Session note added to `SESSIONS_ARCHIVE.md`
 
 ## The Philosophy
 
@@ -76,18 +85,8 @@ SNOBOL4: patterns consume input structurally.
 Icon: generators produce output lazily.  
 Prolog: rules define truth declaratively.
 
-One algorithm. Three windows into it.
+One algorithm. Three windows into it. Through our compiler.
 
 ---
 
-## SD-10 Pick-up
-
-```bash
-cd /home/claude/snobol4x
-# Wire up csnobol4 + swipl paths in run_demo.sh
-# Test: bash demo/scrip/run_demo.sh demo/scrip/demo1 demo/scrip/demo1/hello.expected
-# Fire M-SD-DEMO1 when all three pass
-# Then proceed through the ladder
-```
-
-*SCRIP_DEMOS.md — the ladder. Each rung is a green test.*
+*SCRIP_DEMOS.md — the ladder. Each rung is a green test through snobol4ever.*

@@ -2571,3 +2571,24 @@ REPLACE, IDENT, DIFFER, CONVERT, LT, GT, LE, EQ, LGT, ANY, LEN, POS, RPOS, DATA)
 **Next session:** M-SCRIP-DEMO2 (puzzle solver) or M-IJ-RECURSION (unblocks JVM wiring).
 
 **Context window at handoff: ~90%.**
+
+---
+
+## SD-22 -- HQ update: real milestone structure
+
+**Date:** 2026-03-26. **No code change.**
+
+Corrected the purpose of the demo ladder. The 10 demos are **product milestones** —
+each fires when it passes through the snobol4ever backends (x64 ASM, JVM, .NET),
+not the reference interpreters. Reference interpreters (csnobol4, swipl, icont)
+established `.expected` output only. They are not the product.
+
+New milestone namespace: `M-SD-X64-N`, `M-SD-JVM-N`, `M-SD-NET-N` (N=1..10).
+30 total milestones. Product demo fires when all 30 are green.
+
+Updated: `SCRIP_DEMOS.md` (full rewrite), `PLAN.md` NOW row (next = M-SD-X64-1).
+
+**Next session (SD-23):** Wire `sno2c -asm` into `run_demo.sh`; run demo1/hello
+through x64 backend; fire M-SD-X64-1.
+
+**Context window at handoff: ~93%.**
