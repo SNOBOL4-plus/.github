@@ -2147,3 +2147,28 @@ rung33: **5/5 PASS**. Baseline: 121/121.
 - `/E` (null/failure test): succeeds if E fails, pushes 0L
 - Needs: TK_BACKSLASH + TK_SLASH unary prefix ops in lexer/parser
 - New AST kinds ICN_NONNULL and ICN_NULL (or reuse ICN_NOT pattern)
+
+---
+
+## SD-4 — ij_prepass_types + string relop fix
+
+**Date:** 2026-03-26. **Repos:** snobol4x (main). **HEAD at handoff:** `406eff6`.
+
+**Baseline entering:** rung28–30 15/15 PASS.
+
+**Fixes landed (both in `icon_emit_jvm.c`):**
+
+1. **`ij_prepass_types(IcnNode*)`** — recursive AST walker, called as Pre-pass 3 in `ij_emit_proc` after the existing flat pre-passes. Existing pre-passes only walked top-level `ICN_ASSIGN` statements; `lo`/`hi` assignments nested inside `ICN_AND`/`ICN_ALT`/`ICN_WHILE` were missed → declared `J` instead of `Ljava/lang/String`. Pre-pass 3 recurses the full AST and registers correct field types before any emit-time drain-type queries fire.
+
+2. **`ij_emit_relop` string branch** — added `is_str` detection (parallel to `is_dbl`). When either operand is string-typed: declare `relop_lc/rc` as `Ljava/lang/String`, use `String.compareTo()` instead of `lcmp`, return `rc` String at γ. Added `ICN_LT/LE/GT/GE/EQ/NE` case to `ij_expr_is_string` so AND drain-type queries correctly propagate String type for string-relop children.
+
+**VerifyError root cause confirmed:**  
+Contiguous AND relay labels with mixed J/String stack types. The v45 type-inference verifier merges stack states at `rg_N+1` from both the explicit `goto rg_N+1` path (correct type) AND the bytecode fall-through from `rg_N` (different type). Result: Object inferred → `putstatic J` fails with "Expecting to find long on stack."
+
+**Fix for SD-5:** In `ij_emit_and` relay-trampoline loop, place relay bodies only reachable via explicit gotos — emit `goto ca2` (AND alpha) before the relay block so fall-through from normal code can't reach any relay label directly. See SCRIPTEN_DEMO.md §NOW SD-5 Option C.
+
+**Score:** rung28–30 15/15 PASS ✅ (invariant maintained). family_icon.icn still VerifyError — ✗.
+
+**Context window at handoff: ~78%.**
+
+**Next session (SD-5):** Fix AND relay contiguous-label type merge. See SCRIPTEN_DEMO.md §NOW.

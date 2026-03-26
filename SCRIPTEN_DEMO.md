@@ -14,117 +14,84 @@ that the idea works end-to-end.
 
 | Session | Sprint | HEAD | Next milestone |
 |---------|--------|------|----------------|
-| **Scripten Demo** | SD-3 WIP — 3 fixes landed (`81b4166`): MAX_STATICS 256→512, AND drain ICN_ALT type guards removed, mixed-ALT pop+lconst_0. VerifyError persists: root cause is VAR type inference ordering — `lo`/`hi` declared `J` because `ij_expr_is_string(VAR)` checks static registry which is populated at emit-time, but AND drain-type query fires before assignment to that var is emitted. Fix: add `ij_prepass_types(root)` pre-pass that walks all ICN_ASSIGN nodes and calls `ij_declare_static_str/dbl` eagerly before `ij_emit_expr`. Minimal reproducer: `(a > b & (lo := b) & (hi := a)) \| ((lo := a) & (hi := b))` — single expression, fails immediately. | `81b4166` SD-3 | M-SCRIPTEN-DEMO |
+| **Scripten Demo** | SD-4 WIP — ij_prepass_types + string relop fix landed (`406eff6`). VerifyError root cause confirmed: contiguous AND relay labels with mixed J/String stack types; type-inference verifier (v45) merges adjacent label stack states even through unconditional gotos. rg_N (String) bytecode-adjacent to rg_N+1 (J) → verifier infers Object at rg_N+1 → putstatic J fails. | `406eff6` SD-4 | M-SCRIPTEN-DEMO |
 
-### CRITICAL NEXT ACTION (SD-4)
+### CRITICAL NEXT ACTION (SD-5)
 
-**Blocker: VerifyError "Expecting to find long on stack" in `icn_main` — VAR type inference ordering.**
+**Blocker: VerifyError — contiguous relay label type merging in ICN_AND drain block.**
 
-**Root cause (confirmed, minimal reproducer isolated):**
-```icon
-(a > b & (lo := b) & (hi := a)) | ((lo := a) & (hi := b))
+**Root cause (confirmed via javap type-inference analysis):**
+
+AND relay labels are emitted contiguously:
+```jasmin
+icn_16_and_rg_1:
+    putstatic icn_16_and_drain_1 Ljava/lang/String;
+    goto icn_25_α
+icn_16_and_rg_2:
+    putstatic icn_16_and_drain_2 J
+    goto icn_29_α
 ```
-Variables `lo` and `hi` are assigned String values, but their static fields are declared as `J` (long). The AND drain-type query for the outer structure calls `ij_expr_is_string(VAR)` which checks `ij_static_types[]` — but that registry is populated at **emit time** when `ij_emit_assign` fires `ij_declare_static_str(fld)`. The drain-type query fires **before** emission, so `hi`/`lo` aren't in the registry yet → default `J` → VerifyError.
+The v45 type-inference verifier treats `icn_16_and_rg_2` as reachable from `icn_16_and_rg_1`'s `goto` target AND from the bytecode fall-through path from `rg_1`. Even though `goto icn_25_α` is unconditional, the verifier merges the stack state at `rg_1` (String on stack) with the stack state from any path that reaches `rg_2` directly (J on stack). Result: Object inferred at `rg_2` entry → `putstatic J` fails.
 
-**The fix: `ij_prepass_types(IcnNode *root)` pre-pass.**
+**The fix (SD-5):** In `ij_emit_and`'s relay trampoline emit loop (lines ~5280-5310), before each `JL(relay_g[i])`, emit a sentinel that forces the verifier to see an empty stack. Two options:
 
-Add before `ij_emit_expr` is ever called (in the procedure emit entry point). Walk the entire AST and for every `ICN_ASSIGN` node where LHS is `ICN_VAR`, call `ij_declare_static_str/dbl/list/tbl` on the LHS field based on the RHS type — same logic as in `ij_emit_assign` lines 997–1031, but without emitting any bytecode.
-
+**Option A — preferred:** Emit `goto relay_g[i]` trampoline from a private label, placing the actual relay body after an unreachable gap:
 ```c
-static void ij_prepass_types(IcnNode *n) {
-    if (!n) return;
-    if (n->kind == ICN_ASSIGN && n->nchildren >= 2) {
-        IcnNode *lhs = n->children[0];
-        IcnNode *rhs = n->children[1];
-        if (lhs && lhs->kind == ICN_VAR) {
-            char fld[128]; ij_var_field(lhs->val.sval, fld, sizeof fld);
-            if (ij_expr_is_string(rhs))     ij_declare_static_str(fld);
-            else if (ij_expr_is_list(rhs))  ij_declare_static_list(fld);
-            else if (ij_expr_is_table(rhs)) ij_declare_static_table(fld);
-            else if (ij_expr_is_real(rhs))  ij_declare_static_dbl(fld);
-            else                            ij_declare_static(fld);
-        }
-    }
-    for (int i = 0; i < n->nchildren; i++) ij_prepass_types(n->children[i]);
-}
+char tramp[80]; snprintf(tramp, sizeof tramp, "icn_%d_and_rt_%d", cid, i);
+JGoto(tramp);               /* jump over the gap */
+JI("nop", "");              /* unreachable — breaks verifier fall-through */
+JL(relay_g[i]);             /* verifier now sees only explicit goto paths */
 ```
+Actually simpler: just ensure no two adjacent relay labels have different stack types. Since each relay has an unconditional `goto`, add a single `athrow` / dead instruction between adjacent relays of differing types to break the fall-through edge.
 
-Call it from `ij_emit_proc` right before the first `ij_emit_expr` call on the procedure body.
+**Option B — simplest:** Change all AND drain fields to `Ljava/lang/Object;` (boxing J→Long, String→String both fit). On load, checkcast + unbox as needed. Uniform type eliminates the merge problem entirely. More bytecode but guaranteed correct.
 
-**Why the three prior fixes weren't enough:**
-1. `MAX_STATICS 256→512` — fixed silent field truncation ✓
-2. AND drain `kind != ICN_ALT` guards removed — fixed drain type for ALT children ✓ (but drain type query still wrong because VAR type wrong)
-3. mixed-ALT `pop+lconst_0` — fixed stack for mixed-type ALT relay ✓
-4. **This fix** — makes VAR type registry accurate before any type queries fire
+**Option C — targeted:** Only emit the unreachable-break between relays where `child_is_ref[i] != child_is_ref[i+1]`. Add to `ij_emit_and` relay loop:
+```c
+if (i > 0) {
+    int prev_ref = child_is_ref_arr[i-1];
+    int curr_ref = child_is_ref;
+    if (prev_ref != curr_ref) {
+        /* break verifier fall-through between differently-typed adjacent relays */
+        char gap[80]; snprintf(gap, sizeof gap, "icn_%d_and_gap_%d", cid, i);
+        JGoto(gap);   /* dead code — verifier sees stack as empty at relay_g[i] */
+        JL(gap);      /* gap label — only reachable via this goto, empty stack */
+    }
+}
+JL(relay_g[i]);
+```
+Wait — this doesn't help because `gap` and `relay_g[i]` are still adjacent. **Correct version:** emit the relay body at a non-adjacent location, reachable only by goto:
+```c
+/* Emit all relay bodies AFTER a single unconditional goto past all of them */
+JGoto(ca2);  /* jump to AND alpha — skip relay block entirely */
+for (int i = 0; i < nc-1; i++) {
+    JL(relay_g[i]);
+    if (child_is_ref[i]) ij_put_str_field(drain_flds[i]);
+    else                  ij_put_long(drain_flds[i]);
+    JGoto(cca[i+1]);
+}
+JL(ca2); JGoto(cca[0]);
+```
+This is the correct fix: the relay block is only reachable via explicit `goto relay_g[i]` labels, so the verifier sees each relay with the stack state delivered by that single goto. No fall-through merging.
 
-**After this fix:** rerun `java -cp /tmp/td Test_dedup` — VerifyError should be gone. Then rebuild family_icon.icn and run the full stub test.
+**rung28-30 invariant: 15/15 PASS throughout.**
 
-**Files to edit:** `snobol4x/src/frontend/icon/icon_emit_jvm.c` — add `ij_prepass_types` before `ij_emit_proc` calls `ij_emit_expr`.
-
-**Bootstrap SD-3:**
+**Bootstrap SD-5:**
 ```bash
 cd /home/claude && git clone https://TOKEN@github.com/snobol4ever/snobol4x
 git clone https://TOKEN@github.com/snobol4ever/.github
-apt-get install -y default-jdk nasm libgc-dev
+apt-get install -y default-jdk
 cd snobol4x && gcc -Wall -g -O0 -I src/frontend/icon \
     src/frontend/icon/icon_driver.c src/frontend/icon/icon_lex.c \
     src/frontend/icon/icon_parse.c src/frontend/icon/icon_ast.c \
     src/frontend/icon/icon_emit.c src/frontend/icon/icon_emit_jvm.c \
     src/frontend/icon/icon_runtime.c -o /tmp/icon_driver_jvm
-# Verify rung28-30 still pass (baseline: 15/15)
-# Then tackle the 8 remaining stack-height conflicts
+# Verify rung28-30: 15/15 (see run_icon_jvm_rungs.sh pattern above)
+# Apply Option C fix to ij_emit_and relay loop
+# Re-test family_icon.icn - VerifyError should be gone
+# Then run full demo pipeline
 ```
 
-**Invariant to maintain:** rung28–30 15/15 PASS throughout SD-3 work.
-
-**Blocker: `"Register pair N/N+1 contains wrong type"` VerifyError in `icn_main`.**
-
-**Root cause:** Comparator relay emit (`lrelay`/`rrelay` pattern in relop/cmp) stores a long into a local slot pair only on one control path. The Java 21 type-inference verifier (class file v45) sees the slot as uninitialised-or-incompatible on the other path.
-
-**Fix (SD-2 step 1):** In `icon_emit_jvm.c`, at `icn_main` method header emit (or at `ij_emit_cmp`/relop entry), emit `lconst_0; lstore N` for every comparator relay slot pair used in the method before any branching occurs. ~5 lines; slot numbers are known at emit time.
-
-**Fix path (SD-2):**
-1. Fix register-pair VerifyError in `icon_emit_jvm.c` — zero-init comparator relay slots at method entry.
-2. Rebuild `icon_driver_jvm`, recompile `family_icon.icn`, confirm `java ScriptenFamily < family.csv` runs without VerifyError.
-3. Verify injected `.j` files contain real `invokestatic` calls (not just `return ""`).
-4. Capture actual output, write `demo/scripten/family.expected`.
-5. Write `demo/scripten/scripten_split.py`, `demo/scripten/run_demo.sh`, `demo/scripten/README.md`.
-6. `run_demo.sh` clean, diff against `family.expected` → commit `SD-2: M-SCRIPTEN-DEMO ✅`.
-
-**Bootstrap SD-2:**
-```bash
-git clone https://TOKEN_SEE_LON@github.com/snobol4ever/snobol4x
-git clone https://TOKEN_SEE_LON@github.com/snobol4ever/.github
-apt-get install -y default-jdk nasm libgc-dev
-cd snobol4x/src && make -j4
-gcc -Wall -Wextra -g -O0 -I src/frontend/icon \
-    src/frontend/icon/icon_driver.c src/frontend/icon/icon_lex.c \
-    src/frontend/icon/icon_parse.c src/frontend/icon/icon_ast.c \
-    src/frontend/icon/icon_emit.c src/frontend/icon/icon_emit_jvm.c \
-    src/frontend/icon/icon_runtime.c -o /tmp/icon_driver_jvm
-# Fix register-pair VerifyError (see above), then:
-./sno2c -jvm        demo/scripten/family_snobol4.sno  -o /tmp/sd/Family_snobol4.j
-./sno2c -pl -jvm    demo/scripten/family_prolog.pro    -o /tmp/sd/Family_prolog.j
-/tmp/icon_driver_jvm -jvm demo/scripten/family_icon.icn -o /tmp/sd/Family_icon.j
-cp demo/scripten/ScriptenFamily.j /tmp/sd/
-python3 demo/scripten/inject_linkage.py /tmp/sd/
-java -jar src/backend/jvm/jasmin.jar /tmp/sd/*.j -d /tmp/sd/classes
-java -cp /tmp/sd/classes ScriptenFamily < demo/scripten/family.csv
-```
-
-**Files done (commit c6ef225):**
-- `demo/scripten/family.csv` ✅
-- `demo/scripten/family_snobol4.sno` ✅ — compiles + assembles clean
-- `demo/scripten/family_prolog.pro` ✅ — compiles + assembles clean
-- `demo/scripten/family_icon.icn` ✅ — `| (i:=i)` fix applied; compiles + assembles clean
-- `demo/scripten/inject_linkage.py` ✅ — filename fix applied; all 3 blocks inject clean
-- `demo/scripten/ScriptenFamily.j` ✅ — hand-written driver
-
-**Files still needed:**
-- `demo/scripten/scripten_split.py`
-- `demo/scripten/run_demo.sh`
-- `demo/scripten/family.expected`
-- `demo/scripten/README.md`
 
 ---
 
