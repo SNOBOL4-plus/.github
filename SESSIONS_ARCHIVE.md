@@ -2379,3 +2379,20 @@ Key contrast: `REVERSE` built-in (SNOBOL4) vs subscript walk (Icon) vs `reverse/
 Key contrast: labeled goto loop (SNOBOL4) vs `suspend` generator (Icon) vs `fib/2` rule (Prolog).
 
 **Context window at handoff: ~32%.**
+
+---
+
+## SD-15 -- M-SD-DEMO5 ✅
+
+**Date:** 2026-03-26. **HEAD (snobol4x):** `f7153ce`.
+
+- `demo/scrip/demo5/fib.md`: Fibonacci first 10.
+- SNOBOL4: iterative labeled-goto; accumulators A/B; T for swap; `LT(N,10)` guard.
+- Icon: `suspend` generator with `:=:` swap idiom; `every fibs() \ 10` limits output.
+- Prolog: accumulator rule `fib/4`; `forall(between(0,9,N),...)` drives output.
+- Expected: 0 1 1 2 3 5 8 13 21 34. swipl PASS.
+
+**Next (SD-16): M-SD-DEMO6** -- `demo6/sieve.md`.
+Key contrast: TABLE bitset (SNOBOL4) vs list+every (Icon) vs exclude/sieve (Prolog).
+
+**Context window at handoff: ~36%.**
