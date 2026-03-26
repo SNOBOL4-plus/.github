@@ -19,26 +19,28 @@ assembled by `jasmin.jar` into `.class` files. Despite the file's location under
 
 | Session | Sprint | HEAD | Next milestone |
 |---------|--------|------|----------------|
-| **Icon JVM** | `main` IJ-47 ✅ M-IJ-STRING-RETVAL complete | `f204094` IJ-47 ✅ | M-IJ-NULL-TEST or M-IJ-CASE |
+| **Icon JVM** | `main` IJ-48 ✅ M-IJ-CASE complete | `2dad5b3` IJ-48 ✅ | M-IJ-NULL-TEST |
 
-### CRITICAL NEXT ACTION (IJ-48)
+### CRITICAL NEXT ACTION (IJ-49)
 
-**Baseline: 116/116 JVM rungs (rung05–32) PASS. rung32 t03 xfail (nested gen in str arg).**
+**Baseline: 121/121 JVM rungs (rung05–33) PASS. rung32 t03 xfail (nested gen in str arg).**
 
-IJ-47 committed (`f204094`). rung32: **4 pass, 0 fail, 1 xfail**.
+IJ-48 committed (`2dad5b3`). rung33: **5/5 PASS**.
 
-String proc args/returns fixed:
-1. Call emitter uses `icn_arg_str_N` (String) for string args
-2. Proc prologue loads from `icn_arg_str_N` when tagged 'A'
-3. Pass 1d (3-iteration fixpoint): pre-registers string arg/param fields
+This session completed (IJ-45→IJ-48):
+- M-IJ-SORT ✅ (4 layered bugs: 'R' tag, pre-pass 2, is_rec_direct, makelist record)
+- M-IJ-ALT-VALUE ✅ (ALT relay passes actual values through, not lconst_0 sentinel)
+- M-IJ-STRING-RETVAL ✅ (icn_arg_str_N + Pass 1d fixpoint, generator prologue)
+- M-IJ-CASE ✅ (parser + Byrd-box emitter: int/str dispatch, default, result wiring)
 
-**Next options:**
-- M-IJ-NULL-TEST: `\E` (non-null test) and `/E` (null/failure test)
-- M-IJ-CASE: `case E of { ... }` expression
-- M-IJ-BLOCK-BODY: `{ stmt; stmt }` compound body
+**Next: M-IJ-NULL-TEST**
+- `\E` — non-null test: succeeds if E succeeds (like `not not E`), produces E's value
+- `/E` — null/failure test: succeeds if E fails (like `not E`), produces &null (0L)
+- Needs: TK_BACKSLASH + TK_SLASH in lexer/parser as unary prefix ops
+- Emitter: ICN_NOT already exists; need ICN_NONNULL and ICN_NULL new AST kinds
 
 ```bash
-# Bootstrap IJ-48:
+# Bootstrap IJ-49:
 git clone https://TOKEN_SEE_LON@github.com/snobol4ever/snobol4x
 git clone https://TOKEN_SEE_LON@github.com/snobol4ever/.github
 apt-get install -y default-jdk nasm libgc-dev
@@ -213,22 +215,23 @@ gcc -Wall -Wextra -g -O0 -I. src/frontend/icon/icon_driver.c src/frontend/icon/i
 | M-IJ-CORPUS-R22 | 114/114 PASS rungs 01–22 | ✅ |
 | **M-IJ-TABLE** | `table`, `t[k]`, `key/insert/delete/member` | ✅ |
 | **M-IJ-RECORD** | `record` decl, `r.field` access, record proc args | ✅ |
-| **M-IJ-STRING-RETVAL** | String procedure returns: `putstatic icn_retval J` VerifyError — hard Scripten dep | ❌ **NEXT** |
-| M-IJ-NULL-TEST | `\E` (non-null test) and `/E` (null/failure test) unary ops | ❌ |
-| **M-IJ-BLOCK-BODY** | `{ stmt; stmt }` compound body in `while`/`every`/`if` — Scripten dep | ❌ |
+| **M-IJ-STRING-RETVAL** | String procedure returns: `icn_arg_str_N` + Pass 1d fixpoint | ✅ |
+| M-IJ-NULL-TEST | `\E` (non-null test) and `/E` (null/failure test) unary ops | ❌ **NEXT** |
+| **M-IJ-BLOCK-BODY** | `{ stmt; stmt }` compound body in `while`/`every`/`if` | ❌ |
 | M-IJ-GLOBAL | `global` vars, `initial` clause | ✅ |
 | M-IJ-POW | `^` exponentiation (int+real) | ✅ |
 | M-IJ-READ | `read()`, `reads(n)` | ✅ |
 | **M-IJ-BUILTINS-STR** | `repl/reverse/left/right/center/trim/map/char/ord` | ✅ |
-| **M-IJ-BUILTINS-TYPE** | `type/copy/image/numeric` | ❌ **NEXT** |
-| M-IJ-SORT | `sort/sortf` (depends: LISTS+TABLE) | ❌ |
-| M-IJ-CASE | `case E of { ... }` | ❌ |
+| **M-IJ-BUILTINS-TYPE** | `type/copy/image/numeric` | ✅ |
+| M-IJ-SORT | `sort/sortf` (depends: LISTS+TABLE) | ✅ |
+| M-IJ-ALT-VALUE | ALT relay passes actual values through (not lconst_0 sentinel) | ✅ |
+| M-IJ-CASE | `case E of { ... }` | ✅ |
 | M-IJ-SCAN-AUGOP | `s ?:= expr` | ❌ |
 | M-IJ-COEXPR | `create E`, `@C` co-expressions | 💭 |
 | M-IJ-MATH | `atan/sin/cos/exp/log/sqrt` | 💭 |
 | M-IJ-MULTIFILE | `link`, multi-file programs | 💭 |
 
-**Sprint order:** TABLE → RECORD → GLOBAL → POW → READ → BUILTINS-STR → BUILTINS-TYPE → SORT → CASE → SCAN-AUGOP → COEXPR → MATH → MULTIFILE.
+**Sprint order:** TABLE → RECORD → GLOBAL → POW → READ → BUILTINS-STR → BUILTINS-TYPE → SORT → ALT-VALUE → STRING-RETVAL → CASE → NULL-TEST → BLOCK-BODY → SCAN-AUGOP → COEXPR → MATH → MULTIFILE.
 
 ---
 

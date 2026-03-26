@@ -2059,3 +2059,46 @@ Specifically: the ICN_EVERY β-tableswitch dispatches into the ICN_AND sub-chain
 **Remaining bug:** `p` in `every p := !S do write(p.x)` pre-declared as `J` not `Object`. `ij_expr_is_record_list` VAR branch checks statics for `_elem_0 'O'` but those entries don't exist at Pass 1b time.
 
 **NEXT:** Add **Pass 1c** in `ij_emit_proc` after Pass 1b (~line 5545): walk all `ICN_ASSIGN(VAR v, rhs)` where `ij_expr_is_record_list(rhs)` is true (AST-only: MAKELIST with record elements, `sortf(...)`, or `sort` of record list) → `ij_declare_static_obj("icn_gvar_v")`. Expect 5/5 rung31. Then confirm 102/102 prior rungs. Then commit `IJ-45: M-IJ-SORT ✅`.
+
+---
+
+## IJ-45 through IJ-48 — M-IJ-SORT, M-IJ-ALT-VALUE, M-IJ-STRING-RETVAL, M-IJ-CASE ✅
+
+**Session:** Full IJ session completing four milestones. Context reached ~59% at handoff.
+
+**IJ-45: M-IJ-SORT ✅** (`6cabad7`)
+Four layered bugs fixed:
+1. `'R'` type tag for record-list vars (`ij_declare_static_reclist`) — `ij_expr_is_record_list(VAR)` works across body-before-gen Byrd-box ordering.
+2. Pre-pass 2: `every v := !reclist` pre-tags `v` as Object before body emit.
+3. `is_rec_direct`: bang-of-reclist assigns store Object directly from stack (no pop2+retval_obj).
+4. `ICN_MAKELIST` record elements: pop2 the 0L placeholder, load from `icn_retval_obj`.
+rung31: **5/5 PASS**. Baseline: 107/107.
+
+**IJ-46: M-IJ-ALT-VALUE ✅** (`1bf2e9c`)
+ALT relay redesigned to pass actual values through to ports.γ (was always discarding to lconst_0 sentinel):
+- String alts: `astore scratch → set gate → aload scratch`
+- Double alts: `dstore temp → set gate → dload temp`
+- Long/int alts: `lstore temp → set gate → lload temp`
+Also: `ij_expr_is_string(ICN_ALT)` returns 1 when all alternatives are strings.
+rung13: **5/5** (was 1 visible + 2 hidden by set -e). rung14: **5/5** (2 xfails resolved). Baseline: 112/112.
+
+**IJ-47: M-IJ-STRING-RETVAL ✅** (`f204094`)
+String-typed procedure arguments and return values:
+1. Call emitter: string args stored in `icn_arg_str_N` (String) not `icn_arg_N` (J).
+2. Proc prologue: loads from `icn_arg_str_N` when tagged `'A'`.
+3. Pass 1d (3-iteration fixpoint): pre-registers `icn_arg_str_N` and callee param fields. Sets `ij_cur_proc` correctly for chained param propagation (e.g. `wrap(s) → suffix(s)` where `s` is string).
+rung32: **4 pass, 0 fail, 1 xfail** (t03 xfail: nested gen in str proc arg). Baseline: 116/116.
+
+**IJ-48: M-IJ-CASE ✅** (`2dad5b3`)
+`case E of { V1:R1 ... default:RD }` expression:
+1. `icon_parse.c`: `parse_expr` + `parse_primary` handle `TK_CASE`. AST: `ICN_CASE([dispatch, val1, res1, ..., default?])`.
+2. `icon_emit_jvm.c`: `ij_emit_case()` — dispatch stored in `icn_N_case_disp`, per-clause val eval + compare (lcmp or String.equals), result branch wired AFTER `ij_emit_expr` (correct Byrd-box order). Last vnext→dstart explicit goto for default.
+3. `ij_expr_is_string(ICN_CASE)`: uses first result branch type.
+Key bugs fixed: vmatch and dstart fell through to wrong code due to Byrd-box reverse emit — fixed by emitting result expr before label+JGoto wiring.
+rung33: **5/5 PASS**. Baseline: 121/121.
+
+**NEXT (IJ-49): M-IJ-NULL-TEST**
+- `\E` (non-null test): succeeds if E succeeds, leaves E's value on stack
+- `/E` (null/failure test): succeeds if E fails, pushes 0L
+- Needs: TK_BACKSLASH + TK_SLASH unary prefix ops in lexer/parser
+- New AST kinds ICN_NONNULL and ICN_NULL (or reuse ICN_NOT pattern)
