@@ -1804,3 +1804,23 @@ Replace all `| 1` fallthrough no-ops in `family_icon.icn` with `| (i := i)` (lon
 4. Local slot type inconsistency at loop-back join points (VerifyError "Register pair N wrong type") → unconditional `lconst_0; lstore N` zero-init of all local slots at method entry
 
 **Next:** IJ-42 — M-IJ-BUILTINS-STR (`repl`/`reverse`/`left`/`right`/`center`/`trim`/`map`/`char`/`ord`)
+
+---
+
+## PJ-58 — M-PJ-SUCC-PLUS
+
+**HEAD start:** `d0b58bb` (PJ-57) → **HEAD end:** `937ef92`
+
+**Accomplished:**
+
+- **`pj_is_var(Object) → Z`** helper: checks null or `tag=="var" && [1]==null`.
+- **`pj_succ_2(Object x, Object y) → Z`**: if X bound → Y=X+1; else X=Y-1 (fails if Y-1<0).
+- **`pj_plus_3(Object x, Object y, Object z) → Z`**: three modes — X+Y→Z, Z-X→Y, Z-Y→X.
+- **Dispatch** for `succ/2` and `plus/3` in `pj_emit_goal`.
+- **rung18_succ_plus corpus** (5 tests): succ forward, succ backward, plus XY→Z, plus XZ→Y, plus YZ→X.
+
+**Score:** 5/5 rung18 ✅. rung11–17: 35/35 no regressions. **M-PJ-SUCC-PLUS ✅ FIRES.**
+
+**Context window at handoff: ~78%.**
+
+**Next session (PJ-59):** M-PJ-FORMAT — `format/1`, `format/2`. See FRONTEND-PROLOG-JVM.md §NOW.

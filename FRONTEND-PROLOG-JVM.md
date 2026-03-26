@@ -19,27 +19,26 @@ and emits Jasmin `.j` files, assembled by `jasmin.jar`.
 
 | Session | Sprint | HEAD | Next milestone |
 |---------|--------|------|----------------|
-| **Prolog JVM** | `main` PJ-57 — M-PJ-SORT ✅ 5/5 rung17 | `d0b58bb` PJ-57 | M-PJ-SUCC-PLUS |
+| **Prolog JVM** | `main` PJ-58 — M-PJ-SUCC-PLUS ✅ 5/5 rung18 | `937ef92` PJ-58 | M-PJ-FORMAT |
 
-### CRITICAL NEXT ACTION (PJ-58)
+### CRITICAL NEXT ACTION (PJ-59)
 
-**Baseline: 5/5 rung11–rung17 ✅. snobol4x HEAD `d0b58bb`.**
+**Baseline: 5/5 rung11–rung18 ✅. snobol4x HEAD `937ef92`.**
 
-**Next milestone: M-PJ-SUCC-PLUS — implement `succ/2`, `plus/3`.**
+**Next milestone: M-PJ-FORMAT — implement `format/1`, `format/2` (basic: `~w`, `~a`, `~n`, `~d`, `~i`).**
 
-**Key finding from PJ-57:** `sort/2`/`msort/2` use a self-contained insertion-sort helper (`pj_sort_list`) over an ArrayList. The `pj_list_to_arraylist` + `pj_arraylist_to_list` helpers are reusable for future list-manipulation builtins.
-
-**Bootstrap PJ-58:**
+**Bootstrap PJ-59:**
 ```bash
 git clone https://TOKEN@github.com/snobol4ever/snobol4x
 git clone https://TOKEN@github.com/snobol4ever/.github
 apt-get install -y default-jdk nasm libgc-dev swi-prolog
 make -C snobol4x/src
-# Read §NOW above. Implement succ/2 and plus/3.
-# bash test/frontend/prolog/run_prolog_jvm_rung.sh test/frontend/prolog/corpus/rung18_succ_plus
-# Confirm rung11–rung17 no regressions
+# Read §NOW above. Implement format/1 and format/2.
+# bash test/frontend/prolog/run_prolog_jvm_rung.sh test/frontend/prolog/corpus/rung19_format
+# Confirm rung11–rung18 no regressions
 # Commit snobol4x, update §NOW + PLAN.md + SESSIONS_ARCHIVE.md, push both repos
 ```
+
 ## Milestone Table
 
 | ID | Trigger | Status |
@@ -71,7 +70,8 @@ make -C snobol4x/src
 | **M-PJ-RETRACT** | `retract/1` — peek-then-remove, 5/5 rung14 | ✅ |
 | **M-PJ-ATOP** | `@<`/`@>`/`@=<`/`@>=` as parser infix operators — Scripten dep | ✅ |
 | **M-PJ-SORT** | `sort/2`, `msort/2` — insertion sort, optional dedup | ✅ |
-| **M-PJ-SUCC-PLUS** | `succ/2`, `plus/3` — successor/addition builtins | ❌ **NEXT** |
+| **M-PJ-SUCC-PLUS** | `succ/2`, `plus/3` — successor/addition builtins | ✅ |
+| **M-PJ-FORMAT** | `format/1`, `format/2` — ~w ~a ~n ~d ~i directives | ❌ **NEXT** |
 | **M-PJ-ABOLISH** | `abolish/1` — remove entire predicate from DB | ✅ |
 
 ---
