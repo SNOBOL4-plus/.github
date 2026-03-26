@@ -1466,3 +1466,21 @@ Root cause: `pj_emit_arith()` has no case for `mod` — falls to `default: lcons
 2. Build, `5/5 rung12` → **M-PJ-ATOM-BUILTINS ✅**.
 3. `20/20 puzzle corpus` confirm.
 4. Commit snobol4x, update §NOW + milestone table FRONTEND-PROLOG-JVM.md, update PLAN.md, push .github.
+
+## IJ-36 — M-IJ-TABLE ✅
+
+**HEAD:** `9635570` | **Date:** 2026-03-25
+
+**Baseline confirmed:** 114/114 + rung23 4/5 (t01–t04 PASS, t05 FAIL — `every total +:= t[key(t)]` returning 10 instead of 60).
+
+**Work done:**
+
+Two bugs fixed in `icon_emit_jvm.c`:
+
+**Bug3a — `key(T)` α re-snapshot:** Added `icn_N_kinit I` static field per key-call site. α port checks `getstatic kinit; ifne kchk` — if already initialized, skips re-snapshot and jumps directly to `kchk`. `ktr` (init path) sets `kinit=1` after snapshotting keySet and resetting kidx=0. Previously α always fell through to `ktr`, causing full re-snapshot on every `every`-loop resume → only first key ever yielded.
+
+**Bug3b — table subscript β wiring:** `ij_emit_subscript` table path had `JL(b); JGoto(ports.ω)` (marked "one-shot"). This broke `every total +:= t[key(t)]` because the every-pump chain was `gbfwd → augop.β → subscript.β → ports.ω` (loop exit after 1 key). Fixed to `JL(b); JGoto(kb)` — subscript β now resumes idx_child's β (= key generator's β), advancing to the next key on each every-loop iteration.
+
+**Score:** 119/119 PASS. M-IJ-TABLE ✅ fired.
+
+**Next session (IJ-37):** M-IJ-RECORD — `record` declarations as static inner JVM classes, `r.field` access via `getfield`/`putfield`, rung24 corpus (5 tests). See FRONTEND-ICON-JVM.md §Tier 1 for full plan.

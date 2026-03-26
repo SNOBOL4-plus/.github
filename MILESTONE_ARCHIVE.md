@@ -251,3 +251,9 @@ Implemented `pj_emit_findall_builtin()` with synthetic helpers `pj_copy_term`, `
 **Fired:** PJ-50 | **Date:** 2026-03-25 | **HEAD:** `cbd6979`
 
 Root bug: `pj_term_int` stores long as `String` via `Long.toString()` at slot [1], but `pj_int_val` was doing `checkcast Long → longValue()` and `pj_atom_name` INT branch had the same mismatch → `ClassCastException: String cannot be cast to Long` on `atom_codes` reverse path. Fixed both to `checkcast String → parseLong`, consistent with arithmetic path. Also fixed `pj_atom_name` INT branch to return String directly without Long boxing/unboxing round-trip. All 9 builtins implemented in PJ-48/49 were already correct; only the runtime helper was broken. 5/5 rung12 PASS. 5/5 rung11 PASS. 19/20 puzzle corpus (puzzle_19 pre-existing between/3 performance issue, not a regression).
+## M-IJ-TABLE — `table(dflt)`, `t[k]` subscript, `key/insert/delete/member` builtins
+
+**Fired:** IJ-36 | **Date:** 2026-03-25 | **HEAD:** `9635570`
+
+Three-session effort (IJ-34/35/36): IJ-34 scaffold + insert/delete/member; IJ-35 t[k]:=v VerifyError + table default value + 4/5 rung23; IJ-36 key(T) two-bug fix (kinit re-snapshot + subscript β wiring) → 5/5 rung23. 119/119 PASS. JVM HashMap<String,Object> backend. Subscript β now resumes key generator β (not one-shot) — required for `every … t[key(t)]` patterns.
+>>>>>>> 38b5401 (IJ-36: M-IJ-TABLE ✅ — update PLAN.md NOW, FRONTEND-ICON-JVM.md §NOW, milestone+session archive)

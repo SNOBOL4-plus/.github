@@ -22,6 +22,7 @@ Each concurrent session owns exactly one row. Update only your row on every push
 | **README** | `main` R-2 | `00846d3` | M-README-DEEP-SCAN |
 | **ICON frontend** | `main` I-11 — rung03 ✅ | `bab5664` I-11 | M-ICON-STRING |
 | **Prolog JVM** | `main` PJ-50 — 5/5 rung11 ✅; 5/5 rung12 ✅; M-PJ-ATOM-BUILTINS ✅ | `cbd6979` PJ-50 | M-PJ-ASSERTZ |
+| **Icon JVM** | `main` IJ-36 — M-IJ-TABLE ✅; 119/119 PASS | `9635570` IJ-36 | M-IJ-CORPUS-R22 |
 
 **Invariants:** TINY `106/106` (`run_crosscheck_asm_corpus.sh`) · DOTNET `1903/1903` (`dotnet test`)
 
@@ -63,7 +64,7 @@ Phases 0–8 · ~80 milestones M-G0-FREEZE → M-G8-CI · **NEXT: M-G0-FREEZE (L
 `M-PJ-FINDALL` ✅ · `M-PJ-ATOM-BUILTINS` ✅ · `M-PJ-ASSERTZ` ❌ **NEXT** · `M-PJ-RETRACT` ❌
 
 ### Icon JVM — detail → [FRONTEND-ICON-JVM.md](FRONTEND-ICON-JVM.md)
-`M-IJ-LISTS` ✅ · `M-IJ-CORPUS-R22` ❌ **NEXT**
+`M-IJ-LISTS` ✅ · `M-IJ-TABLE` ✅ · `M-IJ-CORPUS-R22` ❌ **NEXT**
 
 ### ICON frontend (ASM) — detail → [FRONTEND-ICON.md](FRONTEND-ICON.md)
 `M-ICON-STRING` ❌ **NEXT** · `M-ICON-SCAN` ❌ · `M-ICON-CSET` ❌ · `M-ICON-CORPUS-R4` ❌
