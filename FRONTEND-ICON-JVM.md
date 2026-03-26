@@ -19,20 +19,20 @@ assembled by `jasmin.jar` into `.class` files. Despite the file's location under
 
 | Session | Sprint | HEAD | Next milestone |
 |---------|--------|------|----------------|
-| **Icon JVM** | `main` IJ-38 — M-IJ-RECORD-PROCARG ✅ rung24 5/5 | `4e09418` IJ-38 | M-IJ-GLOBAL |
+| **Icon JVM** | `main` IJ-39 — M-IJ-GLOBAL ✅ rung25 7/7 | `e4f0f7e` IJ-39 | M-IJ-POW |
 
-### CRITICAL NEXT ACTION (IJ-39)
+### CRITICAL NEXT ACTION (IJ-40)
 
-**Baseline: 70/70 JVM rungs (rung05–24) PASS. 0 xfail.**
+**Baseline: 77/77 JVM rungs (rung05–25) PASS. 0 xfail.**
 
-**M-IJ-RECORD is complete.** Next milestone: **M-IJ-GLOBAL** — `global` variable declarations and `initial` clause.
+**M-IJ-GLOBAL is complete.** Next milestone: **M-IJ-POW** — `^` exponentiation operator.
 
 Features needed:
-- `global x` — declare a global var (already handled via `icn_gvar_*` fields for vars used before assignment, but `global` keyword needs parser + explicit registration)
-- `initial { ... }` — code block executed only on first proc entry (guarded by a static boolean flag)
+- `x ^ y` — integer and real exponentiation (emit `Math.pow`, cast result back to long for int operands)
+- Parser: `^` is right-associative, higher precedence than `*`
 
 ```bash
-# Bootstrap IJ-39:
+# Bootstrap IJ-40:
 git clone https://TOKEN_SEE_LON@github.com/snobol4ever/snobol4x
 git clone https://TOKEN_SEE_LON@github.com/snobol4ever/.github
 apt-get install -y default-jdk nasm libgc-dev
@@ -41,8 +41,8 @@ gcc -Wall -Wextra -g -O0 -I. src/frontend/icon/icon_driver.c src/frontend/icon/i
     src/frontend/icon/icon_parse.c src/frontend/icon/icon_ast.c \
     src/frontend/icon/icon_emit.c src/frontend/icon/icon_emit_jvm.c \
     src/frontend/icon/icon_runtime.c -o /tmp/icon_driver
-bash test/frontend/icon/run_rung24.sh /tmp/icon_driver   # expect 5/0/0 baseline
-# Add rung25_global corpus, implement M-IJ-GLOBAL, commit "IJ-39: M-IJ-GLOBAL ✅"
+bash test/frontend/icon/run_rung25.sh /tmp/icon_driver   # expect 7/0/0 baseline
+# Add rung26_pow corpus, implement M-IJ-POW, commit "IJ-40: M-IJ-POW ✅"
 ```
 
 ---
@@ -190,11 +190,11 @@ gcc -Wall -Wextra -g -O0 -I. src/frontend/icon/icon_driver.c src/frontend/icon/i
 | **M-IJ-STRING-RETVAL** | String procedure returns: `putstatic icn_retval J` VerifyError — hard Scripten dep | ❌ **NEXT** |
 | M-IJ-NULL-TEST | `\E` (non-null test) and `/E` (null/failure test) unary ops | ❌ |
 | **M-IJ-BLOCK-BODY** | `{ stmt; stmt }` compound body in `while`/`every`/`if` — Scripten dep | ❌ |
-| M-IJ-GLOBAL | `global` vars, `initial` clause | ❌ |
+| M-IJ-GLOBAL | `global` vars, `initial` clause | ✅ |
+| **M-IJ-POW** | `^` exponentiation (int+real) | ❌ **NEXT** |
 | M-IJ-BUILTINS-STR | `repl/reverse/left/right/center/trim/map/char/ord` | ❌ |
 | M-IJ-BUILTINS-TYPE | `type/copy/image/numeric` | ❌ |
 | M-IJ-SORT | `sort/sortf` (depends: LISTS+TABLE) | ❌ |
-| M-IJ-POW | `^` exponentiation | ❌ |
 | M-IJ-CASE | `case E of { ... }` | ❌ |
 | M-IJ-READ | `read()`, `reads(n)` | ❌ |
 | M-IJ-SCAN-AUGOP | `s ?:= expr` | ❌ |
