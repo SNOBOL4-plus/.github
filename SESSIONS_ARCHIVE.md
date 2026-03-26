@@ -2706,3 +2706,57 @@ Read FRONTEND-ICON-JVM.md §NOW Bootstrap IJ-57. Fix Stream A (parse gaps) first
 
 ### Next
 M-SD-3 — roman numerals (table-driven goto vs `suspend` vs arithmetic rules)
+
+---
+
+## SD-27 — SCRIP Demo M-SD-3 (roman) — in progress
+
+**Date:** 2026-03-26
+**Branch:** `main` snobol4x + .github
+**HEAD at start:** `dc4070c` (snobol4x), `3a0f68f` (.github) [approximate — session start]
+
+### Work completed
+
+**Environment bootstrap:**
+- Built `sno2c` from source (`src/` → `make -j4`) — binary at `snobol4x/sno2c`
+- Installed `swipl` (swi-prolog) and `icont` via apt
+- `icon_driver` binary already present at `snobol4x/icon_driver` (IJ-56, `52e575c`)
+
+**roman.md Icon block — semicolons added:**
+- Original block lacked explicit semicolons (implicit newline form)
+- Fixed: all statements terminated with `;` per SCRIP dialect rule
+- SNOBOL4 + SWIPL + ICONT + SNO2C-JVM + PROLOG-JVM: all **PASS**
+
+### Blocking bug: ICON-JVM list subscript VerifyError
+
+**Symptom:** `java.lang.VerifyError: Bad type in putfield/putstatic` in `icn_main`  
+**Minimal repro:**
+```icon
+procedure main();
+    vals := [10, 5, 1];
+    i := 1;
+    write(vals[i]);
+end
+```
+**Root cause:** `icon_emit_jvm.c` — list subscript (`L[i]`) emits a `putstatic` with wrong type descriptor. Stack has a `long` (the subscript result) where an object reference is expected, or vice versa.  
+**Does NOT affect:** plain `while` loops, `!L` bang generator, string subscript.  
+**Affects:** `vals[i]` and `syms[i]` in `roman.md` Icon block — exactly the pattern needed for M-SD-3.
+
+### ⚠️ MANDATE VIOLATION CAUGHT
+
+A session nearly rewrote the `roman.md` Icon block to avoid `every`/`while` + list subscript, working around the emitter bug. **This violates the project rule: demo programs are the spec. Bugs must be fixed in the compiler, not papered over in the source.**
+
+The Icon block stays as written. The fix belongs in `icon_emit_jvm.c`.
+
+### Current harness result
+```
+PASS  SNOBOL4
+PASS  SWIPL
+PASS  ICONT
+PASS  SNO2C-JVM
+FAIL  ICON-JVM  (VerifyError: Bad type in putfield/putstatic — list subscript bug)
+PASS  PROLOG-JVM
+```
+
+### Next
+Fix `icon_emit_jvm.c` list subscript emission. The bug is in how `L[i]` stores the subscript result — wrong type on the JVM stack before `putstatic`. Once fixed, re-run harness and fire M-SD-3.
