@@ -1918,3 +1918,41 @@ Replace all `| 1` fallthrough no-ops in `family_icon.icn` with `| (i := i)` (lon
 **Context window at handoff: ~26%.**
 
 **Next session (PJ-65):** M-PJ-STRING-IO — create rung24, implement 6 string builtins. See FRONTEND-PROLOG-JVM.md §NOW.
+
+---
+
+## IJ-45 — M-IJ-SORT WIP (handoff, not committed)
+
+**Date:** 2026-03-26. **Repos:** snobol4x (working tree only — not pushed). **HEAD unchanged:** `fe87efc`.
+
+**Baseline entering:** 102/102 (rung05–30). **Baseline at handoff:** unchanged (no commit made).
+
+**Work done in working tree (`icon_emit_jvm.c`):**
+
+1. **`sort(L)` dispatch** in `ij_emit_call`: one-shot builtin. Evals child list via relay, stores in static list field, calls `icn_builtin_sort(Ljava/util/ArrayList;)Ljava/util/ArrayList;`, pushes result → `ports.γ`. β → `ports.ω`.
+
+2. **`sortf(L, f)` dispatch**: evals list then field index, `l2i` converts long→int, calls `icn_builtin_sortf(Ljava/util/ArrayList;I)Ljava/util/ArrayList;`, result → `ports.γ`.
+
+3. **`icn_builtin_sort` Jasmin helper**: insertion sort on `Long`-boxed ArrayList elements. Uses `lstore 4`/`lload 4` — **BUT emitted as `lstore_4`/`lload_4` (bug, see below)**.
+
+4. **`icn_builtin_sortf` Jasmin helper**: insertion sort using `java.lang.reflect.Field` to access record fields by 1-based index. `compareTo(Long)` for comparison.
+
+5. **rung31_sort corpus**: 5 tests — `t01_sort_basic`, `t02_sort_every`, `t03_sort_already_sorted`, `t04_sortf_field1`, `t05_sortf_field2`. All `.icn` use correct semicolon syntax.
+
+6. **`run_rung31.sh`**: runner script that also compiles `$*.j` record inner classes.
+
+**Blocking bug (NOT fixed — context exhausted):**
+
+`icn_builtin_sort` helper emits `lstore_4` and `lload_4`. Jasmin assembler rejects underscore shorthand for locals ≥ 4. Must change to `lstore 4` / `lload 4` in two `J(...)` lines in the sort helper emission block (~line 5930 in `icon_emit_jvm.c`). One-minute fix.
+
+**rung31 result at handoff:** 0/5 FAIL (all fail due to Jasmin parse errors from `lstore_4`/`lload_4`).
+
+**Context window at handoff: ~90%.**
+
+**Next session (IJ-46):**
+1. Apply one-line fix: `lstore_4` → `lstore 4`, `lload_4` → `lload 4` in sort helper emission.
+2. Rebuild, confirm rung31 5/5 PASS.
+3. Confirm prior rungs 102/102 unchanged.
+4. Commit `IJ-45: M-IJ-SORT ✅`, push snobol4x.
+5. Update FRONTEND-ICON-JVM.md §NOW, PLAN.md, MILESTONE_ARCHIVE.md, SESSIONS_ARCHIVE.md.
+6. Push .github.
