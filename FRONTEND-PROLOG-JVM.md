@@ -19,22 +19,15 @@ and emits Jasmin `.j` files, assembled by `jasmin.jar`.
 
 | Session | Sprint | HEAD | Next milestone |
 |---------|--------|------|----------------|
-| **Prolog JVM** | `main` PJ-64 — baseline 20/20 rung11–rung23 ✅ | `e897666` PJ-64 | M-PJ-STRING-IO |
+| **Prolog JVM** | `main` PJ-65 — M-PJ-STRING-IO ✅ 5/5 rung24 | `42df550` PJ-65 | M-PJ-TERM-STRING |
 
-### CRITICAL NEXT ACTION (PJ-65)
+### CRITICAL NEXT ACTION (PJ-66)
 
-**Baseline: 20/20 rung11–rung23 ✅. snobol4x HEAD `e897666`.**
+**Baseline: 5/5 rung24 ✅, 35/35 rung11–rung24 ✅. snobol4x HEAD `42df550`.**
 
-**Next milestone: M-PJ-STRING-IO — implement `atom_string/2`, `number_string/2`, `string_concat/3`, `string_length/2`, `string_lower/2`, `string_upper/2`.**
+**Next milestone: M-PJ-TERM-STRING — implement `term_to_atom/2`, `term_string/2`, `with_output_to(string(S), Goal)` or next queued milestone.**
 
-**Implementation plan:**
-1. Create `test/frontend/prolog/corpus/rung24_string_io/` — 5 test cases (t01–t05), `.pro` + `.expected`
-2. Add JVM helper methods + `pj_emit_goal` dispatch in `prolog_emit_jvm.c` following `atom_concat`/`atom_chars` pattern
-3. Register names in builtin whitelist (`prolog_builtin.c` / whitelist array near line 2941)
-4. Build, run rung24 to green, confirm rung11–23 no regressions
-5. Commit snobol4x, update §NOW + PLAN.md, push both repos
-
-**Bootstrap PJ-65:**
+**Bootstrap PJ-66:**
 ```bash
 git clone https://TOKEN_SEE_LON@github.com/snobol4ever/snobol4x
 git clone https://TOKEN_SEE_LON@github.com/snobol4ever/.github
@@ -78,6 +71,9 @@ make -C snobol4x/src
 | **M-PJ-FORMAT** | `format/1`, `format/2` — ~w ~a ~n ~d ~i directives | ✅ |
 | **M-PJ-NUMBER-VARS** | `numbervars/3` — name unbound vars as A,B,...Z,A1,...; `$VAR` write support | ✅ |
 | **M-PJ-CHAR-TYPE** | `char_type/2` — alpha/alnum/digit/space/upper/lower/to_upper/to_lower/ascii | ✅ |
+| **M-PJ-WRITE-CANONICAL** | `writeq/1`, `write_canonical/1`, `print/1`; atom quoting + symbolic token rules | ✅ |
+| **M-PJ-SUCC-ARITH** | `max/min/sign/truncate/msb`; bitwise `/\ \/ xor >> <<`; `** ^`; prefix `\`; parser op table | ✅ |
+| **M-PJ-STRING-IO** | `atom_string/2`, `number_string/2`, `string_concat/3`, `string_length/2`, `string_lower/2`, `string_upper/2`; rung24 5/5 | ✅ |
 | **M-PJ-WRITE-CANONICAL** | `writeq/1`, `write_canonical/1`, `print/1`; atom quoting + symbolic token rules | ✅ |
 | **M-PJ-SUCC-ARITH** | `max/min/sign/truncate/msb`; bitwise `/\ \/ xor >> <<`; `** ^`; prefix `\`; parser op table | ✅ |
 

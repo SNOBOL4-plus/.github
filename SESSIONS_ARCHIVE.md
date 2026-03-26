@@ -1956,3 +1956,19 @@ Replace all `| 1` fallthrough no-ops in `family_icon.icn` with `| (i := i)` (lon
 4. Commit `IJ-45: M-IJ-SORT ✅`, push snobol4x.
 5. Update FRONTEND-ICON-JVM.md §NOW, PLAN.md, MILESTONE_ARCHIVE.md, SESSIONS_ARCHIVE.md.
 6. Push .github.
+
+---
+
+## PJ-65 — M-PJ-STRING-IO ✅
+
+**Date:** 2026-03-26. **Repos:** snobol4x (main). **HEAD at handoff:** `42df550`.
+
+**Baseline entering:** 20/20 rung11–rung23 ✅. **Baseline at handoff:** 35/35 rung11–rung24 ✅.
+
+**M-PJ-STRING-IO:** Added `pj_atom_string_2` and `pj_number_string_2` JVM helper methods to `prolog_emit_jvm.c`. Added 6 dispatch blocks in `pj_emit_goal`: `atom_string/2` (bidirectional via helper), `number_string/2` (bidirectional via helper), `string_concat/3` (alias for atom_concat), `string_length/2` (alias for atom_length), `string_upper/2` (alias for upcase_atom), `string_lower/2` (alias for downcase_atom). All 6 registered in builtin whitelist. Created rung24_string_io with 5 tests. 5/5 PASS, 0 regressions.
+
+**Note:** `apt-get install` requires `--fix-missing` in this container environment.
+
+**Context window at handoff: ~40%.**
+
+**Next session (PJ-66):** M-PJ-TERM-STRING — `term_to_atom/2`, `term_string/2`, `with_output_to(string(S),Goal)`. See FRONTEND-PROLOG-JVM.md §NOW.
