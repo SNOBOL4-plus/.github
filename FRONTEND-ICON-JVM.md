@@ -19,85 +19,64 @@ assembled by `jasmin.jar` into `.class` files. Despite the file's location under
 
 | Session | Sprint | HEAD | Next milestone |
 |---------|--------|------|----------------|
-| **Icon JVM** | `main` IJ-55 — M-IJ-STRRET-GEN ✅ | `d64d752` IJ-55 | *(open)* |
+| **Icon JVM** | `main` IJ-56 — M-IJ-JCON-HARNESS 🔄 | `52e575c` IJ-56 | M-IJ-JCON-HARNESS |
 
-### IJ-55 findings — M-IJ-STRRET-GEN ✅ (HEAD d64d752)
+### IJ-56 progress — M-IJ-JCON-HARNESS (HEAD 52e575c)
 
-**rung32: 5/5 PASS (was 4 pass, 1 xfail). 153/153 PASS total. Zero regressions.**
+**rung01–35: 153/153 PASS. Zero regressions.**
 
-**Root cause:** `ij_emit_call` β path for non-generator procs unconditionally jumped to `ports.ω`. So `every write(tag("a" | "b" | "c"))` — where `tag` is non-gen but its arg is a generator — exited after the first value; the arg alternation's β was never invoked on subsequent pump cycles.
+**Work done this session:**
+- Added `rung36_jcon/` — 75 JCON oracle tests (t01–t75), `.expected` from JCON `.std`, `.stdin` from JCON `.dat`, `.xfail` for SET/BIGINT/COEXPR/errors
+- `run_rung36.sh` — pipes each `.icn` through `icon_semicolon` before compilation
+- `icon_semicolon.c` — auto-semicolon converter (Icon LRM §3.1 rule); build: `gcc -O2 -o /tmp/icon_semicolon src/frontend/icon/icon_semicolon.c`
+- `icon_parse.c` — `static` declarations now handled same as `local`; omitted function args `f(,x)` `f(x,)` emit `&null`
+- `icon_lex.c` — `NNrXX` radix literals (16rff, 3r201, 36rcat, etc.)
+- `icon_semicolon.c` — JCON preprocessor: `$<`→`[`, `$>`→`]`, `$(`→`{`, `$)`→`}`
 
-**Fix:** Non-generator proc β now routes to `arg_betas[nargs-1]` (last arg's β) when `nargs > 0`, re-pumping the arg generator chain and re-calling. Zero-arg non-gen procs still route to `ports.ω`.
+**rung36 baseline: 38 compile errors, 13 compile+run, 0 pass (all backend content bugs)**
 
-**Removed:** `t03_strret_every.xfail` marker.
+### NEXT ACTION — M-IJ-JCON-HARNESS
 
-### Session IJ-53 — IJ-55 summary
+**Goal:** All non-xfail rung36 tests PASS (t01–t52, skipping t31/t53–t75 xfail). Currently 0/51.
 
-| Milestone | Result |
-|---|---|
-| M-IJ-RECURSION (IJ-53) | `fact(5)=120` — save/restore caller scratch statics across calls |
-| M-IJ-INITIAL (IJ-54) | `initial` persistence — exclude callee `icn_pv_*` from callsave restore |
-| Harness coverage (IJ-54b) | All corpus dirs now have scripts (rung08/09/12/18/20/21 added) |
-| M-IJ-STRRET-GEN (IJ-55) | `every proc(gen_arg)` — β re-pumps last arg; rung32 t03 promoted from xfail |
+**Two work streams:**
 
-### Bootstrap IJ-56
+**Stream A — Remaining parse gaps (compile errors):**
+Fix these in `icon_parse.c` / `icon_lex.c` to reduce 38 CE to ~0:
+1. `if/then/else` without braces multi-line — affects t25, t32, t44, t47 (`got else`)
+2. `++` cset union op — not in lexer — affects t38, t39, t43, t44 (`got +`)
+3. `=:=` swap-assign op — `=:=` differs from `:=:` — affects t34, t21
+4. `!expr` as function argument — `every (-3|-2|-1|0|1|2|3) ! [201,202]` — affects t02, t52
+5. `initial { block }` — `initial` with brace body — affects t27
+6. `s[i+:n]` / `s[i-:n]` M+:N slice forms — affects t22
+7. `?E` in expression position — affects t16, t17
+8. Block `do { }` in certain positions — affects t27, t50, t51
 
+**Stream B — Backend content bugs (13 compile but produce wrong output):**
+- `image(&null)` returns `0` not `&null` — affects t03, t32
+- `center(s,n)` off by one — affects t07
+- `trim(s)` doesn't quote output — affects t08 (actually image() issue)
+- `primes` empty output — `next` inside nested `every`/`if` — t01
+- `level()` empty — recursive depth tracking — t10
+
+**Bootstrap IJ-57:**
 ```bash
 git clone https://TOKEN@github.com/snobol4ever/snobol4x
 git clone https://TOKEN@github.com/snobol4ever/.github
-apt-get install -y default-jdk nasm libgc-dev
+apt-get install -y default-jdk
 cd snobol4x
 gcc -g -O0 -I. src/frontend/icon/icon_driver.c src/frontend/icon/icon_lex.c \
     src/frontend/icon/icon_parse.c src/frontend/icon/icon_ast.c \
     src/frontend/icon/icon_emit.c src/frontend/icon/icon_emit_jvm.c \
     src/frontend/icon/icon_runtime.c -o /tmp/icon_driver
+gcc -O2 -o /tmp/icon_semicolon src/frontend/icon/icon_semicolon.c
+# Confirm rung01-35 clean:
 for s in test/frontend/icon/run_rung*.sh; do bash $s /tmp/icon_driver 2>/dev/null; done | grep -E "^---"
-# Expected: all clean, 0 fail
+# Run rung36:
+bash test/frontend/icon/run_rung36.sh /tmp/icon_driver /tmp/icon_semicolon 2>/dev/null | grep -E "^PASS|^---"
+# Expected: 0 pass, 38 CE, 13 run, 24 xfail — fix Stream A then Stream B
 ```
 
-**Baseline: rung02_proc 3/3, rung02_arith_gen 5/5, rung04_string 5/5, rung35_table_str 2/2. All rung05–35 unaffected. Zero regressions.**
-
-**Root cause (broader than diagnosed):** ALL class-level statics — not just `icn_pv_<proc>_*` but also `icn_N_binop_lc/rc`, `icn_N_relop_lc/rc`, etc. — are trampled by recursive calls. For `n * fact(n-1)`, `n` is saved into `icn_1_binop_lc` before the recursive call; that field is then overwritten by the callee's own `n * fact(n-1)` computation.
-
-**Fix in `icon_emit_jvm.c`:**
-- Added `ij_static_needs_callsave(i)`: returns 1 for `'J'`-typed statics except `icn_gvar_*` (globals), `icn_arg_*`, `icn_retval`, `icn_failed/suspended/suspend_id`
-- In `ij_emit_call` `do_call` block: emit `getstatic+lstore` for each saveable static before `invokestatic`; `lload+putstatic` after
-- Same treatment for `b_resume` (generator re-entry) path
-- `.limit locals` bumped by `2 * ij_nstatics` to cover the spill region
-
-**Harness scripts written:** `run_rung02_arith_gen.sh`, `run_rung02_proc.sh`, `run_rung04_string.sh`, `run_rung35_table_str.sh`
-
-**Pre-existing failures (not introduced):** rung25 t03/t07 (`initial` locals) — next milestone candidate.
-
-### NEXT ACTION (IJ-54) — M-IJ-INITIAL
-
-**Bug: `initial` block in procedure runs every call instead of once**
-
-rung25 t03 (`t03_initial_once.icn`) and t07 (`t07_initial_zero.icn`) fail:
-- `initial x := 10` should run only on first call; subsequent calls skip it
-- Currently re-initialises `x` on every call → counter resets each time
-
-**Expected fix:** emit an `icn_init_<proc>` byte static (flag); wrap `initial` block: `getstatic icn_init_<proc>` → `ifne skip_initial` → run block → `iconst_1 putstatic icn_init_<proc>` → `skip_initial:`
-
-```bash
-# Bootstrap IJ-53:
-git clone https://TOKEN_SEE_LON@github.com/snobol4ever/snobol4x
-git clone https://TOKEN_SEE_LON@github.com/snobol4ever/.github
-apt-get install -y default-jdk nasm libgc-dev
-cd snobol4x
-gcc -g -O0 -I. src/frontend/icon/icon_driver.c src/frontend/icon/icon_lex.c \
-    src/frontend/icon/icon_parse.c src/frontend/icon/icon_ast.c \
-    src/frontend/icon/icon_emit.c src/frontend/icon/icon_emit_jvm.c \
-    src/frontend/icon/icon_runtime.c -o /tmp/icon_driver
-bash test/frontend/icon/run_rung23.sh /tmp/icon_driver   # 5/5 ✅
-bash test/frontend/icon/run_rung36.sh /tmp/icon_driver   # 4/4 + 1 xfail ✅
-# Confirm recursion bug:
-/tmp/icon_driver -jvm test/frontend/icon/corpus/rung02_proc/t02_fact.icn -o /tmp/fact.j
-java -jar src/backend/jvm/jasmin.jar /tmp/fact.j -d /tmp/ && java -cp /tmp/ T02_fact
-# expected: 120   actual: 1
-```
-
----
 
 ## §BUILD
 ```bash
@@ -273,7 +252,10 @@ gcc -Wall -Wextra -g -O0 -I. src/frontend/icon/icon_driver.c src/frontend/icon/i
 | M-IJ-CASE | `case E of { ... }` | ✅ |
 | M-IJ-SCAN-AUGOP | `s ?:= expr` | ✅ |
 | **M-IJ-TABLE-VERIFY** | rung23 5/5 — int+str keys, str defaults, member/delete | ✅ |
-| **M-IJ-RECURSION** | Save/restore `icn_pv_*` statics around user proc calls | ❌ **NEXT** |
+| M-IJ-RECURSION | Save/restore `icn_pv_*` statics around user proc calls | ✅ |
+| M-IJ-INITIAL | `initial` block once-only flag | ✅ |
+| M-IJ-STRRET-GEN | β re-pumps last arg for non-gen procs | ✅ |
+| **M-IJ-JCON-HARNESS** | rung36 JCON oracle suite: icon_semicolon + all t01–t52 PASS | ❌ **NEXT** |
 | M-IJ-COEXPR | `create E`, `@C` co-expressions | 💭 |
 | M-IJ-MATH | `atan/sin/cos/exp/log/sqrt` | 💭 |
 | M-IJ-MULTIFILE | `link`, multi-file programs | 💭 |

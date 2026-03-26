@@ -2632,3 +2632,44 @@ REPLACE, IDENT, DIFFER, CONVERT, LT, GT, LE, EQ, LGT, ANY, LEN, POS, RPOS, DATA)
 4. Begin Icon/Prolog runtime gap analysis for M-SD-2 (wordcount)
 
 **Context window at handoff: ~78%.**
+
+---
+
+## IJ-56 — M-IJ-JCON-HARNESS (in progress)
+
+**Date:** 2026-03-26  
+**HEAD at close:** `52e575c` snobol4x  
+**Baseline maintained:** rung01–35: 153/153 PASS, 0 regressions
+
+### Work completed
+
+**rung36_jcon corpus (195 files committed):**
+- 75 JCON oracle tests (t01–t75) from `jcon-master/test/`
+- `.expected` = JCON `.std` oracle outputs
+- `.stdin` = JCON `.dat` stdin feeds (22 tests)
+- `.xfail` markers: t31 (errkwds), t53–t75 (SET/BIGINT/COEXPR/errors)
+- `run_rung36.sh` — stdin-aware, pipes through `icon_semicolon`
+
+**icon_semicolon.c** (new tool, `src/frontend/icon/icon_semicolon.c`):
+- Auto-semicolon converter: standard Icon → semicolon-explicit form
+- Implements Icon LRM §3.1 rule: insert `;` before newline after statement-ending tokens
+- JCON preprocessor: `$<`→`[`, `$>`→`]`, `$(`→`{`, `$)`→`}`
+- Build: `gcc -O2 -o /tmp/icon_semicolon src/frontend/icon/icon_semicolon.c`
+
+**icon_parse.c fixes:**
+- `static` declarations handled same as `local` in procedure body
+- Omitted args `f(,x)` `f(x,)` `f(x,,z)` emit `&null` (ICN_VAR `"&null"`)
+
+**icon_lex.c fixes:**
+- `NNrXX` radix literals: `16rff`, `3r201`, `36rcat`, etc.
+
+### rung36 baseline at handoff
+
+- 38 compile errors (parse gaps listed in §NOW Stream A)  
+- 13 compile+run, 0 pass (backend content bugs listed in §NOW Stream B)
+- 24 xfail
+
+### Next session
+
+Read FRONTEND-ICON-JVM.md §NOW Bootstrap IJ-57. Fix Stream A (parse gaps) first to maximize compile coverage, then Stream B (backend bugs) to get passes.
+

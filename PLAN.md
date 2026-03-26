@@ -22,7 +22,7 @@ Each concurrent session owns exactly one row. Update only your row on every push
 | **README** | `main` R-2 | `00846d3` | M-README-DEEP-SCAN |
 | **ICON frontend** | `main` I-11 — rung03 ✅ | `bab5664` I-11 | M-ICON-STRING |
 | **Prolog JVM** | `main` PJ-76 — 8 plunit bugs fixed; SWI baseline partial | `d6c63ad` PJ-76 | M-PJ-SWI-BASELINE |
-| **Icon JVM** | `main` IJ-55 ✅ M-IJ-STRRET-GEN; 153/153 PASS; 0 xfail | `d64d752` IJ-55 | *(open — see FRONTEND-ICON-JVM.md)* |
+| **Icon JVM** | `main` IJ-56 — M-IJ-JCON-HARNESS 🔄 rung36 0/51 pass; 38 CE; icon_semicolon ✅ | `52e575c` IJ-56 | M-IJ-JCON-HARNESS |
 
 **Invariants:** TINY `106/106` (`run_crosscheck_asm_corpus.sh`) · DOTNET `1903/1903` (`dotnet test`)
 
