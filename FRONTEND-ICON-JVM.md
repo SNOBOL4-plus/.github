@@ -19,18 +19,18 @@ assembled by `jasmin.jar` into `.class` files. Despite the file's location under
 
 | Session | Sprint | HEAD | Next milestone |
 |---------|--------|------|----------------|
-| **Icon JVM** | `main` IJ-42 — M-IJ-BUILTINS-STR ✅ rung28 5/5 | `5f710ff` IJ-42 | M-IJ-BUILTINS-TYPE |
+| **Icon JVM** | `main` IJ-43 — M-IJ-BUILTINS-TYPE ✅ rung29 5/5 | `495cb65` IJ-43 | M-IJ-BUILTINS-MISC |
 
-### CRITICAL NEXT ACTION (IJ-43)
+### CRITICAL NEXT ACTION (IJ-44)
 
-**Baseline: 92/92 JVM rungs (rung05–28) PASS. 0 xfail. rung14 2 pre-existing xfail unchanged.**
+**Baseline: 97/97 JVM rungs (rung05–29) PASS. 0 xfail. rung14 2 pre-existing xfail unchanged.**
 
-**M-IJ-BUILTINS-STR is complete.** Next milestone: **M-IJ-BUILTINS-TYPE** — type/copy/image/numeric builtins.
+**M-IJ-BUILTINS-TYPE is complete.** Next milestone: **M-IJ-BUILTINS-MISC** — remaining utility builtins.
 
-Functions needed: `type(x)` `copy(x)` `image(x)` `numeric(x)`
+Candidates: `abs(x)` `max(x,...)` `min(x,...)` `sqrt(x)` `seq(i,j)` `iand/ior/ixor/icom/ishift`
 
 ```bash
-# Bootstrap IJ-43:
+# Bootstrap IJ-44:
 git clone https://TOKEN_SEE_LON@github.com/snobol4ever/snobol4x
 git clone https://TOKEN_SEE_LON@github.com/snobol4ever/.github
 apt-get install -y default-jdk nasm libgc-dev
@@ -39,8 +39,8 @@ gcc -Wall -Wextra -g -O0 -I. src/frontend/icon/icon_driver.c src/frontend/icon/i
     src/frontend/icon/icon_parse.c src/frontend/icon/icon_ast.c \
     src/frontend/icon/icon_emit.c src/frontend/icon/icon_emit_jvm.c \
     src/frontend/icon/icon_runtime.c -o /tmp/icon_driver
-bash test/frontend/icon/run_rung28.sh /tmp/icon_driver   # expect 5/0/0 baseline
-# Add rung29_builtins_type corpus, implement M-IJ-BUILTINS-TYPE, commit "IJ-43: M-IJ-BUILTINS-TYPE ✅"
+bash test/frontend/icon/run_rung29.sh /tmp/icon_driver   # expect 5/0/0 baseline
+# Add rung30_builtins_misc corpus, implement M-IJ-BUILTINS-MISC, commit "IJ-44: M-IJ-BUILTINS-MISC ✅"
 ```
 
 ---
