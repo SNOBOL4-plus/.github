@@ -1670,3 +1670,25 @@ Toplevel `:- Goal` directives are parsed as `E_DIRECTIVE` but `pj_emit_main()` i
 3. Run `inject_linkage.py /tmp/scripten_demo/`.
 4. Write `ScriptenFamily.j`, `scripten_split.py`, `run_demo.sh`, `family.expected`, `README.md`.
 5. `run_demo.sh` clean → commit `M-SCRIPTEN-DEMO ✅`.
+
+## PJ-54 — M-PJ-RETRACT ✅ — 2026-03-25
+
+**HEAD start:** `8929f4e` (PJ-53) → **HEAD end:** `5d947a1`
+
+**Accomplished:**
+
+- **`pj_db_retract(String key, int idx) → Object | null`** JVM helper added in `pj_emit_assertz_helpers`: fetches ArrayList for key, bounds-checks, calls `ArrayList.remove(int)`, returns removed term or null.
+
+- **`retract/1` dispatch in `pj_emit_goal`** (after assertz block): peek-then-remove strategy — `pj_db_query` at `db_idx_local` first; on null → `lbl_ω`; save trail mark; probe `pj_unify`; on fail → `pj_trail_unwind` + `iinc db_idx_local` + loop; on success → `pj_db_retract` at confirmed index + `lbl_γ`. Three scratch locals allocated via `(*next_local)++`.
+
+- **`"retract"` added to builtins[]** so `pj_is_user_call` returns 0 for it.
+
+- **rung14_retract corpus** (5 tests): `retract_basic` (remove specific atom, query remainder), `retract_unify` (retract with variable binding), `retract_all` (recursive retract loop empties DB), `retract_mixed` (remove middle element, verify order), `retract_nonexistent` (retract absent fact → fail path).
+
+**Score:** 5/5 rung14 ✅. rung11–13: 15/15 no regressions. **M-PJ-RETRACT ✅ FIRES.**
+
+**Note on inline retract limitations:** `retract(X), fail` backtrack-driven loops do not work with the inline implementation (fail backtracks to clause choice point, not into retract). Recursive retract loops (`retract_loop :- retract(X), retract_loop. retract_loop.`) work correctly since each call re-enters the inline loop from index 0, and items shift down after removal.
+
+**Context window at handoff: ~90%.**
+
+**Next session (PJ-55):** M-PJ-ABOLISH — implement `abolish/1`, create rung15 corpus (5 tests). See FRONTEND-PROLOG-JVM.md §NOW.

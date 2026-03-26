@@ -19,30 +19,29 @@ and emits Jasmin `.j` files, assembled by `jasmin.jar`.
 
 | Session | Sprint | HEAD | Next milestone |
 |---------|--------|------|----------------|
-| **Prolog JVM** | `main` PJ-53 — M-PJ-ASSERTZ ✅ 5/5 rung13 | `8929f4e` PJ-53 | M-PJ-RETRACT |
+| **Prolog JVM** | `main` PJ-54 — M-PJ-RETRACT ✅ 5/5 rung14 | `5d947a1` PJ-54 | M-PJ-ABOLISH |
 
-### CRITICAL NEXT ACTION (PJ-54)
+### CRITICAL NEXT ACTION (PJ-55)
 
-**Baseline: 5/5 rung11 ✅. 5/5 rung12 ✅. 5/5 rung13 ✅. snobol4x HEAD `8929f4e`.**
+**Baseline: 5/5 rung11 ✅. 5/5 rung12 ✅. 5/5 rung13 ✅. 5/5 rung14 ✅. snobol4x HEAD `5d947a1`.**
 
-**Next milestone: M-PJ-RETRACT — implement `retract/1`, get 5/5 rung14.**
+**Next milestone: M-PJ-ABOLISH — implement `abolish/1`, get 5/5 rung15.**
 
 **Plan:**
-- Add `pj_db_retract(String key, int idx)` helper: removes entry at index `idx` from the ArrayList for `key` in `pj_db`. Returns the removed `Object[]` term, or null if out-of-range.
-- Add `retract/1` dispatch in `pj_emit_goal`: call `pj_db_retract_key` to get key, call `pj_db_retract`, unify head with returned term.
-- Backtracking: `retract/1` is choice-point-aware — on retry, increment idx and try next entry.
-- Create rung14 corpus: 5 `.pro` + `.expected` covering: basic retract, retract with unification, retract-all via backtracking, retract from mixed DB, retract nonexistent (fail).
-- Verify 5/5 rung11–rung13 no regressions.
+- Add `pj_db_abolish(String key)` helper: removes the entire ArrayList for `key` from `pj_db` (or no-op if absent).
+- Add `abolish/1` dispatch in `pj_emit_goal`: call `pj_db_assert_key` on arg, call `pj_db_abolish`, goto lbl_γ (always succeeds).
+- Create rung15 corpus: 5 `.pro` + `.expected` covering: abolish existing predicate, abolish then query (fail), abolish nonexistent (succeed), abolish then re-assert, abolish one of two predicates.
+- Verify rung11–rung14 no regressions.
 
-**Bootstrap PJ-54:**
+**Bootstrap PJ-55:**
 ```bash
 git clone https://TOKEN@github.com/snobol4ever/snobol4x
 git clone https://TOKEN@github.com/snobol4ever/.github
 apt-get install -y default-jdk nasm libgc-dev swi-prolog
 make -C snobol4x/src
-# Read §NOW above. Implement retract/1.
-# bash test/frontend/prolog/run_prolog_jvm_rung.sh test/frontend/prolog/corpus/rung14_retract
-# Confirm rung11–rung13 no regressions
+# Read §NOW above. Implement abolish/1.
+# bash test/frontend/prolog/run_prolog_jvm_rung.sh test/frontend/prolog/corpus/rung15_abolish
+# Confirm rung11–rung14 no regressions
 # Commit snobol4x, update §NOW + PLAN.md + SESSIONS_ARCHIVE.md, push both repos
 ```
 ## Milestone Table
@@ -73,8 +72,9 @@ make -C snobol4x/src
 | **M-PJ-FINDALL** | `findall/3` — collect all solutions into list | ✅ |
 | **M-PJ-ATOM-BUILTINS** | atom_chars/length/concat/codes/char_code etc. | ✅ |
 | **M-PJ-ASSERTZ** | `assertz/1`, `asserta/1` — dynamic DB (Scripten dep) | ✅ |
-| **M-PJ-RETRACT** | `retract/1` — dynamic DB removal | ❌ **NEXT** |
+| **M-PJ-RETRACT** | `retract/1` — peek-then-remove, 5/5 rung14 | ✅ |
 | **M-PJ-ATOP** | `@<`/`@>`/`@=<`/`@>=` as parser infix operators — Scripten dep | ❌ |
+| **M-PJ-ABOLISH** | `abolish/1` — remove entire predicate from DB | ❌ **NEXT** |
 
 ---
 
