@@ -2281,3 +2281,15 @@ Contiguous AND relay labels with mixed J/String stack types. The v45 type-infere
 **Next session (SD-11):** Create `demo/scrip/demo1/hello.scrip` (SNOBOL4+Icon+Prolog sections), `hello.expected`, and `run_demo.sh`. Wire csnobol4 + swipl + icon_driver paths. Fire M-SD-DEMO1 when all three backends pass.
 
 **Context window at handoff: ~23%.**
+
+---
+
+## IJ-52 — M-IJ-TABLE-VERIFY ✅ (diagnosis; no new commit)
+
+**Date:** 2026-03-26. **HEAD:** `6fe0f2b` (unchanged).
+
+rung23 arrived 5/5 — already resolved in IJ-51. Confirmed 136/136 JVM rungs green. Discovered `rung02_proc/t02_fact` FAIL: `icn_pv_*` static fields clobbered by recursive calls. Fix spec written to §NOW. 4 harnessless corpus dirs all pass except t02_fact.
+
+**Next (IJ-53): M-IJ-RECURSION** — save/restore `icn_pv_<curproc>_*` in `ij_emit_call` do_call block.
+
+**Context window at handoff: ~90%.**
