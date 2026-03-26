@@ -101,16 +101,31 @@ The Byrd-box four-port model (α/β/γ/ω) is emitted as labels + gotos — neve
 
 **L4 owns all sprint content.** Session state, §NOW, §CRITICAL NEXT ACTION, step-by-step plans — all go in the L4 doc. Never in L1 or L3.
 
----
+**Doc index (what to read and when):**
 
-
-
-- **L1 PLAN.md:** 3KB max. NOW table + milestone IDs only. No sprint content, no step content, no completed rows. Ever.
-- **L2 docs:** 10KB max. §NOW + §CRITICAL NEXT ACTION only.
-- **L3 docs:** 10KB max. Invariant reference only — no session state, no step content.
-- **L4 docs:** No hard limit. Replace sections; never append. Session summaries → L5 SESSIONS_ARCHIVE.md.
-- When updating: **replace** the relevant section. Never append session summaries beyond §NOW.
-- SESSIONS_ARCHIVE.md is append-only and has no size limit.
+| File | Level | Read when |
+|------|-------|-----------|
+| SESSIONS_ARCHIVE.md | L5 | `tail -80` — step 1 of every session |
+| RULES.md | L3 | Every session |
+| ARCH.md | L3 | Every session |
+| TINY.md | L2 | B/N/J/F sessions |
+| JVM.md | L2 | snobol4jvm sessions |
+| DOTNET.md | L2 | D sessions |
+| FRONTEND-SNOBOL4.md | L4 | SNOBOL4 frontend |
+| FRONTEND-ICON.md | L4 | I sessions |
+| FRONTEND-ICON-JVM.md | L4 | IJ sessions |
+| FRONTEND-PROLOG.md | L4 | F sessions |
+| FRONTEND-PROLOG-JVM.md | L4 | PJ sessions |
+| FRONTEND-SNOCONE.md | L4 | Snocone sessions |
+| FRONTEND-REBUS.md | L4 | Rebus sessions |
+| BACKEND-X64.md | L4 | B sessions |
+| BACKEND-JVM.md | L4 | J sessions |
+| BACKEND-NET.md | L4 | N sessions |
+| BEAUTY.md | L4 | beauty.sno sprint |
+| GRAND_MASTER_REORG.md | L4 | G sessions only |
+| SCRIP_DEMO.md | L4 | SD sessions |
+| PATCHES.md | L4 | runtime patch work |
+| MILESTONE_ARCHIVE.md | L5 | append only |
 
 ---
 
@@ -149,7 +164,7 @@ When the frontend produces an IR node the backend cannot yet emit, do not add a 
 
 ## ⛔ SCRIP DEMO PROGRAMS ARE THE SPEC — Never rewrite to cover compiler limits
 
-The `.md` source blocks in `demo/scrip/demoN/` are the specification. They define what the compilers must handle. If a demo fails, the bug is in the compiler (sno2c, icon_driver, JVM emitter, Prolog emitter) — never in the demo source. Do not simplify, restructure, or otherwise modify a demo block to work around a compiler limitation. Fix the product. Root cause: SD-27 session nearly rewrote roman.md Icon block to avoid list subscript VerifyError in icon_emit_jvm.c.
+The `.md` source blocks in `demo/scrip/demoN/` are the specification. They define what the compilers must handle. If a demo fails, the bug is in the compiler (sno2c, icon_driver, JVM emitter, Prolog emitter) — never in the demo source. Do not simplify, restructure, or otherwise modify a demo block to work around a compiler limitation. Fix the product.
 
 ---
 
