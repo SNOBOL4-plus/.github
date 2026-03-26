@@ -13,7 +13,7 @@ Each concurrent session owns exactly one row. Update only your row on every push
 | Session | Sprint | HEAD | Next milestone |
 |---------|--------|------|----------------|
 | **⚠ GRAND MASTER REORG** | G-7 — FRONTEND-PROLOG-JVM.md trimmed 12KB→4.6KB; §NOW bloat + Roadmap removed | `eb9f2ec` G-7 | M-G0-FREEZE (Lon schedules) |
-| **⭐ Scrip Demo** | SD-24: run_demo.sh wired; SNO2C-JVM 9/10; M-SD-1 ✅ — next: fix demo10 TABLE semantics + Icon/Prolog runtime gaps | `0f28136` SD-24 | M-SD-2 |
+| **⭐ Scrip Demo** | SD-27: M-SD-3 🔄 roman — 5/6 PASS; ICON-JVM list subscript VerifyError in icon_emit_jvm.c | `51e38fc` SD-27 | M-SD-3 |
 | **TINY backend** | `main` B-292 — 106/106 | `acbc71e` B-292 | M-BEAUTIFY-BOOTSTRAP-ASM-MONITOR |
 | **TINY NET** | `net-t2` N-248 — 110/110 | `425921a` N-248 | M-T2-FULL |
 | **TINY JVM** | `main` J-216 — STLIMIT/STCOUNT ✅ | `a74ccd8` J-216 | M-JVM-STLIMIT-STCOUNT |
