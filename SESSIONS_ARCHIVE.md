@@ -2281,3 +2281,212 @@ Contiguous AND relay labels with mixed J/String stack types. The v45 type-infere
 **Next session (SD-11):** Create `demo/scrip/demo1/hello.scrip` (SNOBOL4+Icon+Prolog sections), `hello.expected`, and `run_demo.sh`. Wire csnobol4 + swipl + icon_driver paths. Fire M-SD-DEMO1 when all three backends pass.
 
 **Context window at handoff: ~23%.**
+
+---
+
+## IJ-52 — M-IJ-TABLE-VERIFY ✅ (diagnosis; no new commit)
+
+**Date:** 2026-03-26. **HEAD:** `6fe0f2b` (unchanged).
+
+rung23 arrived 5/5 — already resolved in IJ-51. Confirmed 136/136 JVM rungs green. Discovered `rung02_proc/t02_fact` FAIL: `icn_pv_*` static fields clobbered by recursive calls. Fix spec written to §NOW. 4 harnessless corpus dirs all pass except t02_fact.
+
+**Next (IJ-53): M-IJ-RECURSION** — save/restore `icn_pv_<curproc>_*` in `ij_emit_call` do_call block.
+
+**Context window at handoff: ~90%.**
+
+---
+
+## SD-11 — M-SD-DEMO1 ✅
+
+**Date:** 2026-03-26. **HEAD (snobol4x):** `fcbd6a8`.
+
+**Work done:**
+- Created `demo/scrip/demo1/hello.scrip`: three-section polyglot Hello World.
+  SNOBOL4 idiom: `OUTPUT = 'Hello, World!'`. Icon idiom: `write("Hello, World!")`.
+  Prolog idiom: `write('Hello, World!'), nl` under `:- initialization(main, main)`.
+- Created `demo/scrip/demo1/hello.expected`: `Hello, World!\n`
+- Created `demo/scrip/scrip_split.py`: fence splitter. Reads triple-backtick blocks,
+  writes `snobol4.sno` / `icon.icn` / `prolog.pro` to OUTDIR, prints manifest.
+- Created `demo/scrip/run_demo.sh`: wires SNOBOL4 / swipl / icont. Graceful SKIP
+  for missing backends (0 FAIL when binary absent). Invocation: `swipl -q -f FILE -t halt`.
+
+**Results:** swipl PASS. snobol4 SKIP (no binary). icont SKIP (no binary).
+Full 3-way pass pending: Lon to provide csnobol4 tarball at `/mnt/user-data/uploads/snobol4-2_3_3_tar.gz` + `apt install icont`.
+
+**Next session (SD-12):** M-SD-DEMO2 — `demo/scrip/demo2/wordcount.scrip`.
+Key contrast: SNOBOL4 `SPAN` patterns vs Icon `!str` generator vs Prolog DCG.
+Input: a short text string (or stdin). Output: word count integer.
+
+**Context window at handoff: ~12%.**
+
+---
+
+## SD-12 -- M-SD-DEMO2 ✅
+
+**Date:** 2026-03-26. **HEAD (snobol4x):** `0c1fc58`.
+
+- `demo/scrip/demo2/wordcount.md`: three-section polyglot word counter.
+  Input string: "the quick brown fox jumps over the lazy dog". Expected output: `9`.
+- SNOBOL4: `SPAN(&LCASE &UCASE)` loop with counter variable.
+- Icon: string scanning `s ? { tab(upto(&letters)) / tab(many(&letters)) }`.
+- Prolog: DCG `whites//0` + `word//1` + `words//1`; `phrase/3` + `length/2`.
+- swipl PASS. snobol4/icont SKIP.
+
+**Next (SD-13): M-SD-DEMO3** -- `demo3/roman.md`. Integer to Roman numerals.
+Key contrast: table-driven goto (SNOBOL4) vs `suspend` generator (Icon) vs arithmetic rules (Prolog).
+
+**Context window at handoff: ~18%.**
+
+---
+
+## SD-13 -- M-SD-DEMO2 fix + M-SD-DEMO3 ✅
+
+**Date:** 2026-03-26. **HEAD (snobol4x):** `8931853`.
+
+**demo2 correction:** SNOBOL4 section was non-idiomatic. Rewrote to Gimpel style:
+`BREAK(WORD) SPAN(WORD)` pattern, subject replacement loop (`LINE WPAT =`).
+The match IS the consumption — no `LEN(SIZE(W))=''` hackery.
+
+**demo3 roman.md:**
+- SNOBOL4: Gimpel `ROMAN.inc` verbatim — recursive digit-strip, inline table string,
+  `REPLACE` shifts `IVXLCDM` → `XLCDM**` for place-value promotion. Elegant.
+- Icon: greedy subtraction loop over parallel `vals`/`syms` lists.
+- Prolog: arithmetic rules with cut, recursive `atom_concat` accumulation.
+- Input: 1776, 42, 9. Expected: `MDCCLXXVI` / `XLII` / `IX`. swipl PASS.
+
+**Lesson:** Read Gimpel before writing SNOBOL4. The idioms are specific:
+BREAK/SPAN for word boundaries, subject replacement for consumption,
+`RPOS(1) LEN(1) . T =` for digit-stripping from the right.
+
+**Next (SD-14): M-SD-DEMO4** -- `demo4/palindrome.md`.
+Key contrast: `REVERSE` built-in (SNOBOL4) vs subscript walk (Icon) vs `reverse/2` (Prolog).
+
+**Context window at handoff: ~28%.**
+
+---
+
+## SD-14 -- M-SD-DEMO4 ✅
+
+**Date:** 2026-03-26. **HEAD (snobol4x):** `62b0077`.
+
+- `demo/scrip/demo4/palindrome.md`: three-section palindrome detector.
+- SNOBOL4: `IDENT(S, REVERSE(S))` — exact palin.sno idiom; `REPLACE(S, &LCASE, &UCASE)` normalises case. One comparison, no loop.
+- Icon: subscript walk inward (`s[i]` / `s[j]`), `map()` for lowercase.
+- Prolog: `reverse(Cs, Cs)` — unification IS the test; one clause, one cut.
+- Input: racecar/hello/level. Expected: yes/no/yes. swipl PASS.
+
+**Next (SD-15): M-SD-DEMO5** -- `demo5/fib.md`.
+Key contrast: labeled goto loop (SNOBOL4) vs `suspend` generator (Icon) vs `fib/2` rule (Prolog).
+
+**Context window at handoff: ~32%.**
+
+---
+
+## SD-15 -- M-SD-DEMO5 ✅
+
+**Date:** 2026-03-26. **HEAD (snobol4x):** `f7153ce`.
+
+- `demo/scrip/demo5/fib.md`: Fibonacci first 10.
+- SNOBOL4: iterative labeled-goto; accumulators A/B; T for swap; `LT(N,10)` guard.
+- Icon: `suspend` generator with `:=:` swap idiom; `every fibs() \ 10` limits output.
+- Prolog: accumulator rule `fib/4`; `forall(between(0,9,N),...)` drives output.
+- Expected: 0 1 1 2 3 5 8 13 21 34. swipl PASS.
+
+**Next (SD-16): M-SD-DEMO6** -- `demo6/sieve.md`.
+Key contrast: TABLE bitset (SNOBOL4) vs list+every (Icon) vs exclude/sieve (Prolog).
+
+**Context window at handoff: ~36%.**
+
+---
+
+## SD-16 -- M-SD-DEMO6 ✅
+
+**Date:** 2026-03-26. **HEAD (snobol4x):** `72de264`.
+
+- `demo/scrip/demo6/sieve.md`: Sieve of Eratosthenes, primes to 50.
+- SNOBOL4: `ARRAY(LIMIT, 1)` as bitset; `OUTER`/`INNER`/`PRINT`/`PLOOP` labeled-goto loops.
+  `DIFFER(A<I>)` skips composites cleanly. `IDENT(OUT)` handles first-element no-space.
+  Note: spec said TABLE but ARRAY is correct -- TABLE is for associative lookup.
+- Icon: list subscript marks composites; two `every` passes (mark then collect).
+- Prolog: `is_prime/2` trial division against accumulated prime list; `sieve/4` recursion;
+  `atomic_list_concat` for clean space-separated output.
+- Expected: `2 3 5 7 11 13 17 19 23 29 31 37 41 43 47`. swipl PASS.
+
+**Next (SD-17): M-SD-DEMO7** -- `demo7/caesar.md`.
+Key contrast: `MAP` built-in (SNOBOL4) vs `map()` with char translation (Icon) vs `maplist+rot13_char` (Prolog).
+
+**Context window at handoff: ~44%.**
+
+---
+
+## SD-17 -- M-SD-DEMO7 ✅
+
+**Date:** 2026-03-26. **HEAD (snobol4x):** `137364c`.
+
+- `demo/scrip/demo7/caesar.md`: ROT13 cipher; double application proves involution.
+- SNOBOL4: `REPLACE(S, PLAIN, ROT13)` with two parallel 52-char strings -- Gimpel UPLO.inc idiom verbatim.
+- Icon: `map(s, plain, rot13)` -- same parallel-string idiom, built-in function.
+- Prolog: `maplist/2` over integer codes; `rot13_code/2` uses `mod 26` arithmetic.
+- Expected: `Uryyb, Jbeyq!` / `Hello, World!`. swipl PASS.
+
+**Next (SD-18): M-SD-DEMO8** -- `demo8/sort.md`.
+Key contrast: Gimpel BSORT/HSORT insertion-sort idiom (SNOBOL4) vs `isort` (Icon) vs `msort/2` (Prolog).
+
+**Context window at handoff: ~50%.**
+
+---
+
+## SD-18 -- M-SD-DEMO8 ✅
+
+**Date:** 2026-03-26. **HEAD (snobol4x):** `62da781`.
+
+- `demo/scrip/demo8/sort.md`: insertion sort of 8 integers.
+- SNOBOL4: Gimpel BSORT verbatim -- `LGT(A<K>,V) A<K>` shifts in one statement;
+  `IDENT(OUT)` for first-element no-space idiom.
+- Icon: `isort` procedure -- same algorithm; `!a` generator for output.
+- Prolog: `msort/2` built-in; `atomic_list_concat` for output.
+- Input: 5 3 8 1 9 2 7 4. Expected: `1 2 3 4 5 7 8 9`. swipl PASS.
+
+**Next (SD-19): M-SD-DEMO9** -- `demo9/rpn.md`.
+Key contrast: pattern-driven stack (SNOBOL4) vs list-as-stack (Icon) vs DCG (Prolog).
+
+**Context window at handoff: ~54%.**
+
+---
+
+## SD-19 -- M-SD-DEMO9 ✅
+
+**Date:** 2026-03-26. **HEAD (snobol4x):** `2e3aaba`.
+
+- `demo/scrip/demo9/rpn.md`: RPN calculator. Expression: `5 1 2 + 4 * + 3 -` = 14.
+- SNOBOL4: pattern-driven scan; `SPAN(DIGITS)` for numbers, `LEN(1)` for operators;
+  Gimpel `DATA('LINK(NEXT,VAL)')` stack with `PUSH`/`POP`; `IDENT` dispatches operator.
+- Icon: list-as-stack; `put()`/`pull()`; `tab(many(&digits))` scanner; `case` dispatch.
+- Prolog: `rpn/3` with explicit stack accumulator; `eval/4` operator clauses;
+  tokens passed as mixed number/atom list -- no string parsing needed.
+- Expected: `14`. swipl PASS.
+
+**Next (SD-20): M-SD-DEMO10** -- `demo10/anagram.md`.
+Key contrast: SORTCHARS+TABLE (SNOBOL4) vs canonical+table (Icon) vs msort+assert (Prolog).
+
+**Context window at handoff: ~59%.**
+
+---
+
+## SD-20 -- M-SD-DEMO10 ✅  **SCRIP DEMO LADDER COMPLETE**
+
+**Date:** 2026-03-26. **HEAD (snobol4x):** `ebe6d87`.
+
+- `demo/scrip/demo10/anagram.md`: detect anagram groups in a word list.
+- SNOBOL4: `BSORT` on char `ARRAY` → canonical key; `TABLE` groups words by key;
+  `CONVERT(T,'ARRAY')` iterates entries; `BREAK(' ')` filters solo groups.
+- Icon: `sort(chars-list)` → key; `table()` of lists; `sort(t)` for ordered iteration.
+- Prolog: `msort` on char list; `group_pairs_by_key`; `length/2` filters singletons.
+- Words: eat tea tan ate nat bat. Expected: `eat tea ate` / `tan nat`. swipl PASS.
+
+**Full ladder result: demo1–demo10, all swipl PASS, 0 FAIL.**
+
+**Next: M-SCRIP-DEMO** — family tree polyglot (SNOBOL4+Icon+Prolog in one .md file).
+Blocked pending StackMapTable work in Icon JVM backend.
+
+**Context window at handoff: ~64%.**

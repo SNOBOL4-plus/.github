@@ -288,3 +288,6 @@ rung29 5/0/0 · 97/97 total · HEAD `495cb65` · `type/copy/image/numeric` — c
 
 ## IJ-44 — M-IJ-BUILTINS-MISC ✅  2026-03-25
 rung30 5/0/0 · 102/102 total · HEAD `fe87efc` · `abs/max/min/sqrt/seq` — `Math.abs/max/min/sqrt`; varargs relay chain for max/min; seq infinite generator with α/β ports + static cur+step; `ij_expr_is_real` extended for sqrt/abs/max/min; helper name fixes `_long→default`, `_real→_dbl`
+
+## IJ-52 — M-IJ-TABLE-VERIFY ✅  2026-03-26
+rung23 5/5 · 136/136 total · HEAD `6fe0f2b` · resolved on arrival (IJ-51 codebase). Discovered M-IJ-RECURSION: static `icn_pv_*` fields clobbered by recursive proc calls.

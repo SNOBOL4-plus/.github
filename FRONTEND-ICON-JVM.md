@@ -19,34 +19,40 @@ assembled by `jasmin.jar` into `.class` files. Despite the file's location under
 
 | Session | Sprint | HEAD | Next milestone |
 |---------|--------|------|----------------|
-| **Icon JVM** | `main` IJ-50 ✅ M-IJ-BLOCK-BODY complete | `1ccf83e` IJ-50 ✅ | M-IJ-SCAN-AUGOP |
+| **Icon JVM** | `main` IJ-52 — M-IJ-TABLE-VERIFY ✅; recursion bug diagnosed | `6fe0f2b` IJ-51 | M-IJ-RECURSION |
 
-### CRITICAL NEXT ACTION (IJ-51)
+### CRITICAL NEXT ACTION (IJ-53)
 
-**Baseline: 131/131 JVM rungs (rung05–35) PASS. rung32 t03 xfail (nested gen in str arg).**
+**Baseline: 136/136 JVM rungs (rung05–36 incl rung23 5/5). rung32 t03 xfail. rung36 t05 xfail.**
 
-IJ-50 committed (`1ccf83e`). rung35: **5/5 PASS**.
+**Bug: `rung02_proc/t02_fact` — recursion clobbers static locals**
 
-This session completed (IJ-49→IJ-50):
-- M-IJ-NULL-TEST ✅ (`\E`→ICN_NONNULL transparent; `/E`→ICN_NULL inverted lconst_0)
-- M-IJ-BLOCK-BODY ✅ (parse_block_or_expr; ij_emit_every gen_drain/pump_gen split; ij_emit_if mixed-width drain+join)
+`icn_pv_<proc>_*` are class-level statics. Recursive call overwrites caller's `n`; `n * fact(n-1)` reads `n=0` at base, gives `1` not `120`.
 
-**Next: M-IJ-SCAN-AUGOP**
-- `s ?:= expr` — scanning augmented assignment
-- ICN_SCAN_AUGOP already in AST; needs emitter in icon_emit_jvm.c
-- Pattern: like ICN_SCAN but stores scan result back into lhs var
+**Fix: `ij_emit_call` `do_call` block (~line 3110 in `icon_emit_jvm.c`)**
+- Before `invokestatic`: for each `icn_pv_<ij_cur_proc>_*` long in `ij_statics[]`, emit `getstatic` + `lstore` into save slots starting at `ij_jvm_locals_count() + 10`
+- After call: emit `lload` + `putstatic` for each, restoring caller's locals
+- Bump `ij_jvm_locals_count()` return by `2 * MAX_LOCALS`
+
+**Also: write 4 missing harness scripts** (all corpus already passing except t02_fact):
+- `run_rung02_arith_gen.sh` (5/5 ✅), `run_rung02_proc.sh` (2/3), `run_rung04_string.sh` (5/5 ✅), `run_rung35_table_str.sh` (2/2 ✅)
 
 ```bash
-# Bootstrap IJ-51:
+# Bootstrap IJ-53:
 git clone https://TOKEN_SEE_LON@github.com/snobol4ever/snobol4x
 git clone https://TOKEN_SEE_LON@github.com/snobol4ever/.github
 apt-get install -y default-jdk nasm libgc-dev
 cd snobol4x
-gcc -Wall -Wextra -g -O0 -I. src/frontend/icon/icon_driver.c src/frontend/icon/icon_lex.c \
+gcc -g -O0 -I. src/frontend/icon/icon_driver.c src/frontend/icon/icon_lex.c \
     src/frontend/icon/icon_parse.c src/frontend/icon/icon_ast.c \
     src/frontend/icon/icon_emit.c src/frontend/icon/icon_emit_jvm.c \
     src/frontend/icon/icon_runtime.c -o /tmp/icon_driver
-bash test/frontend/icon/run_rung35.sh /tmp/icon_driver   # expect 5/5
+bash test/frontend/icon/run_rung23.sh /tmp/icon_driver   # 5/5 ✅
+bash test/frontend/icon/run_rung36.sh /tmp/icon_driver   # 4/4 + 1 xfail ✅
+# Confirm recursion bug:
+/tmp/icon_driver -jvm test/frontend/icon/corpus/rung02_proc/t02_fact.icn -o /tmp/fact.j
+java -jar src/backend/jvm/jasmin.jar /tmp/fact.j -d /tmp/ && java -cp /tmp/ T02_fact
+# expected: 120   actual: 1
 ```
 
 ---
@@ -213,8 +219,8 @@ gcc -Wall -Wextra -g -O0 -I. src/frontend/icon/icon_driver.c src/frontend/icon/i
 | **M-IJ-TABLE** | `table`, `t[k]`, `key/insert/delete/member` | ✅ |
 | **M-IJ-RECORD** | `record` decl, `r.field` access, record proc args | ✅ |
 | **M-IJ-STRING-RETVAL** | String procedure returns: `icn_arg_str_N` + Pass 1d fixpoint | ✅ |
-| M-IJ-NULL-TEST | `\E` (non-null test) and `/E` (null/failure test) unary ops | ❌ **NEXT** |
-| **M-IJ-BLOCK-BODY** | `{ stmt; stmt }` compound body in `while`/`every`/`if` | ❌ |
+| M-IJ-NULL-TEST | `\E` (non-null test) and `/E` (null/failure test) unary ops | ✅ |
+| **M-IJ-BLOCK-BODY** | `{ stmt; stmt }` compound body in `while`/`every`/`if` | ✅ |
 | M-IJ-GLOBAL | `global` vars, `initial` clause | ✅ |
 | M-IJ-POW | `^` exponentiation (int+real) | ✅ |
 | M-IJ-READ | `read()`, `reads(n)` | ✅ |
@@ -223,7 +229,9 @@ gcc -Wall -Wextra -g -O0 -I. src/frontend/icon/icon_driver.c src/frontend/icon/i
 | M-IJ-SORT | `sort/sortf` (depends: LISTS+TABLE) | ✅ |
 | M-IJ-ALT-VALUE | ALT relay passes actual values through (not lconst_0 sentinel) | ✅ |
 | M-IJ-CASE | `case E of { ... }` | ✅ |
-| M-IJ-SCAN-AUGOP | `s ?:= expr` | ❌ |
+| M-IJ-SCAN-AUGOP | `s ?:= expr` | ✅ |
+| **M-IJ-TABLE-VERIFY** | rung23 5/5 — int+str keys, str defaults, member/delete | ✅ |
+| **M-IJ-RECURSION** | Save/restore `icn_pv_*` statics around user proc calls | ❌ **NEXT** |
 | M-IJ-COEXPR | `create E`, `@C` co-expressions | 💭 |
 | M-IJ-MATH | `atan/sin/cos/exp/log/sqrt` | 💭 |
 | M-IJ-MULTIFILE | `link`, multi-file programs | 💭 |
