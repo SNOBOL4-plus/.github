@@ -19,9 +19,43 @@ and emits Jasmin `.j` files, assembled by `jasmin.jar`.
 
 | Session | Sprint | HEAD | Next milestone |
 |---------|--------|------|----------------|
-| **Prolog JVM** | `main` PJ-51 — stub emitter + directive exec done; `pj_db_assert` stack-height VerifyError on all 5 rung13 | `ce8bc5a` PJ-51 | M-PJ-ASSERTZ |
+| **Prolog JVM** | `main` PJ-52 — stack-height+key-encoding fixed; ClassCastException String→Integer in p_main_0 | `d4f8ac4` PJ-52 | M-PJ-ASSERTZ |
 
-### CRITICAL NEXT ACTION (PJ-52)
+### CRITICAL NEXT ACTION (PJ-53)
+
+**Baseline: 5/5 rung11 ✅. 5/5 rung12 ✅. snobol4x HEAD `d4f8ac4`.**
+
+**Next milestone: M-PJ-ASSERTZ — fix ClassCastException, get 5/5 rung13.**
+
+**THE BUG:** `ClassCastException: String cannot be cast to Integer` at `p_main_0`. The dynamic DB walker uses `db_idx_local = arity + 40` as an int local. In `p_main_0` (arity=0), that's local 40. The `iinc 40 1` instruction in the retry path is treating local 40 as an int — but the JVM `iinc` bytecode requires the local to already contain an int. If the local slot 40 happens to hold a String reference from some other use, iinc throws ClassCastException.
+
+**Root cause:** The `db_idx_local` offset formula `arity + 4 + 32 + 4` is wrong — it should use `locals_needed` (the actual computed limit) as the base, not a hardcoded offset. For `p_main_0` the total locals might be much smaller than 40, and the JVM initialises unwritten locals to `null` (a reference), not 0 (an int). `iinc` on a null local → ClassCastException.
+
+**Fix:** In the dynamic DB walker block (inside `pj_emit_choice`, after the static clauses), change:
+```c
+int db_idx_local = arity + 4 + 32 + 4;  // WRONG
+```
+to:
+```c
+int db_idx_local = locals_needed - 2;   // last two slots reserved for db_idx + db_term
+int db_term_local = locals_needed - 1;
+```
+And bump `locals_needed` by 2 more if not already enough. Also do the same fix in the stub emitter (where `idx_loc = dyn_arity + 2` and `trm_loc = dyn_arity + 3` — those are fine since stubs start from `dyn_arity + 0`).
+
+Also initialise `db_idx_local` to 0 with `iconst_0; istore db_idx_local` at the top of the method before any branch, so the JVM verifier knows it's an int.
+
+**Bootstrap PJ-53:**
+```bash
+git clone https://TOKEN_SEE_LON@github.com/snobol4ever/snobol4x
+git clone https://TOKEN_SEE_LON@github.com/snobol4ever/.github
+apt-get install -y default-jdk nasm libgc-dev swi-prolog
+make -C snobol4x/src && cd snobol4x
+# In pj_emit_choice omega-port walker: change db_idx_local = arity+40 to locals_needed-2
+# Add: iconst_0; istore db_idx_local at method entry (after .limit locals)
+# Build, run rung13 5-way sweep, expect 5/5
+# Confirm rung11+rung12 no regressions
+# Commit, update §NOW + PLAN.md + SESSIONS_ARCHIVE, push both repos
+```
 
 **Baseline: 5/5 rung11 ✅. 5/5 rung12 ✅. snobol4x HEAD `ce8bc5a`.**
 

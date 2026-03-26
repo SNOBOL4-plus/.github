@@ -1541,3 +1541,22 @@ Toplevel `:- Goal` directives are parsed as `E_DIRECTIVE` but `pj_emit_main()` i
 **Fix for PJ-52:** Rewrite `pj_db_assert` (line ~1193 in `prolog_emit_jvm.c`). Use local 3 as list storage on both paths; join point has empty stack, then load local 3. See FRONTEND-PROLOG-JVM.md §NOW for exact Jasmin pattern.
 
 **Context window at handoff: ~95%.**
+
+## PJ-52 — M-PJ-ASSERTZ WIP (stack-height + key-encoding fixed)
+
+**HEAD start:** `ce8bc5a` (PJ-51) → **HEAD end:** `d4f8ac4`
+**Date:** 2026-03-25
+
+**Accomplished:**
+
+1. **`pj_db_assert` stack-height VerifyError fixed.** Rewrote to store list to local 3 on BOTH paths (new-list and existing-list), joining at `pj_db_assert_join` with empty stack. Clean JVM verifier discipline.
+
+2. **`pj_db_assert_key` functor/arity encoding fixed.** Term encoding is `arr[0]=tag, arr[1]=functor, arr[2..n+1]=args`. Was reading `arr[0]` (tag "compound") as functor and computing `length-1` as arity. Fixed to `arr[1]` and `length-2`.
+
+3. **Both DB walkers (omega-port + stub) arg-index fixed.** Was loading `arr[ai+1]` as arg; correct index is `arr[ai+2]`. Fixed in both places.
+
+**Remaining bug:** `ClassCastException: String cannot be cast to Integer` at `p_main_0` runtime. The omega-port DB walker uses `db_idx_local = arity + 40` as an int local. For `p_main_0` (arity=0), local 40 is uninitialized (null reference). `iinc 40 1` on a null slot → ClassCastException.
+
+**Fix for PJ-53:** Change `db_idx_local = arity + 4 + 32 + 4` to `locals_needed - 2` (within `pj_emit_choice`). Also add `iconst_0; istore db_idx_local` at method entry so the JVM knows the type. See §NOW CRITICAL NEXT ACTION.
+
+**Context window at handoff: ~99%.**
