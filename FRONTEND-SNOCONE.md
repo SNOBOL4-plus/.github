@@ -1,12 +1,10 @@
-# FRONTEND-SNOCONE.md — Snocone Frontend
+# FRONTEND-SNOCONE.md — Snocone Frontend (L3)
 
 Snocone is a structured language frontend implemented in all three repos.
 Status: in progress across TINY, JVM, DOTNET — lexer and expression parser done.
 
 *Session state → TINY.md / JVM.md / DOTNET.md.*
 
----
-**Deep reference:** all ARCH docs cataloged in `ARCH-index.md`
 ---
 
 ## Status by Repo

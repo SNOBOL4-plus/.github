@@ -65,8 +65,8 @@ Each `M-SD-N` fires when:
 | Milestone | Status |
 |-----------|--------|
 | M-SD-1  | ✅ hello — SNO2C-JVM + ICON-JVM + PROLOG-JVM all PASS |
-| M-SD-2  | ✅ wordcount — SNO2C-JVM + ICON-JVM + PROLOG-JVM all PASS |
-| M-SD-3  | ❌ **NEXT** |
+| M-SD-2  | ❌ **NEXT** — wordcount; blocked on Icon scanning + Prolog string builtins |
+| M-SD-3  | ❌ |
 | M-SD-4  | ❌ |
 | M-SD-5  | ❌ |
 | M-SD-6  | ❌ |
@@ -74,8 +74,6 @@ Each `M-SD-N` fires when:
 | M-SD-8  | ❌ |
 | M-SD-9  | ❌ |
 | M-SD-10 | ❌ |
-
-**Icon dialect rule:** SCRIP `.md` Icon blocks use explicit semicolons. `icon_semicolon` is a standalone tool for end-users — it is NEVER run as part of the snobol4ever pipeline.
 
 ---
 
