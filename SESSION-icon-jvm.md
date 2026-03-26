@@ -1,4 +1,4 @@
-# FRONTEND-ICON-JVM.md — Icon × JVM (snobol4x)
+# SESSION-icon-jvm.md — Icon × JVM (snobol4x)
 
 **Repo:** snobol4x · **Frontend:** Icon · **Backend:** JVM (Jasmin)
 **Session prefix:** `IJ` · **Trigger:** "playing with Icon JVM"

@@ -103,24 +103,22 @@ Every session is defined by three values. Pick them, read three docs, work.
 | Snocone | `FRONTEND-SNOCONE.md` |
 | Rebus | `FRONTEND-REBUS.md` |
 
-**Axis 3 — Backend** (emitter, codegen, §NOW sprint state):
+**Axis 3 — Frontend × Backend → SESSION doc** (§NOW sprint state lives here):
 
-| Backend | Doc |
-|---------|-----|
-| x64 ASM | `BACKEND-X64.md` |
-| JVM | `BACKEND-JVM.md` |
-| .NET | `BACKEND-NET.md` |
-| Icon×JVM combo | `FRONTEND-ICON-JVM.md` |
-| Prolog×JVM combo | `FRONTEND-PROLOG-JVM.md` |
+| | x64 ASM | JVM | .NET |
+|--|:-------:|:---:|:----:|
+| SNOBOL4 | `SESSION-snobol4-x64.md` | `SESSION-snobol4-jvm.md` | `SESSION-snobol4-net.md` |
+| Icon | `SESSION-icon-x64.md` | `SESSION-icon-jvm.md` | — |
+| Prolog | `SESSION-prolog-x64.md` | `SESSION-prolog-jvm.md` | — |
 
-**Special sessions** (not frontend×backend): `SCRIP_DEMO.md` (SD), `BEAUTY.md` (beauty sprint).
+**Special sessions**: `SCRIP_DEMOS.md` (SD) · `BEAUTY.md` (beauty sprint)
+**Pure backend ref** (no session state): `BACKEND-X64.md` · `BACKEND-JVM.md` · `BACKEND-NET.md`
+**Deep reference**: `ARCH-*.md` — open only when you hit something you don't understand.
 
 **Session start — three steps:**
 1. `tail -80 SESSIONS_ARCHIVE.md` — your handoff. Do this FIRST.
-2. Read `PLAN.md` — NOW table, find your row, confirm next milestone.
-3. Read your three axis docs. §NOW sprint state lives in the backend/combo doc.
-
-**Sprint state** (§NOW, next action, step plan) lives in the backend or combo doc. Never in PLAN.md or RULES.md. SESSIONS_ARCHIVE.md is append-only.
+2. Read `PLAN.md` — NOW table, confirm next milestone.
+3. Read `REPO-*.md` + your `SESSION-*.md`. §NOW lives in the SESSION doc.
 
 ---
 
