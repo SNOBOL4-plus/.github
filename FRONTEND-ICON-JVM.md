@@ -19,42 +19,25 @@ assembled by `jasmin.jar` into `.class` files. Despite the file's location under
 
 | Session | Sprint | HEAD | Next milestone |
 |---------|--------|------|----------------|
-| **Icon JVM** | `main` IJ-45 WIP — M-IJ-SORT 3/5 (sortf Pass 1c fix needed) | `b2868c8` IJ-45 WIP | M-IJ-SORT |
+| **Icon JVM** | `main` IJ-45 ✅ M-IJ-SORT complete | `1bef9c8` IJ-45: M-IJ-SORT ✅ | M-IJ-RECORD (Tier 1) |
 
 ### CRITICAL NEXT ACTION (IJ-46)
 
-**Baseline: 102/102 JVM rungs (rung05–30) PASS. 0 xfail. rung14 2 pre-existing xfail unchanged.**
+**Baseline: 107/107 JVM rungs (rung05–31) PASS. rung14 2 pre-existing xfail unchanged.**
 
-**IJ-45 WIP committed** (`b2868c8`). Three bugs fixed (lstore/lload, ij_expr_is_list, record-list bang fork). rung31: **3/5 PASS**. t04/t05 (sortf) still fail — one fix remaining (Pass 1c, see below).
+M-IJ-SORT committed (`1bef9c8`). rung31: **5/5 PASS**.
 
-#### IJ-45 findings (working tree, not committed)
+Four bugs were fixed to make sortf/sort work with record lists:
+1. `'R'` type tag for record-list vars (ij_declare_static_reclist)
+2. Pre-pass 2: `every v := !reclist` pre-tags `v` as Object before body emit
+3. `is_rec_direct`: bang-of-reclist stores Object directly (no pop2+retval_obj)
+4. ICN_MAKELIST: record elements loaded from icn_retval_obj (not boxed as Long)
 
-**`icon_emit_jvm.c` changes made:**
-1. `sort(L)` builtin in `ij_emit_call`: one-shot, evals child list, calls `icn_builtin_sort(ArrayList)ArrayList`.
-2. `sortf(L,f)` builtin in `ij_emit_call`: evals list + field index (long→int via `l2i`), calls `icn_builtin_sortf(ArrayList,int)ArrayList`.
-3. `icn_builtin_sort` static helper emitted at class footer: insertion sort on `Long`-boxed elements.
-4. `icn_builtin_sortf` static helper: insertion sort using `java.lang.reflect.Field` to compare record fields by 1-based index.
-5. **rung31_sort corpus** created: `t01_sort_basic`, `t02_sort_every`, `t03_sort_already_sorted`, `t04_sortf_field1`, `t05_sortf_field2`.
-6. **`run_rung31.sh`** created (also compiles `$*.j` record inner classes).
-
-#### ONE-LINE BUG TO FIX FIRST
-
-**Root cause:** Jasmin assembler rejects `lstore_4`/`lload_4` (underscore shorthand only valid for locals 0–3). Locals ≥ 4 require space form.
-
-**Fix in `icon_emit_jvm.c` `icn_builtin_sort` helper emission (~line 5930):**
-```c
-// WRONG (generates "lstore_4" / "lload_4" → Jasmin parse error):
-J("    lstore_4\n");
-...
-J("    lload_4\n");
-
-// RIGHT:
-J("    lstore 4\n");
-...
-J("    lload 4\n");
-```
-
-After fix, rebuild, run `bash test/frontend/icon/run_rung31.sh /tmp/icon_driver` — expect 5/5. Then confirm prior rungs unchanged. Then commit `IJ-45: M-IJ-SORT ✅`.
+**Next milestone: M-IJ-RECORD (Tier 1)**
+- record decl → static inner class with public Object fields
+- `r.field` access (ICN_FIELD) → getfield/putfield
+- Constructor call `foo(v1,v2)` → new foo + field stores
+- Corpus: test/frontend/icon/corpus/rung24_records/ (5 tests)
 
 ```bash
 # Bootstrap IJ-46:
