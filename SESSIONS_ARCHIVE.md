@@ -1484,3 +1484,34 @@ Two bugs fixed in `icon_emit_jvm.c`:
 **Score:** 119/119 PASS. M-IJ-TABLE ✅ fired.
 
 **Next session (IJ-37):** M-IJ-RECORD — `record` declarations as static inner JVM classes, `r.field` access via `getfield`/`putfield`, rung24 corpus (5 tests). See FRONTEND-ICON-JVM.md §Tier 1 for full plan.
+
+## PJ-50 — M-PJ-ATOM-BUILTINS ✅; M-PJ-ASSERTZ WIP
+
+**HEAD start:** `cbd6979` (PJ-49 fix) → **HEAD end:** `02cc4c6`
+**Date:** 2026-03-25
+
+**Accomplished:**
+
+1. **M-PJ-ATOM-BUILTINS ✅ confirmed** — `cbd6979` already had the nil-check fix landing. 5/5 rung12 PASS on session start. Milestone fired.
+
+2. **M-PJ-ASSERTZ WIP — skeleton landed:**
+   - `pj_db` static `HashMap<String,ArrayList<Object[]>>` field added to class header `<clinit>`.
+   - `pj_emit_assertz_helpers()` emits 4 Jasmin helpers: `pj_db_assert_key`, `pj_db_assert`, `pj_db_query`, `pj_copy_term_ground`.
+   - `assertz/1` + `asserta/1` added to `pj_is_user_call` whitelist + `pj_emit_goal` dispatch.
+   - Dynamic DB walker appended to every predicate method's omega port: computes `db_idx = cs - base[nclauses]`, calls `pj_db_query`, unifies args one by one with trail-unwind on failure, returns `pj_term_atom("true")` on success.
+   - rung13 corpus created: 5 `.pro` + `.expected` via swipl oracle.
+   - Build clean.
+
+**Score:** 5/5 rung11 ✅ · 5/5 rung12 ✅ · 0/5 rung13 (not yet run — two blockers)
+
+**TWO BUGS for PJ-51:**
+
+**Bug 1 — No stub method for pure-dynamic predicates.**
+Programs with `:- dynamic foo/N` and only `assertz(foo(...))` calls never emit a static predicate method `p_foo_N` → `NoSuchMethodError` at runtime. Fix: in `prolog_emit_jvm()`, after emitting static predicates, scan program for assertz'd functor/arities with no static choice → emit stub method containing only the dynamic DB walker + `aconst_null; areturn`.
+
+**Bug 2 — `:- assertz(...)` directives not executed before main.**
+Toplevel `:- Goal` directives are parsed as `E_DIRECTIVE` but `pj_emit_main()` ignores them. Fix: in `pj_emit_main()`, before invoking `p_main_0`, iterate `prog->head` for `E_DIRECTIVE` nodes whose child is `assertz/1` or `asserta/1` and emit the same bytecode as `pj_emit_goal` for assertz (with `var_locals=NULL, n_vars=0`).
+
+**Context window at handoff: ~88%.**
+
+**Next session (PJ-51):** Fix Bug 1 + Bug 2 → 5/5 rung13 → **M-PJ-ASSERTZ ✅** → M-PJ-RETRACT.

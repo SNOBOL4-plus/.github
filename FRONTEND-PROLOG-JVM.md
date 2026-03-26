@@ -19,38 +19,52 @@ and emits Jasmin `.j` files, assembled by `jasmin.jar`.
 
 | Session | Sprint | HEAD | Next milestone |
 |---------|--------|------|----------------|
-| **Prolog JVM** | `main` PJ-49 — 5/5 rung11 ✅; 4/5 rung12; pj_is_user_call whitelist fixed; atom_codes reverse ClassCastException WIP | `7e31f3a` PJ-49 | M-PJ-ATOM-BUILTINS |
+| **Prolog JVM** | `main` PJ-50 — M-PJ-ATOM-BUILTINS ✅; M-PJ-ASSERTZ WIP; pj_db HashMap field + helpers + walker skeleton; rung13 corpus created (0/5 JVM — stub predicate for pure-dynamic missing) | `02cc4c6` PJ-50 | M-PJ-ASSERTZ |
 
-### CRITICAL NEXT ACTION (PJ-50)
+### CRITICAL NEXT ACTION (PJ-51)
 
-**Baseline: 5/5 rung11 PASS. 20/20 puzzle corpus PASS. snobol4x HEAD `7e31f3a`.**
+**Baseline: 5/5 rung11 ✅. 5/5 rung12 ✅. snobol4x HEAD `02cc4c6`.**
 
-**Next milestone: M-PJ-ATOM-BUILTINS — fix nil-check bug, then green rung12**
+**Next milestone: M-PJ-ASSERTZ — get 5/5 rung13**
 
-**THE BUG:** `pj_code_list_to_string` reverse path — `atom_codes(A, [104,101,...])` crashes with ClassCastException: String cannot be cast to Long.
+**WHAT WAS DONE (PJ-50):**
+- `pj_db` static `HashMap<String,ArrayList<Object[]>>` field added to class header + `<clinit>`.
+- `pj_emit_assertz_helpers()` emits 4 Jasmin helper methods: `pj_db_assert_key`, `pj_db_assert`, `pj_db_query`, `pj_copy_term_ground`.
+- `assertz/1` and `asserta/1` dispatch added to `pj_emit_goal`.
+- Dynamic DB walker appended to every `pj_emit_choice` omega port.
+- rung13 corpus created: 5 `.pro` + `.expected` files.
+- Build is clean.
 
-Root cause: nil-check in `colts_loop` uses `iconst_1 aaload` (head slot) but nil term `{"[]"}` only has index 0. Check `pj_char_list_to_string` (which works) — uses `iconst_0 aaload` (the tag). Fix `pj_code_list_to_string` nil-check to use `iconst_0`. Also verify head is at [1] vs [2] to match `pj_char_list_to_string`.
+**TWO BUGS REMAINING for 5/5 rung13:**
 
-Fix: `make -C src`, then `5/5 rung12` → **M-PJ-ATOM-BUILTINS ✅**. Then 20/20 puzzle sweep.
+**Bug 1 — Pure-dynamic predicates have no stub method.**
+`assertz_atom.pro` does `:- dynamic color/1` then only `assertz(color(...))` calls — no static `color/1` clauses. `pj_emit_choice` is never called for `color/1` so no `p_color_1` method exists. JVM → `NoSuchMethodError`. Fix: in `prolog_emit_jvm()` entry, after emitting static predicates, scan the program for `:- dynamic foo/N` directives and for `:- assertz(foo(...))` at toplevel with no matching static predicate; emit a stub method for each:
+```c
+/* stub: just the dynamic walker, no static clauses */
+J(".method static p_%s_%d(", safe_fn, arity);
+for (int i=0; i<arity; i++) J("[Ljava/lang/Object;");
+J("I)[Ljava/lang/Object;\n");
+J("    .limit stack 16\n    .limit locals %d\n", arity+50);
+/* emit only the dynamic DB walker (same code as in pj_emit_choice omega) */
+/* then: aconst_null; areturn */
+J(".end method\n\n");
+```
 
-**Bootstrap PJ-50:**
+**Bug 2 — `:- assertz(...)` directives must run before `main`.**
+The Prolog parser emits `:- Goal` directives as `E_DIRECTIVE` statements. The JVM emitter's `pj_emit_main()` currently ignores these. Fix: in `pj_emit_main()`, before calling `p_main_0`, scan `prog->head` for `E_DIRECTIVE` statements whose goal is `assertz/1` or `asserta/1` and emit the assertz call inline (same bytecode as `pj_emit_goal` for assertz).
+
+**Bootstrap PJ-51:**
 ```bash
 git clone https://TOKEN_SEE_LON@github.com/snobol4ever/snobol4x
 git clone https://TOKEN_SEE_LON@github.com/snobol4ever/.github
-apt-get install -y --fix-missing default-jdk nasm libgc-dev swi-prolog
+apt-get install -y default-jdk nasm libgc-dev swi-prolog
 make -C snobol4x/src && cd snobol4x
-# Confirm 5/5 rung11 + 20/20 puzzle baseline
-for f in test/frontend/prolog/corpus/rung11_findall/*.pro; do
-  base=$(basename $f .pro); ./sno2c -pl -jvm $f -o /tmp/${base}.j 2>/dev/null
-  java -jar src/backend/jvm/jasmin.jar /tmp/${base}.j -d /tmp 2>/dev/null
-  cls=$(grep "^\.class" /tmp/${base}.j | awk '{print $3}')
-  got=$(timeout 10 java -cp /tmp $cls 2>&1 | grep -v "Picked up")
-  want=$(cat ${f%.pro}.expected)
-  [ "$got" = "$want" ] && echo "$base: PASS" || echo "$base: FAIL"
-done
-# Fix pj_code_list_to_string nil-check: iconst_0 aaload, not iconst_1
-# Build, run rung12 sweep, expect 5/5
-# Then run 20/20 puzzle sweep to confirm no regressions
+# Confirm 5/5 rung11 + 5/5 rung12 baseline
+# Fix Bug 1: stub method emitter for pure-dynamic predicates
+# Fix Bug 2: directive execution in pj_emit_main
+# Build, run rung13 sweep, expect 5/5
+# Then run rung11+rung12 regression sweep
+# Commit snobol4x, update §NOW, update PLAN.md, push .github
 ```
 
 ---
@@ -81,8 +95,8 @@ done
 | **M-PJ-DISPLAY-BT** | puzzle_03 over-generation workaround; 20/20 | ✅ |
 | **M-PJ-PZ-ALL-JVM** | All 20 puzzle solutions pass JVM | ✅ |
 | **M-PJ-FINDALL** | `findall/3` — collect all solutions into list | ✅ |
-| **M-PJ-ATOM-BUILTINS** | atom_chars/length/concat/codes/char_code etc. | ❌ **NEXT** |
-| **M-PJ-ASSERTZ** | `assertz/1`, `asserta/1` — dynamic DB (Scripten dep) | ❌ |
+| **M-PJ-ATOM-BUILTINS** | atom_chars/length/concat/codes/char_code etc. | ✅ |
+| **M-PJ-ASSERTZ** | `assertz/1`, `asserta/1` — dynamic DB (Scripten dep) | ❌ **NEXT** |
 
 ---
 
@@ -113,8 +127,8 @@ make -C snobol4x/src
 | Milestone | Feature | Rung | Status |
 |-----------|---------|------|--------|
 | M-PJ-FINDALL | `findall/3` | rung11 | ✅ |
-| M-PJ-ATOM-BUILTINS | atom_chars/codes/length/concat/char_code, upcase/downcase | rung12 | ❌ **NEXT** |
-| M-PJ-ASSERTZ | `assertz/1`, `asserta/1` dynamic DB — **Scripten Demo dep** | rung13 | ❌ |
+| M-PJ-ATOM-BUILTINS | atom_chars/codes/length/concat/char_code, upcase/downcase | rung12 | ✅ |
+| M-PJ-ASSERTZ | `assertz/1`, `asserta/1` dynamic DB — **Scripten Demo dep** | rung13 | ❌ **NEXT** |
 | M-PJ-RETRACT | `retract/1`, `retractall/1` (depends: ASSERTZ) | rung14 | ❌ |
 | M-PJ-SORT | `sort/2`, `msort/2`, `keysort/2` | rung14b | ❌ |
 
