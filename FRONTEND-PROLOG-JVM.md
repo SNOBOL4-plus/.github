@@ -19,40 +19,49 @@ and emits Jasmin `.j` files, assembled by `jasmin.jar`.
 
 | Session | Sprint | HEAD | Next milestone |
 |---------|--------|------|----------------|
-| **Prolog JVM** | `main` PJ-72 — M-PJ-DCG ✅ 5/5 rung30 | `4fbe5f1` PJ-72 | M-PJ-SWI-BASELINE |
+| **Prolog JVM** | `main` PJ-73 — M-PJ-SWI-BASELINE ✅ 51/52 test_acyclic | `7037880` PJ-73 | M-PJ-SWI-SUITE |
 
-### CRITICAL NEXT ACTION (PJ-73)
+### CRITICAL NEXT ACTION (PJ-74)
 
-**M-PJ-DCG complete. New milestone: M-PJ-SWI-BASELINE.**
+**M-PJ-SWI-BASELINE complete. New milestone: M-PJ-SWI-SUITE.**
 
-**What was done this session (post-PJ-72):**
-- Downloaded 18 SWI-Prolog `tests/core/` files (LGPL v2.1 / BSD-2) into `snobol4corpus/programs/prolog/swi_tests_core/`
-- Wrote `convert_plunit2.py` — strips plunit harness, emits standalone `.pro` with inline `pj_test_*` harness
-- Converted 14 files (~564 tests) into `snobol4corpus/programs/prolog/swi_tests_converted/`
-- Verified converted files load and run under SWI-Prolog
-- snobol4corpus HEAD: `384d9c1`
+**What was done this session (PJ-73):**
+- Wiped last session's corpus mistakes (snobol4corpus reset to ccd79fa)
+- Architecture decision: fetch SWI tests at run-time, no copies in repo
+- `test/frontend/prolog/wrap_swi.py` — wraps SWI .pl files for our backend:
+  strips module/use_module/bare-dynamic directives, silences begin/end_tests,
+  statically emits pj_suite/pj_test facts + bridge predicates, appends shim
+- `test/frontend/prolog/plunit.pl` — 161-line plunit shim:
+  no call/N, flat single-clause dispatch, acyclic_term/maplist/append stdlib
+- `src/frontend/prolog/prolog_parse.c` fixes:
+  - f() zero-arity compound parsing
+  - operator-as-functor: =(x), not(x) etc.
+  - =@= / \=@= / ?= added to BIN_OPS operator table
+- First green run: `test_acyclic.pl` → 51 passed, 0 failed, 1 skipped (sto)
 
-**PJ-73 task: M-PJ-SWI-BASELINE**
+**PJ-74 task: M-PJ-SWI-SUITE**
 
-Run all 14 converted `.pro` files against our JVM backend, record pass/fail counts as the baseline. Expected: many failures (missing `?=/2`, `unifiable/3`, `trim_stacks/0`, cyclic terms, `freeze/2`, arity-0 compounds `f()`). Goal is just to establish the number.
+Run wrap_swi.py + pipeline against the full SWI tests/core suite.
+Fetch each file, wrap, compile, run, record pass/fail/skip/error.
+Build a baseline table. Then fix the gaps.
 
 ```bash
-cd snobol4x
-bash test/frontend/prolog/run_prolog_jvm_rung.sh \
-  ../snobol4corpus/programs/prolog/swi_tests_converted/
-```
-
-Record results in `SESSIONS_ARCHIVE.md` under PJ-73. Then define rung31 from the passing subset.
-
-**Bootstrap PJ-73:**
-```bash
-git clone https://TOKEN_SEE_LON@github.com/snobol4ever/snobol4x
-git clone https://TOKEN_SEE_LON@github.com/snobol4ever/.github
-git clone https://TOKEN_SEE_LON@github.com/snobol4ever/snobol4corpus
+git clone https://TOKEN@github.com/snobol4ever/snobol4x
+git clone https://TOKEN@github.com/snobol4ever/.github
 apt-get install -y --fix-missing default-jdk nasm libgc-dev swi-prolog
 make -C snobol4x/src
 # Read §NOW above. Start at CRITICAL NEXT ACTION.
 ```
+
+**Key files:**
+- `snobol4x/test/frontend/prolog/wrap_swi.py` — wrapper
+- `snobol4x/test/frontend/prolog/plunit.pl` — shim
+- Fetch URL pattern: `https://raw.githubusercontent.com/SWI-Prolog/swipl-devel/master/tests/core/TEST.pl`
+
+**SWI tests to run next (roughly easy→hard):**
+test_acyclic ✅, test_unify, test_list, test_copy_term, test_occurs_check,
+test_exception, test_op, test_sort, test_string, test_arith, test_format,
+test_write, test_read, test_dcg, test_bips, test_misc
 
 ## Milestone Table
 
