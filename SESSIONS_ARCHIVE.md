@@ -2592,3 +2592,19 @@ Updated: `SCRIP_DEMOS.md` (full rewrite), `PLAN.md` NOW row (next = M-SD-X64-1).
 through x64 backend; fire M-SD-X64-1.
 
 **Context window at handoff: ~93%.**
+
+---
+
+## SD-22b -- HQ correction: three frontends, one JVM backend
+
+**Date:** 2026-03-26. **No code change.**
+
+Corrected framing: the demo ladder tests three **frontends** (SNOBOL4, Icon, Prolog)
+against one **backend** (JVM). Not x64/JVM/.NET — those are backend options for
+SNOBOL4 only. The Scrip demo specifically showcases the JVM backend with all three
+language frontends. 10 milestones (M-SD-1 through M-SD-10), one per demo.
+Each fires when all three frontends compile correctly through JVM and match .expected.
+
+Updated: SCRIP_DEMOS.md, PLAN.md NOW row (next = M-SD-1).
+
+**Context window at handoff: ~94%.**
