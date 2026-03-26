@@ -19,20 +19,18 @@ assembled by `jasmin.jar` into `.class` files. Despite the file's location under
 
 | Session | Sprint | HEAD | Next milestone |
 |---------|--------|------|----------------|
-| **Icon JVM** | `main` IJ-40 — M-IJ-POW ✅ rung26 5/5 | `90c759e` IJ-40 | M-IJ-READ |
+| **Icon JVM** | `main` IJ-41 — M-IJ-READ ✅ rung27 5/5 | `d94e728` IJ-41 | M-IJ-BUILTINS-STR |
 
-### CRITICAL NEXT ACTION (IJ-41)
+### CRITICAL NEXT ACTION (IJ-42)
 
-**Baseline: 82/82 JVM rungs (rung05–26) PASS. 0 xfail.**
+**Baseline: 87/87 JVM rungs (rung05–27) PASS. 0 xfail.**
 
-**M-IJ-POW is complete.** Next milestone: **M-IJ-READ** — `read()` and `reads(n)` builtins.
+**M-IJ-READ is complete.** Next milestone: **M-IJ-BUILTINS-STR** — string manipulation builtins.
 
-Features needed:
-- `read()` — read one line from stdin, return string; fail on EOF
-- `reads(n)` — read n bytes from stdin, return string; fail on EOF
+Functions needed: `repl(s,n)` `reverse(s)` `left(s,n,pad)` `right(s,n,pad)` `center(s,n,pad)` `trim(s,cs)` `map(s,src,dst)` `char(i)` `ord(s)`
 
 ```bash
-# Bootstrap IJ-41:
+# Bootstrap IJ-42:
 git clone https://TOKEN_SEE_LON@github.com/snobol4ever/snobol4x
 git clone https://TOKEN_SEE_LON@github.com/snobol4ever/.github
 apt-get install -y default-jdk nasm libgc-dev
@@ -41,8 +39,8 @@ gcc -Wall -Wextra -g -O0 -I. src/frontend/icon/icon_driver.c src/frontend/icon/i
     src/frontend/icon/icon_parse.c src/frontend/icon/icon_ast.c \
     src/frontend/icon/icon_emit.c src/frontend/icon/icon_emit_jvm.c \
     src/frontend/icon/icon_runtime.c -o /tmp/icon_driver
-bash test/frontend/icon/run_rung26.sh /tmp/icon_driver   # expect 5/0/0 baseline
-# Add rung27_read corpus, implement M-IJ-READ, commit "IJ-41: M-IJ-READ ✅"
+bash test/frontend/icon/run_rung27.sh /tmp/icon_driver   # expect 5/0/0 baseline
+# Add rung28_builtins_str corpus, implement M-IJ-BUILTINS-STR, commit "IJ-42: M-IJ-BUILTINS-STR ✅"
 ```
 
 ---
@@ -192,7 +190,8 @@ gcc -Wall -Wextra -g -O0 -I. src/frontend/icon/icon_driver.c src/frontend/icon/i
 | **M-IJ-BLOCK-BODY** | `{ stmt; stmt }` compound body in `while`/`every`/`if` — Scripten dep | ❌ |
 | M-IJ-GLOBAL | `global` vars, `initial` clause | ✅ |
 | M-IJ-POW | `^` exponentiation (int+real) | ✅ |
-| **M-IJ-READ** | `read()`, `reads(n)` | ❌ **NEXT** |
+| M-IJ-READ | `read()`, `reads(n)` | ✅ |
+| **M-IJ-BUILTINS-STR** | `repl/reverse/left/right/center/trim/map/char/ord` | ❌ **NEXT** |
 | M-IJ-BUILTINS-STR | `repl/reverse/left/right/center/trim/map/char/ord` | ❌ |
 | M-IJ-BUILTINS-TYPE | `type/copy/image/numeric` | ❌ |
 | M-IJ-SORT | `sort/sortf` (depends: LISTS+TABLE) | ❌ |
