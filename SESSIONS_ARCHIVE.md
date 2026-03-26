@@ -2433,3 +2433,21 @@ Key contrast: `MAP` built-in (SNOBOL4) vs `map()` with char translation (Icon) v
 Key contrast: Gimpel BSORT/HSORT insertion-sort idiom (SNOBOL4) vs `isort` (Icon) vs `msort/2` (Prolog).
 
 **Context window at handoff: ~50%.**
+
+---
+
+## SD-18 -- M-SD-DEMO8 ✅
+
+**Date:** 2026-03-26. **HEAD (snobol4x):** `62da781`.
+
+- `demo/scrip/demo8/sort.md`: insertion sort of 8 integers.
+- SNOBOL4: Gimpel BSORT verbatim -- `LGT(A<K>,V) A<K>` shifts in one statement;
+  `IDENT(OUT)` for first-element no-space idiom.
+- Icon: `isort` procedure -- same algorithm; `!a` generator for output.
+- Prolog: `msort/2` built-in; `atomic_list_concat` for output.
+- Input: 5 3 8 1 9 2 7 4. Expected: `1 2 3 4 5 7 8 9`. swipl PASS.
+
+**Next (SD-19): M-SD-DEMO9** -- `demo9/rpn.md`.
+Key contrast: pattern-driven stack (SNOBOL4) vs list-as-stack (Icon) vs DCG (Prolog).
+
+**Context window at handoff: ~54%.**
