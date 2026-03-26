@@ -2760,3 +2760,59 @@ PASS  PROLOG-JVM
 
 ### Next
 Fix `icon_emit_jvm.c` list subscript emission. The bug is in how `L[i]` stores the subscript result — wrong type on the JVM stack before `putstatic`. Once fixed, re-run harness and fire M-SD-3.
+
+---
+
+## SD-27 — HQ Restructure + M-SD-3 in progress
+
+**Date:** 2026-03-26
+**snobol4x HEAD at close:** `51e38fc`
+**Context window at handoff:** ~67%
+
+### Work completed
+
+**roman.md (demo/scrip/demo3/):**
+- Icon block: added explicit semicolons throughout (SCRIP dialect rule)
+- SNOBOL4 ✅ · SWIPL ✅ · ICONT ✅ · SNO2C-JVM ✅ · PROLOG-JVM ✅
+- ICON-JVM ❌ — blocked by `icon_emit_jvm.c` list subscript VerifyError
+
+**ICON-JVM blocker identified:**
+- `vals[i]` → `Bad type in putfield/putstatic` (VerifyError in `icn_main`)
+- Minimal repro: `vals := [10,5,1]; i := 1; write(vals[i]);`
+- Fix location: `ij_emit_subscript()` in `icon_emit_jvm.c` — list path
+- Does NOT affect: string subscript, table subscript, `!L` bang generator
+- Documented in SESSION-icon-jvm.md §NOW
+
+**Mandate violation caught and documented:**
+- Session nearly rewrote roman.md Icon block to work around emitter bug
+- Caught, not executed
+- Rule added to RULES.md: SCRIP DEMO PROGRAMS ARE THE SPEC
+- Memory updated
+
+**HQ restructure (major):**
+- Three-axis model: REPO-* × FRONTEND-* × BACKEND-* → SESSION-frontend-backend.md
+- Old five-level L1-L5 hierarchy replaced
+- PLAN.md trimmed to 2.3KB (was 6.4KB, over hard limit)
+- SESSION-*.md created for all frontend×backend combos
+- FRONTEND-*.md / BACKEND-*.md stripped to pure reference (no §NOW)
+- §NOW lives only in SESSION-*.md
+- ARCH-*.md created for all deep reference content (18 files)
+- ARCH-index.md — full catalog, every operational doc links to it
+- Old duplicate files (TINY.md, JVM.md, DOTNET.md etc.) still present — Lon to delete after confirming content preserved in REPO-*.md
+
+### Next session (SD-28)
+
+1. Fix `icon_emit_jvm.c` list subscript VerifyError — see SESSION-icon-jvm.md §NOW
+2. Re-run harness: `bash demo/scrip/run_demo.sh demo/scrip/demo3/`
+3. Fire M-SD-3 when all 6 PASS
+4. Update PLAN.md, SESSIONS_ARCHIVE.md, MILESTONE_ARCHIVE.md
+
+**Bootstrap SD-28:**
+```bash
+git clone https://TOKEN_SEE_LON@github.com/snobol4ever/snobol4x
+git clone https://TOKEN_SEE_LON@github.com/snobol4ever/.github
+cd snobol4x && make -C src && apt-get install -y default-jdk swi-prolog icont
+export JAVA_TOOL_OPTIONS=""
+# Confirm 5/6: SNO2C=snobol4x/sno2c ICON_DRIVER=snobol4x/icon_driver JASMIN=snobol4x/src/backend/jvm/jasmin.jar bash demo/scrip/run_demo.sh demo/scrip/demo3/
+# Fix icon_emit_jvm.c ij_emit_subscript() list path → re-run → fire M-SD-3
+```
