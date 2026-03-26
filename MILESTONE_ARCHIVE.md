@@ -279,3 +279,6 @@ rung17 5/0/0 · HEAD `d0b58bb` · `sort/2`/`msort/2` — `pj_list_to_arraylist`,
 
 ## PJ-58 — M-PJ-SUCC-PLUS ✅  2026-03-25
 rung18 5/0/0 · HEAD `937ef92` · `succ/2`/`plus/3` — `pj_is_var`, `pj_succ_2`, `pj_plus_3` (all 3 modes for plus)
+
+## IJ-42 — M-IJ-BUILTINS-STR ✅  2026-03-25
+rung28 5/0/0 · 92/92 total · HEAD `c1e2b56` · `repl/reverse/left/right/center/trim/map/char/ord` — inline JVM emission + static helpers `icn_builtin_left/right/center/trim/map`; `ij_expr_is_string` extended for all 8 String-returning builtins
