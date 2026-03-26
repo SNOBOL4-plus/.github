@@ -2202,3 +2202,27 @@ Contiguous AND relay labels with mixed J/String stack types. The v45 type-infere
 **Context window at handoff: ~94%.**
 
 **Next session (SD-7):** Fix `ts_got`/null branch for String-valued tables. See SCRIPTEN_DEMO.md §NOW.
+
+---
+
+## SD-7 — String-valued table subscript fix complete
+
+**Date:** 2026-03-26. **HEAD at close:** `bc686de`.
+
+**Problem:** `t := table("0"); t["alice"] := "1"; write(t["alice"])` threw ClassCastException (JVM backend). Three distinct bugs found and fixed across the emitter.
+
+**Fixes (7 changes in `icon_emit_jvm.c`):**
+1. `ij_tdflt_str[]` + `ij_pending_tdflt_is_str`: parallel bool array tracking whether a table's default is String-typed, set by `table()` emitter, registered through assign path.
+2. `ij_tdflt_is_str(tbl_field)`: lookup helper used at emit time.
+3. `ij_prepass_types`: extended to register dflt type early (before emission) so `ij_expr_is_string` on subscript nodes works correctly during pre-pass.
+4. `ij_expr_is_string` `ICN_SUBSCRIPT` case: changed from unconditional `return 0` for table subscripts to `return ij_tdflt_is_str(tvfld)` — allows `write(t[k])` to emit `astore`/`println(String)` instead of `lstore`/`println(J)`.
+5. `ij_emit_subscript` ts_got + null branches: `checkcast String` for String-default tables instead of `checkcast Long / longValue()J`.
+6. `table()` drelay: String defaults stored as-is (no `Long.valueOf` boxing).
+7. `ij_emit_subscript` krelay: removed stray duplicate `ij_put_str_field(k_fld)` after if/else block (was latent bug exposed by String-key path leaving empty stack).
+8. table-assign `k_relay`: String keys stored directly, not via `Long/toString(J)`.
+
+**Tests:** rung35_table_str 2/2 PASS (new corpus); rung28–34 35/35 PASS (regression clean).
+
+**Context window at close: ~47%.**
+
+**Next session (SD-8):** Build `family_icon.icn` end-to-end. Check `demo/scripten/` exists; if not, create `family.scripten`, `family.csv`, `family.expected` per SCRIPTEN_DEMO.md spec, then run `run_demo.sh`.

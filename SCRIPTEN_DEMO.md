@@ -14,19 +14,31 @@ that the idea works end-to-end.
 
 | Session | Sprint | HEAD | Next milestone |
 |---------|--------|------|----------------|
-| **Scripten Demo** | SD-6 WIP — partial table String fix landed (`377ff1a`). Remaining: `ts_got` branch does `checkcast Long/longValue()J` but String-valued tables store String objects → ClassCastException. Fix: detect String-valued table, use `checkcast String` at ts_got and null branch. | `377ff1a` SD-6 | M-SCRIPTEN-DEMO |
+| **Scripten Demo** | SD-7 ✅ — String-valued table subscript ClassCastException resolved. 7 fixes in `icon_emit_jvm.c`: dflt-type tracking, prepass registration, `ij_expr_is_string` ICN_SUBSCRIPT, ts_got/null checkcast, drelay String boxing, k_relay String keys, stray putstatic. rung35 2/2 PASS; rung28-34 35/35. | `bc686de` SD-7 | M-SCRIPTEN-DEMO |
 
-### CRITICAL NEXT ACTION (SD-7)
+### CRITICAL NEXT ACTION (SD-8)
 
-**Blocker: ClassCastException — table subscript read returns Long but table stores Strings.**
+**Next blocker: Build `family_icon.icn` and verify end-to-end Scripten demo pipeline.**
 
-**Root cause:** `t := table("0")` creates a String-valued table. `t[key]` lookup does `checkcast java/lang/Long; invokevirtual Long/longValue()J` on whatever `HashMap.get` returns. When the stored value is a String (`"0"` or `"1"`), this throws `ClassCastException`.
+Now that String-valued tables work, the Icon side of the family tree demo can proceed. SD-8 tasks:
+1. Compile `family_icon.icn` with `icon_driver -jvm` — expected: clean `.j` output
+2. Run the full `run_demo.sh` pipeline (scripten_split → compile × 3 → inject_linkage → jasmin → java)
+3. Diff output against `family.expected`
+4. Fix any remaining issues in cross-language call emission (`ij_emit_call` dot-notation path)
 
-**The fix:** In `ij_emit_subscript` table-read path, detect whether the table's default/stored values are String-typed. If so:
-- `ts_got` branch: `checkcast java/lang/String` → return String at γ (not `longValue()J`)
-- null branch: load `{varfld}_dflt`, `checkcast String`, return String at γ
-
-Detection: check `ij_static_types` for `{varfld}_dflt` — if it's `'A'` (String), the table is String-valued. Or more directly: `ij_expr_is_string(dflt_expr)` when the table was declared as `table(str_literal)`.
+**Bootstrap SD-8:**
+```bash
+cd /home/claude/snobol4x
+gcc -Wall -Wno-unused-function -g -O0 -I src/frontend/icon \
+    src/frontend/icon/icon_driver.c src/frontend/icon/icon_lex.c \
+    src/frontend/icon/icon_parse.c src/frontend/icon/icon_ast.c \
+    src/frontend/icon/icon_emit.c src/frontend/icon/icon_emit_jvm.c \
+    src/frontend/icon/icon_runtime.c -o /tmp/icon_driver_jvm
+ln -sf /tmp/icon_driver_jvm /tmp/icon_driver
+# Check if demo files exist:
+ls demo/scripten/
+# If not: create family.scripten, family.csv, family.expected per SCRIPTEN_DEMO.md spec
+```
 
 **File:** `snobol4x/src/frontend/icon/icon_emit_jvm.c` — `ij_emit_subscript` table path, around `ts_got` label (after `ij_emit_subscript` line ~5020–5035).
 
