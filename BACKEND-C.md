@@ -1,4 +1,4 @@
-# BACKEND-C.md — C Native Backend Architecture (L3)
+# BACKEND-C.md — C Native Backend Architecture
 
 The C backend compiles SNOBOL4 → C code that links against the C runtime (snobol4.c).
 All patterns are compiled Byrd boxes. No interpreter on the hot path.

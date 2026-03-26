@@ -33,9 +33,9 @@ Each concurrent session owns exactly one row. Update only your row on every push
 
 | Repo | What it is |
 |------|-----------|
-| `snobol4x` | Main compiler: all frontends × x64/JVM/.NET backends |
-| `snobol4jvm` | Clojure JVM backend (snobol4 only) |
-| `snobol4dotnet` | C# .NET backend (snobol4 only) |
+| `snobol4x` | Main compiler: all frontends × x64/JVM/.NET backends | `REPO-snobol4x.md` |
+| `snobol4jvm` | Clojure JVM backend (snobol4 only) | `REPO-snobol4jvm.md` |
+| `snobol4dotnet` | C# .NET backend (snobol4 only) | `REPO-snobol4dotnet.md` |
 
 **Step 2 — Which frontend × backend?** → your L4 doc
 

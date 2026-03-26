@@ -1,4 +1,4 @@
-# RULES.md — Mandatory Rules (L3)
+# RULES.md — Mandatory Rules
 
 Every rule exists because a violation caused real damage. Read section headers first (`grep "^## " RULES.md`), then only sections relevant to your session.
 
@@ -35,7 +35,7 @@ Each session increments only its own counter. Commit messages: `PJ-5: M-PJ-BACKT
 - `"ICON frontend with JVM backend"` = IJ-session (`icon_emit_jvm.c`, Jasmin)
 - `"Icon JVM"` = IJ-session
 - The phrase "JVM backend" is the deciding signal. When in doubt: check which emitter file is active. `icon_emit.c` → I. `icon_emit_jvm.c` → IJ.
-- **HQ MD files are the only reliable memory.** Always read the relevant L3 doc (FRONTEND-ICON.md vs FRONTEND-ICON-JVM.md) to confirm session type before doing any work.
+- **HQ MD files are the only reliable memory.** Always read the relevant doc (FRONTEND-ICON.md vs FRONTEND-ICON-JVM.md) to confirm session type before doing any work.
 
 ---
 
@@ -81,51 +81,46 @@ The Byrd-box four-port model (α/β/γ/ω) is emitted as labels + gotos — neve
 
 ---
 
-## ⛔ DOC HIERARCHY — Five levels, strict reading discipline
+## ⛔ THREE-AXIS ORIENTATION — Repo × Frontend × Backend
 
-| Level | Files | Size limit | Read when |
-|-------|-------|-----------|-----------|
-| **L1** | `PLAN.md` | 3KB hard | Every session, always — NOW table + milestone IDs only |
-| **L2** | `TINY.md`, `JVM.md`, `DOTNET.md` | 10KB | Your platform session — HEAD, build, §NOW sprint |
-| **L3** | `RULES.md`, `ARCH.md` | 10KB | Every session — invariant, never changes session-to-session |
-| **L4** | `FRONTEND-*.md`, `BACKEND-*.md`, `MONITOR.md`, `TESTING.md`, `BEAUTY.md`, `GRAND_MASTER_REORG.md`, `SCRIP_DEMO*.md`, `PATCHES.md` | No hard limit | **Your pipeline or topic only** — read the one(s) matching your session type, no others |
-| **L5** | `SESSIONS_ARCHIVE.md`, `MILESTONE_ARCHIVE.md` | Unlimited | `tail -80 SESSIONS_ARCHIVE.md` = step 1 of session start. Full read: never. Append only. |
+Every session is defined by three values. Pick them, read three docs, work.
 
-**The session start protocol:**
-1. `tail -80 SESSIONS_ARCHIVE.md` — find your session type's last entry; this is the handoff. Do this FIRST, before anything else.
-2. Read L1 (`PLAN.md`) — NOW table + your next milestone ID only
-3. Read L3 (`RULES.md` + `ARCH.md`) — skip if familiar
-4. Read your L2 doc — if your session type has one
-5. Read your L4 doc — the ONE file matching your frontend×backend or topic
-6. Do not read any other L4 docs. Do not read GRAND_MASTER_REORG.md, TESTING.md, or MONITOR.md unless your milestone explicitly requires it.
+**Axis 1 — Repo** (build, paths, invariants):
 
-**L4 owns all sprint content.** Session state, §NOW, §CRITICAL NEXT ACTION, step-by-step plans — all go in the L4 doc. Never in L1 or L3.
+| Repo | Doc |
+|------|-----|
+| snobol4x | `REPO-snobol4x.md` |
+| snobol4jvm | `REPO-snobol4jvm.md` |
+| snobol4dotnet | `REPO-snobol4dotnet.md` |
 
-**Doc index (what to read and when):**
+**Axis 2 — Frontend** (language, parser, AST):
 
-| File | Level | Read when |
-|------|-------|-----------|
-| SESSIONS_ARCHIVE.md | L5 | `tail -80` — step 1 of every session |
-| RULES.md | L3 | Every session |
-| ARCH.md | L3 | Every session |
-| TINY.md | L2 | B/N/J/F sessions |
-| JVM.md | L2 | snobol4jvm sessions |
-| DOTNET.md | L2 | D sessions |
-| FRONTEND-SNOBOL4.md | L4 | SNOBOL4 frontend |
-| FRONTEND-ICON.md | L4 | I sessions |
-| FRONTEND-ICON-JVM.md | L4 | IJ sessions |
-| FRONTEND-PROLOG.md | L4 | F sessions |
-| FRONTEND-PROLOG-JVM.md | L4 | PJ sessions |
-| FRONTEND-SNOCONE.md | L4 | Snocone sessions |
-| FRONTEND-REBUS.md | L4 | Rebus sessions |
-| BACKEND-X64.md | L4 | B sessions |
-| BACKEND-JVM.md | L4 | J sessions |
-| BACKEND-NET.md | L4 | N sessions |
-| BEAUTY.md | L4 | beauty.sno sprint |
-| GRAND_MASTER_REORG.md | L4 | G sessions only |
-| SCRIP_DEMO.md | L4 | SD sessions |
-| PATCHES.md | L4 | runtime patch work |
-| MILESTONE_ARCHIVE.md | L5 | append only |
+| Frontend | Doc |
+|----------|-----|
+| SNOBOL4 | `FRONTEND-SNOBOL4.md` |
+| Icon | `FRONTEND-ICON.md` |
+| Prolog | `FRONTEND-PROLOG.md` |
+| Snocone | `FRONTEND-SNOCONE.md` |
+| Rebus | `FRONTEND-REBUS.md` |
+
+**Axis 3 — Backend** (emitter, codegen, §NOW sprint state):
+
+| Backend | Doc |
+|---------|-----|
+| x64 ASM | `BACKEND-X64.md` |
+| JVM | `BACKEND-JVM.md` |
+| .NET | `BACKEND-NET.md` |
+| Icon×JVM combo | `FRONTEND-ICON-JVM.md` |
+| Prolog×JVM combo | `FRONTEND-PROLOG-JVM.md` |
+
+**Special sessions** (not frontend×backend): `SCRIP_DEMO.md` (SD), `BEAUTY.md` (beauty sprint).
+
+**Session start — three steps:**
+1. `tail -80 SESSIONS_ARCHIVE.md` — your handoff. Do this FIRST.
+2. Read `PLAN.md` — NOW table, find your row, confirm next milestone.
+3. Read your three axis docs. §NOW sprint state lives in the backend/combo doc.
+
+**Sprint state** (§NOW, next action, step plan) lives in the backend or combo doc. Never in PLAN.md or RULES.md. SESSIONS_ARCHIVE.md is append-only.
 
 ---
 

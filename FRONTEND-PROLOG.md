@@ -1,4 +1,4 @@
-# FRONTEND-PROLOG.md — Tiny-Prolog Frontend (L3)
+# FRONTEND-PROLOG.md — Tiny-Prolog Frontend
 
 Tiny-Prolog is a frontend for snobol4x targeting the x64 ASM backend first,
 then C once the design is proven.

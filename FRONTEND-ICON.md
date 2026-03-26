@@ -1,4 +1,4 @@
-# FRONTEND-ICON.md — Tiny-ICON Frontend (L3)
+# FRONTEND-ICON.md — Tiny-ICON Frontend
 
 Tiny-ICON is a frontend for snobol4x targeting the x64 ASM backend.
 SNOBOL4 and Icon share a bloodline — Griswold invented both.

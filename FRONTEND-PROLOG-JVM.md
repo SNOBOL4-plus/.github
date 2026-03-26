@@ -1,4 +1,4 @@
-# FRONTEND-PROLOG-JVM.md — Prolog → JVM Backend (L4)
+# FRONTEND-PROLOG-JVM.md — Prolog → JVM Backend
 
 Prolog frontend targeting JVM bytecode via Jasmin.
 Reuses the existing Prolog IR pipeline (lex → parse → lower) unchanged.

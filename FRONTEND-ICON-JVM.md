@@ -1,4 +1,4 @@
-# FRONTEND-ICON-JVM.md — Tiny-ICON → JVM Backend (L4)
+# FRONTEND-ICON-JVM.md — Tiny-ICON → JVM Backend
 
 Icon → JVM backend emitter. The Icon **frontend** (lex → parse → AST) is shared
 and lives in `src/frontend/icon/`; this sprint is about `icon_emit_jvm.c` — the

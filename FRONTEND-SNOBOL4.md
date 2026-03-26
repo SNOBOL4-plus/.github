@@ -1,4 +1,4 @@
-# FRONTEND-SNOBOL4.md — SNOBOL4/SPITBOL Frontend (L3)
+# FRONTEND-SNOBOL4.md — SNOBOL4/SPITBOL Frontend
 
 SNOBOL4 and SPITBOL are treated as a single frontend (SPITBOL is a SNOBOL4
 superset with minor extensions). This frontend is implemented in all three repos.

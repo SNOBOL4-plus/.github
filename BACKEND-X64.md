@@ -1,4 +1,4 @@
-# BACKEND-X64.md — x64 Assembly Backend (L3)
+# BACKEND-X64.md — x64 Assembly Backend
 
 x64 ASM backend for snobol4x.
 Current: near-term stack-frame bridge (M-ASM-RECUR).
